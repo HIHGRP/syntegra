@@ -1,0 +1,727 @@
+domain: warehouse
+code: DW
+title: Analytics warehouse — conformed dimensions, facts, aggregates, live KPI read model and feature store
+module: analytics
+zone: dw
+summary: >
+  A separate MySQL 9.7 analytics cluster per state fed by CDC (Debezium → Kafka → loaders) so analytical
+  queries never run on the operational primary (NFR-PLAT-110, FR-RPT-06). Layers: raw (CDC landing,
+  not modelled here) → conformed core (the dimensions and facts below, Kimball style, SCD type 2 where
+  history matters) → aggregates (agg_*) and the live KPI read model → semantic layer (metrics.yaml).
+  Learner and staff keys are pseudonymised with a keyed HMAC at load; re-identification happens only
+  through the operational API under the user's permissions. The vault is never replicated: safeguarding,
+  SEND and wellbeing appear only as governed counts. Surrogate keys are BIGINT; every table carries
+  tenant_id (the state), loaded_at and load_batch_id.
+
+entities:
+  dim_date:
+    title: Calendar date dimension
+    kind: dimension
+    class: public
+    history: none
+    origin: ceda
+    pk: [tenant_id, date_key]
+    sources: [academic_period, calendar_event]
+    attrs:
+      - "date_key: int! | YYYYMMDD"
+      - "calendar_date: date!"
+      - "day_of_week: smallint!"
+      - "iso_week: smallint!"
+      - "month_no: smallint!"
+      - "year_no: smallint!"
+      - "is_weekend: bool!"
+      - "state_session_label: code(20)"
+      - "state_term_label: code(20)"
+      - "is_state_school_day: bool!"
+
+  dim_scope:
+    title: Governance scope dimension (SCD2) — country, state, LGA, network, institution, campus, unit, class
+    kind: dimension
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, scope_key]
+    sources: [scope_node]
+    attrs:
+      - "scope_key: bigint!"
+      - "scope_node_id: uuid!"
+      - "level: enum(scope_level)!"
+      - "code: code(40)!"
+      - "name: title!"
+      - "path: path!"
+      - "state_code: subdivision"
+      - "lga_code: code(40)"
+      - "ownership: cl(ownership)"
+      - "row_valid_from: date!"
+      - "row_valid_to: date"
+      - "is_current: bool!"
+    ix: [[scope_node_id, is_current], [path]]
+
+  dim_scope_closure:
+    title: Scope ancestor/descendant pairs in the warehouse (permission trimming and roll-up)
+    kind: dimension
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, ancestor_key, descendant_key]
+    sources: [scope_closure]
+    attrs:
+      - "ancestor_key: bigint!"
+      - "descendant_key: bigint!"
+      - "depth: smallint!"
+    ix: [[descendant_key]]
+
+  dim_institution:
+    title: Institution dimension (SCD2) with comparison context (P7)
+    kind: dimension
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, institution_key]
+    sources: [institution, institution_profile]
+    attrs:
+      - "institution_key: bigint!"
+      - "institution_id: uuid!"
+      - "scope_key: bigint!"
+      - "lga_scope_key: bigint!"
+      - "institution_code: code(20)!"
+      - "name: title!"
+      - "category: cl(institution_category)!"
+      - "ownership: cl(ownership)!"
+      - "is_public: bool!"
+      - "location_class: enum(location_class)"
+      - "comparison_group: code(60)"
+      - "onboarding_status: enum(onboarding_status)!"
+      - "row_valid_from: date!"
+      - "row_valid_to: date"
+      - "is_current: bool!"
+    ix: [[institution_id, is_current], [lga_scope_key]]
+
+  dim_learner:
+    title: Pseudonymised learner dimension (SCD2) — no names, no identifiers
+    kind: dimension
+    class: confidential
+    history: none
+    origin: ceda
+    pk: [tenant_id, learner_key]
+    sources: [learner]
+    attrs:
+      - "learner_key: bigint!"
+      - "learner_pseudo: hmac! | Keyed HMAC of learner_id (key held outside the warehouse)"
+      - "birth_year: smallint"
+      - "sex: cl(sex)"
+      - "is_historic: bool!"
+      - "row_valid_from: date!"
+      - "row_valid_to: date"
+      - "is_current: bool!"
+    ix: [[learner_pseudo, is_current]]
+
+  dim_staff:
+    title: Pseudonymised staff dimension (SCD2)
+    kind: dimension
+    class: confidential
+    history: none
+    origin: ceda
+    pk: [tenant_id, staff_key]
+    sources: [staff, staff_post, staff_qualification]
+    attrs:
+      - "staff_key: bigint!"
+      - "staff_pseudo: hmac!"
+      - "sex: cl(sex)"
+      - "staff_category: cl(staff_category)"
+      - "academic_rank: cl(academic_rank)"
+      - "is_qualified_teacher: bool"
+      - "is_trcn_registered: bool"
+      - "row_valid_from: date!"
+      - "row_valid_to: date"
+      - "is_current: bool!"
+
+  dim_subject:
+    title: Subject dimension
+    kind: dimension
+    class: public
+    history: none
+    origin: ceda
+    pk: [tenant_id, subject_key]
+    sources: [subject]
+    attrs:
+      - "subject_key: bigint!"
+      - "subject_id: uuid!"
+      - "code: code(32)!"
+      - "name: title!"
+      - "subject_group: cl(subject_group)"
+      - "is_mandatory_core: bool!"
+
+  dim_curriculum_node:
+    title: Curriculum objective dimension (version-aware)
+    kind: dimension
+    class: public
+    history: none
+    origin: ceda
+    pk: [tenant_id, node_key]
+    sources: [curriculum_node, curriculum_version, curriculum]
+    attrs:
+      - "node_key: bigint!"
+      - "node_id: uuid!"
+      - "curriculum_code: code(48)!"
+      - "version_label: semver!"
+      - "node_code: code(48)!"
+      - "kind: enum(curriculum_node_kind)!"
+      - "requirement: enum(requirement_status)!"
+      - "subject_key: bigint"
+      - "min_hours: dec(6,1)"
+
+  dim_class:
+    title: Class (arm/set/section) dimension per session
+    kind: dimension
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, class_key]
+    sources: [class_group, course_section]
+    attrs:
+      - "class_key: bigint!"
+      - "class_group_id: uuid!"
+      - "institution_key: bigint!"
+      - "education_level: cl(education_level)!"
+      - "stream: cl(stream)"
+      - "session_label: code(20)!"
+      - "name: title!"
+
+  dim_period:
+    title: Academic and billing period dimension (session, term, semester, billing period)
+    kind: dimension
+    class: public
+    history: none
+    origin: ceda
+    pk: [tenant_id, period_key]
+    sources: [academic_period, billing_period]
+    attrs:
+      - "period_key: bigint!"
+      - "period_id: uuid!"
+      - "kind: enum(period_kind)!"
+      - "label: code(40)!"
+      - "starts_on: date!"
+      - "ends_on: date!"
+
+  fact_enrolment_census:
+    title: Enrolment at the census date per learner and period (billable, exempt) — grain learner × period
+    kind: fact
+    class: confidential
+    history: none
+    origin: ceda
+    pk: [tenant_id, period_key, learner_key]
+    sources: [census_learner, census_snapshot, sdaf_exemption, enrolment]
+    attrs:
+      - "period_key: bigint!"
+      - "learner_key: bigint!"
+      - "institution_key: bigint!"
+      - "education_level: cl(education_level)!"
+      - "is_billable: bool!"
+      - "is_exempt: bool!"
+
+  agg_enrolment_daily:
+    title: Daily enrolment counts by institution, level and sex
+    kind: aggregate
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, date_key, institution_key, education_level, sex]
+    sources: [enrolment, learner]
+    attrs:
+      - "date_key: int!"
+      - "institution_key: bigint!"
+      - "education_level: cl(education_level)!"
+      - "sex: cl(sex)!"
+      - "enrolled: int_u!"
+      - "new_entrants: int_u!"
+      - "leavers: int_u!"
+      - "dropouts: int_u!"
+
+  fact_attendance:
+    title: Attendance mark fact (pseudonymised learner) — grain learner × register (partitioned by month)
+    kind: fact
+    class: confidential
+    history: none
+    origin: ceda
+    pk: [tenant_id, date_key, register_id, learner_key]
+    sources: [attendance_mark, attendance_register]
+    attrs:
+      - "date_key: int!"
+      - "register_id: uuid!"
+      - "learner_key: bigint!"
+      - "institution_key: bigint!"
+      - "class_key: bigint!"
+      - "register_kind: enum(register_kind)!"
+      - "code: cl(attendance_code)!"
+      - "is_present: bool!"
+      - "is_late: bool!"
+      - "is_authorised_absence: bool!"
+      - "minutes_late: smallint"
+
+  agg_attendance_daily:
+    title: Daily attendance aggregate by institution and class (live tiles refreshed ≤ 15 min in school hours)
+    kind: aggregate
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, date_key, class_key]
+    sources: [attendance_mark, attendance_register]
+    attrs:
+      - "date_key: int!"
+      - "class_key: bigint!"
+      - "institution_key: bigint!"
+      - "possible_sessions: int_u!"
+      - "present_sessions: int_u!"
+      - "late_sessions: int_u!"
+      - "authorised_absences: int_u!"
+      - "unauthorised_absences: int_u!"
+      - "registers_due: smallint!"
+      - "registers_on_time: smallint!"
+      - "registers_missing: smallint!"
+
+  agg_learner_attendance_term:
+    title: Learner attendance rate per term (persistent < 90% and severe < 50% absence)
+    kind: aggregate
+    class: confidential
+    history: none
+    origin: ceda
+    pk: [tenant_id, period_key, learner_key]
+    sources: [attendance_mark]
+    attrs:
+      - "period_key: bigint!"
+      - "learner_key: bigint!"
+      - "institution_key: bigint!"
+      - "possible_sessions: int_u!"
+      - "present_sessions: int_u!"
+      - "attendance_rate: pct!"
+      - "is_persistent_absence: bool!"
+      - "is_severe_absence: bool!"
+
+  fact_staff_presence:
+    title: Staff presence per day (sign-in or register-derived)
+    kind: fact
+    class: confidential
+    history: none
+    origin: ceda
+    pk: [tenant_id, date_key, staff_key, institution_key]
+    sources: [staff_attendance, staff_absence]
+    attrs:
+      - "date_key: int!"
+      - "staff_key: bigint!"
+      - "institution_key: bigint!"
+      - "is_expected: bool!"
+      - "is_present: bool!"
+      - "absence_type: cl(absence_type)"
+
+  fact_class_subject_coverage:
+    title: Daily coverage snapshot per class-subject — teacher of record, qualified, hours required vs scheduled vs delivered
+    kind: fact
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, date_key, class_key, subject_key]
+    sources: [class_subject_plan, teaching_assignment, staff_qualification, timetable_lesson, delivery_log, coverage_gap]
+    attrs:
+      - "date_key: int!"
+      - "class_key: bigint!"
+      - "subject_key: bigint!"
+      - "institution_key: bigint!"
+      - "is_mandatory: bool!"
+      - "has_teacher_of_record: bool!"
+      - "is_teacher_qualified: bool!"
+      - "required_hours_to_date: dec(7,1)!"
+      - "scheduled_hours_to_date: dec(7,1)!"
+      - "delivered_hours_to_date: dec(7,1)!"
+      - "objectives_due: smallint!"
+      - "objectives_delivered: smallint!"
+      - "objectives_assessed_due: smallint!"
+      - "objectives_assessed: smallint!"
+      - "open_gaps: smallint!"
+
+  fact_coverage_gap:
+    title: Coverage gap fact (opened, closed, age, severity, rule)
+    kind: fact
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, gap_id]
+    sources: [coverage_gap, gap_event]
+    attrs:
+      - "gap_id: uuid!"
+      - "institution_key: bigint!"
+      - "class_key: bigint"
+      - "subject_key: bigint"
+      - "rule: enum(coverage_rule)!"
+      - "severity: enum(severity)!"
+      - "opened_date_key: int!"
+      - "closed_date_key: int"
+      - "escalation_level: smallint!"
+      - "learners_affected: smallint!"
+
+  fact_curriculum_delivery:
+    title: Lesson delivery fact per objective
+    kind: fact
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, delivery_id, node_key]
+    sources: [delivery_log]
+    attrs:
+      - "delivery_id: uuid!"
+      - "node_key: bigint!"
+      - "date_key: int!"
+      - "class_key: bigint!"
+      - "staff_key: bigint!"
+      - "delivered_minutes: minutes!"
+
+  fact_assessment_result:
+    title: Assessment result fact (score %, objective results)
+    kind: fact
+    class: confidential
+    history: none
+    origin: ceda
+    pk: [tenant_id, assessment_id, learner_key]
+    sources: [assessment_result, assessment, submission_mark]
+    attrs:
+      - "assessment_id: uuid!"
+      - "learner_key: bigint!"
+      - "date_key: int!"
+      - "class_key: bigint!"
+      - "subject_key: bigint!"
+      - "assessment_kind: enum(assessment_kind)!"
+      - "score_pct: pct"
+      - "is_missing_work: bool!"
+      - "target_gap_points: dec(6,2)"
+
+  fact_exam_result:
+    title: Examination result fact (internal and external series; credits and passes)
+    kind: fact
+    class: confidential
+    history: none
+    origin: ceda
+    pk: [tenant_id, series_id, learner_key, subject_key]
+    sources: [exam_result, exam_entry, exam_series, external_exam_record]
+    attrs:
+      - "series_id: uuid!"
+      - "learner_key: bigint!"
+      - "subject_key: bigint!"
+      - "institution_key: bigint!"
+      - "exam_body: cl(exam_body)!"
+      - "exam_year: smallint!"
+      - "grade_label: code(16)!"
+      - "is_pass: bool!"
+      - "is_credit: bool!"
+
+  fact_behaviour:
+    title: Behaviour event fact
+    kind: fact
+    class: confidential
+    history: none
+    origin: ceda
+    pk: [tenant_id, behaviour_event_id]
+    sources: [behaviour_event, behaviour_type, detention]
+    attrs:
+      - "behaviour_event_id: uuid!"
+      - "date_key: int!"
+      - "learner_key: bigint!"
+      - "institution_key: bigint!"
+      - "class_key: bigint"
+      - "polarity: enum(polarity)!"
+      - "category: cl(behaviour_category)!"
+      - "points: smallint!"
+      - "outcome: enum(behaviour_outcome)"
+
+  agg_wellbeing_safeguarding_count:
+    title: Governed daily counts of safeguarding concerns, SEND provision and wellbeing concerns (counts only; produced inside the vault)
+    kind: aggregate
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, date_key, institution_key, measure, category]
+    sources: [safeguarding_concern, send_profile, wellbeing_concern, community_report]
+    notes: Computed by a job running inside the vault zone that emits counts only; no row-level vault data ever leaves the vault.
+    attrs:
+      - "date_key: int!"
+      - "institution_key: bigint!"
+      - "measure: code(40)! | safeguarding_concerns, send_register, send_provision_covered, wellbeing_concerns"
+      - "category: code(40)! | Concern category or '*'"
+      - "count_value: int_u!"
+
+  fact_lms_activity:
+    title: LMS activity fact per assignment (set, submitted, on time, late, missing, marked)
+    kind: fact
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, assignment_id]
+    sources: [assignment, submission, submission_mark, course_space]
+    attrs:
+      - "assignment_id: uuid!"
+      - "date_key: int! | Due date"
+      - "institution_key: bigint!"
+      - "class_key: bigint"
+      - "staff_key: bigint!"
+      - "assignment_kind: enum(assignment_kind)!"
+      - "learners_expected: smallint!"
+      - "submitted: smallint!"
+      - "on_time: smallint!"
+      - "late: smallint!"
+      - "missing: smallint!"
+      - "marked: smallint!"
+      - "returned_online: smallint!"
+
+  fact_digital_skill:
+    title: Digital-skills level snapshot per person and strand
+    kind: fact
+    class: confidential
+    history: none
+    origin: ceda
+    pk: [tenant_id, date_key, person_pseudo, strand]
+    sources: [digital_skill_level]
+    attrs:
+      - "date_key: int!"
+      - "person_pseudo: hmac!"
+      - "person_kind: enum(person_kind)!"
+      - "institution_key: bigint!"
+      - "strand: cl(digital_strand)!"
+      - "level: smallint!"
+
+  fact_message:
+    title: Messaging fact (volumes, delivery, read, cost by channel)
+    kind: fact
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, message_id]
+    sources: [message, broadcast_campaign]
+    attrs:
+      - "message_id: uuid!"
+      - "date_key: int!"
+      - "institution_key: bigint"
+      - "channel: enum(channel)!"
+      - "direction: enum(message_direction)!"
+      - "is_delivered: bool!"
+      - "is_read: bool!"
+      - "response_minutes: int"
+      - "cost: money"
+      - "currency: currency"
+
+  fact_finance:
+    title: Finance fact (invoiced, collected, outstanding by charge type; budget vs actual)
+    kind: fact
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, date_key, institution_key, charge_type_code, measure]
+    sources: [invoice, invoice_line, payment, ledger_entry, budget]
+    attrs:
+      - "date_key: int!"
+      - "institution_key: bigint!"
+      - "charge_type_code: code(32)!"
+      - "measure: code(24)! | invoiced, collected, outstanding, budget, actual"
+      - "amount: money!"
+      - "currency: currency!"
+
+  fact_sdaf:
+    title: SDAF fact per institution and billing period (billed, exempted, collected, remitted, outstanding)
+    kind: fact
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, period_key, institution_key]
+    sources: [sdaf_demand, sdaf_collection, remittance_allocation, census_snapshot, reconciliation_line]
+    attrs:
+      - "period_key: bigint!"
+      - "institution_key: bigint!"
+      - "billable_learners: int_u!"
+      - "exempt_learners: int_u!"
+      - "billed: money!"
+      - "exempted: money!"
+      - "collected: money!"
+      - "remitted: money!"
+      - "currency: currency!"
+
+  fact_certificate_event:
+    title: Certificate lifecycle and verification fact
+    kind: fact
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, event_id]
+    sources: [certificate_event, certificate, verification, reissue_case]
+    attrs:
+      - "event_id: uuid!"
+      - "date_key: int!"
+      - "institution_key: bigint"
+      - "event_kind: code(24)! | issued, revoked, reissued, corrected, verified_ok, verified_failed, reissue_requested"
+      - "credential_kind: enum(credential_kind)"
+      - "channel: code(24)"
+
+  fact_digitisation:
+    title: Digitisation throughput and quality fact per batch and day
+    kind: fact
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, date_key, batch_id]
+    sources: [digitisation_batch, scanned_page, extracted_field, qa_sample, custody_event]
+    attrs:
+      - "date_key: int!"
+      - "batch_id: uuid!"
+      - "hub: str(80)"
+      - "lga_scope_key: bigint"
+      - "pages_captured: int_u!"
+      - "pages_indexed: int_u!"
+      - "key_field_accuracy: pct"
+      - "hours_scan_to_searchable: dec(7,1)"
+
+  fact_data_quality:
+    title: Data Quality Index components per institution per day (DQI = 0.30C + 0.20U + 0.20V + 0.15T + 0.10K + 0.05Ve)
+    kind: fact
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, date_key, institution_key]
+    sources: [data_quality_issue, data_quality_rule, dataset_freshness, match_review]
+    attrs:
+      - "date_key: int!"
+      - "institution_key: bigint!"
+      - "completeness: ratio!"
+      - "uniqueness: ratio!"
+      - "validity: ratio!"
+      - "timeliness: ratio!"
+      - "consistency: ratio!"
+      - "verification: ratio!"
+      - "dqi: score!"
+
+  fact_health_index:
+    title: Institution health index per day with decomposed indicator scores and weights (P8)
+    kind: fact
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, date_key, institution_key, indicator]
+    sources: [health_index_policy, institution]
+    attrs:
+      - "date_key: int!"
+      - "institution_key: bigint!"
+      - "indicator: code(40)! | attendance, progress, exam_outcomes, retention, dropout … or 'index'"
+      - "raw_value: dec(12,4)"
+      - "normalised_score: score"
+      - "weight: dec(6,4)"
+      - "policy_version: int_u!"
+      - "is_partial: bool!"
+
+  fact_compliance_score:
+    title: Curriculum compliance per institution per day with components (subject coverage 20, hours 25, objectives 25, assessment 15, qualified staff 15)
+    kind: fact
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, date_key, institution_key, component]
+    sources: [class_subject_plan, delivery_log, assessment, teaching_assignment, curriculum_adoption]
+    attrs:
+      - "date_key: int!"
+      - "institution_key: bigint!"
+      - "component: code(32)! | subject_coverage, teaching_hours, objectives, assessment, qualified_staff, total"
+      - "score: score!"
+      - "weight: dec(6,4)!"
+      - "band: code(24) | compliant, partial, non_compliant, not_assessed"
+
+  fact_infrastructure:
+    title: Infrastructure snapshot per institution per term (classrooms per learner, toilets, water, power, ICT, condition)
+    kind: fact
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, period_key, institution_key]
+    sources: [room, building, asset]
+    attrs:
+      - "period_key: bigint!"
+      - "institution_key: bigint!"
+      - "classrooms: smallint!"
+      - "learners_per_classroom: dec(6,2)"
+      - "toilets: smallint"
+      - "has_water: bool"
+      - "has_power: bool"
+      - "ict_devices: int_u"
+      - "condition_score: score"
+      - "textbook_ratio: json | Subject × level → textbooks per learner"
+
+  fact_alert:
+    title: Alert fact (raised, acknowledged, escalated, resolved; age)
+    kind: fact
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, alert_id]
+    sources: [alert, alert_event]
+    attrs:
+      - "alert_id: uuid!"
+      - "scope_key: bigint!"
+      - "severity: enum(severity)!"
+      - "rule_key: code(40)!"
+      - "raised_date_key: int!"
+      - "resolved_date_key: int"
+      - "escalations: smallint!"
+
+  agg_metric:
+    title: Generic metric aggregate served by the semantic layer (value, numerator, denominator, suppression) per scope and period
+    kind: aggregate
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, metric_code, scope_key, grain, period_label, dims_hash]
+    sources: [scope_node]
+    attrs:
+      - "metric_code: code(40)!"
+      - "scope_key: bigint!"
+      - "grain: code(16)! | day, week, term, session, year"
+      - "period_label: code(20)!"
+      - "dims_hash: hash! | Hash of the dimension filter (sex, level, ownership …)"
+      - "dims: json!"
+      - "value: dec(18,6)"
+      - "numerator: dec(18,6)"
+      - "denominator: dec(18,6)"
+      - "is_suppressed: bool! | Cells < 10 outside the institution scope"
+      - "label_kind: enum(indicator_label)!"
+      - "computed_at: ts!"
+
+  live_kpi:
+    title: Live KPI read model (attendance today, registers, staff presence) refreshed by stream aggregation ≤ 5 min
+    kind: aggregate
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, metric_code, scope_key, as_of_date]
+    sources: [attendance_register, attendance_mark, staff_attendance]
+    attrs:
+      - "metric_code: code(40)!"
+      - "scope_key: bigint!"
+      - "as_of_date: date!"
+      - "value: dec(18,6)"
+      - "numerator: dec(18,6)"
+      - "denominator: dec(18,6)"
+      - "is_suppressed: bool!"
+      - "refreshed_at: ts!"
+
+  feature_learner_weekly:
+    title: Point-in-time learner feature set for early-warning models (no protected characteristics)
+    kind: feature
+    class: confidential
+    history: none
+    origin: ceda
+    pk: [tenant_id, week_start_key, learner_key]
+    sources: [attendance_mark, assessment_result, behaviour_event, submission, enrolment]
+    attrs:
+      - "week_start_key: int!"
+      - "learner_key: bigint!"
+      - "institution_key: bigint!"
+      - "attendance_rate_4w: ratio"
+      - "attendance_trend: dec(8,5)"
+      - "attainment_trend: dec(8,5)"
+      - "negative_behaviour_4w: smallint"
+      - "missing_work_4w: smallint"
+      - "transitions: smallint | Moves between institutions"
+      - "label_dropout_next_term: bool | Training label, filled retrospectively"

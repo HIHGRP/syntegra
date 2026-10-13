@@ -1,0 +1,304 @@
+domain: comms
+code: COM
+title: Communication — messaging gateway, WhatsApp and Zenzap, templates, conversations, broadcasts, notifications, announcements and consent requests
+module: comms
+zone: ops
+retention: RS-COMMS
+summary: >
+  One messaging gateway with channel adapters (WhatsApp Business Platform, Zenzap-type workspaces, SMS,
+  USSD, e-mail, push, voice) routing each message to the cheapest compliant channel, preferring open
+  service windows and enforcing spend caps and quiet hours (MFS §9, FR-COM-01–05, 101–120). Every inbound
+  and outbound message is stored against the recipient record with delivery, read and failure status.
+  External channels never carry special-category content. Phone numbers are stored hashed for lookup and
+  encrypted at rest (NFR-SEC-102).
+
+entities:
+  message_channel:
+    title: Connected channel (WhatsApp number, Zenzap workspace, SMS sender ID, e-mail domain, push app) held by the tenant
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-COM-102, FR-COM-103, FR-COM-109]
+    pages: [COM-102]
+    attrs:
+      - "channel: enum(channel)!"
+      - "provider: code(40)! | meta_cloud_api, bsp_name, zenzap, teams, slack, smpp_aggregator …"
+      - "display_name: title!"
+      - "address: code(128)! | E.164 number, sender id, workspace id"
+      - "credentials_vault_ref: str(255)! | Token stored in the vault; never in the database"
+      - "monthly_spend_cap: money"
+      - "currency: currency"
+      - "quiet_hours: json | Default 20:00–07:00 local"
+      - "status: enum(record_status)!"
+
+  message_template:
+    title: Approved message template (Meta category, multilingual variants, approval status, version)
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: appj
+    reqs: [FR-COM-03, FR-COM-104, FR-COM-101]
+    pages: [COM-102, COM-02]
+    attrs:
+      - "channel_id: ref(message_channel)"
+      - "template_key: code(64)!"
+      - "category: enum(template_category)!"
+      - "variants: json! | Language → body with merge fields"
+      - "provider_template_ref: code(128)"
+      - "approval_status: enum(template_approval)!"
+      - "version: int_u!"
+      - "is_mail_merge: bool! default=false | Word-compatible letter/label/badge template"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, template_key, version]]
+
+  channel_contact:
+    title: Contact endpoint of a person on a channel (phone or address) with HMAC lookup for inbound matching
+    kind: master
+    class: confidential
+    history: lifecycle
+    scope: "derived: the person's institutions"
+    origin: ceda
+    reqs: [FR-COM-106, NFR-SEC-102]
+    pages: [COM-101]
+    attrs:
+      - "person_kind: enum(person_kind)!"
+      - "person_id: uuid!"
+      - "channel: enum(channel)!"
+      - "endpoint: secret! lookup mask4 | E.164 phone, e-mail or device token"
+      - "is_verified: bool! default=false"
+    ix: [[channel, endpoint_hmac]]
+
+  channel_opt_in:
+    title: Opt-in / opt-out per contact and channel with evidence (STOP honoured immediately)
+    kind: event
+    class: confidential
+    history: append
+    scope: "derived: the person"
+    origin: appj
+    reqs: [FR-COM-108]
+    pages: [COM-102, COM-101]
+    attrs:
+      - "contact_id: ref(channel_contact)!"
+      - "decision: enum(opt_decision)!"
+      - "category: enum(template_category)"
+      - "wording: str(1000)! | Wording shown at opt-in"
+      - "source: enum(channel)!"
+      - "decided_at: ts!"
+
+  conversation:
+    title: Two-way conversation thread (WhatsApp inbox, workspace thread linked to a record, web chat)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-COM-106, FR-COM-110, FR-COM-118, FR-AGT-114]
+    pages: [COM-101]
+    attrs:
+      - "channel_id: ref(message_channel)!"
+      - "contact_id: ref(channel_contact)"
+      - "external_thread_ref: code(128)"
+      - "linked_record_kind: code(40) | alert, coverage_gap, corrective_action, inspection, reissue_case"
+      - "linked_record_id: uuid"
+      - "assigned_office: enum(office)"
+      - "assigned_user_id: uuid"
+      - "service_window_ends_at: ts | WhatsApp 24-hour customer-service window"
+      - "sla_due_at: ts"
+      - "is_bot_handled: bool! default=false | Parent Concierge Agent; hand-over offered"
+      - "status: enum(conversation_status)!"
+
+  message:
+    title: Message sent or received on any channel (delivery, read, failure status; stored against the recipient record)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: "derived: the recipient's institution"
+    origin: appj
+    partition: {type: range_month, column: created_on}
+    reqs: [FR-COM-01, FR-COM-02, FR-COM-04, FR-COM-105, FR-COM-112, FR-COM-113, FR-COM-114, FR-COM-115, FR-COM-117, FR-ATT-101, FR-DOC-116]
+    pages: [COM-01, COM-02, COM-101, HOM-02]
+    events: [COM.MESSAGE_SENT, COM.MESSAGE_RECEIVED]
+    notes: >
+      Classification-aware content rules block special-category content on external channels (they carry only
+      "You have a new item — sign in to view"). Restricted guardians are excluded automatically.
+    attrs:
+      - "created_on: date! | Partition key (UTC date of creation)"
+      - "conversation_id: ref(conversation)"
+      - "campaign_id: ref(broadcast_campaign)"
+      - "notification_id: ref(notification)"
+      - "direction: enum(message_direction)!"
+      - "channel: enum(channel)!"
+      - "recipient_kind: enum(person_kind)"
+      - "recipient_id: uuid"
+      - "about_learner_id: ref(learner)"
+      - "template_id: ref(message_template)"
+      - "language: lang"
+      - "body: text | Rendered content (never special-category on external channels)"
+      - "priority: enum(message_priority)! default=normal"
+      - "estimated_cost: money"
+      - "actual_cost: money"
+      - "currency: currency"
+      - "provider_message_ref: code(128)"
+      - "delivery_status: enum(delivery_status)!"
+      - "delivered_at: ts"
+      - "read_at: ts"
+      - "failure_reason: str(300)"
+      - "sent_by: uuid | User or agent service identity"
+    ix: [[recipient_kind, recipient_id], [provider_message_ref]]
+
+  broadcast_campaign:
+    title: Broadcast campaign (audience rules, scheduling, language variants, throttling, cost estimate, results)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-COM-116, FR-COM-01, FR-COM-03]
+    pages: [COM-103, COM-01]
+    attrs:
+      - "title: title!"
+      - "audience_rule: json!"
+      - "template_id: ref(message_template)!"
+      - "scheduled_at: ts"
+      - "throttle_per_second: smallint"
+      - "recipients_estimated: int_u"
+      - "cost_estimate: money | Counts only template messages outside open service windows"
+      - "currency: currency"
+      - "results: json"
+      - "approved_by: uuid"
+      - "status: enum(campaign_status)!"
+
+  notification_rule:
+    title: Rule turning domain events into notifications (recipients, channel policy, digest, quiet hours, escalation)
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: ceda
+    retention: RS-CONFIG
+    reqs: [FR-COM-05]
+    pages: [ADM-18]
+    attrs:
+      - "event_type: code(64)!"
+      - "recipient_rule: json!"
+      - "channel_policy: json!"
+      - "is_digest: bool! default=false"
+      - "bypass_quiet_hours: bool! default=false | Priority 1 and DSL safeguarding only"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+
+  notification:
+    title: In-app notification to a user (permission-trimmed; may fan out to external channels)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    origin: ceda
+    retention: RS-OPS-3
+    partition: {type: range_month, column: created_on}
+    scope_note: Addressed to one user.
+    reqs: [FR-COM-05, FR-CMD-03]
+    pages: [HOM-02]
+    attrs:
+      - "created_on: date!"
+      - "user_id: uuid!"
+      - "rule_id: ref(notification_rule) soft"
+      - "event_id: uuid | Source domain event"
+      - "title: title!"
+      - "body: str(1000) | Never special-category content"
+      - "link: str(500)"
+      - "priority: enum(message_priority)!"
+      - "read_at: ts"
+      - "acknowledged_at: ts"
+    ix: [[user_id, read_at]]
+
+  staff_announcement:
+    title: Announcement to staff or parents with relationship-based audience (timetabled teachers, heads of year, tutors), receipts and expiry
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-COM-119]
+    pages: [COM-104]
+    attrs:
+      - "title: title!"
+      - "body: text!"
+      - "audience_rule: json! | e.g. timetabled_teachers_of(learner)"
+      - "requires_acknowledgement: bool! default=false"
+      - "expires_at: ts"
+      - "published_at: ts"
+      - "status: enum(version_status)!"
+
+  announcement_recipient:
+    title: Delivery, read and acknowledgement per announcement recipient
+    kind: link
+    class: internal
+    history: none
+    origin: appj
+    retention: RS-OPS-3
+    scope_note: Inherits the announcement's scope.
+    reqs: [FR-COM-119]
+    pages: [COM-104]
+    attrs:
+      - "announcement_id: ref(staff_announcement)!"
+      - "user_id: uuid!"
+      - "delivered_at: ts"
+      - "read_at: ts"
+      - "acknowledged_at: ts"
+    uq: [[announcement_id, user_id]]
+
+  consent_request:
+    title: Request for parental consent (trip, photographs, event, data sharing) — versioned, reminders only to pending parents
+    kind: transaction
+    class: internal
+    history: versioned
+    scope: owned
+    origin: appj
+    reqs: [FR-COM-120, FR-OPS-06]
+    pages: [COM-104, OPS-06]
+    attrs:
+      - "consent_type: cl(consent_type)!"
+      - "title: title!"
+      - "body: text!"
+      - "version: int_u!"
+      - "learner_ids: json! | Learners covered"
+      - "respond_by: ts"
+      - "trip_id: ref(trip)"
+      - "status: enum(version_status)!"
+
+  mail_merge_job:
+    title: Mail-merge run producing letters, labels or badges (every letter stored to the recipient record)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-OPS-3
+    reqs: [FR-COM-101]
+    pages: [COM-02]
+    attrs:
+      - "template_id: ref(message_template)!"
+      - "recipient_rule: json!"
+      - "output: enum(merge_output)!"
+      - "documents_created: int_u"
+      - "status: enum(run_status)!"
+
+  workspace_channel:
+    title: Workspace-messaging channel provisioned from the hierarchy and staff posts (state, LGA, institution, department, year group)
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-COM-109, FR-COM-110, FR-COM-111]
+    pages: [COM-102, COM-101]
+    attrs:
+      - "channel_id: ref(message_channel)!"
+      - "external_channel_ref: code(128)!"
+      - "audience: enum(workspace_audience)!"
+      - "membership_rule: json! | Derived from grants and posts; removed automatically on leaving"
+      - "last_synced_at: ts"
+      - "status: enum(record_status)!"

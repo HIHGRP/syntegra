@@ -1,0 +1,1334 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/11_curriculum.schema.json",
+  "title": "CEDA CUR — Curriculum 360, adoption, teaching chain evidence and zero-gap coverage assurance",
+  "$defs": {
+    "Curriculum": {
+      "title": "Curriculum",
+      "description": "Curriculum 360 master (national, state, international or institutional framework)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "curriculum",
+        "zone": "registry",
+        "domain": "CUR",
+        "kind": "master",
+        "classification": "public",
+        "history": "lifecycle",
+        "module": "curriculum"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 48,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "e.g. NG-NERDC-MATH-JSS"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "framework": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "curriculum_framework",
+          "description": "national, state, cambridge, ib, pearson, competency, institutional"
+        },
+        "subject_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "subject"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "levels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "x-code-list": "education_level"
+        },
+        "authority": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "regulator",
+          "description": "NERDC, State MoE, NBTE, NCCE, NUC …"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "code",
+        "title",
+        "framework",
+        "levels",
+        "authority",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "CurriculumVersion": {
+      "title": "CurriculumVersion",
+      "description": "Immutable published version of a curriculum (copy-on-write; author ≠ approver)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "curriculum_version",
+        "zone": "registry",
+        "domain": "CUR",
+        "kind": "config",
+        "classification": "public",
+        "history": "versioned",
+        "module": "curriculum"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "curriculum_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "curriculum"
+        },
+        "version_label": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "e.g. 3.1"
+        },
+        "base_version_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "curriculum_version",
+              "description": "Federal version a state adaptation layers on"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_adaptation": {
+          "type": "boolean"
+        },
+        "language": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 35,
+              "description": "Curriculum versions by language of instruction"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "review",
+            "approved",
+            "published",
+            "superseded",
+            "withdrawn"
+          ]
+        },
+        "effective_from": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "effective_to": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "authored_by": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "approved_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approval_reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 65535
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Digitised source (captured from paper; human approval before publication)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content_hash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "contentEncoding": "base64",
+              "description": "Hash of the node tree at publication"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "curriculum_id",
+        "version_label",
+        "is_adaptation",
+        "status",
+        "authored_by",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "CurriculumNode": {
+      "title": "CurriculumNode",
+      "description": "Strand, theme, topic, learning objective or competency of a curriculum version",
+      "type": "object",
+      "x-ceda": {
+        "entity": "curriculum_node",
+        "zone": "registry",
+        "domain": "CUR",
+        "kind": "config",
+        "classification": "public",
+        "history": "versioned",
+        "module": "curriculum"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "version_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "curriculum_version"
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "curriculum_node"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "node_code": {
+          "type": "string",
+          "maxLength": 48,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "Unique within the version"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "subject",
+            "strand",
+            "theme",
+            "topic",
+            "objective",
+            "competency"
+          ]
+        },
+        "statement": {
+          "type": "string",
+          "maxLength": 65535
+        },
+        "requirement": {
+          "type": "string",
+          "enum": [
+            "mandatory",
+            "optional",
+            "recommended",
+            "restricted"
+          ],
+          "description": "mandatory, optional, recommended, restricted"
+        },
+        "is_state_addition": {
+          "type": "boolean"
+        },
+        "min_hours": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_assessment_required": {
+          "type": "boolean"
+        },
+        "teacher_requirements": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Required qualification and specialism"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resource_requirements": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "term_hint": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "description": "Suggested term for scheme-of-work drafting"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sort_key": {
+          "type": "integer"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "version_id",
+        "node_code",
+        "kind",
+        "statement",
+        "requirement",
+        "is_state_addition",
+        "is_assessment_required",
+        "sort_key",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "CurriculumAdoption": {
+      "title": "CurriculumAdoption",
+      "description": "Which curriculum version applies to which institution, level, cohort and period (resolved automatically)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "curriculum_adoption",
+        "zone": "registry",
+        "domain": "CUR",
+        "kind": "link",
+        "classification": "internal",
+        "history": "effective",
+        "module": "curriculum"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "version_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "curriculum_version"
+        },
+        "education_level": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "education_level"
+        },
+        "cohort_start_year": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_additional": {
+          "type": "boolean",
+          "description": "Approved institution addition (Cambridge, IB, faith studies)"
+        },
+        "resolved_by": {
+          "type": "string",
+          "enum": [
+            "automatic",
+            "state_adaptation",
+            "institution_addition",
+            "exception"
+          ]
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective from (inclusive) — history: effective",
+          "readOnly": true
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective to (inclusive); NULL = open-ended — history: effective",
+          "readOnly": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "institution_id",
+        "version_id",
+        "education_level",
+        "is_additional",
+        "resolved_by",
+        "valid_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "SchemeOfWork": {
+      "title": "SchemeOfWork",
+      "description": "Scheme of work for a teaching assignment — auto-drafted from curriculum hours and the calendar, edited by the teacher (G5, G10)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "scheme_of_work",
+        "zone": "ops",
+        "domain": "CUR",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "curriculum"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "class_subject_plan_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "class_subject_plan"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "course_section_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "course_section"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "teaching_assignment_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "teaching_assignment"
+        },
+        "curriculum_version_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "curriculum_version"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "is_auto_drafted": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "teaching_assignment_id",
+        "curriculum_version_id",
+        "version",
+        "is_auto_drafted",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "SchemeWeek": {
+      "title": "SchemeWeek",
+      "description": "Week of a scheme of work with the curriculum objectives placed in it",
+      "type": "object",
+      "x-ceda": {
+        "entity": "scheme_week",
+        "zone": "ops",
+        "domain": "CUR",
+        "kind": "link",
+        "classification": "internal",
+        "history": "none",
+        "module": "curriculum"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scheme_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "scheme_of_work"
+        },
+        "week_no": {
+          "type": "integer"
+        },
+        "week_starts_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "node_ids": {
+          "type": "object",
+          "description": "Curriculum objectives planned for the week"
+        },
+        "planned_minutes": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scheme_id",
+        "week_no",
+        "week_starts_on",
+        "node_ids",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "DeliveryLog": {
+      "title": "DeliveryLog",
+      "description": "Evidence that a lesson was delivered — objectives covered, learners present, note (G6)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "delivery_log",
+        "zone": "ops",
+        "domain": "CUR",
+        "kind": "event",
+        "classification": "internal",
+        "history": "append",
+        "module": "curriculum"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "lesson_occurrence_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "lesson_occurrence"
+        },
+        "teaching_assignment_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "teaching_assignment"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff"
+        },
+        "node_ids": {
+          "type": "object",
+          "description": "Objectives covered"
+        },
+        "delivered_minutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "is_as_planned": {
+          "type": "boolean"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "class_page",
+            "staff_app",
+            "lms_lesson",
+            "import"
+          ],
+          "description": "class_page, staff_app, lms_lesson"
+        },
+        "learners_present": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "delivered_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "lesson_occurrence_id",
+        "teaching_assignment_id",
+        "staff_id",
+        "node_ids",
+        "delivered_minutes",
+        "is_as_planned",
+        "source",
+        "delivered_on",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "CoverageGap": {
+      "title": "CoverageGap",
+      "description": "Coverage gap — a breached teaching-chain invariant (G1–G12) with owner, severity, due date and escalation",
+      "type": "object",
+      "x-ceda": {
+        "entity": "coverage_gap",
+        "zone": "ops",
+        "domain": "CUR",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "curriculum"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "rule": {
+          "type": "string",
+          "enum": [
+            "g1",
+            "g2",
+            "g3",
+            "g4",
+            "g5",
+            "g6",
+            "g7",
+            "g8",
+            "g9",
+            "g10",
+            "g11",
+            "g12"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "moderate",
+            "info"
+          ]
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "class_subject_plan_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "class_subject_plan"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "course_section_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "course_section"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "teaching_assignment_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "teaching_assignment"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "learners_affected": {
+          "type": "integer"
+        },
+        "owner_role": {
+          "type": "string",
+          "maxLength": 16,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "owner_user_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "due_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "escalation_level": {
+          "type": "integer"
+        },
+        "escalated_to_scope_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "suggested_fixes": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Ranked qualified teachers with spare load, LGA deployment, remote teaching"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "accepted_by_head": {
+          "type": "boolean",
+          "description": "Gap accepted (e.g. leaver handover)"
+        },
+        "opened_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "closed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "closed_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "in_progress",
+            "escalated",
+            "accepted",
+            "closed"
+          ]
+        },
+        "open_key": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 120,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "rule:target while open; NULL when closed (one open gap per target per rule)",
+              "readOnly": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "rule",
+        "severity",
+        "institution_id",
+        "learners_affected",
+        "owner_role",
+        "due_on",
+        "escalation_level",
+        "accepted_by_head",
+        "opened_at",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "GapEvent": {
+      "title": "GapEvent",
+      "description": "History of a coverage gap (opened, reminded, escalated, fix proposed, closed) — append-only",
+      "type": "object",
+      "x-ceda": {
+        "entity": "gap_event",
+        "zone": "ops",
+        "domain": "CUR",
+        "kind": "event",
+        "classification": "internal",
+        "history": "append",
+        "module": "curriculum"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "gap_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "coverage_gap"
+        },
+        "event_kind": {
+          "type": "string",
+          "enum": [
+            "opened",
+            "updated",
+            "reminded",
+            "fix_proposed",
+            "escalated",
+            "accepted",
+            "closed",
+            "reopened"
+          ]
+        },
+        "actor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "User or agent service identity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "detail": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "linked_thread_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Workspace-messaging thread (FR-COM-110)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "gap_id",
+        "event_kind",
+        "occurred_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

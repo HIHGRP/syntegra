@@ -1,0 +1,229 @@
+erDiagram
+    scope_node {
+        BINARY_16_ id PK
+        BINARY_16_ parent_id FK
+        VARCHAR_32_ level
+        VARCHAR_40_ code
+        VARCHAR_300_ name
+        VARCHAR_512_ path
+        SMALLINT depth
+        VARCHAR_32_ ref_kind
+        BINARY_16_ ref_id
+        VARCHAR_32_ ownership
+        DATE valid_from
+        DATE valid_to
+    }
+    scope_closure {
+        BINARY_16_ ancestor_id PK
+        BINARY_16_ descendant_id PK
+        SMALLINT depth
+    }
+    config_version {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ layer
+        VARCHAR_40_ section
+        INT version
+        JSON document
+        JSON locked_keys
+        VARCHAR_32_ status
+        DATE effective_from
+        BINARY_16_ published_by FK
+    }
+    jurisdiction_pack {
+        BINARY_16_ id PK
+        VARCHAR_40_ code
+        INT version
+        VARCHAR_300_ title
+        CHAR_2_ country
+        JSON content
+        VARCHAR_32_ status
+        DATE effective_from
+    }
+    code_list {
+        BINARY_16_ id PK
+        VARCHAR_48_ code
+        VARCHAR_300_ title
+        VARCHAR_40_ pack
+        BOOLEAN is_extensible
+    }
+    code_value {
+        BINARY_16_ id PK
+        BINARY_16_ code_list_id FK
+        VARCHAR_32_ code
+        VARCHAR_300_ label
+        JSON labels_i18n
+        VARCHAR_32_ parent_code
+        SMALLINT sort_order
+        JSON attributes
+        BINARY_16_ owner_scope_id FK
+        DATE valid_from
+        DATE valid_to
+    }
+    translation {
+        BINARY_16_ id PK
+        BINARY_16_ override_scope_id FK
+        VARCHAR_35_ lang
+        VARCHAR_200_ msg_key
+        TEXT text
+        VARCHAR_32_ status
+    }
+    policy_rule {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ rule_key
+        VARCHAR_32_ rule_domain
+        VARCHAR_300_ title
+        INT version
+        BOOLEAN is_mandatory_below
+        MEDIUMTEXT expression
+        JSON parameters
+        VARCHAR_32_ status
+        DATE effective_from
+        DATE effective_to
+        BINARY_16_ authored_by FK
+        BINARY_16_ approved_by FK
+    }
+    policy_rule_test {
+        BINARY_16_ id PK
+        BINARY_16_ rule_id FK
+        VARCHAR_300_ name
+        JSON given_context
+        JSON expected
+        VARCHAR_32_ last_result
+        DATETIME_6_ last_run_at
+    }
+    policy_exception {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ rule_id FK
+        VARCHAR_40_ subject_kind
+        BINARY_16_ subject_id
+        TEXT reason
+        BINARY_16_ evidence_document_id
+        BINARY_16_ requested_by FK
+        BINARY_16_ approved_by FK
+        DATE start_on
+        DATE end_on
+        DATE review_on
+        VARCHAR_32_ status
+    }
+    policy_conflict {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ rule_id FK
+        BINARY_16_ attempted_by FK
+        VARCHAR_40_ config_section
+        JSON attempted_value
+        VARCHAR_32_ resolution
+    }
+    workflow_definition {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_60_ workflow_key
+        INT version
+        VARCHAR_300_ title
+        JSON definition
+        VARCHAR_32_ status
+    }
+    workflow_instance {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ definition_id FK
+        VARCHAR_40_ subject_kind
+        BINARY_16_ subject_id
+        VARCHAR_60_ state
+        VARCHAR_32_ status
+        BINARY_16_ started_by
+        DATETIME_6_ completed_at
+        JSON context
+    }
+    workflow_instance {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ definition_id FK
+        VARCHAR_40_ subject_kind
+        BINARY_16_ subject_id
+        VARCHAR_60_ state
+        VARCHAR_32_ status
+        BINARY_16_ started_by
+        DATETIME_6_ completed_at
+        JSON context
+    }
+    workflow_task {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ instance_id FK
+        VARCHAR_60_ step_key
+        VARCHAR_300_ title
+        VARCHAR_16_ assignee_role
+        BINARY_16_ assignee_scope_id
+        BINARY_16_ assignee_user_id
+        VARCHAR_32_ approval_type
+        DATETIME_6_ due_at
+        DATETIME_6_ reminded_at
+        DATETIME_6_ escalated_at
+        VARCHAR_32_ status
+        VARCHAR_40_ decision
+        BINARY_16_ decided_by
+        DATETIME_6_ decided_at
+        VARCHAR_128_ external_task_ref
+    }
+    workflow_task {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ instance_id FK
+        VARCHAR_60_ step_key
+        VARCHAR_300_ title
+        VARCHAR_16_ assignee_role
+        BINARY_16_ assignee_scope_id
+        BINARY_16_ assignee_user_id
+        VARCHAR_32_ approval_type
+        DATETIME_6_ due_at
+        DATETIME_6_ reminded_at
+        DATETIME_6_ escalated_at
+        VARCHAR_32_ status
+        VARCHAR_40_ decision
+        BINARY_16_ decided_by
+        DATETIME_6_ decided_at
+        VARCHAR_128_ external_task_ref
+    }
+    workflow_transition {
+        BINARY_16_ id PK
+        BINARY_16_ instance_id FK
+        VARCHAR_60_ from_state
+        VARCHAR_60_ to_state
+        BINARY_16_ actor
+        TEXT reason
+        DATETIME_6_ occurred_at
+    }
+    workflow_transition {
+        BINARY_16_ id PK
+        BINARY_16_ instance_id FK
+        VARCHAR_60_ from_state
+        VARCHAR_60_ to_state
+        BINARY_16_ actor
+        TEXT reason
+        DATETIME_6_ occurred_at
+    }
+    app_user {
+        BINARY_16 id PK
+    }
+    app_user ||--o{ config_version : "published_by"
+    app_user ||--o{ policy_conflict : "attempted_by"
+    app_user ||--o{ policy_exception : "approved_by"
+    app_user ||--o{ policy_exception : "requested_by"
+    app_user ||--o{ policy_rule : "approved_by"
+    app_user ||--o{ policy_rule : "authored_by"
+    code_list ||--o{ code_value : "code_list_id"
+    policy_rule ||--o{ policy_conflict : "rule_id"
+    policy_rule ||--o{ policy_exception : "rule_id"
+    policy_rule ||--o{ policy_rule_test : "rule_id"
+    scope_node ||--o{ code_value : "owner_scope_id"
+    scope_node ||--o{ scope_closure : "ancestor_id"
+    scope_node ||--o{ scope_closure : "descendant_id"
+    scope_node ||--o{ scope_node : "parent_id"
+    scope_node ||--o{ translation : "override_scope_id"
+    workflow_definition ||--o{ workflow_instance : "definition_id"
+    workflow_instance ||--o{ workflow_task : "instance_id"
+    workflow_instance ||--o{ workflow_transition : "instance_id"

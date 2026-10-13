@@ -1,0 +1,3229 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/22_finance.schema.json",
+  "title": "CEDA FIN — Billing, payments, funding, ledger, budgets, procurement and suppliers",
+  "$defs": {
+    "Account": {
+      "title": "Account",
+      "description": "Ledger account — learner, family, sponsor or funder account, and general-ledger accounts",
+      "type": "object",
+      "x-ceda": {
+        "entity": "account",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "master",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "account_kind": {
+          "type": "string",
+          "enum": [
+            "learner",
+            "family",
+            "sponsor",
+            "funder",
+            "general_ledger"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "holder_kind": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "learner",
+                "family",
+                "guardian",
+                "sponsor",
+                "funder",
+                "government",
+                "employer",
+                "institution"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "holder_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "learner, family, sponsor or funder"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "gl_type": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "asset",
+                "liability",
+                "income",
+                "expense",
+                "equity"
+              ],
+              "description": "asset, liability, income, expense, equity (GL accounts)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "virtual_account_number": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Per-family virtual account for transfers"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "account_kind",
+        "code",
+        "name",
+        "currency",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ChargeType": {
+      "title": "ChargeType",
+      "description": "Charge type (tuition, registration, exam, accommodation, transport, meals, uniform, books, ICT, lab, clinical, trips …) with GL account and tax treatment",
+      "type": "object",
+      "x-ceda": {
+        "entity": "charge_type",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "config",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "income_account_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "account"
+        },
+        "tax_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 16,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_digital_services_line": {
+          "type": "boolean",
+          "description": "Labelled pass-through line for private providers"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "code",
+        "name",
+        "income_account_id",
+        "is_digital_services_line",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "BillingRule": {
+      "title": "BillingRule",
+      "description": "Versioned, effective-dated billing rule (conditions, amount, priority, discount stacking); tested before publishing",
+      "type": "object",
+      "x-ceda": {
+        "entity": "billing_rule",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "rule_key": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "charge_type_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "charge_type"
+        },
+        "billing_basis": {
+          "type": "string",
+          "enum": [
+            "term",
+            "semester",
+            "annual",
+            "monthly",
+            "weekly",
+            "course",
+            "credit",
+            "module",
+            "session",
+            "hour",
+            "exam",
+            "registration",
+            "learner",
+            "family",
+            "service",
+            "subscription",
+            "pay_as_you_go"
+          ]
+        },
+        "conditions": {
+          "type": "object",
+          "description": "Institution, campus, programme, course, level, category, residency, scholarship, family …"
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "priority": {
+          "type": "integer"
+        },
+        "discount_policy": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Sibling/family discounts and stacking"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "effective_from": {
+          "type": "string",
+          "format": "date"
+        },
+        "effective_to": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "test_results": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Results against sample learners"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "rule_key",
+        "charge_type_id",
+        "billing_basis",
+        "conditions",
+        "amount_minor",
+        "currency",
+        "priority",
+        "version",
+        "effective_from",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "BillingRun": {
+      "title": "BillingRun",
+      "description": "Billing run with preview, exceptions, approval and issue (no duplicate invoice per learner per period)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "billing_run",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "period_label": {
+          "type": "string",
+          "maxLength": 20,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "billing_basis": {
+          "type": "string",
+          "enum": [
+            "term",
+            "semester",
+            "annual",
+            "monthly",
+            "weekly",
+            "course",
+            "credit",
+            "module",
+            "session",
+            "hour",
+            "exam",
+            "registration",
+            "learner",
+            "family",
+            "service",
+            "subscription",
+            "pay_as_you_go"
+          ]
+        },
+        "learners_in_scope": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "exceptions": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "total_amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "approved_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "issued_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "previewed",
+            "running",
+            "awaiting_approval",
+            "approved",
+            "issued",
+            "completed",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "period_label",
+        "billing_basis",
+        "learners_in_scope",
+        "total_amount_minor",
+        "currency",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Invoice to a payer (immutable once issued; credit notes for changes)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "invoice",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "invoice_number": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "billing_run_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "billing_run"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "account_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "account"
+        },
+        "learner_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "learner"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "payer_kind": {
+          "type": "string",
+          "enum": [
+            "learner",
+            "family",
+            "guardian",
+            "sponsor",
+            "funder",
+            "government",
+            "employer",
+            "institution"
+          ]
+        },
+        "payer_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "period_label": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "issued_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "due_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "total_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "balance_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "fx_rate_to_reporting": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal",
+              "description": "Rate captured per transaction"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "issued",
+            "part_paid",
+            "paid",
+            "overdue",
+            "credited",
+            "void"
+          ]
+        },
+        "dedupe_key": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 120,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "learner:period:run — prevents duplicate invoices per learner per period",
+              "readOnly": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "invoice_number",
+        "account_id",
+        "payer_kind",
+        "payer_id",
+        "issued_on",
+        "due_on",
+        "total_minor",
+        "balance_minor",
+        "currency",
+        "content_hash",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "InvoiceLine": {
+      "title": "InvoiceLine",
+      "description": "Invoice line (charge, rule version used, discount and funding applied)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "invoice_line",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "append",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "invoice_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "invoice"
+        },
+        "line_no": {
+          "type": "integer"
+        },
+        "charge_type_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "charge_type"
+        },
+        "billing_rule_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "billing_rule"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rule_version": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "gross_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "discount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "funded_minor": {
+          "type": "integer",
+          "description": "Applied funding sources (no double funding) (minor units)"
+        },
+        "net_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "invoice_id",
+        "line_no",
+        "charge_type_id",
+        "description",
+        "gross_minor",
+        "discount_minor",
+        "funded_minor",
+        "net_minor",
+        "currency",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "CreditNote": {
+      "title": "CreditNote",
+      "description": "Credit note against an invoice",
+      "type": "object",
+      "x-ceda": {
+        "entity": "credit_note",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "append",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "invoice_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "invoice"
+        },
+        "credit_number": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "approved_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "invoice_id",
+        "credit_number",
+        "reason",
+        "amount_minor",
+        "currency",
+        "approved_by",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "FundingSource": {
+      "title": "FundingSource",
+      "description": "Scholarship, bursary, grant, sponsor, capitation, employer funding or loan (budget and per-learner caps)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "funding_source",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "master",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "funding_kind": {
+          "type": "string",
+          "enum": [
+            "government",
+            "capitation",
+            "scholarship",
+            "bursary",
+            "grant",
+            "sponsorship",
+            "employer",
+            "loan",
+            "instalment"
+          ]
+        },
+        "funder_account_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "account"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "budget_minor": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "description": "(minor units)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "per_learner_cap_minor": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "description": "(minor units)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "priority": {
+          "type": "integer"
+        },
+        "eligibility_rule": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "valid_until": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "name",
+        "funding_kind",
+        "currency",
+        "priority",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "FundingAward": {
+      "title": "FundingAward",
+      "description": "Funding awarded to a learner (scholarship, bursary, capitation share) — never double counted",
+      "type": "object",
+      "x-ceda": {
+        "entity": "funding_award",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "effective",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "funding_source_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "funding_source"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "awarded_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective from (inclusive) — history: effective",
+          "readOnly": true
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective to (inclusive); NULL = open-ended — history: effective",
+          "readOnly": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "funding_source_id",
+        "learner_id",
+        "amount_minor",
+        "currency",
+        "awarded_by",
+        "valid_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "GovernmentFundingReceipt": {
+      "title": "GovernmentFundingReceipt",
+      "description": "Capitation or government grant tranche received, reconciled against learners funded",
+      "type": "object",
+      "x-ceda": {
+        "entity": "government_funding_receipt",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "funding_source_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "funding_source"
+        },
+        "tranche_label": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "amount_due_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "amount_received_minor": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "description": "(minor units)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "received_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "learners_funded": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reconciliation": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Government + student + scholarship + sponsor = total, no double counting"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "unmatched",
+            "matched",
+            "part_matched",
+            "disputed",
+            "reconciled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "funding_source_id",
+        "tranche_label",
+        "amount_due_minor",
+        "currency",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "PaymentPlan": {
+      "title": "PaymentPlan",
+      "description": "Payment plan and hardship assessment under the ethical recovery policy",
+      "type": "object",
+      "x-ceda": {
+        "entity": "payment_plan",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "account_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "account"
+        },
+        "instalments": {
+          "type": "object"
+        },
+        "hardship_assessment": {
+          "anyOf": [
+            {
+              "type": "string",
+              "x-classification": "special",
+              "writeOnly": true,
+              "description": "Household circumstances (encrypted)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approved_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "active",
+            "under_review",
+            "completed",
+            "closed",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "account_id",
+        "instalments",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "RecoveryPolicy": {
+      "title": "RecoveryPolicy",
+      "description": "Ethical recovery policy (reminder cadence, payment-plan offers); core education restrictions cannot be configured",
+      "type": "object",
+      "x-ceda": {
+        "entity": "recovery_policy",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "steps": {
+          "type": "object"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "version",
+        "steps",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Incoming payment (gateway, virtual account, transfer, card, USSD, mobile money, cash, cheque, government, employer, scholarship)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "payment",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "bank_transfer",
+            "virtual_account",
+            "card",
+            "direct_debit",
+            "mobile_money",
+            "ussd",
+            "gateway",
+            "remita",
+            "cash",
+            "cheque",
+            "government",
+            "employer",
+            "scholarship"
+          ]
+        },
+        "gateway": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "gateway_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Hard duplicate check"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "payer_name": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200,
+              "x-personal-data": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "payer_contact_hmac": {
+          "anyOf": [
+            {
+              "type": "string",
+              "contentEncoding": "base64",
+              "description": "Soft duplicate check (payer + amount within 10 minutes)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "fx_rate_to_reporting": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "received_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "confirmed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "receipt_number": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allocation_status": {
+          "type": "string",
+          "enum": [
+            "unallocated",
+            "suggested",
+            "part_allocated",
+            "allocated"
+          ]
+        },
+        "possible_duplicate_of_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "payment"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "confirmed",
+            "failed",
+            "refunded",
+            "held_duplicate"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "method",
+        "amount_minor",
+        "currency",
+        "received_at",
+        "allocation_status",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "PaymentAllocation": {
+      "title": "PaymentAllocation",
+      "description": "Allocation of a payment to an invoice (virtual account → reference → payer → heuristic suggestion)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "payment_allocation",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "append",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "payment_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "payment"
+        },
+        "invoice_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "invoice"
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "virtual_account",
+            "reference",
+            "payer_contact",
+            "heuristic",
+            "manual"
+          ]
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal",
+              "description": "Fee Agent allocates only ≥ 0.95; below that it suggests"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allocated_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "payment_id",
+        "invoice_id",
+        "amount_minor",
+        "currency",
+        "method",
+        "allocated_by",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "LedgerEntry": {
+      "title": "LedgerEntry",
+      "description": "Double-entry posting (append-only; reverse, never edit; partitioned by month)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "ledger_entry",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "event",
+        "classification": "restricted",
+        "history": "append",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "journal_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "journal"
+        },
+        "account_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "account"
+        },
+        "posted_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "debit_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "credit_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "source_kind": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "invoice, payment, payroll_run, credit_note, journal"
+        },
+        "source_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "rule_versions": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Billing rule versions referenced"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reverses_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Entry this one reverses"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "journal_id",
+        "account_id",
+        "posted_on",
+        "debit_minor",
+        "credit_minor",
+        "currency",
+        "source_kind",
+        "source_id",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "Journal": {
+      "title": "Journal",
+      "description": "Journal (balanced set of ledger entries) in a fiscal period",
+      "type": "object",
+      "x-ceda": {
+        "entity": "journal",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "journal_number": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "fiscal_period_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "fiscal_period"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "posted_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "exported_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "description": "Exported to an external ERP/IFMIS where it is the ledger of record"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "posted",
+            "reversed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "journal_number",
+        "fiscal_period_id",
+        "description",
+        "posted_by",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "FiscalPeriod": {
+      "title": "FiscalPeriod",
+      "description": "Fiscal period (open/closed); closed periods accept no postings",
+      "type": "object",
+      "x-ceda": {
+        "entity": "fiscal_period",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "config",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 10,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "YYYY-MM"
+        },
+        "starts_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "ends_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "closed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "closed_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "code",
+        "starts_on",
+        "ends_on",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "FxRate": {
+      "title": "FxRate",
+      "description": "Exchange rate captured per source and day (local and reporting currency)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "fx_rate",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "reference",
+        "classification": "public",
+        "history": "append",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "rate_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "base_currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "quote_currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "rate": {
+          "type": "string",
+          "format": "decimal"
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "rate_date",
+        "base_currency",
+        "quote_currency",
+        "rate",
+        "source",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "TaxRule": {
+      "title": "TaxRule",
+      "description": "Tax rule (VAT 7.5% where applicable, withholding) by charge type and jurisdiction",
+      "type": "object",
+      "x-ceda": {
+        "entity": "tax_rule",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "config",
+        "classification": "public",
+        "history": "versioned",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "tax_code": {
+          "type": "string",
+          "maxLength": 16,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "rate": {
+          "type": "string",
+          "format": "decimal"
+        },
+        "applies_to": {
+          "type": "object"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "effective_from": {
+          "type": "string",
+          "format": "date"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "tax_code",
+        "rate",
+        "applies_to",
+        "version",
+        "effective_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "BankStatementLine": {
+      "title": "BankStatementLine",
+      "description": "Imported bank statement line (MT940/CSV/open banking) reconciled to payments and disbursements",
+      "type": "object",
+      "x-ceda": {
+        "entity": "bank_statement_line",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "bank_account_ref": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "statement_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "value_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "narrative": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "bank_ref": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "matched_kind": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "matched_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "unmatched",
+            "matched",
+            "part_matched",
+            "disputed",
+            "reconciled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "bank_account_ref",
+        "statement_date",
+        "value_date",
+        "amount_minor",
+        "currency",
+        "bank_ref",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Budget": {
+      "title": "Budget",
+      "description": "Budget by cost centre and account linked to enrolment and staffing forecasts (approved via workflow)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "budget",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "fiscal_year": {
+          "type": "integer"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "line_items": {
+          "type": "object",
+          "description": "Cost centre × account × period amounts"
+        },
+        "assumptions": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Enrolment and staffing forecasts"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "variance_notes": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Explanations and forecast outturn"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "fiscal_year",
+        "version",
+        "line_items",
+        "currency",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "description": "Supplier 360 master (duplicate detection; call-back verification and dual approval for bank-detail changes)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "supplier",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "master",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "cac_number": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tin": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "contacts": {
+          "anyOf": [
+            {
+              "type": "object",
+              "x-personal-data": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "bank_account": {
+          "type": "string",
+          "x-classification": "restricted",
+          "writeOnly": true,
+          "description": "Encrypted bank_account"
+        },
+        "bank_change_verified_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "bank_change_approved_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "name",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Requisition": {
+      "title": "Requisition",
+      "description": "Purchase requisition (delegated approval limits; split-purchase detection)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "requisition",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "requisition_number": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "requested_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "cost_centre": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "line_items": {
+          "type": "object"
+        },
+        "total_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "split_purchase_flag": {
+          "type": "boolean"
+        },
+        "workflow_instance_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "workflow_instance"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "submitted",
+            "in_review",
+            "approved",
+            "rejected",
+            "cancelled",
+            "fulfilled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "requisition_number",
+        "requested_by",
+        "cost_centre",
+        "line_items",
+        "total_minor",
+        "currency",
+        "split_purchase_flag",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "PurchaseOrder": {
+      "title": "PurchaseOrder",
+      "description": "Purchase order, goods receipt and three-way match to the supplier invoice",
+      "type": "object",
+      "x-ceda": {
+        "entity": "purchase_order",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "po_number": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "requisition_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "requisition"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "supplier_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "supplier"
+        },
+        "total_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "received_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "supplier_invoice_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "match_status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "matched",
+            "mismatch",
+            "override_approved"
+          ]
+        },
+        "paid_journal_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "journal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "approved",
+            "issued",
+            "received",
+            "invoiced",
+            "paid",
+            "closed",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "po_number",
+        "supplier_id",
+        "total_minor",
+        "currency",
+        "match_status",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,168 @@
+# CEDA domain-event catalogue (MFS Book 3 §16). Events are named <DOMAIN>.<PAST_TENSE_VERB>, written to
+# the producing zone's outbox in the same transaction as the change, published by Debezium to Kafka topic
+# syn.<region>.<domain>.v<major> keyed by aggregate id, and carried in the CloudEvents envelope
+# (generated/events/envelope.schema.json). Payloads hold identifiers and minimal non-personal facts only;
+# consumers fetch details through the API under their own permissions. Special-category events carry no
+# detail at all (SAF.*). 'version' is the payload schema major version (default 1); additive payload
+# changes keep the version, breaking ones publish v2 in parallel for 12 months.
+#
+# Fields: producer = owning module (Django app); aggregate = CEDA entity; payload = field: type (! = required);
+# consumers = modules/services that subscribe; trigger = when it is emitted.
+
+events:
+  # ---------------------------------------------------------------- platform, governance, identity
+  PLT.TENANT_PROVISIONED: {producer: platform, aggregate: tenant, payload: {tenant_id: uuid!, kind: enum(tenant_kind)!, parent_id: uuid}, consumers: [governance, iam, analytics, comms], trigger: A tenant (state, private provider, network) is provisioned}
+  PLT.TENANT_STATUS_CHANGED: {producer: platform, aggregate: tenant, payload: {tenant_id: uuid!, status: enum(tenant_status)!}, consumers: [iam, integration, analytics], trigger: Tenant activated, suspended or closed}
+  GOV.SCOPE_CHANGED: {producer: governance, aggregate: scope_node, payload: {scope_node_id: uuid!, parent_id: uuid, level: enum(scope_level)!, valid_from: date!}, consumers: [iam, search, analytics, comms], trigger: Hierarchy node created, moved or closed (closure table rebuilt)}
+  GOV.CONFIG_PUBLISHED: {producer: governance, aggregate: config_version, payload: {config_version_id: uuid!, scope_node_id: uuid!, section: code(40)!, version: int_u!}, consumers: [all_modules], trigger: A configuration layer section is published}
+  GOV.POLICY_PUBLISHED: {producer: governance, aggregate: policy_rule, payload: {policy_rule_id: uuid!, rule_key: code(40)!, version: int_u!, effective_from: date!}, consumers: [curriculum, attendance, intelligence, financing], trigger: A rule version is published after its tests pass}
+  GOV.EXCEPTION_APPROVED: {producer: governance, aggregate: policy_exception, payload: {policy_exception_id: uuid!, rule_id: uuid!, scope_node_id: uuid!, end_on: date!}, consumers: [curriculum, institutions, intelligence], trigger: A time-boxed exception is approved}
+  WF.STARTED: {producer: governance, aggregate: workflow_instance, payload: {workflow_instance_id: uuid!, subject_kind: code(40)!, subject_id: uuid!}, consumers: [intelligence], trigger: Workflow instance started}
+  WF.COMPLETED: {producer: governance, aggregate: workflow_instance, payload: {workflow_instance_id: uuid!, state: code(60)!}, consumers: [subject_module], trigger: Workflow reached a terminal state}
+  WF.TASK_ASSIGNED: {producer: governance, aggregate: workflow_task, payload: {workflow_task_id: uuid!, assignee_user_id: uuid, due_at: ts}, consumers: [comms], trigger: Human task created or reassigned}
+  WF.TASK_COMPLETED: {producer: governance, aggregate: workflow_task, payload: {workflow_task_id: uuid!, decision: code(40)}, consumers: [comms, integration], trigger: Task completed (synced to workspace messaging)}
+  WF.TASK_ESCALATED: {producer: governance, aggregate: workflow_task, payload: {workflow_task_id: uuid!, escalated_to_scope_id: uuid}, consumers: [comms, intelligence], trigger: SLA breached}
+  IAM.USER_CREATED: {producer: iam, aggregate: app_user, payload: {user_id: uuid!, person_kind: enum(person_kind)}, consumers: [comms, analytics], trigger: Account created or invited}
+  IAM.USER_DEACTIVATED: {producer: iam, aggregate: app_user, payload: {user_id: uuid!}, consumers: [comms, integration], trigger: Account deactivated (e.g. HR leaving date) — workspace channels removed}
+  IAM.GRANT_CHANGED: {producer: iam, aggregate: role_grant, payload: {role_grant_id: uuid!, user_id: uuid!, scope_id: uuid!, status: enum(record_status)!}, consumers: [search, comms], trigger: Role-at-scope granted, changed or ended}
+  AUTH.SIGNED_IN: {producer: iam, aggregate: user_session, payload: {user_id: uuid!, session_id: uuid!}, consumers: [analytics], trigger: Successful sign-in}
+  AUTH.FAILED: {producer: iam, aggregate: user_session, payload: {user_id: uuid}, consumers: [security_monitoring], trigger: Failed sign-in}
+  AUTH.LOCKED: {producer: iam, aggregate: app_user, payload: {user_id: uuid!, locked_until: ts!}, consumers: [comms, security_monitoring], trigger: Account locked after repeated failures}
+  AUTH.MFA_PASSED: {producer: iam, aggregate: user_session, payload: {user_id: uuid!, session_id: uuid!}, consumers: [analytics], trigger: MFA verified}
+  AUTH.MFA_FAILED: {producer: iam, aggregate: user_session, payload: {user_id: uuid!}, consumers: [security_monitoring], trigger: MFA failed}
+
+  # ---------------------------------------------------------------- master data
+  ID.NIN_VERIFIED: {producer: mdm, aggregate: identity_verification, payload: {identity_verification_id: uuid!, person_kind: enum(person_kind)!, person_id: uuid!, outcome: enum(verification_outcome)!}, consumers: [learners, certificates, providers], trigger: National identifier verification returned}
+  LRN.MATCH_REVIEWED: {producer: mdm, aggregate: match_review, payload: {match_review_id: uuid!, entity_kind: enum(match_entity)!}, consumers: [learners], trigger: Probable-duplicate review opened}
+  MDM.MATCH_DECIDED: {producer: mdm, aggregate: match_review, payload: {match_review_id: uuid!, decision: enum(match_decision)!}, consumers: [learners, families, people, analytics], trigger: Steward decided a pair}
+  MDM.MERGED: {producer: mdm, aggregate: merge_journal, payload: {merge_journal_id: uuid!, entity_kind: enum(match_entity)!, survivor_id: uuid!, merged_id: uuid!}, consumers: [all_modules, search, analytics], trigger: Two master records merged (references re-pointed)}
+  MDM.UNMERGED: {producer: mdm, aggregate: merge_journal, payload: {merge_journal_id: uuid!, survivor_id: uuid!, merged_id: uuid!}, consumers: [all_modules, search, analytics], trigger: Merge reversed within 90 days}
+
+  # ---------------------------------------------------------------- institutions & providers
+  INS.APPLICATION_SUBMITTED: {producer: providers, aggregate: provider_application, payload: {provider_application_id: uuid!, kind: enum(application_kind)!}, consumers: [institutions, intelligence], trigger: Institution registration or approval application submitted}
+  INS.REGISTERED: {producer: institutions, aggregate: institution, payload: {institution_id: uuid!, scope_node_id: uuid!, ownership: code(32)!}, consumers: [governance, financing, analytics, search, comms], trigger: Institution 360 activated}
+  INS.STATUS_CHANGED: {producer: institutions, aggregate: institution, payload: {institution_id: uuid!, status: enum(institution_status)!, onboarding_status: enum(onboarding_status)!}, consumers: [analytics, financing, certificates], trigger: Institution lifecycle or onboarding status changed}
+  INS.MERGED: {producer: institutions, aggregate: institution, payload: {institution_id: uuid!, merged_into: uuid!}, consumers: [all_modules], trigger: Institutions amalgamated}
+  INS.LICENCE_EXPIRED: {producer: institutions, aggregate: licence, payload: {licence_id: uuid!, institution_id: uuid!, kind: enum(licence_kind)!}, consumers: [certificates, assessment, intelligence], trigger: Licence passed expiry (issuance and new entries blocked)}
+  INS.LICENCE_RENEWED: {producer: institutions, aggregate: licence, payload: {licence_id: uuid!, expires_on: date}, consumers: [certificates, assessment], trigger: Licence renewed}
+  INSP.FINDING_RECORDED: {producer: institutions, aggregate: inspection_finding, payload: {inspection_finding_id: uuid!, inspection_id: uuid!, requires_action: bool!}, consumers: [intelligence], trigger: Finding saved in the inspection workspace}
+  INSP.REPORT_APPROVED: {producer: institutions, aggregate: inspection, payload: {inspection_id: uuid!, institution_id: uuid!}, consumers: [intelligence, providers, analytics], trigger: Report approved (corrective actions created)}
+  INSP.ACTION_VERIFIED: {producer: institutions, aggregate: corrective_action, payload: {corrective_action_id: uuid!, institution_id: uuid!}, consumers: [providers, intelligence], trigger: Corrective action evidence verified}
+  PVT.PROVIDER_REGISTERED: {producer: providers, aggregate: provider, payload: {provider_id: uuid!}, consumers: [mdm], trigger: Proprietor organisation registered}
+  ADM.APPLICATION_SUBMITTED: {producer: providers, aggregate: provider_application, payload: {provider_application_id: uuid!}, consumers: [intelligence, comms], trigger: Provider application submitted (Licensing Agent)}
+  PVT.DECISION_MADE: {producer: providers, aggregate: provider_application, payload: {provider_application_id: uuid!, decision: enum(approval_decision)!}, consumers: [institutions, platform, comms], trigger: Four-eyes decision recorded}
+  PVT.APPROVAL_ISSUED: {producer: providers, aggregate: approval, payload: {approval_id: uuid!, institution_id: uuid!, expires_on: date!}, consumers: [platform, institutions, certificates, comms], trigger: Approval certificate issued (tenant created)}
+  PVT.APPROVAL_RENEWED: {producer: providers, aggregate: approval, payload: {approval_id: uuid!, expires_on: date!}, consumers: [institutions, certificates], trigger: Approval renewed}
+  PVT.SANCTION_APPLIED: {producer: providers, aggregate: sanction, payload: {sanction_id: uuid!, institution_id: uuid!, step: enum(sanction_step)!}, consumers: [learners, assessment, intelligence, comms], trigger: Sanction step takes effect (admissions/exam entries blocked)}
+
+  # ---------------------------------------------------------------- learners & families
+  LRN.CREATED: {producer: learners, aggregate: learner, payload: {learner_id: uuid!, global_learner_id: glid!}, consumers: [mdm, search, analytics, financing], trigger: Learner 360 created after matching}
+  LRN.UPDATED: {producer: learners, aggregate: learner, payload: {learner_id: uuid!, changed_fields: json}, consumers: [search, analytics], trigger: Identity attributes changed (field names only)}
+  LRN.MERGED: {producer: learners, aggregate: learner, payload: {learner_id: uuid!, merged_into: uuid!}, consumers: [all_modules], trigger: Learner record became an alias}
+  LRN.VIEWED_SPECIAL: {producer: learners, aggregate: learner, payload: {learner_id: uuid!, viewer_user_id: uuid!, purpose_code: code(40)!}, consumers: [audit_monitoring], trigger: Special-category tab opened with purpose}
+  LRN.TRANSFERRED: {producer: learners, aggregate: learner_transfer, payload: {learner_transfer_id: uuid!, learner_id: uuid!, to_institution_id: uuid}, consumers: [attendance, finance, safeguarding, success, lms, comms], trigger: Transfer completed}
+  LRN.LEFT: {producer: learners, aggregate: enrolment, payload: {enrolment_id: uuid!, learner_id: uuid!, destination_known: bool!}, consumers: [learners, analytics, lms, comms], trigger: Leaver recorded (unknown destination at compulsory age → CME referral)}
+  ENR.STARTED: {producer: learners, aggregate: enrolment, payload: {enrolment_id: uuid!, learner_id: uuid!, institution_id: uuid!}, consumers: [academic, timetable, finance, curriculum, lms, financing, analytics], trigger: Enrolment became active}
+  ENR.ENDED: {producer: learners, aggregate: enrolment, payload: {enrolment_id: uuid!, status: enum(enrolment_status)!}, consumers: [academic, finance, lms, financing, analytics], trigger: Enrolment ended}
+  FAM.GUARDIAN_CREATED: {producer: families, aggregate: guardian, payload: {guardian_id: uuid!}, consumers: [comms, search], trigger: Guardian master created}
+  FAM.CONSENT_CHANGED: {producer: families, aggregate: consent_record, payload: {consent_record_id: uuid!, learner_id: uuid!, consent_type: code(32)!, decision: enum(consent_decision)!}, consumers: [comms, operations, lms, records], trigger: Consent given, refused or withdrawn (propagates immediately)}
+
+  # ---------------------------------------------------------------- staff
+  STF.CREATED: {producer: people, aggregate: staff, payload: {staff_id: uuid!}, consumers: [search, analytics], trigger: Staff 360 created}
+  STF.LEFT: {producer: people, aggregate: staff, payload: {staff_id: uuid!}, consumers: [iam, curriculum, comms], trigger: Staff member left all posts}
+  STF.POST_STARTED: {producer: people, aggregate: staff_post, payload: {staff_post_id: uuid!, staff_id: uuid!, institution_id: uuid!}, consumers: [iam, comms, analytics], trigger: Post started}
+  STF.POST_ENDED: {producer: people, aggregate: staff_post, payload: {staff_post_id: uuid!, staff_id: uuid!}, consumers: [iam, curriculum, comms], trigger: Post ended (G9 handover check)}
+  STF.AUTHORISATION_CHANGED: {producer: people, aggregate: staff_qualification, payload: {staff_qualification_id: uuid!, staff_id: uuid!}, consumers: [curriculum, timetable], trigger: Authorisation added, verified or expired (G3 re-check)}
+  STF.ABSENCE_RECORDED: {producer: people, aggregate: staff_absence, payload: {staff_absence_id: uuid!, staff_id: uuid!, starts_at: ts!, ends_at: ts!}, consumers: [timetable, curriculum, intelligence], trigger: Staff absence recorded (cover flow, G8)}
+  STF.TRAINING_COMPLETED: {producer: people, aggregate: training_completion, payload: {training_completion_id: uuid!, staff_id: uuid!, passed: bool!}, consumers: [learners, analytics], trigger: Statutory training completed}
+  PAY.RUN_APPROVED: {producer: people, aggregate: payroll_run, payload: {payroll_run_id: uuid!}, consumers: [finance], trigger: Pay run approved by two people}
+
+  # ---------------------------------------------------------------- academic, curriculum, timetable
+  ACA.CLASS_ACTIVATED: {producer: academic, aggregate: class_group, payload: {class_group_id: uuid!, institution_id: uuid!}, consumers: [curriculum, lms, timetable, governance], trigger: Class activated for the session}
+  ACA.SUBJECT_PLAN_PUBLISHED: {producer: academic, aggregate: class_subject_plan, payload: {class_subject_plan_id: uuid!, class_group_id: uuid!}, consumers: [lms, curriculum, timetable], trigger: Class subject plan published (course spaces created)}
+  ACA.COURSE_REGISTERED: {producer: academic, aggregate: course_registration, payload: {course_registration_id: uuid!, learner_id: uuid!, course_section_id: uuid!}, consumers: [lms, finance], trigger: Course registration approved}
+  CUR.APPROVED: {producer: curriculum, aggregate: curriculum_version, payload: {curriculum_version_id: uuid!}, consumers: [comms], trigger: Curriculum version approved}
+  CUR.PUBLISHED: {producer: curriculum, aggregate: curriculum_version, payload: {curriculum_version_id: uuid!, curriculum_id: uuid!, effective_from: date}, consumers: [curriculum, lms, institutions, analytics], trigger: Version published (adoption resolved, schemes redrafted, G10)}
+  CUR.WITHDRAWN: {producer: curriculum, aggregate: curriculum_version, payload: {curriculum_version_id: uuid!}, consumers: [curriculum, analytics], trigger: Version withdrawn}
+  CUR.ADOPTION_RESOLVED: {producer: curriculum, aggregate: curriculum_adoption, payload: {curriculum_adoption_id: uuid!, institution_id: uuid!, version_id: uuid!}, consumers: [academic, analytics], trigger: Applicable version stamped for an institution and level}
+  CUR.ASSIGNMENT_CHANGED: {producer: academic, aggregate: teaching_assignment, payload: {teaching_assignment_id: uuid!, staff_id: uuid!}, consumers: [curriculum, lms, timetable, comms], trigger: Teacher of record or co-teacher changed (G2/G3)}
+  CUR.LESSON_DELIVERED: {producer: curriculum, aggregate: delivery_log, payload: {delivery_log_id: uuid!, teaching_assignment_id: uuid!}, consumers: [analytics], trigger: Lesson delivery logged (G6)}
+  CUR.GAP_OPENED: {producer: curriculum, aggregate: coverage_gap, payload: {coverage_gap_id: uuid!, rule: enum(coverage_rule)!, severity: enum(severity)!, institution_id: uuid!}, consumers: [intelligence, comms, analytics], trigger: Coverage invariant breached}
+  CUR.GAP_ESCALATED: {producer: curriculum, aggregate: coverage_gap, payload: {coverage_gap_id: uuid!, escalation_level: smallint!}, consumers: [comms, intelligence], trigger: Gap passed its due date}
+  CUR.GAP_CLOSED: {producer: curriculum, aggregate: coverage_gap, payload: {coverage_gap_id: uuid!}, consumers: [analytics, intelligence], trigger: Gap closed by a person}
+  TT.PUBLISHED: {producer: timetable, aggregate: timetable, payload: {timetable_id: uuid!, institution_id: uuid!}, consumers: [attendance, curriculum, lms, comms], trigger: Timetable version published}
+  TT.COVER_ASSIGNED: {producer: timetable, aggregate: cover_assignment, payload: {cover_assignment_id: uuid!, lesson_occurrence_id: uuid!, is_qualified: bool!}, consumers: [comms, curriculum], trigger: Cover confirmed}
+
+  # ---------------------------------------------------------------- attendance
+  ATT.REGISTER_SUBMITTED: {producer: attendance, aggregate: attendance_register, payload: {attendance_register_id: uuid!, class_group_id: uuid!, session_date: date!}, consumers: [intelligence, comms, analytics], trigger: Register submitted (live tiles, absence follow-up)}
+  ATT.REGISTER_MISSING: {producer: attendance, aggregate: attendance_register, payload: {attendance_register_id: uuid!, class_group_id: uuid!}, consumers: [intelligence, comms], trigger: Register not taken by deadline (Register Agent)}
+  ATT.ABSENCE_REPORTED: {producer: attendance, aggregate: absence_report, payload: {absence_report_id: uuid!, learner_id: uuid!, from_date: date!}, consumers: [attendance, comms], trigger: Parent reported an absence}
+  ATT.EVACUATION_STARTED: {producer: attendance, aggregate: evacuation_event, payload: {evacuation_event_id: uuid!, campus_id: uuid!}, consumers: [comms], trigger: Evacuation or drill started}
+
+  # ---------------------------------------------------------------- assessment, exams, certificates
+  ASM.ASSESSMENT_CREATED: {producer: assessment, aggregate: assessment, payload: {assessment_id: uuid!}, consumers: [curriculum], trigger: Assessment created (G7 objective links)}
+  ASM.RESULTS_LOCKED: {producer: assessment, aggregate: assessment, payload: {assessment_id: uuid!}, consumers: [certificates, analytics, intelligence], trigger: Results approved and locked}
+  EXAM.RESULTS_COMMITTED: {producer: assessment, aggregate: exam_result, payload: {series_id: uuid!, results_count: int_u!}, consumers: [certificates, intelligence, analytics], trigger: Results committed immutably}
+  CERT.ISSUED: {producer: certificates, aggregate: certificate, payload: {certificate_id: uuid!, learner_id: uuid, institution_id: uuid!}, consumers: [learners, integration, analytics], trigger: Certificate signed and issued}
+  CERT.REVOKED: {producer: certificates, aggregate: certificate, payload: {certificate_id: uuid!}, consumers: [learners, integration, analytics], trigger: Certificate revoked (two approvers)}
+  CERT.REISSUED: {producer: certificates, aggregate: certificate, payload: {certificate_id: uuid!, supersedes_id: uuid!}, consumers: [learners, integration, analytics], trigger: Reissue issued; original superseded at the same moment}
+  CERT.CORRECTED: {producer: certificates, aggregate: certificate, payload: {certificate_id: uuid!, supersedes_id: uuid!}, consumers: [learners, integration], trigger: Correction issued}
+  CERT.SUSPENDED: {producer: certificates, aggregate: certificate, payload: {certificate_id: uuid!}, consumers: [integration], trigger: Certificate suspended}
+  CERT.VERIFIED: {producer: certificates, aggregate: verification, payload: {verification_id: uuid!, result: enum(verification_result)!}, consumers: [analytics, learners], trigger: Verification answered}
+  CERT.VERIFY_FAILED: {producer: certificates, aggregate: verification, payload: {verification_id: uuid!}, consumers: [intelligence], trigger: Verification failed (integrity patterns)}
+  CER.REISSUE_REQUESTED: {producer: certificates, aggregate: reissue_case, payload: {reissue_case_id: uuid!, reason: enum(reissue_reason)!}, consumers: [intelligence, comms], trigger: Reissue application submitted}
+  CER.REISSUE_DECIDED: {producer: certificates, aggregate: reissue_case, payload: {reissue_case_id: uuid!, status: enum(reissue_status)!}, consumers: [comms], trigger: Reissue approved or rejected}
+
+  # ---------------------------------------------------------------- learner success
+  BEH.POLICY_PUBLISHED: {producer: success, aggregate: behaviour_policy, payload: {behaviour_policy_id: uuid!, institution_id: uuid!}, consumers: [analytics], trigger: Behaviour policy version published}
+  BEH.EVENT_RECORDED: {producer: success, aggregate: behaviour_event, payload: {behaviour_event_id: uuid!, learner_id: uuid!, polarity: enum(polarity)!}, consumers: [intelligence, analytics, comms], trigger: Behaviour logged (intelligence events evaluated)}
+  BEH.DETENTION_SET: {producer: success, aggregate: detention, payload: {detention_id: uuid!, learner_id: uuid!}, consumers: [comms], trigger: Detention created (parent notified)}
+  BEH.ONCALL_RAISED: {producer: success, aggregate: oncall_request, payload: {oncall_request_id: uuid!, reason: enum(oncall_reason)!}, consumers: [comms], trigger: On-call request raised}
+  SAF.CONCERN_RAISED: {producer: safeguarding, aggregate: safeguarding_concern, payload: {safeguarding_concern_id: uuid!}, consumers: [comms], trigger: Concern recorded — notification carries no detail}
+  SAF.CASE_UPDATED: {producer: safeguarding, aggregate: safeguarding_case, payload: {safeguarding_case_id: uuid!}, consumers: [comms], trigger: Case updated — no detail}
+  SAF.CASE_VIEWED: {producer: safeguarding, aggregate: safeguarding_case, payload: {safeguarding_case_id: uuid!, viewer_user_id: uuid!}, consumers: [audit_monitoring], trigger: Case viewed}
+  SAF.STAFF_CASE_OPENED: {producer: safeguarding, aggregate: staff_case, payload: {staff_case_id: uuid!}, consumers: [comms], trigger: Staff case opened — designated officer notified without detail}
+  SEN.ADJUSTMENT_CHANGED: {producer: success, aggregate: adjustment, payload: {adjustment_id: uuid!, learner_id: uuid!}, consumers: [timetable, assessment, lms, academic], trigger: Authorised adjustment changed (rooms, exams, assignments re-checked)}
+  WEL.CONCERN_REPORTED: {producer: success, aggregate: wellbeing_concern, payload: {wellbeing_concern_id: uuid!, keyword_alert: bool!}, consumers: [comms], trigger: Wellbeing concern reported}
+  INT.INTERVENTION_CLOSED: {producer: intelligence, aggregate: intervention, payload: {intervention_id: uuid!, status: enum(intervention_status)!}, consumers: [analytics, intelligence], trigger: Intervention closed with outcome}
+
+  # ---------------------------------------------------------------- LMS, comms, forms, records
+  LMS.SPACE_CREATED: {producer: lms, aggregate: course_space, payload: {course_space_id: uuid!}, consumers: [comms], trigger: Course space auto-created}
+  LMS.ASSIGNMENT_PUBLISHED: {producer: lms, aggregate: assignment, payload: {assignment_id: uuid!, course_space_id: uuid!, due_at: ts!}, consumers: [comms, analytics], trigger: Assignment published to learners and parents}
+  LMS.SUBMITTED: {producer: lms, aggregate: submission, payload: {submission_id: uuid!, assignment_id: uuid!, is_late: bool!}, consumers: [analytics, intelligence], trigger: Submission received (receipt hash issued)}
+  COM.MESSAGE_SENT: {producer: comms, aggregate: message, payload: {message_id: uuid!, channel: enum(channel)!}, consumers: [analytics, records], trigger: Message sent}
+  COM.MESSAGE_RECEIVED: {producer: comms, aggregate: message, payload: {message_id: uuid!, channel: enum(channel)!, conversation_id: uuid}, consumers: [comms, intelligence], trigger: Inbound message received and matched}
+  FRM.SUBMITTED: {producer: forms, aggregate: form_response, payload: {form_response_id: uuid!, form_id: uuid!}, consumers: [governance, records, finance], trigger: Form submitted}
+  DOC.INGESTED: {producer: records, aggregate: document, payload: {document_id: uuid!, category_id: uuid!}, consumers: [search, intelligence], trigger: Document stored (search indexed unless special category)}
+  DOC.LINKED: {producer: records, aggregate: document_link, payload: {document_link_id: uuid!, record_kind: code(40)!, record_id: uuid!}, consumers: [search], trigger: Document linked to a record}
+
+  # ---------------------------------------------------------------- finance & financing
+  BIL.RUN_ISSUED: {producer: finance, aggregate: billing_run, payload: {billing_run_id: uuid!, invoices: int_u!}, consumers: [comms, analytics], trigger: Billing run issued}
+  BIL.INVOICE_ISSUED: {producer: finance, aggregate: invoice, payload: {invoice_id: uuid!, account_id: uuid!}, consumers: [comms, records], trigger: Invoice issued}
+  BIL.INVOICE_OVERDUE: {producer: finance, aggregate: invoice, payload: {invoice_id: uuid!}, consumers: [comms, intelligence], trigger: Invoice overdue (Fee Agent; never restricts education)}
+  PMT.RECEIVED: {producer: finance, aggregate: payment, payload: {payment_id: uuid!, method: enum(payment_method)!}, consumers: [finance, comms, analytics], trigger: Payment confirmed}
+  PMT.ALLOCATED: {producer: finance, aggregate: payment_allocation, payload: {payment_allocation_id: uuid!, payment_id: uuid!, invoice_id: uuid!}, consumers: [comms, analytics], trigger: Payment allocated to an invoice}
+  SUB.RATE_CARD_PUBLISHED: {producer: financing, aggregate: sdaf_rate_card, payload: {sdaf_rate_card_id: uuid!, effective_from: date!}, consumers: [comms, analytics], trigger: SDAF rate card published}
+  SUB.CENSUS_FROZEN: {producer: financing, aggregate: census_snapshot, payload: {census_snapshot_id: uuid!, institution_id: uuid!, billable: int_u!}, consumers: [financing, platform, analytics], trigger: Census frozen and hashed}
+  SUB.DEMAND_ISSUED: {producer: financing, aggregate: sdaf_demand, payload: {sdaf_demand_id: uuid!, institution_id: uuid!}, consumers: [comms, analytics], trigger: Demand notice or assessment issued}
+  SUB.COLLECTION_POSTED: {producer: financing, aggregate: sdaf_collection, payload: {sdaf_collection_id: uuid!, demand_id: uuid!}, consumers: [analytics, comms], trigger: State collection posted idempotently}
+  SUB.REMITTANCE_RECORDED: {producer: financing, aggregate: remittance, payload: {remittance_id: uuid!}, consumers: [platform, analytics], trigger: Remittance to SDIN recorded}
+  SUB.STATEMENT_SIGNED: {producer: financing, aggregate: reconciliation_statement, payload: {reconciliation_statement_id: uuid!, status: enum(statement_status)!}, consumers: [platform, analytics], trigger: Statement signed by state or operator}
+  SUB.SUBSCRIPTION_STATUS_CHANGED: {producer: platform, aggregate: subscription, payload: {subscription_id: uuid!, tenant_id: uuid!, status: enum(subscription_status)!}, consumers: [iam, comms], trigger: Subscription status changed (administrative restriction only)}
+  SUB.INVOICE_ISSUED: {producer: platform, aggregate: subscription_invoice, payload: {subscription_invoice_id: uuid!, subscription_id: uuid!}, consumers: [comms], trigger: Operator invoice issued}
+  SUB.PAYMENT_RECEIVED: {producer: platform, aggregate: subscription_payment, payload: {subscription_payment_id: uuid!, invoice_id: uuid!}, consumers: [platform, comms], trigger: Provider payment received (access restored)}
+
+  # ---------------------------------------------------------------- intelligence, reporting
+  ALERT.RAISED: {producer: intelligence, aggregate: alert, payload: {alert_id: uuid!, severity: enum(severity)!, subject_kind: code(40)!, subject_id: uuid!}, consumers: [comms, analytics], trigger: Alert raised (deduplicated)}
+  ALERT.ESCALATED: {producer: intelligence, aggregate: alert, payload: {alert_id: uuid!, escalation_level: smallint!}, consumers: [comms], trigger: Alert escalated}
+  ALERT.RESOLVED: {producer: intelligence, aggregate: alert, payload: {alert_id: uuid!}, consumers: [analytics], trigger: Alert resolved}
+  ALERT.SNOOZED: {producer: intelligence, aggregate: alert, payload: {alert_id: uuid!, snoozed_until: ts!}, consumers: [comms], trigger: Alert snoozed from the briefing}
+  INV.OPENED: {producer: intelligence, aggregate: investigation, payload: {investigation_id: uuid!}, consumers: [comms], trigger: Investigation opened}
+  INV.ACTION_ADDED: {producer: intelligence, aggregate: investigation, payload: {investigation_id: uuid!, stage: enum(investigation_stage)!}, consumers: [comms], trigger: Investigation advanced}
+  INV.CLOSED: {producer: intelligence, aggregate: investigation, payload: {investigation_id: uuid!}, consumers: [analytics], trigger: Investigation closed with outcome}
+  AI.RECOMMENDATION_DECIDED: {producer: intelligence, aggregate: recommendation, payload: {recommendation_id: uuid!, decision: enum(recommendation_decision)!}, consumers: [analytics, intelligence], trigger: Human decided a recommendation (model evaluation)}
+  AI.QUERY: {producer: intelligence, aggregate: assistant_conversation, payload: {assistant_conversation_id: uuid!}, consumers: [audit_monitoring], trigger: Assistant query (audited as a read)}
+  AGT.PAUSED: {producer: intelligence, aggregate: agent, payload: {agent_id: uuid!, paused_by: uuid!}, consumers: [comms], trigger: Kill switch used (queued actions held)}
+  AGT.LEVEL_LOWERED: {producer: intelligence, aggregate: agent, payload: {agent_id: uuid!, level: enum(autonomy_level)!}, consumers: [comms], trigger: Error threshold breached (autonomy lowered one level)}
+  RPT.RETURN_SUBMITTED: {producer: reporting, aggregate: return_submission, payload: {return_submission_id: uuid!}, consumers: [integration, analytics], trigger: Government return certified and submitted}
+  ADM.APPLICATION_RECEIVED: {producer: sectors, aggregate: admission_application, payload: {admission_application_id: uuid!, institution_id: uuid!}, consumers: [comms, intelligence], trigger: Admission application received (Admissions Agent acknowledges)}

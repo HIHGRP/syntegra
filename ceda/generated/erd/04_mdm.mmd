@@ -1,0 +1,124 @@
+erDiagram
+    external_identifier {
+        BINARY_16_ id PK
+        VARCHAR_32_ person_kind
+        BINARY_16_ person_id
+        VARCHAR_32_ scheme
+        BINARY_32_ value_hmac
+        VARBINARY_1024_ value_enc
+        CHAR_4_ value_last4
+        VARCHAR_120_ issuer
+        DATETIME_6_ verified_at
+        VARCHAR_32_ verified_via
+        VARCHAR_32_ status
+    }
+    identity_verification {
+        BINARY_16_ id PK
+        VARCHAR_32_ person_kind
+        BINARY_16_ person_id
+        VARCHAR_32_ scheme
+        VARCHAR_32_ channel
+        BINARY_16_ requested_by
+        VARCHAR_40_ purpose_code
+        VARCHAR_32_ outcome
+        JSON match_detail
+        VARCHAR_128_ provider_ref
+        DATETIME_6_ occurred_at
+    }
+    match_review {
+        BINARY_16_ id PK
+        VARCHAR_32_ entity_kind
+        BINARY_16_ candidate_id
+        BINARY_16_ existing_id
+        DECIMAL_7_6_ score
+        JSON evidence
+        VARCHAR_32_ source
+        BINARY_16_ assigned_to FK
+        VARCHAR_32_ decision
+        VARCHAR_500_ decision_reason
+        BINARY_16_ decided_by FK
+        DATETIME_6_ decided_at
+        VARCHAR_32_ status
+    }
+    match_pair_decision {
+        BINARY_16_ id PK
+        VARCHAR_32_ entity_kind
+        BINARY_16_ record_a_id
+        BINARY_16_ record_b_id
+        VARCHAR_32_ decision
+        VARCHAR_32_ model_version
+    }
+    merge_journal {
+        BINARY_16_ id PK
+        VARCHAR_32_ entity_kind
+        BINARY_16_ survivor_id
+        BINARY_16_ merged_id
+        JSON survivorship
+        JSON repointed
+        BINARY_16_ approved_by FK
+        BINARY_16_ second_approver_id FK
+        DATETIME_6_ merged_at
+        DATE unmerge_deadline
+        DATETIME_6_ unmerged_at
+        BINARY_16_ unmerged_by FK
+    }
+    data_quality_rule {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ rule_key
+        VARCHAR_32_ dimension
+        VARCHAR_64_ entity
+        TEXT expression
+        VARCHAR_32_ severity
+        INT version
+        VARCHAR_32_ status
+    }
+    data_quality_issue {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ rule_key
+        VARCHAR_32_ dimension
+        VARCHAR_64_ record_kind
+        BINARY_16_ record_id
+        VARCHAR_1000_ detail
+        VARCHAR_32_ severity
+        DATETIME_6_ detected_at
+        BINARY_16_ owner_user_id
+        DATETIME_6_ resolved_at
+        VARCHAR_32_ status
+    }
+    data_quality_issue {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ rule_key
+        VARCHAR_32_ dimension
+        VARCHAR_64_ record_kind
+        BINARY_16_ record_id
+        VARCHAR_1000_ detail
+        VARCHAR_32_ severity
+        DATETIME_6_ detected_at
+        BINARY_16_ owner_user_id
+        DATETIME_6_ resolved_at
+        VARCHAR_32_ status
+    }
+    dataset_freshness {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        VARCHAR_32_ dataset
+        DATETIME_6_ last_received_at
+        SMALLINT expected_interval_hours
+        BOOLEAN is_stale
+    }
+    app_user {
+        BINARY_16 id PK
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    app_user ||--o{ match_review : "assigned_to"
+    app_user ||--o{ match_review : "decided_by"
+    app_user ||--o{ merge_journal : "approved_by"
+    app_user ||--o{ merge_journal : "second_approver_id"
+    app_user ||--o{ merge_journal : "unmerged_by"
+    institution ||--o{ dataset_freshness : "institution_id"

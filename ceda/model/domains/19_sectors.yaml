@@ -1,0 +1,572 @@
+domain: sectors
+code: SEC
+title: Sector extensions — early years, post-16 and careers, TVET, higher education and medical/health education
+module: sectors
+zone: ops
+retention: RS-LRN-PERM
+summary: >
+  Sector-specific records on the same Learner 360, enrolment and programme masters: early-years
+  observations, milestones, daycare sessions, authorised collectors and care logs (FR-EYR-01–03, 101);
+  option choices, career guidance, higher-education applications, student finance and destinations
+  (FR-P16-01–03, 101–103); competencies, workplace assessment, apprenticeships, SIWES industrial training
+  and Employer Partner 360 (FR-TVT-01–06, 101); accommodation, research candidature and ethics, graduation
+  and alumni (FR-HED-01–07, 101); clinical rotations, anonymised logbooks, clinical hours, skills labs and
+  regulator readiness (FR-MED-01–05, 101–103). Patient data is never stored (FR-MED-03, FR-MED-05).
+
+entities:
+  development_milestone:
+    title: Early-years development area and milestone framework
+    kind: reference
+    zone: registry
+    class: public
+    history: versioned
+    scope: owned
+    origin: ceda
+    retention: RS-CUR-PERM
+    reqs: [FR-EYR-01]
+    pages: [EYR-02]
+    attrs:
+      - "area_code: code(32)!"
+      - "milestone_code: code(32)!"
+      - "statement: text!"
+      - "age_band_months: code(16)!"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, milestone_code, version]]
+
+  eyr_observation:
+    title: Early-years observation (text, photo, video) against development areas and milestones, shared with parents
+    kind: event
+    class: confidential
+    history: lifecycle
+    scope: "derived: the learner's class"
+    origin: ceda
+    reqs: [FR-EYR-01, FR-EYR-02, FR-EYR-03]
+    pages: [EYR-01, EYR-02]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "observed_by_staff_id: ref(staff)!"
+      - "observed_at: ts!"
+      - "milestone_codes: json"
+      - "note: text"
+      - "media_document_ids: json | Shared only when every pictured child has photo consent"
+      - "pictured_learner_ids: json"
+      - "shared_with_parents_at: ts"
+
+  eyr_session_booking:
+    title: Daycare-linked early-years session booking (staff-to-child ratio monitoring)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-OPS-7
+    reqs: [FR-EYR-101]
+    pages: [EYR-01]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "session_date: date!"
+      - "session_code: code(16)!"
+      - "invoice_id: ref(invoice)"
+      - "status: enum(booking_status)!"
+    uq: [[learner_id, session_date, session_code]]
+
+  authorised_collector:
+    title: Person authorised to collect an early-years child (photo check at pick-up)
+    kind: master
+    class: confidential
+    history: effective
+    scope: "derived: the learner"
+    origin: appj
+    retention: RS-OPS-7
+    reqs: [FR-EYR-101, FR-FAM-04]
+    pages: [EYR-01, FAM-01]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "guardian_id: ref(guardian) | When the collector is a guardian"
+      - "name: name! pii"
+      - "phone: phone pii"
+      - "photo_document_id: uuid restricted"
+      - "password_phrase: secret restricted | Collection password"
+
+  collection_record:
+    title: Pick-up record with photo check against authorised collectors
+    kind: event
+    class: confidential
+    history: append
+    scope: "derived: the learner"
+    origin: ceda
+    retention: RS-OPS-3
+    reqs: [FR-EYR-101]
+    pages: [EYR-01]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "collector_id: ref(authorised_collector)"
+      - "is_verified: bool!"
+      - "staff_id: ref(staff)!"
+      - "collected_at: ts!"
+      - "exception_note: str(500)"
+
+  care_log:
+    title: Early-years daily care log (meals, sleep, nappies, medication given) shared with parents
+    kind: event
+    zone: vault
+    class: special
+    history: append
+    scope: owned
+    origin: ceda
+    retention: RS-HEALTH
+    reqs: [FR-EYR-03, FR-EYR-101]
+    pages: [EYR-02]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "log_kind: enum(care_log_kind)!"
+      - "detail: sealed! special"
+      - "recorded_by: uuid!"
+      - "recorded_at: ts!"
+      - "shared_with_parents_at: ts"
+
+  option_choice:
+    title: Subject option or stream choice (combination rules, capacity, guidance against entry requirements)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: "derived: the learner's institution"
+    origin: ceda
+    reqs: [FR-P16-01, FR-P16-103]
+    pages: [P16-01]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "period_id: ref(academic_period)!"
+      - "stream: cl(stream)"
+      - "choices: json! | Ranked subject choices"
+      - "rule_check: json | Combination-rule result"
+      - "counsellor_override_by: uuid | Override of a guidance rule (recorded)"
+      - "status: enum(request_status)!"
+    uq: [[learner_id, period_id]]
+
+  guidance_session:
+    title: Career guidance session (counsellor, interests, aptitude, recommended stream, agreed next steps)
+    kind: event
+    class: confidential
+    history: lifecycle
+    scope: "derived: the learner's institution"
+    origin: appj
+    reqs: [FR-P16-103, FR-P16-102]
+    pages: [P16-01, P16-02]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "counsellor_staff_id: ref(staff)!"
+      - "held_on: date!"
+      - "topic: cl(guidance_topic)!"
+      - "interests: json"
+      - "aptitude: json"
+      - "recommended_stream: cl(stream)"
+      - "next_steps: text"
+
+  he_application:
+    title: Higher-education application tracked through an adapter (JAMB UTME/CAPS, UCAS-equivalent) — choices, references, offers
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: "derived: the learner's institution"
+    origin: ceda
+    reqs: [FR-P16-101, FR-P16-02]
+    pages: [P16-02]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "scheme: cl(admission_scheme)!"
+      - "choices: json!"
+      - "personal_statement_document_id: uuid"
+      - "reference_document_ids: json"
+      - "offer: json"
+      - "accepted_choice: str(200)"
+      - "external_ref: code(64)"
+      - "status: enum(application_status)!"
+
+  student_finance_application:
+    title: Student-finance guidance and loan or grant application (e.g. NELFUND) — no lender credentials stored
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    scope: "derived: the learner's institution"
+    origin: ceda
+    reqs: [FR-P16-102]
+    pages: [P16-02]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "scheme: cl(finance_scheme)!"
+      - "amount_requested: money"
+      - "currency: currency"
+      - "status: enum(application_status)!"
+      - "external_ref: code(64)"
+
+  destination_record:
+    title: Post-education destination (further education, employment, apprenticeship, entrepreneurship, professional qualification)
+    kind: event
+    class: confidential
+    history: lifecycle
+    scope: "derived: the learner's last institution"
+    origin: ceda
+    reqs: [FR-P16-03, FR-TVT-06]
+    pages: [P16-02, LRN-09]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "enrolment_id: ref(enrolment)"
+      - "destination: cl(destination_kind)!"
+      - "detail: json"
+      - "recorded_on: date!"
+      - "source: enum(destination_source)!"
+
+  competency_framework:
+    title: Competency framework (NSQ, NABTEB trade syllabus, industry certification, clinical competencies, digital skills)
+    kind: reference
+    zone: registry
+    class: public
+    history: versioned
+    scope: owned
+    origin: ceda
+    retention: RS-CUR-PERM
+    reqs: [FR-TVT-01, FR-LMS-122, FR-MED-02]
+    pages: [TVT-01]
+    attrs:
+      - "code: code(40)!"
+      - "title: title!"
+      - "framework_kind: enum(competency_framework_kind)!"
+      - "units: json! | Units and elements with performance criteria"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, code, version]]
+
+  competency_record:
+    title: Competency evidence and assessor sign-off (including approved workplace assessors and clinical supervisors)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: "derived: the learner's institution"
+    origin: ceda
+    reqs: [FR-TVT-01, FR-TVT-05, FR-MED-02, FR-MED-101]
+    pages: [TVT-01, MED-02, TVT-05]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "framework_id: ref(competency_framework)!"
+      - "unit_code: code(40)!"
+      - "evidence_document_ids: json"
+      - "assessor_kind: enum(assessor_kind)!"
+      - "assessor_ref: uuid! | Staff or employer contact"
+      - "level_achieved: code(16)"
+      - "signed_off_at: ts"
+      - "status: enum(competency_status)!"
+
+  employer_partner:
+    title: Employer Partner 360 (placements, sponsorships, assessors, agreements, hiring outcomes)
+    kind: master
+    zone: registry
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-OPS-7
+    reqs: [FR-TVT-04, FR-TVT-03]
+    pages: [TVT-04, TVT-03]
+    attrs:
+      - "name: title!"
+      - "cac_number: code(20)"
+      - "sector: cl(industry_sector)"
+      - "address: json"
+      - "contacts: json pii"
+      - "agreements: json"
+      - "status: enum(record_status)!"
+
+  placement:
+    title: Industry placement, apprenticeship or clinical rotation (matching, agreement, attendance, workplace assessment)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: "derived: the learner's institution"
+    origin: ceda
+    reqs: [FR-TVT-03, FR-MED-01, FR-MED-05]
+    pages: [TVT-03, MED-01]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "placement_kind: enum(placement_kind)!"
+      - "employer_partner_id: ref(employer_partner) soft"
+      - "clinical_site_id: ref(clinical_site) soft"
+      - "supervisor_name: name pii"
+      - "starts_on: date!"
+      - "ends_on: date!"
+      - "prerequisites_met: json | Competencies, immunisation/occupational-health clearance"
+      - "agreement_document_id: uuid"
+      - "funding: json | Employer funding"
+      - "attendance_confirmed_days: smallint"
+      - "status: enum(placement_status)!"
+
+  industrial_training:
+    title: Industrial training / SIWES placement (letters, employer acceptance, logbook, visits, ITF forms, grading)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: "derived: the learner's institution"
+    origin: appj
+    reqs: [FR-TVT-101]
+    pages: [TVT-03]
+    attrs:
+      - "placement_id: ref(placement)!"
+      - "itf_reference: code(40)"
+      - "logbook_document_id: uuid"
+      - "supervisor_visits: json"
+      - "grade: code(16)"
+      - "status: enum(placement_status)!"
+
+  clinical_site:
+    title: Hospital or clinical department hosting rotations (capacity, supervisors)
+    kind: master
+    zone: registry
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-OPS-7
+    reqs: [FR-MED-01]
+    pages: [MED-01]
+    attrs:
+      - "name: title!"
+      - "department: str(120)"
+      - "capacity: smallint"
+      - "fhir_endpoint: url | Placement attendance confirmation only (Practitioner/Encounter references)"
+      - "status: enum(record_status)!"
+
+  logbook_entry:
+    title: Anonymised clinical logbook entry (procedure/case, level of involvement, reflection) with supervisor verification
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: "derived: the learner's institution"
+    origin: ceda
+    reqs: [FR-MED-02, FR-MED-03]
+    pages: [MED-02]
+    notes: Save is blocked when text matches patient-identifier patterns (name lists, hospital-number formats).
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "placement_id: ref(placement)"
+      - "procedure_code: code(40)!"
+      - "involvement: enum(involvement_level)!"
+      - "reflection: text"
+      - "occurred_on: date!"
+      - "supervisor_verified_by: str(200)"
+      - "verified_at: ts"
+      - "clinical_minutes: minutes"
+
+  professional_body:
+    title: Health-profession regulator and its registration rules for a programme family (MDCN, NMCN, PCN, MRTB, RRBN, MLSCN, CHPRBN)
+    kind: reference
+    zone: registry
+    class: public
+    history: lifecycle
+    scope: owned
+    origin: appj
+    retention: RS-CUR-PERM
+    reqs: [FR-MED-103, FR-MED-04]
+    pages: [MED-03]
+    attrs:
+      - "code: code(16)!"
+      - "name: title!"
+      - "cadre: cl(programme_family)!"
+      - "indexing_rules: json"
+      - "registration_rules: json"
+      - "required_clinical_hours: smallint"
+      - "export_format: str(80)"
+    uq: [[scope_node_id, code]]
+
+  registration_readiness:
+    title: Readiness of a learner for professional registration or licensing examination (clinical hours, competencies)
+    kind: projection
+    class: confidential
+    history: snapshot
+    scope: "derived: the learner's institution"
+    origin: ceda
+    reqs: [FR-MED-04, FR-MED-102, FR-MED-103]
+    pages: [MED-03]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "professional_body_id: ref(professional_body) soft"
+      - "clinical_hours: dec(7,1)!"
+      - "competencies_signed: smallint!"
+      - "is_ready: bool!"
+      - "as_of: date!"
+      - "exported_at: ts"
+
+  skills_lab_session:
+    title: Skills laboratory or simulation session (equipment, facilitators, competency outcomes)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-OPS-7
+    reqs: [FR-MED-101]
+    pages: [MED-01]
+    attrs:
+      - "room_booking_id: ref(room_booking)!"
+      - "scenario: str(300)!"
+      - "facilitator_staff_ids: json!"
+      - "equipment_asset_ids: json"
+      - "participant_learner_ids: json!"
+      - "outcomes: json | Competency outcomes recorded"
+
+  international_student_record:
+    title: Institutional information for an international student (visa-related records) — restricted
+    kind: master
+    class: restricted
+    history: lifecycle
+    scope: "derived: the learner's institution"
+    origin: ceda
+    retention: RS-OPS-7
+    reqs: [FR-HED-07]
+    pages: [HED-01, LRN-04]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "nationality: country!"
+      - "visa_reference: secret restricted mask4"
+      - "visa_expires_on: date"
+      - "sponsor_institution_ref: str(120)"
+      - "document_ids: json"
+    uq: [[learner_id]]
+
+  accommodation_allocation:
+    title: Hostel accommodation application and allocation (accessibility needs considered)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-OPS-7
+    reqs: [FR-HED-03]
+    pages: [HED-04]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "period_id: ref(academic_period)!"
+      - "room_id: ref(room)"
+      - "bed_label: code(16)"
+      - "has_accessibility_need: bool! default=false"
+      - "invoice_id: ref(invoice)"
+      - "status: enum(allocation_status)!"
+    uq: [[learner_id, period_id]]
+
+  research_candidature:
+    title: Research student candidature (supervision, milestones, progression reviews, thesis examination)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: "derived: the learner's department"
+    origin: ceda
+    reqs: [FR-HED-04]
+    pages: [HED-05]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "enrolment_id: ref(enrolment)!"
+      - "supervisor_staff_ids: json!"
+      - "thesis_title: title"
+      - "milestones: json"
+      - "examination: json"
+      - "status: enum(candidature_status)!"
+
+  ethics_application:
+    title: Research ethics application and decision
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: "derived: the candidature"
+    origin: ceda
+    reqs: [FR-HED-04]
+    pages: [HED-05]
+    attrs:
+      - "candidature_id: ref(research_candidature)!"
+      - "title: title!"
+      - "document_id: uuid!"
+      - "decision: enum(approval_decision)"
+      - "decided_on: date"
+
+  graduation_list:
+    title: Graduation list from classification and certificate eligibility; ceremony
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-HED-05]
+    pages: [HED-06]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "period_id: ref(academic_period)!"
+      - "ceremony_on: date"
+      - "learner_ids: json!"
+      - "approved_by: uuid"
+      - "status: enum(version_status)!"
+
+  alumnus:
+    title: Alumni record (consented contact after graduation)
+    kind: master
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-OPS-7
+    reqs: [FR-HED-05]
+    pages: [HED-06]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "graduated_on: date!"
+      - "contact_consent: bool! default=false"
+      - "contact_email: email pii"
+    uq: [[learner_id]]
+
+  admission_enquiry:
+    title: Admissions enquiry, open-day or visit booking, waiting list position (website widget posts here)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-RECRUIT
+    reqs: [FR-FAM-102, FR-FAM-103]
+    pages: [HED-01, PUB-03]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "contact_name: name! pii"
+      - "contact_phone: phone pii"
+      - "contact_email: email pii"
+      - "child_name: name pii"
+      - "intended_level: cl(education_level)"
+      - "source: enum(enquiry_source)!"
+      - "visit_at: ts"
+      - "waiting_list_position: int_u"
+      - "application_id: ref(admission_application) | Conversion to an application"
+      - "status: enum(enquiry_status)!"
+
+  admission_application:
+    title: Admission application for a school place or tertiary programme (entry checks, O'Level verification, decisions, offers)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-HED-01, FR-FAM-102, FR-FAM-103]
+    pages: [HED-01, HED-02, PUB-03]
+    events: [ADM.APPLICATION_RECEIVED]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "programme_id: ref(programme)"
+      - "education_level: cl(education_level)"
+      - "learner_id: ref(learner) | Matched or created at offer acceptance"
+      - "applicant_name: name! pii"
+      - "applicant_dob: date pii"
+      - "applicant_email: email pii"
+      - "applicant_phone: phone pii"
+      - "channel: enum(application_channel)!"
+      - "answers: json!"
+      - "olevel_verification: json | Via Certificate 360 or exam-body adapters"
+      - "decision: enum(admission_decision)"
+      - "decided_by: uuid | Admission refusal is human-only"
+      - "offer_expires_on: date"
+      - "status: enum(admission_status)!"

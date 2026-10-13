@@ -1,0 +1,263 @@
+erDiagram
+    sdaf_rate_card {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        INT version
+        BINARY_16_ proposed_by FK
+        BINARY_16_ approved_by FK
+        VARCHAR_200_ approval_instrument
+        DATE effective_from
+        DATETIME_6_ published_at
+        VARCHAR_32_ status
+    }
+    sdaf_rate {
+        BINARY_16_ id PK
+        BINARY_16_ rate_card_id FK
+        VARCHAR_32_ institution_type
+        VARCHAR_32_ education_level
+        VARCHAR_32_ charge_period
+        BIGINT amount_minor
+        CHAR_3_ currency
+    }
+    billing_period {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ academic_period_id FK
+        JSON institution_types
+        VARCHAR_40_ label
+        DATE census_on
+        DATE confirmation_closes_on
+        DATE collection_window_ends_on
+        DATE remittance_due_on
+        VARCHAR_32_ status
+    }
+    sdaf_payer_rule {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ institution_type
+        VARCHAR_32_ education_level
+        BOOLEAN is_basic_education
+        VARCHAR_32_ payer
+        JSON split
+        INT version
+        VARCHAR_32_ status
+    }
+    sdaf_exemption_category {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ code
+        VARCHAR_300_ title
+        VARCHAR_32_ funding_rule
+        VARCHAR_500_ evidence_required
+        INT version
+        VARCHAR_32_ status
+    }
+    sdaf_exemption {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        BINARY_16_ billing_period_id FK
+        BINARY_16_ category_id FK
+        BINARY_16_ evidence_document_id
+        BINARY_16_ requested_by FK
+        BINARY_16_ approved_by FK
+        VARCHAR_32_ status
+    }
+    census_snapshot {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        BINARY_16_ billing_period_id FK
+        INT version
+        INT enrolled
+        INT verified
+        INT excluded
+        INT exempted
+        INT billable
+        INT open_flags
+        BINARY_16_ confirmed_by FK
+        DATETIME_6_ confirmed_at
+        DATETIME_6_ frozen_at
+        BINARY_32_ content_hash
+        JSON challenge
+        VARCHAR_32_ status
+    }
+    census_learner {
+        BINARY_16_ id PK
+        BINARY_16_ snapshot_id FK
+        BINARY_16_ learner_id FK
+        BINARY_16_ enrolment_id FK
+        VARCHAR_32_ inclusion
+        VARCHAR_32_ reason
+    }
+    census_flag {
+        BINARY_16_ id PK
+        BINARY_16_ snapshot_id FK
+        BINARY_16_ learner_id FK
+        VARCHAR_32_ flag_kind
+        JSON evidence
+        VARCHAR_32_ resolution
+        VARCHAR_1000_ explanation
+        BINARY_16_ resolved_by FK
+        VARCHAR_32_ status
+    }
+    billing_period_billed {
+        BINARY_16_ id PK
+        BINARY_16_ billing_period_id FK
+        BINARY_16_ learner_id FK
+        VARCHAR_32_ channel
+        BINARY_16_ institution_id FK
+        BINARY_16_ snapshot_id FK
+    }
+    sdaf_demand {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ demand_number
+        BINARY_16_ institution_id FK
+        BINARY_16_ billing_period_id FK
+        BINARY_16_ snapshot_id FK
+        VARCHAR_32_ payer_kind
+        BINARY_16_ payer_ref
+        BINARY_16_ learner_id FK
+        INT billable_count
+        INT waived_count
+        BINARY_16_ rate_id FK
+        BIGINT amount_minor
+        CHAR_3_ currency
+        VARCHAR_40_ revenue_code
+        VARCHAR_64_ payment_reference
+        DATETIME_6_ issued_at
+        BOOLEAN is_basic_education
+        VARCHAR_32_ status
+    }
+    sdaf_collection {
+        BINARY_16_ id PK
+        BINARY_16_ demand_id FK
+        VARCHAR_128_ state_receipt_ref
+        VARCHAR_32_ channel
+        BIGINT amount_minor
+        CHAR_3_ currency
+        DATETIME_6_ paid_at
+        DATETIME_6_ statement_matched_at
+    }
+    unmatched_collection {
+        BINARY_16_ id PK
+        VARCHAR_128_ state_receipt_ref
+        JSON payload
+        VARCHAR_32_ reason
+        BINARY_16_ resolved_demand_id FK
+        BINARY_16_ resolved_by FK
+        VARCHAR_32_ status
+    }
+    remittance {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ billing_period_id FK
+        VARCHAR_64_ advice_ref
+        VARCHAR_64_ bank_ref
+        BIGINT amount_minor
+        CHAR_3_ currency
+        DATE remitted_on
+        BINARY_16_ recorded_by FK
+        BINARY_16_ approved_by FK
+    }
+    remittance_allocation {
+        BINARY_16_ id PK
+        BINARY_16_ remittance_id FK
+        BINARY_16_ collection_id FK
+        BIGINT amount_minor
+        CHAR_3_ currency
+    }
+    reconciliation_statement {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ billing_period_id FK
+        BIGINT billed_minor
+        BIGINT exempted_minor
+        BIGINT collected_minor
+        BIGINT remitted_minor
+        BIGINT outstanding_minor
+        BIGINT late_remittance_charge_minor
+        BIGINT service_credits_minor
+        CHAR_3_ currency
+        BINARY_16_ state_signed_by FK
+        DATETIME_6_ state_signed_at
+        BINARY_16_ operator_signed_by FK
+        DATETIME_6_ operator_signed_at
+        BINARY_32_ content_hash
+        VARCHAR_32_ status
+    }
+    reconciliation_line {
+        BINARY_16_ id PK
+        BINARY_16_ statement_id FK
+        BINARY_16_ institution_id FK
+        BIGINT billed_minor
+        BIGINT exempted_minor
+        BIGINT collected_minor
+        BIGINT remitted_minor
+        CHAR_3_ currency
+        JSON dispute
+    }
+    sdaf_public_summary {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ billing_period_id FK
+        DATETIME_6_ published_at
+        JSON summary
+    }
+    academic_period {
+        BINARY_16 id PK
+    }
+    app_user {
+        BINARY_16 id PK
+    }
+    enrolment {
+        BINARY_16 id PK
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    learner {
+        BINARY_16 id PK
+    }
+    academic_period ||--o{ billing_period : "academic_period_id"
+    app_user ||--o{ census_flag : "resolved_by"
+    app_user ||--o{ census_snapshot : "confirmed_by"
+    app_user ||--o{ reconciliation_statement : "operator_signed_by"
+    app_user ||--o{ reconciliation_statement : "state_signed_by"
+    app_user ||--o{ remittance : "approved_by"
+    app_user ||--o{ remittance : "recorded_by"
+    app_user ||--o{ sdaf_exemption : "approved_by"
+    app_user ||--o{ sdaf_exemption : "requested_by"
+    app_user ||--o{ sdaf_rate_card : "approved_by"
+    app_user ||--o{ sdaf_rate_card : "proposed_by"
+    app_user ||--o{ unmatched_collection : "resolved_by"
+    billing_period ||--o{ billing_period_billed : "billing_period_id"
+    billing_period ||--o{ census_snapshot : "billing_period_id"
+    billing_period ||--o{ reconciliation_statement : "billing_period_id"
+    billing_period ||--o{ remittance : "billing_period_id"
+    billing_period ||--o{ sdaf_demand : "billing_period_id"
+    billing_period ||--o{ sdaf_exemption : "billing_period_id"
+    billing_period ||--o{ sdaf_public_summary : "billing_period_id"
+    census_snapshot ||--o{ billing_period_billed : "snapshot_id"
+    census_snapshot ||--o{ census_flag : "snapshot_id"
+    census_snapshot ||--o{ census_learner : "snapshot_id"
+    census_snapshot ||--o{ sdaf_demand : "snapshot_id"
+    enrolment ||--o{ census_learner : "enrolment_id"
+    institution ||--o{ billing_period_billed : "institution_id"
+    institution ||--o{ census_snapshot : "institution_id"
+    institution ||--o{ reconciliation_line : "institution_id"
+    institution ||--o{ sdaf_demand : "institution_id"
+    learner ||--o{ billing_period_billed : "learner_id"
+    learner ||--o{ census_flag : "learner_id"
+    learner ||--o{ census_learner : "learner_id"
+    learner ||--o{ sdaf_demand : "learner_id"
+    learner ||--o{ sdaf_exemption : "learner_id"
+    reconciliation_statement ||--o{ reconciliation_line : "statement_id"
+    remittance ||--o{ remittance_allocation : "remittance_id"
+    sdaf_collection ||--o{ remittance_allocation : "collection_id"
+    sdaf_demand ||--o{ sdaf_collection : "demand_id"
+    sdaf_demand ||--o{ unmatched_collection : "resolved_demand_id"
+    sdaf_exemption_category ||--o{ sdaf_exemption : "category_id"
+    sdaf_rate ||--o{ sdaf_demand : "rate_id"
+    sdaf_rate_card ||--o{ sdaf_rate : "rate_card_id"

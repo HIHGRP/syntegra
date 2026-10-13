@@ -1,0 +1,273 @@
+erDiagram
+    institution {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_20_ institution_code
+        VARCHAR_40_ gov_reg_no
+        VARCHAR_300_ name
+        VARCHAR_80_ short_name
+        VARCHAR_32_ category
+        VARCHAR_32_ ownership
+        BOOLEAN is_public
+        BINARY_16_ operating_tenant_id
+        BINARY_16_ provider_id FK
+        BINARY_16_ network_scope_id FK
+        BINARY_16_ lga_scope_id FK
+        JSON levels
+        VARCHAR_32_ day_boarding
+        VARCHAR_32_ gender_intake
+        JSON address
+        POINT location
+        VARCHAR_32_ location_class
+        INT capacity
+        BINARY_16_ head_staff_id FK
+        VARCHAR_2048_ website
+        VARCHAR_16_ phone
+        VARCHAR_254_ email
+        VARCHAR_32_ onboarding_status
+        VARCHAR_32_ regulatory_status
+        VARCHAR_32_ status
+        BINARY_16_ merged_into FK
+        BOOLEAN is_regularisation
+    }
+    institution_change_request {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        JSON field_changes
+        TEXT reason
+        BINARY_16_ evidence_document_id
+        BINARY_16_ requested_by FK
+        BINARY_16_ decided_by FK
+        DATETIME_6_ decided_at
+        VARCHAR_32_ status
+    }
+    campus {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        VARCHAR_300_ name
+        JSON address
+        POINT location
+        BOOLEAN is_main
+        VARCHAR_32_ status
+    }
+    org_unit {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        BINARY_16_ campus_id FK
+        BINARY_16_ parent_id FK
+        VARCHAR_32_ unit_type
+        VARCHAR_20_ code
+        VARCHAR_300_ name
+        BINARY_16_ head_staff_id FK
+        BINARY_16_ acting_head_staff_id FK
+        VARCHAR_32_ cost_centre
+        DATE valid_from
+        DATE valid_to
+    }
+    licence {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        VARCHAR_32_ kind
+        VARCHAR_60_ licence_number
+        VARCHAR_32_ issuing_body
+        BINARY_16_ programme_id FK
+        JSON scope_detail
+        TEXT conditions
+        DATE issued_on
+        DATE expires_on
+        VARCHAR_32_ status
+        BINARY_16_ approval_id FK
+    }
+    inspection {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        VARCHAR_32_ kind
+        BINARY_16_ programme_id FK
+        BINARY_16_ provider_application_id FK
+        DATE scheduled_on
+        BINARY_16_ lead_inspector_id FK
+        DECIMAL_7_3_ risk_score
+        JSON briefing
+        VARCHAR_32_ overall_judgement
+        BINARY_16_ report_document_id
+        POINT visited_location
+        VARCHAR_32_ status
+    }
+    inspection_programme {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ name
+        DATE period_start
+        DATE period_end
+        JSON method
+        BINARY_16_ approved_by FK
+        VARCHAR_32_ status
+    }
+    inspection_finding {
+        BINARY_16_ id PK
+        BINARY_16_ inspection_id FK
+        VARCHAR_32_ area
+        VARCHAR_32_ judgement
+        TEXT evidence
+        JSON evidence_document_ids
+        BOOLEAN requires_action
+    }
+    corrective_action {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        VARCHAR_32_ source_kind
+        BINARY_16_ source_id
+        TEXT description
+        BINARY_16_ owner_user_id FK
+        DATE due_on
+        JSON evidence_document_ids
+        BINARY_16_ verified_by FK
+        DATETIME_6_ verified_at
+        VARCHAR_32_ status
+    }
+    compliance_requirement {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ requirement_key
+        VARCHAR_300_ title
+        VARCHAR_32_ category
+        JSON applies_to
+        TEXT evidence_required
+        SMALLINT renewal_months
+        INT version
+        VARCHAR_32_ status
+    }
+    compliance_status {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        BINARY_16_ requirement_id FK
+        BINARY_16_ evidence_document_id
+        DATE certified_on
+        DATE expires_on
+        VARCHAR_32_ status
+    }
+    onboarding_check {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        VARCHAR_32_ step
+        DATE target_on
+        DATETIME_6_ completed_at
+        VARCHAR_500_ blocking_reason
+        VARCHAR_32_ status
+    }
+    onboarding_target {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ lga_scope_id FK
+        SMALLINT wave
+        DATE target_live_on
+        JSON readiness_gate
+    }
+    unknown_institution_reference {
+        BINARY_16_ id PK
+        VARCHAR_32_ source_kind
+        BINARY_16_ source_id
+        VARCHAR_300_ reported_name
+        VARCHAR_500_ reported_address
+        BINARY_16_ lga_scope_id FK
+        BINARY_16_ alert_id
+        BINARY_16_ resolved_institution_id FK
+    }
+    institution_profile {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        DATE as_of
+        VARCHAR_60_ comparison_group
+        VARCHAR_16_ enrolment_band
+        VARCHAR_16_ ptr_band
+        VARCHAR_16_ infrastructure_band
+        DECIMAL_6_3_ additional_needs_share
+        JSON context
+    }
+    health_index_policy {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        INT version
+        JSON weights
+        JSON targets
+        JSON bands
+        VARCHAR_32_ status
+        DATE effective_from
+    }
+    facility_check {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        BINARY_16_ campus_id FK
+        VARCHAR_32_ check_kind
+        DATE performed_on
+        VARCHAR_200_ performed_by
+        VARCHAR_32_ result
+        BINARY_16_ certificate_document_id
+        DATE expires_on
+    }
+    app_user {
+        BINARY_16 id PK
+    }
+    approval {
+        BINARY_16 id PK
+    }
+    programme {
+        BINARY_16 id PK
+    }
+    provider {
+        BINARY_16 id PK
+    }
+    provider_application {
+        BINARY_16 id PK
+    }
+    scope_node {
+        BINARY_16 id PK
+    }
+    staff {
+        BINARY_16 id PK
+    }
+    app_user ||--o{ corrective_action : "owner_user_id"
+    app_user ||--o{ corrective_action : "verified_by"
+    app_user ||--o{ inspection_programme : "approved_by"
+    app_user ||--o{ institution_change_request : "decided_by"
+    app_user ||--o{ institution_change_request : "requested_by"
+    approval ||--o{ licence : "approval_id"
+    campus ||--o{ facility_check : "campus_id"
+    campus ||--o{ org_unit : "campus_id"
+    compliance_requirement ||--o{ compliance_status : "requirement_id"
+    inspection ||--o{ inspection_finding : "inspection_id"
+    inspection_programme ||--o{ inspection : "programme_id"
+    institution ||--o{ campus : "institution_id"
+    institution ||--o{ compliance_status : "institution_id"
+    institution ||--o{ corrective_action : "institution_id"
+    institution ||--o{ facility_check : "institution_id"
+    institution ||--o{ inspection : "institution_id"
+    institution ||--o{ institution : "merged_into"
+    institution ||--o{ institution_change_request : "institution_id"
+    institution ||--o{ institution_profile : "institution_id"
+    institution ||--o{ licence : "institution_id"
+    institution ||--o{ onboarding_check : "institution_id"
+    institution ||--o{ org_unit : "institution_id"
+    institution ||--o{ unknown_institution_reference : "resolved_institution_id"
+    org_unit ||--o{ org_unit : "parent_id"
+    programme ||--o{ licence : "programme_id"
+    provider ||--o{ institution : "provider_id"
+    provider_application ||--o{ inspection : "provider_application_id"
+    scope_node ||--o{ institution : "lga_scope_id"
+    scope_node ||--o{ institution : "network_scope_id"
+    scope_node ||--o{ onboarding_target : "lga_scope_id"
+    scope_node ||--o{ unknown_institution_reference : "lga_scope_id"
+    staff ||--o{ inspection : "lead_inspector_id"
+    staff ||--o{ institution : "head_staff_id"
+    staff ||--o{ org_unit : "acting_head_staff_id"
+    staff ||--o{ org_unit : "head_staff_id"

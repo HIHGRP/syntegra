@@ -1,0 +1,246 @@
+# CEDA canonical data types. Every attribute in model/domains/ uses one of these.
+# Each type maps to MySQL 9.7, the Django 5.2 field the application uses, JSON Schema
+# (API payloads, events, exchange) and an OpenAPI hint. Parameterised types take
+# arguments in the attribute DSL, e.g. str(80), dec(7,3), enum(learner_status), ref(learner).
+#
+# Collations: names and free text use utf8mb4_0900_ai_ci (case- and accent-insensitive,
+# required for Nigerian-language diacritics and Arabic script — NFR-PLAT-112); codes and
+# identifiers use ascii_bin (exact, cheap to index).
+
+types:
+  uuid:
+    mysql: BINARY(16)
+    django: syntegra.core.fields.UUID7Field
+    json: {type: string, format: uuid}
+    doc: UUID v7, time-ordered, stored as 16 raw bytes (UUID_TO_BIN without swap)
+  ref:
+    args: [entity]
+    mysql: BINARY(16)
+    django: syntegra.core.fields.RefField
+    json: {type: string, format: uuid}
+    doc: Reference to another entity's id. Same zone → enforced (tenant-consistent) foreign key; other zone or partitioned → soft reference.
+  str:
+    args: [length]
+    mysql: "VARCHAR({0}) COLLATE utf8mb4_0900_ai_ci"
+    django: django.db.models.CharField
+    json: {type: string, maxLength: "{0}"}
+    doc: Short human text
+  name:
+    mysql: VARCHAR(200) COLLATE utf8mb4_0900_ai_ci
+    django: django.db.models.CharField
+    json: {type: string, maxLength: 200}
+    doc: Person, place or organisation name; NFKC-normalised on write
+  title:
+    mysql: VARCHAR(300) COLLATE utf8mb4_0900_ai_ci
+    django: django.db.models.CharField
+    json: {type: string, maxLength: 300}
+    doc: Title or label
+  text:
+    mysql: TEXT
+    django: django.db.models.TextField
+    json: {type: string, maxLength: 65535}
+    doc: Free text up to 64 KB
+  longtext:
+    mysql: MEDIUMTEXT
+    django: django.db.models.TextField
+    json: {type: string}
+    doc: Long text (OCR text, rule source, templates)
+  code:
+    args: [length]
+    default_args: [32]
+    mysql: "VARCHAR({0}) CHARACTER SET ascii COLLATE ascii_bin"
+    django: django.db.models.CharField
+    json: {type: string, maxLength: "{0}", pattern: "^[A-Za-z0-9_.:/-]*$"}
+    doc: Machine code or human-facing identifier (exact match)
+  enum:
+    args: [enum]
+    mysql: "VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin"
+    django: django.db.models.CharField (choices)
+    json: {type: string, enum: "{values}"}
+    doc: Value from a fixed CEDA enumeration (model/enums.yaml); enforced by a CHECK constraint
+  cl:
+    args: [code_list]
+    mysql: "VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin"
+    django: django.db.models.CharField
+    json: {type: string, maxLength: 32, x-code-list: "{0}"}
+    doc: Value from a jurisdiction code list (code_value); validated by the application against the effective jurisdiction pack, never hard-coded
+  cls:
+    args: [code_list]
+    mysql: JSON
+    django: django.db.models.JSONField
+    json: {type: array, items: {type: string, maxLength: 32}, x-code-list: "{0}"}
+    doc: Small set of code-list values (JSON array); use a child table when the list is queried or joined
+  email:
+    mysql: VARCHAR(254) COLLATE utf8mb4_0900_ai_ci
+    django: django.db.models.EmailField
+    json: {type: string, format: email, maxLength: 254}
+    doc: E-mail address, case-insensitive
+  phone:
+    mysql: VARCHAR(16) CHARACTER SET ascii COLLATE ascii_bin
+    django: django.db.models.CharField
+    json: {type: string, pattern: "^\\+[1-9][0-9]{6,14}$"}
+    doc: Phone number in E.164
+  url:
+    mysql: VARCHAR(2048) CHARACTER SET ascii COLLATE ascii_bin
+    django: django.db.models.URLField
+    json: {type: string, format: uri, maxLength: 2048}
+    doc: URL
+  lang:
+    mysql: VARCHAR(35) CHARACTER SET ascii COLLATE ascii_bin
+    django: django.db.models.CharField
+    json: {type: string, maxLength: 35}
+    doc: BCP 47 language tag (en-NG, ha, ig, yo, ar)
+  country:
+    mysql: CHAR(2) CHARACTER SET ascii COLLATE ascii_bin
+    django: django.db.models.CharField
+    json: {type: string, pattern: "^[A-Z]{2}$"}
+    doc: ISO 3166-1 alpha-2
+  subdivision:
+    mysql: VARCHAR(6) CHARACTER SET ascii COLLATE ascii_bin
+    django: django.db.models.CharField
+    json: {type: string, pattern: "^[A-Z]{2}-[A-Z0-9]{1,3}$"}
+    doc: ISO 3166-2 subdivision (NG-AB)
+  currency:
+    mysql: CHAR(3) CHARACTER SET ascii COLLATE ascii_bin
+    django: django.db.models.CharField
+    json: {type: string, pattern: "^[A-Z]{3}$"}
+    doc: ISO 4217 currency code
+  money:
+    mysql: BIGINT
+    column_suffix: _minor
+    django: django.db.models.BigIntegerField
+    json: {type: integer}
+    doc: Amount in minor units (kobo, pence); always paired with a currency column on the row
+  date:
+    mysql: DATE
+    django: django.db.models.DateField
+    json: {type: string, format: date}
+    doc: Calendar date (no time zone)
+  ts:
+    mysql: DATETIME(6)
+    django: django.db.models.DateTimeField
+    json: {type: string, format: date-time}
+    doc: Instant, always UTC (server time_zone '+00:00'); the tenant time zone is applied on display
+  time:
+    mysql: TIME
+    django: django.db.models.TimeField
+    json: {type: string, format: time}
+    doc: Local wall-clock time of day (timetable periods)
+  bool:
+    mysql: BOOLEAN
+    django: django.db.models.BooleanField
+    json: {type: boolean}
+    doc: True/false
+  int:
+    mysql: INT
+    django: django.db.models.IntegerField
+    json: {type: integer}
+    doc: 32-bit integer
+  int_u:
+    mysql: INT UNSIGNED
+    django: django.db.models.PositiveIntegerField
+    json: {type: integer, minimum: 0}
+    doc: Non-negative 32-bit integer
+  smallint:
+    mysql: SMALLINT
+    django: django.db.models.SmallIntegerField
+    json: {type: integer}
+    doc: 16-bit integer
+  bigint:
+    mysql: BIGINT
+    django: django.db.models.BigIntegerField
+    json: {type: integer}
+    doc: 64-bit integer
+  dec:
+    args: [precision, scale]
+    mysql: "DECIMAL({0},{1})"
+    django: django.db.models.DecimalField
+    json: {type: string, format: decimal}
+    doc: Exact decimal (marks, credits, hours, FTE)
+  pct:
+    mysql: DECIMAL(6,3)
+    django: django.db.models.DecimalField
+    json: {type: string, format: decimal}
+    doc: Percentage 0–100 with three decimals
+  ratio:
+    mysql: DECIMAL(7,6)
+    django: django.db.models.DecimalField
+    json: {type: string, format: decimal}
+    doc: Ratio or probability 0–1 (confidence, match score)
+  score:
+    mysql: DECIMAL(7,3)
+    django: django.db.models.DecimalField
+    json: {type: string, format: decimal}
+    doc: Index or score (health index, DQI, compliance)
+  minutes:
+    mysql: INT
+    django: django.db.models.IntegerField
+    json: {type: integer, minimum: 0}
+    doc: Duration in minutes
+  json:
+    mysql: JSON
+    django: django.db.models.JSONField
+    json: {type: object}
+    doc: Structured document validated against a named JSON Schema; searched keys get generated columns
+  hash:
+    mysql: BINARY(32)
+    django: django.db.models.BinaryField
+    json: {type: string, contentEncoding: base64}
+    doc: SHA-256 digest
+  hmac:
+    mysql: BINARY(32)
+    django: django.db.models.BinaryField
+    json: {type: string, contentEncoding: base64}
+    doc: HMAC-SHA-256 lookup token (keyed per tenant and scheme)
+  bytes:
+    args: [length]
+    mysql: "VARBINARY({0})"
+    django: django.db.models.BinaryField
+    json: {type: string, contentEncoding: base64}
+    doc: Opaque bytes (signatures, key ids)
+  secret:
+    mysql: VARBINARY(1024)
+    expands: true
+    django: syntegra.core.fields.EncryptedField
+    json: {type: string, x-classification: restricted, writeOnly: true}
+    doc: Field-level envelope-encrypted value. Expands to <name>_enc VARBINARY(1024); with flag 'lookup' also <name>_hmac BINARY(32); with flag 'mask4' also <name>_last4 CHAR(4)
+  sealed:
+    mysql: MEDIUMBLOB
+    django: syntegra.core.fields.SealedTextField
+    json: {type: string, x-classification: special, writeOnly: true}
+    doc: Encrypted free text (per-record data key, crypto-shreddable). Never indexed, never sent to search, warehouse or AI training
+  point:
+    mysql: POINT SRID 4326
+    django: django.contrib.gis.db.models.PointField
+    json: {type: object, x-geojson: Point}
+    doc: WGS84 point; distances with ST_Distance_Sphere (500 m and 5 km duplicate checks)
+  path:
+    mysql: VARCHAR(512) CHARACTER SET ascii COLLATE ascii_bin
+    django: django.db.models.CharField
+    json: {type: string, maxLength: 512}
+    doc: Materialised hierarchy path (NG.AB.ABS.0412) for prefix subtree queries
+  ip:
+    mysql: VARBINARY(16)
+    django: django.db.models.GenericIPAddressField
+    json: {type: string, format: ipv6}
+    doc: IPv4/IPv6 address (INET6_ATON)
+  glid:
+    mysql: CHAR(16) CHARACTER SET ascii COLLATE ascii_bin
+    django: django.db.models.CharField
+    json: {type: string, pattern: "^LRN-[0-9]{4}-[0-9]{4}-[0-9]{2}$"}
+    doc: Global Learner ID LRN-NNNN-NNNN-CC (CC = ISO 7064 MOD 97-10 check digits; decision CD-07)
+  object_key:
+    mysql: VARCHAR(1024) CHARACTER SET ascii COLLATE ascii_bin
+    django: django.db.models.CharField
+    json: {type: string, maxLength: 1024}
+    doc: Object-storage key (bucket-relative); never a public URL
+  mime:
+    mysql: VARCHAR(127) CHARACTER SET ascii COLLATE ascii_bin
+    django: django.db.models.CharField
+    json: {type: string, maxLength: 127}
+    doc: IANA media type
+  semver:
+    mysql: VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin
+    django: django.db.models.CharField
+    json: {type: string, maxLength: 32}
+    doc: Version label (3.1, 2026.10.1)

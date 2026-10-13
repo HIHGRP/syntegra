@@ -1,0 +1,3093 @@
+# Extracted from SYN-MFS-002 v2.4 (consolidated single volume) by ceda tooling.
+# Do not edit by hand; regenerate from the specification.
+requirements:
+- id: FR-ACA-01
+  text: Use country education-level and grade codes; institutions choose from them and cannot invent new level codes.
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ACA-02
+  text: Inherit the state/country academic calendar; institutions may add closures but cannot reduce teaching days below the
+    curriculum minimum without an approved exception.
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ACA-03
+  text: Maintain subject/course catalogue mapped to Subject 360 and to curricula.
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ACA-04
+  text: Build programmes from components with credits, core/elective status, prerequisites (cycle-checked), progression and
+    award rules, classification scheme and accrediting body.
+  priority: SHALL
+  phase: P5
+  module: ACA
+- id: FR-ACA-05
+  text: Provide a teacher class page with roster, today's lessons, authorised adjustments, homework and quick actions (ACA-05).
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ACA-06
+  text: Support semesters, sessions, terms, modules and credits for tertiary institutions, and terms/arms for schools, in
+    the same model.
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ACA-101
+  text: Maintain Class 360 for every class (arm) per session with level, arm, stream, capacity, form teacher, language of
+    instruction and enrolled learners.
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ACA-102
+  text: Provide the class subject plan with pre-filled mandatory subjects, stream combination rules, periods, teacher of record,
+    co-teachers, room type and curriculum version.
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ACA-103
+  text: Validate stream subject combinations against configured examination-body rules (WAEC, NECO, NABTEB).
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ACA-104
+  text: Support sets and cross-class groupings with a parent class link, so a learner's subject teacher is always resolvable.
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ACA-105
+  text: Support the primary class-teacher model with specialist overrides per subject.
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ACA-106
+  text: Copy a class subject plan to other arms of the same level, then allow differences.
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ACA-107
+  text: Roll classes, plans and enrolments to the next session with the Academic Year Rollover Wizard, keeping history.
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ACA-108
+  text: Maintain Department 360 for every academic department with faculty, HOD, subject areas, programmes owned, accreditation,
+    lecturers, load policy and facilities.
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ACA-109
+  text: Map each subject area and course to the applicable national benchmark (NUC CCMAS, NBTE, NCCE).
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ACA-110
+  text: Maintain Course 360 per semester with sections, lecturer of record, co-lecturers, teaching assistants, outline, timetable,
+    students, LMS space, assessment components and results.
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ACA-111
+  text: Provide course allocation with specialism matching, live load totals against rank limits, service courses and HOD
+    approval.
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ACA-112
+  text: Block opening of course registration while any compulsory course in the semester lacks a lecturer of record, unless
+    the dean approves an exception.
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ACA-113
+  text: Record lecturer specialisms, ranks, qualifications and professional registrations on Staff 360 and use them in allocation.
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ACA-114
+  text: Record external examiners and moderators per course.
+  priority: SHOULD
+  phase: P5
+  module: ACA
+- id: FR-ACA-115
+  text: Create LMS course spaces and rosters automatically from published class subject plans and course allocations.
+  priority: SHALL
+  phase: P2
+  module: ACA
+- id: FR-ACA-116
+  text: Show every teaching professional their complete teaching assignment across institutions (for staff with posts in more
+    than one).
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ACA-117
+  text: Report class sizes, teacher–learner ratios and lecturer–student ratios per subject, department, institution and LGA.
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ACA-118
+  text: Keep effective-dated history of every class, department, assignment and allocation so past results always show who
+    taught them.
+  priority: SHALL
+  phase: P1
+  module: ACA
+- id: FR-ADM-01
+  text: Provision and manage tenants with residency, plan and status (provider staff have no learner-data access by default).
+  priority: SHALL
+  phase: P1
+  module: ADM
+- id: FR-ADM-02
+  text: Maintain versioned country configuration and institution configuration with validation.
+  priority: SHALL
+  phase: P1
+  module: ADM
+- id: FR-ADM-03
+  text: Manage users, role-at-scope grants, access reviews and automatic deactivation of leavers.
+  priority: SHALL
+  phase: P1
+  module: ADM
+- id: FR-ADM-04
+  text: Maintain the role and permission matrix; custom roles cannot exceed the creator's clearance.
+  priority: SHALL
+  phase: P1
+  module: ADM
+- id: FR-ADM-05
+  text: Author, test and publish policy rules and workflow definitions.
+  priority: SHALL
+  phase: P2
+  module: ADM
+- id: FR-ADM-06
+  text: Provide an integration marketplace and API client/data-sharing agreement management.
+  priority: SHALL
+  phase: P1
+  module: ADM
+- id: FR-ADM-07
+  text: 'Provide the Data Governance Engine: classification, retention schedules, consent and legal basis, residency, subject
+    access and erasure (respecting legal holds), exports and minimisation reviews.'
+  priority: SHALL
+  phase: P1
+  module: ADM
+- id: FR-ADM-08
+  text: Provide the audit log explorer.
+  priority: SHALL
+  phase: P1
+  module: ADM
+- id: FR-ADM-09
+  text: Manage platform-level translations, terminology overrides and RTL languages.
+  priority: SHALL
+  phase: P1
+  module: ADM
+- id: FR-ADM-10
+  text: Manage branding with contrast validation.
+  priority: SHALL
+  phase: P1
+  module: ADM
+- id: FR-ADM-101
+  text: Provide voice interaction (voice search, voice commands and dictation into forms), captions for video and live classes,
+    and alternative formats (large print, easy-read, braille-ready export).
+  priority: SHALL
+  phase: P2
+  module: ADM
+- id: FR-ADM-11
+  text: Bill the platform itself per learner, institution, module, user, campus, enterprise, government contract, national
+    deployment, trust or university-group licence, combinable.
+  priority: SHALL
+  phase: P1
+  module: ADM
+- id: FR-ADM-12
+  text: Import and migrate legacy data with mapping, validation, master matching, staged commit and 30-day rollback.
+  priority: SHALL
+  phase: P1
+  module: ADM
+- id: FR-ADM-13
+  text: Show system health, backups and DR readiness to provider staff.
+  priority: SHALL
+  phase: P1
+  module: ADM
+- id: FR-AGT-101
+  text: Provide an agent runtime that executes agents on events and schedules under scoped service identities bound to a human
+    owner.
+  priority: SHALL
+  phase: P3
+  module: AGT
+- id: FR-AGT-102
+  text: Support autonomy levels A0–A3 with state maximums and institution overrides downward.
+  priority: SHALL
+  phase: P3
+  module: AGT
+- id: FR-AGT-103
+  text: Hard-code consequential decisions as human-only so no configuration can automate them.
+  priority: SHALL
+  phase: P3
+  module: AGT
+- id: FR-AGT-104
+  text: Restrict agents to declared, typed tools that call platform commands through the validation, policy and audit pipeline.
+  priority: SHALL
+  phase: P3
+  module: AGT
+- id: FR-AGT-105
+  text: Ship the 16 agents in 12.2 as configurable templates.
+  priority: SHALL
+  phase: P3–P7
+  module: AGT
+- id: FR-AGT-106
+  text: Enforce per-agent rate, spend and record limits.
+  priority: SHALL
+  phase: P3
+  module: AGT
+- id: FR-AGT-107
+  text: Provide instant pause (kill switch) at owner, institution and state level, holding queued actions.
+  priority: SHALL
+  phase: P3
+  module: AGT
+- id: FR-AGT-108
+  text: Provide 24-hour undo for reversible A2 actions.
+  priority: SHALL
+  phase: P3
+  module: AGT
+- id: FR-AGT-109
+  text: Record every agent action with trigger, evidence, rule, tool call, outcome and owner; display "Agent X for Owner Y"
+    in all histories.
+  priority: SHALL
+  phase: P3
+  module: AGT
+- id: FR-AGT-110
+  text: Provide sandbox simulation against historical data before activation.
+  priority: SHALL
+  phase: P3
+  module: AGT
+- id: FR-AGT-111
+  text: Require owner approval, and head-level approval for A2 and above, before activation; quarterly re-approval.
+  priority: SHALL
+  phase: P3
+  module: AGT
+- id: FR-AGT-112
+  text: Measure agent precision, errors, overrides and complaints; lower autonomy automatically when thresholds are breached.
+  priority: SHALL
+  phase: P3
+  module: AGT
+- id: FR-AGT-113
+  text: 'Defend against prompt injection: retrieved content is data, never instructions; tool parameters are typed and validated.'
+  priority: SHALL
+  phase: P3
+  module: AGT
+- id: FR-AGT-114
+  text: Identify automated assistants to families and staff in every conversation and offer hand-over to a person.
+  priority: SHALL
+  phase: P3
+  module: AGT
+- id: FR-AGT-115
+  text: Register each AI-based agent in the model register (AIX-03) with purpose, data, risks and oversight.
+  priority: SHALL
+  phase: P3
+  module: AGT
+- id: FR-ASM-01
+  text: Define assessments (formative, summative, coursework, practical, competency, examination) with max mark, weight, date,
+    grading scale and the curriculum objectives assessed.
+  priority: SHALL
+  phase: P1
+  module: ASM
+- id: FR-ASM-02
+  text: 'Provide markbooks per class/subject with validation (hard: ≤ max mark; soft: outliers), missing-work flags and access
+    arrangements.'
+  priority: SHALL
+  phase: P1
+  module: ASM
+- id: FR-ASM-03
+  text: 'Configure grading scales: percentage, letter, grade points, GPA/CGPA, pass/fail, competency levels, degree classifications;
+    bands contiguous and non-overlapping.'
+  priority: SHALL
+  phase: P1
+  module: ASM
+- id: FR-ASM-04
+  text: Support moderation with sampling, moderator marks and tolerance rules.
+  priority: SHALL
+  phase: P1
+  module: ASM
+- id: FR-ASM-05
+  text: Lock results after approval; corrections require head approval and are audited.
+  priority: SHALL
+  phase: P1
+  module: ASM
+- id: FR-ASM-06
+  text: Generate report cards from markbooks, attendance, behaviour and comments in branded templates, with completeness checks
+    and publication to the parent portal.
+  priority: SHALL
+  phase: P1
+  module: ASM
+- id: FR-ASM-07
+  text: Never withhold reports for unpaid fees by default; any withholding policy must be explicitly approved and cannot apply
+    to learners flagged for SEND or safeguarding.
+  priority: SHALL
+  phase: P1
+  module: ASM
+- id: FR-ASM-101
+  text: Set target grades automatically from prior attainment and tracking points; show progress against target with red,
+    amber and green status and the numeric gap.
+  priority: SHALL
+  phase: P1
+  module: ASM
+- id: FR-ASM-102
+  text: Import historical and external assessment data for longitudinal tracking and benchmarking against previous cohorts
+    and national standards.
+  priority: SHALL
+  phase: P1
+  module: ASM
+- id: FR-ASM-103
+  text: Let teachers build marksheets with yes/no, numeric, grade, date and comment columns, and export or import them to
+    spreadsheets for offline work.
+  priority: SHALL
+  phase: P1
+  module: ASM
+- id: FR-ATT-01
+  text: Provide daily and lesson registers with country attendance codes, minutes late and notes; ‘all present’ and keyboard
+    shortcuts.
+  priority: SHALL
+  phase: P1
+  module: ATT
+- id: FR-ATT-02
+  text: Pre-fill known absences (parent-reported, trips, exams, exclusions) and show them in the register.
+  priority: SHALL
+  phase: P1
+  module: ATT
+- id: FR-ATT-03
+  text: Work offline with queued sync and conflict resolution (latest teacher mark wins; office overrides audited).
+  priority: SHALL
+  phase: P1
+  module: ATT
+- id: FR-ATT-04
+  text: Flag missing registers after a configurable delay and notify the attendance lead.
+  priority: SHALL
+  phase: P1
+  module: ATT
+- id: FR-ATT-05
+  text: Calculate attendance and punctuality rates by learner, class, year, institution, LGA, state; identify persistent (<
+    90%) and severe (< 50%) absence (thresholds configurable).
+  priority: SHALL
+  phase: P1
+  module: ATT
+- id: FR-ATT-06
+  text: Run first-day absence contact workflow (SMS/call), record reasons, escalate repeated absence; alert DSL for vulnerable
+    learners not contacted by the configured time.
+  priority: SHALL
+  phase: P1
+  module: ATT
+- id: FR-ATT-07
+  text: Trigger the cross-module attendance flow (§20) when thresholds are breached.
+  priority: SHALL
+  phase: P2
+  module: ATT
+- id: FR-ATT-08
+  text: Record staff attendance where institutions choose (biometric/clock-in integration).
+  priority: MAY
+  phase: P4
+  module: ATT
+- id: FR-ATT-101
+  text: Send automatic absence notifications to parents on the configured channel after the register closes.
+  priority: SHALL
+  phase: P1
+  module: ATT
+- id: FR-ATT-102
+  text: Produce emergency and fire-drill registers of everyone on site (learners, staff, visitors) from live attendance, printable
+    and on mobile.
+  priority: SHALL
+  phase: P1
+  module: ATT
+- id: FR-ATT-103
+  text: Accept absence reports from parents by app, WhatsApp and web with reason and attachments; staff acknowledge, accept
+    (pre-filling the register code) or query, in a message thread.
+  priority: SHALL
+  phase: P1
+  module: ATT
+- id: FR-ATT-104
+  text: Show missing and incomplete registers live, nudge the teacher with a direct link at the deadline plus 10 minutes,
+    escalate at plus 30 minutes, and report compliance by teacher, institution and LGA.
+  priority: SHALL
+  phase: P1
+  module: ATT
+- id: FR-ATT-105
+  text: Run evacuation and drill roll calls at assembly points on mobile, offline, from live attendance, staff sign-in and
+    visitor log, with real-time unaccounted list, all-clear and drill timing records. Extends FR-ATT-102.
+  priority: SHALL
+  phase: P1
+  module: ATT
+- id: FR-ATT-106
+  text: Let each institution share attendance with parents live or after a configured delay, in one daily view with behaviour,
+    homework and detentions.
+  priority: SHOULD
+  phase: P1
+  module: ATT
+- id: FR-BEH-01
+  text: Log positive and concern events against the behaviour policy with categories, points, location, description and action.
+  priority: SHALL
+  phase: P2
+  module: BEH
+- id: FR-BEH-02
+  text: Route bullying events with target learners to the pastoral lead.
+  priority: SHALL
+  phase: P2
+  module: BEH
+- id: FR-BEH-03
+  text: Analyse patterns by learner, class, period, location, category and link to attendance.
+  priority: SHALL
+  phase: P2
+  module: BEH
+- id: FR-BEH-04
+  text: Record exclusions/suspensions as head decisions with reason and appeal route; the platform never decides sanctions
+    above detention.
+  priority: SHALL
+  phase: P2
+  module: BEH
+- id: FR-BEH-101
+  text: Provide interactive seating plans per class with drag-and-drop arrangement and one-tap behaviour logging on the plan.
+  priority: SHALL
+  phase: P2
+  module: BEH
+- id: FR-BEH-102
+  text: Show learner context icons on the seating plan (SEND adjustments, free meals, gifted, target grade) to staff entitled
+    to see them.
+  priority: SHALL
+  phase: P2
+  module: BEH
+- id: FR-BEH-103
+  text: Suggest seating arrangements from behaviour interaction data (who works well together), for the teacher to accept
+    or ignore.
+  priority: MAY
+  phase: P7
+  module: BEH
+- id: FR-BEH-104
+  text: 'Manage detentions: sessions, capacity, location, supervising staff, parent notification and attendance (Attended,
+    Pending, Not attended, Escalated).'
+  priority: SHALL
+  phase: P2
+  module: BEH
+- id: FR-BEH-105
+  text: Trigger configurable event actions (for example 10 negative incidents in 7 days → pastoral review) through the policy
+    engine.
+  priority: SHALL
+  phase: P2
+  module: BEH
+- id: FR-BEH-106
+  text: Configure a versioned behaviour policy per institution (positive and negative behaviours with icon, points, default
+    outcome, use in reports and in influences) on top of a state minimum framework; a published version is immutable and later
+    versions never re-score past events.
+  priority: SHALL
+  phase: P2
+  module: BEH
+- id: FR-BEH-107
+  text: Let staff log behaviour for one or several learners in no more than two taps from the register, class list, seating
+    plan or mobile app, adding lesson, room and time automatically, online or offline.
+  priority: SHALL
+  phase: P2
+  module: BEH
+- id: FR-BEH-108
+  text: Award achievement badges at points thresholds or by rule and show them in learner and parent apps and on the student
+    report; badges are recognition only and never enter the certificate registry.
+  priority: SHOULD
+  phase: P2
+  module: BEH
+- id: FR-BEH-109
+  text: Compute pairwise influence scores from behaviour in shared lessons (adjacent versus apart), with a minimum of 20 events,
+    the evidence shown for each pair, no protected characteristics, visible only to the class's teachers and pastoral staff.
+    Supersedes FR-BEH-103.
+  priority: SHALL
+  phase: P2
+  module: BEH
+- id: FR-BEH-110
+  text: Provide seating field sets of up to 16 learner data fields per class, subject or level, reusable room layouts, arrangement
+    strategies (ability, mixed, alphabetical, random, separate negative influences), a board-safe view for classroom screens
+    and logged, watermarked printing for observations.
+  priority: SHALL
+  phase: P2
+  module: BEH
+- id: FR-BEH-111
+  text: 'Manage a detention ladder: types with duration, room and supervisor; automatic creation from behaviours or intelligence
+    events; re-issue at the next level when missed without valid reason; minutes owed; parent notice period and transport
+    check for after-school detentions; notification on the parent''s preferred channel.'
+  priority: SHALL
+  phase: P2
+  module: BEH
+- id: FR-BEH-112
+  text: Provide on-report cards with period, level, owner and personalised targets that appear in every timetabled lesson
+    for rating and comment, visible to parents and the learner with comments, and closed with an outcome that can open an
+    intervention.
+  priority: SHALL
+  phase: P2
+  module: BEH
+- id: FR-BEH-113
+  text: Provide an on-call request from any classroom (room, class, teacher, reason) routed to the on-call rota from the timetable,
+    with acknowledgement target, escalation, an emergency reason that starts the emergency procedure, and recorded outcome.
+  priority: SHALL
+  phase: P2
+  module: BEH
+- id: FR-BEH-114
+  text: Provide behaviour analytics with saved report templates, breakdowns by teacher, learner, gender, year, tutor group,
+    house, subject, time and location, scheduled delivery, and state roll-up with small-number suppression.
+  priority: SHALL
+  phase: P2
+  module: BEH
+- id: FR-BEH-115
+  text: Extend intelligence events to attendance, homework and wellbeing data, with actions (notify, message parent, detention,
+    on report, intervention, badge, DSL alert), a 30-day simulation before activation, positive milestones, audit and staff
+    reversal.
+  priority: SHALL
+  phase: P2
+  module: BEH
+- id: FR-BIL-01
+  text: 'Support billing bases: per term, semester, annual, monthly, weekly, course, credit, module, session, hour, exam,
+    registration, learner, family, service, subscription, pay-as-you-go.'
+  priority: SHALL
+  phase: P1
+  module: BIL
+- id: FR-BIL-02
+  text: 'Support funding models: government-funded, mixed, scholarships, bursaries, grants, sponsorship, employer-funded,
+    loans, instalments.'
+  priority: SHALL
+  phase: P1
+  module: BIL
+- id: FR-BIL-03
+  text: Define charge types (tuition, registration, exam, accommodation, transport, meals, uniform, books, ICT, laboratory,
+    clinical placement, sports, clubs, trips, graduation, certification, professional training, miscellaneous) with ledger
+    accounts and tax treatment.
+  priority: SHALL
+  phase: P1
+  module: BIL
+- id: FR-BIL-04
+  text: Define versioned, effective-dated rules by institution, campus, programme, course, year group, learner category, residency,
+    citizenship, scholarship, family, funding source and level; test rules against sample learners before publishing.
+  priority: SHALL
+  phase: P1
+  module: BIL
+- id: FR-BIL-05
+  text: Reject conflicting rules at the same priority.
+  priority: SHALL
+  phase: P1
+  module: BIL
+- id: FR-BIL-06
+  text: Run billing runs with preview, exceptions, approval and issue; prevent duplicate invoices per learner per period.
+  priority: SHALL
+  phase: P1
+  module: BIL
+- id: FR-BIL-07
+  text: Maintain individual learner ledgers and produce consolidated family statements with sibling/family discounts, multiple
+    payers, sponsors, split payments and shared invoices.
+  priority: SHALL
+  phase: P1
+  module: BIL
+- id: FR-BIL-08
+  text: Allow each programme to have a unique billing structure (universities, TVET).
+  priority: SHALL
+  phase: P5
+  module: BIL
+- id: FR-BIL-09
+  text: Reconcile Government funding + Student payment + Scholarship + Sponsor funding = Total student funding without double
+    counting.
+  priority: SHALL
+  phase: P6
+  module: BIL
+- id: FR-BIL-10
+  text: Offer payment plans and hardship assessment; configure ethical recovery policies; core education restrictions cannot
+    be configured.
+  priority: SHALL
+  phase: P1
+  module: BIL
+- id: FR-CER-01
+  text: 'Evaluate the eligibility chain before issuance: learner identity → institution → programme → curriculum → enrolment
+    → attendance/participation → required subjects → assessment → examination → credits/results → progression → qualification
+    rules → institutional accreditation at award date → award approval.'
+  priority: SHALL
+  phase: P2
+  module: CER
+- id: FR-CER-02
+  text: Block issuance when any mandatory check fails; allow progression only through an authorised exception with reason,
+    evidence and approver recorded on the certificate.
+  priority: SHALL
+  phase: P2
+  module: CER
+- id: FR-CER-03
+  text: Run batch eligibility for cohorts/series and route blocked learners to resolution.
+  priority: SHALL
+  phase: P2
+  module: CER
+- id: FR-CER-04
+  text: Generate certificate numbers (authority sequence + check digit), QR code, verification code, canonical JSON payload,
+    SHA-256 hash and digital signature with keys held in KMS/HSM; optionally issue W3C Verifiable Credentials / Open Badges
+    3.0.
+  priority: SHALL
+  phase: P2
+  module: CER
+- id: FR-CER-05
+  text: Never reuse certificate numbers.
+  priority: SHALL
+  phase: P2
+  module: CER
+- id: FR-CER-06
+  text: Provide a public verification service by number + surname, QR or secure link, with minimum disclosure, rate limiting,
+    logging and holder visibility of verifications.
+  priority: SHALL
+  phase: P2
+  module: CER
+- id: FR-CER-07
+  text: Support bulk verification for registered employers and institutions via API.
+  priority: SHOULD
+  phase: P2
+  module: CER
+- id: FR-CER-08
+  text: Support correction, replacement, reissue, suspension and revocation with authorised user, reason, date/time, evidence
+    and approval; revocation requires two approvers; original records are never deleted.
+  priority: SHALL
+  phase: P2
+  module: CER
+- id: FR-CER-09
+  text: 'Detect duplicates: certificate number, learner qualification, award, multiple certificates for one qualification,
+    issuer not approved.'
+  priority: SHALL
+  phase: P2
+  module: CER
+- id: FR-CER-10
+  text: 'Raise education integrity alerts for unusual patterns: issuance outside award windows, issuer accreditation expired,
+    no matching exam record, obsolete curriculum, unusual grade patterns, duplicate identities, multiple institutions claiming
+    one learner.'
+  priority: SHALL
+  phase: P6
+  module: CER
+- id: FR-CER-101
+  text: Maintain the state certificate registry as the single authoritative register of all certificates issued in the state,
+    with status and history.
+  priority: SHALL
+  phase: P2
+  module: CER
+- id: FR-CER-102
+  text: Publish every issue, reissue, correction and revocation to the registry within 60 seconds and to linked state and
+    national platforms and the Education Passport.
+  priority: SHALL
+  phase: P2
+  module: CER
+- id: FR-CER-103
+  text: Track security-paper stock by serial number from receipt to use, spoilage or destruction; record the stock serial
+    on each printed certificate.
+  priority: SHALL
+  phase: P2
+  module: CER
+- id: FR-CER-104
+  text: Print certificates only on registered security stock through authorised printers; block printing for unsigned or unapproved
+    certificates.
+  priority: SHALL
+  phase: P2
+  module: CER
+- id: FR-CER-105
+  text: Create legacy award records from digitised archives, linked to Learner 360 and marked with their source documents.
+  priority: SHALL
+  phase: P2
+  module: CER
+- id: FR-CER-106
+  text: Provide an online reissue application for holders, with the reasons and evidence in 11.5.
+  priority: SHALL
+  phase: P2
+  module: CER
+- id: FR-CER-107
+  text: Verify reissue applicants' identity through NIN verification, OTP and, where enabled, facial match with liveness;
+    route mismatches to manual review.
+  priority: SHALL
+  phase: P2
+  module: CER
+- id: FR-CER-108
+  text: Charge the configured handling fee per certificate type, reason and urgency before processing; support audited waivers.
+  priority: SHALL
+  phase: P2
+  module: CER
+- id: FR-CER-109
+  text: Issue reissued certificates with new numbers linked to the original, marked "Reissued", and supersede the original
+    at the same moment.
+  priority: SHALL
+  phase: P2
+  module: CER
+- id: FR-CER-110
+  text: Show superseded, corrected and revoked status with date to verifiers, with minimal disclosure.
+  priority: SHALL
+  phase: P2
+  module: CER
+- id: FR-CER-111
+  text: Record collection or courier delivery of printed certificates with recipient identity.
+  priority: SHALL
+  phase: P2
+  module: CER
+- id: FR-CER-112
+  text: Accept suspected-forgery reports from verifiers with evidence images and route them to integrity investigators.
+  priority: SHALL
+  phase: P2
+  module: CER
+- id: FR-CER-113
+  text: Detect repeated failed verification attempts on similar numbers and spoiled-stock anomalies, and raise integrity alerts.
+  priority: SHALL
+  phase: P6
+  module: CER
+- id: FR-CER-114
+  text: Link verified exam-body results to Learner 360 and show them on the verification result where the holder consents.
+  priority: SHOULD
+  phase: P5
+  module: CER
+- id: FR-CMD-01
+  text: Provide command centres for global, national (federal), state, LGA, network and institution levels with the indicator
+    sets in §16 and Gov §3–4.
+  priority: SHALL
+  phase: P6
+  module: CMD
+- id: FR-CMD-02
+  text: Support drill-down Country → State → LGA → Institution → Campus → Department → Programme/Class → Learner, limited
+    by clearance, showing performance, attendance, behaviour, safeguarding, SEND, staffing, finance, infrastructure, curriculum,
+    assessment, compliance, risks and trends at every level.
+  priority: SHALL
+  phase: P6
+  module: CMD
+- id: FR-CMD-03
+  text: Generate a personalised morning briefing grouped Priority 1, Priority 2, Priority 3 and Information (positive developments).
+  priority: SHALL
+  phase: P6
+  module: CMD
+- id: FR-CMD-04
+  text: Provide the Alert Centre with Critical/High/Moderate/Informational alerts, each explaining what changed, why it matters,
+    evidence, severity, recommended action, owner and due date; deduplicate and escalate.
+  priority: SHALL
+  phase: P6
+  module: CMD
+- id: FR-CMD-05
+  text: Provide Follow-the-Problem investigations from symptom → evidence → root cause → action → outcome, with lineage to
+    records.
+  priority: SHALL
+  phase: P6
+  module: CMD
+- id: FR-CMD-06
+  text: Compare entities of the same type with contextual indicators; suppress rank order when contexts are not comparable.
+  priority: SHALL
+  phase: P6
+  module: CMD
+- id: FR-CMD-07
+  text: Identify resource imbalances with evidence and create proposals for human decision; never reallocate automatically.
+  priority: SHALL
+  phase: P6
+  module: CMD
+- id: FR-CMD-08
+  text: Run planning scenarios showing assumptions, current capacity, forecast, gap, cost estimate and scenario comparison.
+  priority: SHALL
+  phase: P7
+  module: CMD
+- id: FR-CMD-09
+  text: 'Surface what is working: high performers, successful interventions, improving indicators, with practice sharing.'
+  priority: SHALL
+  phase: P7
+  module: CMD
+- id: FR-CMD-10
+  text: Label all global/international indicators as verified, calculated or estimated; suppress cells below the minimum aggregation
+    size.
+  priority: SHALL
+  phase: P7
+  module: CMD
+- id: FR-CMD-101
+  text: Maintain the state institution register covering every institution of every level and ownership, with onboarding status.
+  priority: SHALL
+  phase: P1
+  module: CMD
+- id: FR-CMD-102
+  text: Provide the onboarding tracker with readiness checks per institution and targets per LGA.
+  priority: SHALL
+  phase: P1
+  module: CMD
+- id: FR-CMD-103
+  text: Detect references to institutions not on the register (transfers, exam entries, certificates) and alert the regulator.
+  priority: SHALL
+  phase: P1
+  module: CMD
+- id: FR-CMD-104
+  text: Show data freshness per institution per dataset, and flag stale institutions on the dashboard.
+  priority: SHALL
+  phase: P1
+  module: CMD
+- id: FR-CMD-105
+  text: Provide the State Education Control Room with the four regions in 7.2 and the KPI catalogue in 7.3, available read-only
+    from Phase 1 and fully from Phase 6.
+  priority: SHALL
+  phase: P1 / P6
+  module: CMD
+- id: FR-CMD-106
+  text: Provide an institution performance table for all institutions in scope with the listed columns, filters, saved views
+    and export.
+  priority: SHALL
+  phase: P1
+  module: CMD
+- id: FR-CMD-107
+  text: Provide state-wide learner search with phonetic matching and permission trimming, and audited purpose for opening
+    a record.
+  priority: SHALL
+  phase: P1
+  module: CMD
+- id: FR-CMD-108
+  text: Apply small-number suppression to every aggregate leaving the institution scope.
+  priority: SHALL
+  phase: P1
+  module: CMD
+- id: FR-CMD-109
+  text: Provide contextual comparison of institutions within comparable groups (CMD-102).
+  priority: SHALL
+  phase: P6
+  module: CMD
+- id: FR-CMD-110
+  text: Provide the executive mobile view and the automatic monthly briefing pack.
+  priority: SHALL
+  phase: P6
+  module: CMD
+- id: FR-CMD-111
+  text: Publish optional public school report cards controlled by state policy.
+  priority: MAY
+  phase: P7
+  module: CMD
+- id: FR-CMD-112
+  text: Refresh live indicators (attendance, registers, staff presence) at least every 15 minutes during school hours.
+  priority: SHALL
+  phase: P1
+  module: CMD
+- id: FR-CMD-113
+  text: Provide every government indicator listed in §13, with gender and equity indicators shown only where the jurisdiction's
+    policy allows.
+  priority: SHALL
+  phase: P6
+  module: CMD
+- id: FR-CMD-114
+  text: Show every indicator group of the executive overview in §16 (institutions, learners, staff, academic, safeguarding,
+    SEND, finance, infrastructure) on the control room, each linked to its lineage.
+  priority: SHALL
+  phase: P6
+  module: CMD
+- id: FR-CMD-115
+  text: Organise the administrator briefing by time horizon (today, this week, this month, this year) as well as by priority.
+  priority: SHALL
+  phase: P6
+  module: CMD
+- id: FR-CMD-116
+  text: Forecast university places, technical skills demand and ICT requirements alongside learners, teachers, classrooms
+    and budget in planning scenarios.
+  priority: SHALL
+  phase: P7
+  module: CMD
+- id: FR-CMD-117
+  text: Recognise outstanding teachers and successful practice from evidence (progress, attendance, feedback), shared only
+    with the teacher's consent and never as a public ranking.
+  priority: SHOULD
+  phase: P7
+  module: CMD
+- id: FR-CMD-118
+  text: Make drill-down two-way. From any record (learner, class, programme, department, campus, institution, LGA) the administrator
+    can roll up to every ancestor scope with the same indicators. Follow-the-Problem runs Problem → Evidence → Root cause
+    → Intervention → Responsible person → Outcome, with the owner and due date set at the responsible-person stage.
+  priority: SHALL
+  phase: P6
+  module: CMD
+- id: FR-CMD-119
+  text: 'Provide the Education Administrator 360: the administrator''s scopes and delegations, portfolio of institutions,
+    open alerts, investigations and improvement plans they own, decisions made with their outcomes, and briefing preferences.
+    It is the fifth fundamental intelligence object alongside Learner, Institution, Staff and Family 360.'
+  priority: SHALL
+  phase: P6
+  module: CMD
+- id: FR-COM-01
+  text: Compose messages to audiences defined by rules; deliver by app, e-mail, SMS, WhatsApp or voice per recipient preference
+    and cost policy.
+  priority: SHALL
+  phase: P1
+  module: COM
+- id: FR-COM-02
+  text: Exclude restricted contacts and withdrawn consents automatically.
+  priority: SHALL
+  phase: P1
+  module: COM
+- id: FR-COM-03
+  text: Support multilingual templates and merge fields; show SMS segment count and estimated cost.
+  priority: SHALL
+  phase: P1
+  module: COM
+- id: FR-COM-04
+  text: Track delivery, read and acknowledgement.
+  priority: SHALL
+  phase: P1
+  module: COM
+- id: FR-COM-05
+  text: Generate notifications from domain events via configurable rules with digests, quiet hours (except Priority 1 and
+    DSL safeguarding) and escalation.
+  priority: SHALL
+  phase: P1
+  module: COM
+- id: FR-COM-101
+  text: Produce mail-merge letters, labels and name badges from Word-compatible templates, printed or e-mailed, with every
+    letter stored to the recipient record.
+  priority: SHALL
+  phase: P1
+  module: COM
+- id: FR-COM-102
+  text: Provide a messaging gateway with a channel-adapter port; ship adapters for WhatsApp Business Platform, Zenzap, SMS
+    aggregators, USSD, e-mail, push and voice.
+  priority: SHALL
+  phase: P1
+  module: COM
+- id: FR-COM-103
+  text: Connect verified WhatsApp Business numbers per institution or per state, with numbers held by the tenant, not the
+    provider.
+  priority: SHALL
+  phase: P1
+  module: COM
+- id: FR-COM-104
+  text: 'Manage WhatsApp templates: draft, translate, categorise, submit, track approval, version and retire.'
+  priority: SHALL
+  phase: P1
+  module: COM
+- id: FR-COM-105
+  text: Route outbound messages to the cheapest compliant channel per recipient, prefer open service windows, show cost estimates,
+    and enforce spend caps.
+  priority: SHALL
+  phase: P1
+  module: COM
+- id: FR-COM-106
+  text: Provide the Conversations inbox for two-way WhatsApp with matching to guardians and learners, assignment to offices,
+    family context panel, canned replies and SLA timers.
+  priority: SHALL
+  phase: P1
+  module: COM
+- id: FR-COM-107
+  text: Provide WhatsApp self-service menus for absence reporting, fee balance, payment link, homework, consents and meeting
+    booking.
+  priority: SHALL
+  phase: P2
+  module: COM
+- id: FR-COM-108
+  text: Record opt-in and opt-out per channel with evidence; honour STOP immediately.
+  priority: SHALL
+  phase: P1
+  module: COM
+- id: FR-COM-109
+  text: Provision Zenzap (or alternative workspace) channels from the hierarchy and staff posts, with SSO and automatic removal
+    on leaving.
+  priority: SHALL
+  phase: P2
+  module: COM
+- id: FR-COM-110
+  text: Open linked threads from alerts, gaps, corrective actions, inspections and reissue cases, and write thread decisions
+    back to the record history.
+  priority: SHALL
+  phase: P2
+  module: COM
+- id: FR-COM-111
+  text: Sync tasks between workspace messaging and My tasks.
+  priority: SHOULD
+  phase: P3
+  module: COM
+- id: FR-COM-112
+  text: Block special-category content on external channels by classification-aware content rules.
+  priority: SHALL
+  phase: P1
+  module: COM
+- id: FR-COM-113
+  text: Block direct staff-to-learner WhatsApp conversations for learners under 16.
+  priority: SHALL
+  phase: P1
+  module: COM
+- id: FR-COM-114
+  text: Store every message with delivery, read and failure status against the recipient record; apply retention.
+  priority: SHALL
+  phase: P1
+  module: COM
+- id: FR-COM-115
+  text: Enforce quiet hours with Priority 1 and safeguarding exceptions.
+  priority: SHALL
+  phase: P1
+  module: COM
+- id: FR-COM-116
+  text: Provide broadcast campaigns with audience rules, scheduling, A/B language variants, throttling and results.
+  priority: SHALL
+  phase: P1
+  module: COM
+- id: FR-COM-117
+  text: Report messaging volumes, delivery rates, response times and cost by tenant, institution and channel.
+  priority: SHALL
+  phase: P1
+  module: COM
+- id: FR-COM-118
+  text: Provide the state public helpdesk on WhatsApp with menus and hand-over to staff.
+  priority: SHOULD
+  phase: P3
+  module: COM
+- id: FR-COM-119
+  text: Send staff announcements to relationship-based audiences (timetabled teachers of a learner, heads of year or house,
+    form tutors, named staff) with read receipts, optional acknowledgement and expiry.
+  priority: SHALL
+  phase: P1
+  module: COM
+- id: FR-COM-120
+  text: Send consent requests to parents with response by app, web or WhatsApp buttons, comments, reminders to pending parents
+    only, and responses written to the consent record with the request version.
+  priority: SHALL
+  phase: P1
+  module: COM
+- id: FR-CUR-01
+  text: Allow authorised authority officials to create, version, approve, publish, amend, withdraw and schedule curricula
+    with effective dates.
+  priority: SHALL
+  phase: P2
+  module: CUR
+- id: FR-CUR-02
+  text: Structure curricula as subject → strand → topic → learning objective/competency, each with status (mandatory, optional,
+    recommended, restricted), minimum hours, assessment requirement, teacher-qualification and resource requirements.
+  priority: SHALL
+  phase: P2
+  module: CUR
+- id: FR-CUR-03
+  text: Record author, approver, version, date, effective date, reason and audit trail for every change; approver must differ
+    from author.
+  priority: SHALL
+  phase: P2
+  module: CUR
+- id: FR-CUR-04
+  text: Make published versions immutable; editing creates a new version (copy-on-write).
+  priority: SHALL
+  phase: P2
+  module: CUR
+- id: FR-CUR-05
+  text: Support international and vocational frameworks (Cambridge, IB, Pearson, competency frameworks) and institution-specific
+    curricula without hard-coding any examination system.
+  priority: SHALL
+  phase: P2
+  module: CUR
+- id: FR-CUR-06
+  text: Allow state adaptations layered on federal curricula; prevent lower authorities from relaxing higher mandatory rules
+    unless an exception is approved.
+  priority: SHALL
+  phase: P2
+  module: CUR
+- id: FR-CUR-07
+  text: Resolve automatically which curriculum version applies to an institution, level, year group, cohort and academic year,
+    and store it on the class for history.
+  priority: SHALL
+  phase: P2
+  module: CUR
+- id: FR-CUR-08
+  text: Prevent institutions from marking a mandatory component as optional.
+  priority: SHALL
+  phase: P2
+  module: CUR
+- id: FR-CUR-09
+  text: 'Calculate curriculum compliance per institution from evidence: required subjects offered, scheduled vs delivered
+    teaching hours, objectives delivered (delivery logs), assessment coverage of objectives, qualified-teacher fit, required
+    resources, calendar and exam requirements.'
+  priority: SHALL
+  phase: P2
+  module: CUR
+- id: FR-CUR-10
+  text: Show compliance as Compliant (≥ 95%), Partially compliant (80–94.9%), Non-compliant (< 80%) or Not assessed (insufficient
+    data), always with the specific deficiencies.
+  priority: SHALL
+  phase: P2
+  module: CUR
+- id: FR-CUR-101
+  text: Capture the federal and state curricula for every level and programme as structured Curriculum 360 records, including
+    from digitised documents, with human approval before publication.
+  priority: SHALL
+  phase: P1
+  module: CUR
+- id: FR-CUR-102
+  text: Resolve and stamp the applicable curriculum version on every class and course in every institution, public and private,
+    at session start and on publication.
+  priority: SHALL
+  phase: P1
+  module: CUR
+- id: FR-CUR-103
+  text: Prevent any class from being activated for a session without an adopted curriculum for each of its levels' mandatory
+    subjects.
+  priority: SHALL
+  phase: P1
+  module: CUR
+- id: FR-CUR-104
+  text: Maintain a teaching assignment for every class-subject (school) and every course section (tertiary) with one teacher
+    of record, optional co-teachers, and effective dates.
+  priority: SHALL
+  phase: P1
+  module: CUR
+- id: FR-CUR-105
+  text: Validate every assignment against the teacher's authorisation for subject and level; block unauthorised assignments
+    unless a time-boxed exception is approved by the head and reported to the LGA.
+  priority: SHALL
+  phase: P1
+  module: CUR
+- id: FR-CUR-106
+  text: Evaluate coverage invariants G1–G12 on the triggers listed in 5.3 and nightly; create, update and close gap records
+    automatically.
+  priority: SHALL
+  phase: P2
+  module: CUR
+- id: FR-CUR-107
+  text: Assign every gap an owner, severity, due date and escalation chain from policy; escalate automatically on breach.
+  priority: SHALL
+  phase: P2
+  module: CUR
+- id: FR-CUR-108
+  text: Suggest fixes for each gap, including ranked qualified teachers with spare load inside the institution, the LGA, and
+    remote-teaching options.
+  priority: SHALL
+  phase: P2
+  module: CUR
+- id: FR-CUR-109
+  text: Block the leaving or transfer of a teacher of record from taking effect until every assignment is handed over or a
+    gap is accepted by the head.
+  priority: SHALL
+  phase: P1
+  module: CUR
+- id: FR-CUR-11
+  text: 'Detect blind spots: missing content, repeated content, uncovered objectives, wrong subject allocation, insufficient
+    hours, assessment gaps, teacher mismatches, programme inconsistencies, version mismatch.'
+  priority: SHALL
+  phase: P6
+  module: CUR
+- id: FR-CUR-110
+  text: Auto-draft a scheme of work for each assignment from curriculum hours and the academic calendar; let teachers edit
+    within curriculum constraints.
+  priority: SHALL
+  phase: P2
+  module: CUR
+- id: FR-CUR-111
+  text: Record lesson delivery against curriculum objectives from the teacher class page, the staff app or a completed LMS
+    lesson.
+  priority: SHALL
+  phase: P2
+  module: CUR
+- id: FR-CUR-112
+  text: Compute teacher demand and supply by subject, level and LGA, and feed the recruitment and deployment pages.
+  priority: SHALL
+  phase: P6
+  module: CUR
+- id: FR-CUR-113
+  text: Provide a state coverage heatmap and gap-ageing view with drill-down to the class-subject.
+  priority: SHALL
+  phase: P2
+  module: CUR
+- id: FR-CUR-114
+  text: Include coverage status in the private-institution regulatory dataset and in approval and renewal checks.
+  priority: SHALL
+  phase: P2
+  module: CUR
+- id: FR-CUR-115
+  text: Ship curriculum framework templates for national curricula, the British and American curricula, IB, Cambridge, Pearson
+    and competency frameworks, none of them hard-coded.
+  priority: SHALL
+  phase: P2
+  module: CUR
+- id: FR-CUR-12
+  text: Raise curriculum compliance alerts and create corrective action workflows when thresholds are breached.
+  priority: SHALL
+  phase: P6
+  module: CUR
+- id: FR-CUR-13
+  text: Provide geographic and hierarchical compliance heatmaps filterable by subject, level, type, ownership, region and
+    year.
+  priority: SHALL
+  phase: P6
+  module: CUR
+- id: FR-CUR-14
+  text: Pre-load the applicable curriculum, requirements and historical compliance into inspection workspaces.
+  priority: SHALL
+  phase: P6
+  module: CUR
+- id: FR-CUR-15
+  text: Connect curriculum to timetable (required vs scheduled hours), teacher (authorisation), assessment (objective traceability)
+    and examination (valid combinations).
+  priority: SHALL
+  phase: P3
+  module: CUR
+- id: FR-DOC-101
+  text: Provide a digitisation programme dashboard with survey data, page estimates, batch schedule, throughput, quality and
+    cost by site and LGA.
+  priority: SHALL
+  phase: P1
+  module: DOC
+- id: FR-DOC-102
+  text: Track boxes and volumes with barcodes and chain-of-custody events from collection to disposition.
+  priority: SHALL
+  phase: P1
+  module: DOC
+- id: FR-DOC-103
+  text: Capture images to the specified resolutions and formats, hash them at capture, keep immutable masters and derived
+    access copies.
+  priority: SHALL
+  phase: P1
+  module: DOC
+- id: FR-DOC-104
+  text: Apply image clean-up to access copies only.
+  priority: SHALL
+  phase: P1
+  module: DOC
+- id: FR-DOC-105
+  text: Run OCR and HTR with models tuned for local names and register layouts, including table recognition.
+  priority: SHALL
+  phase: P1
+  module: DOC
+- id: FR-DOC-106
+  text: Classify documents and extract index fields with confidence scores.
+  priority: SHALL
+  phase: P1
+  module: DOC
+- id: FR-DOC-107
+  text: Provide the QA workstation with image crops, double-keying for key fields and batch sampling to target accuracy.
+  priority: SHALL
+  phase: P1
+  module: DOC
+- id: FR-DOC-108
+  text: Match extracted people to master records and create historic Learner 360 and Staff 360 records when no match exists.
+  priority: SHALL
+  phase: P1
+  module: DOC
+- id: FR-DOC-109
+  text: Store documents in WORM storage with metadata, classification and retention at ingest; index full text except special-category
+    documents.
+  priority: SHALL
+  phase: P1
+  module: DOC
+- id: FR-DOC-110
+  text: Provide fielded, phonetic and full-text search with hit highlighting, trimmed by permission and document category.
+  priority: SHALL
+  phase: P1
+  module: DOC
+- id: FR-DOC-111
+  text: Show a Documents tab on every 360 record listing linked documents.
+  priority: SHALL
+  phase: P1
+  module: DOC
+- id: FR-DOC-112
+  text: Provide a viewer with watermarking of downloads and prints.
+  priority: SHALL
+  phase: P1
+  module: DOC
+- id: FR-DOC-113
+  text: Redact third-party personal data automatically before external release, with human review.
+  priority: SHALL
+  phase: P2
+  module: DOC
+- id: FR-DOC-114
+  text: Accept public requests for copies of personal records with identity verification and configured fees.
+  priority: SHOULD
+  phase: P2
+  module: DOC
+- id: FR-DOC-115
+  text: Maintain file plans, retention schedules, legal holds and approved disposal with disposal certificates.
+  priority: SHALL
+  phase: P1
+  module: DOC
+- id: FR-DOC-116
+  text: Capture born-digital documents automatically against the right records (letters, messages, reports, invoices, receipts,
+    forms, submissions).
+  priority: SHALL
+  phase: P1
+  module: DOC
+- id: FR-DOC-117
+  text: Restrict special-category documents to cleared operators and named users throughout capture, QA and retrieval.
+  priority: SHALL
+  phase: P1
+  module: DOC
+- id: FR-DOC-118
+  text: Report digitisation progress to the central dashboard.
+  priority: SHALL
+  phase: P1
+  module: DOC
+- id: FR-EXM-01
+  text: Create examination series linked to body, qualification, approved curriculum and programme; reject invalid subject
+    combinations.
+  priority: SHALL
+  phase: P1
+  module: EXM
+- id: FR-EXM-02
+  text: Enter candidates with eligibility checks (enrolment, subjects studied, identity verified, attendance where policy
+    applies), access arrangements and fees.
+  priority: SHALL
+  phase: P1
+  module: EXM
+- id: FR-EXM-03
+  text: Plan sittings, rooms, seating, invigilation and clash resolution.
+  priority: SHALL
+  phase: P1
+  module: EXM
+- id: FR-EXM-04
+  text: Import results from boards (file/API) with candidate matching to Learner 360, validation and anomaly review; commit
+    immutably.
+  priority: SHALL
+  phase: P1
+  module: EXM
+- id: FR-EXM-05
+  text: Approve and schedule release of results to learners and parents.
+  priority: SHALL
+  phase: P1
+  module: EXM
+- id: FR-EXM-06
+  text: Compute GPA/CGPA, credits, progression and degree classification; flag borderline cases for board discretion.
+  priority: SHALL
+  phase: P5
+  module: EXM
+- id: FR-EXM-07
+  text: Generate digitally signed, verifiable transcripts.
+  priority: SHALL
+  phase: P5
+  module: EXM
+- id: FR-EXM-08
+  text: Detect statistical anomalies (grade distributions, similarity clusters, improbable improvements) for human review;
+    never penalise automatically.
+  priority: SHALL
+  phase: P6
+  module: EXM
+- id: FR-EXM-101
+  text: Plan exam rooms with customisable desk layouts, candidate desk labels, invigilator allocation and external candidates.
+  priority: SHALL
+  phase: P1
+  module: EXM
+- id: FR-EXM-102
+  text: Produce grade broadsheets per class, subject and series, exportable to spreadsheet.
+  priority: SHALL
+  phase: P1
+  module: EXM
+- id: FR-EYR-01
+  text: Record observations (text, photo, video) against development areas and milestones, shared with parents.
+  priority: SHALL
+  phase: P1
+  module: EYR
+- id: FR-EYR-02
+  text: Share photos only when every pictured child has photo consent.
+  priority: SHALL
+  phase: P1
+  module: EYR
+- id: FR-EYR-03
+  text: Track development, nutrition, health information and daily care logs.
+  priority: SHALL
+  phase: P1
+  module: EYR
+- id: FR-EYR-101
+  text: 'Support daycare-linked early-years settings: session booking, authorised collectors with photo check at pick-up,
+    daily care log (meals, sleep, nappies, medication given) shared with parents, and staff-to-child ratio monitoring.'
+  priority: SHALL
+  phase: P1
+  module: EYR
+- id: FR-FAM-01
+  text: Maintain guardians as master records matched on phone, e-mail, NIN and name before creation.
+  priority: SHALL
+  phase: P1
+  module: FAM
+- id: FR-FAM-02
+  text: Model relationship type, parental responsibility, contact priority, lives-with and effective dates for each learner–guardian
+    link.
+  priority: SHALL
+  phase: P1
+  module: FAM
+- id: FR-FAM-03
+  text: Allow one guardian to belong to several families and one learner to have guardians in several households.
+  priority: SHALL
+  phase: P1
+  module: FAM
+- id: FR-FAM-04
+  text: 'Record contact restrictions (court orders) as special-category data and enforce them system-wide: no communications,
+    no collection, no portal access to the restricted child.'
+  priority: SHALL
+  phase: P1
+  module: FAM
+- id: FR-FAM-05
+  text: Provide consent records by type (photography, trips, data sharing, medical, biometrics, digital services) with legal
+    basis, given-by, expiry and withdrawal that propagates immediately.
+  priority: SHALL
+  phase: P1
+  module: FAM
+- id: FR-FAM-06
+  text: Provide a parent portal (web, mobile, low-bandwidth) with each child's day, attendance, homework, results, fees, messages,
+    consents and events (FAM-03).
+  priority: SHALL
+  phase: P1
+  module: FAM
+- id: FR-FAM-07
+  text: Allow parents to report absences that pre-fill the register.
+  priority: SHALL
+  phase: P1
+  module: FAM
+- id: FR-FAM-08
+  text: Support SMS, WhatsApp and USSD fallbacks for absence reporting, fee balance and payment links.
+  priority: SHOULD
+  phase: P1
+  module: FAM
+- id: FR-FAM-101
+  text: Store unlimited contacts per learner with relationship, priority and channel preference, and organisation contacts
+    (other schools, doctors, suppliers).
+  priority: SHALL
+  phase: P1
+  module: FAM
+- id: FR-FAM-102
+  text: Provide a website admissions widget that posts enquiries directly into the admissions pipeline, styled to the school's
+    brand.
+  priority: SHALL
+  phase: P1
+  module: FAM
+- id: FR-FAM-103
+  text: Manage enquiries, open days, visits and automated waiting lists, with conversion reporting from enquiry to enrolment.
+  priority: SHALL
+  phase: P1
+  module: FAM
+- id: FR-FAM-104
+  text: Provide a parent app with push notifications, timetable, homework, results, fees, payments, consents, meetings and
+    messages.
+  priority: SHALL
+  phase: P1
+  module: FAM
+- id: FR-FIN-01
+  text: Prepare budgets by cost centre and account linked to enrolment and staffing forecasts; approve via workflow.
+  priority: SHALL
+  phase: P4
+  module: FIN
+- id: FR-FIN-02
+  text: Monitor budget vs actual with variance explanations and forecast outturn.
+  priority: SHALL
+  phase: P4
+  module: FIN
+- id: FR-FIN-03
+  text: 'Run procurement: requisition → approval (delegated limits) → PO → receipt → three-way match → payment; detect split
+    purchases.'
+  priority: SHALL
+  phase: P4
+  module: FIN
+- id: FR-FIN-04
+  text: Maintain Supplier 360 with duplicate detection; require call-back verification and dual approval for bank-detail changes.
+  priority: SHALL
+  phase: P4
+  module: FIN
+- id: FR-FIN-05
+  text: Post double-entry journals; close periods; reverse instead of edit.
+  priority: SHALL
+  phase: P4
+  module: FIN
+- id: FR-FIN-06
+  text: Integrate with external ERPs (Sage, QuickBooks, Odoo, government IFMIS) where they are the ledger of record.
+  priority: SHALL
+  phase: P4
+  module: FIN
+- id: FR-FRM-101
+  text: Provide a no-code forms builder (Daybook forms) with text, number, date, choice, signature, upload, body-map, cost
+    and table fields; mandatory and conditional fields; per-form security and confidentiality.
+  priority: SHALL
+  phase: P2
+  module: FRM
+- id: FR-FRM-102
+  text: Let forms be raised by staff, learners or parents, or on their behalf, per form permission.
+  priority: SHALL
+  phase: P2
+  module: FRM
+- id: FR-FRM-103
+  text: Run multi-stage forms through the workflow engine with counter-signatures, approvals and alerts to individuals or
+    groups.
+  priority: SHALL
+  phase: P2
+  module: FRM
+- id: FR-FRM-104
+  text: Allow a form to carry a cost that posts to the learner account, and an optional Pay Now step that must complete before
+    the workflow continues.
+  priority: SHALL
+  phase: P2
+  module: FRM
+- id: FR-FRM-105
+  text: File completed forms automatically to the learner, staff or family Daybook timeline, with attachments stored in the
+    document store.
+  priority: SHALL
+  phase: P2
+  module: FRM
+- id: FR-FRM-106
+  text: Provide a template library of common paper forms (trip consent, medical, incident, leave request, transfer request,
+    uniform order) that institutions can copy and adapt.
+  priority: SHOULD
+  phase: P2
+  module: FRM
+- id: FR-FRM-107
+  text: Version forms; responses always keep the version they were submitted on.
+  priority: SHALL
+  phase: P2
+  module: FRM
+- id: FR-FRM-108
+  text: Report on form volumes, turnaround and overdue stages per institution.
+  priority: SHOULD
+  phase: P2
+  module: FRM
+- id: FR-HED-01
+  text: Manage applicants from application to enrolment with entry-requirement checks, O'Level verification via Certificate
+    360 or exam-body adapters, decisions and offers.
+  priority: SHALL
+  phase: P1
+  module: HED
+- id: FR-HED-02
+  text: Support semester course registration with unit limits, prerequisites, carry-overs, clashes and adviser approval.
+  priority: SHALL
+  phase: P5
+  module: HED
+- id: FR-HED-03
+  text: Manage accommodation applications and allocation including accessibility needs.
+  priority: SHALL
+  phase: P5
+  module: HED
+- id: FR-HED-04
+  text: 'Manage research students: supervision, milestones, progression reviews, ethics applications and thesis examination.'
+  priority: SHALL
+  phase: P5
+  module: HED
+- id: FR-HED-05
+  text: Produce graduation lists from classification and certificate eligibility; manage ceremonies and alumni.
+  priority: SHALL
+  phase: P5
+  module: HED
+- id: FR-HED-06
+  text: Manage scholarships and bursaries linked to billing so funding is never double counted.
+  priority: SHALL
+  phase: P4
+  module: HED
+- id: FR-HED-07
+  text: Record institutional information for international students (visa-related records) as restricted data.
+  priority: SHOULD
+  phase: P5
+  module: HED
+- id: FR-HED-101
+  text: Support delivery modes (on-campus, distance, online, blended) and continuing-education programmes with flexible start
+    dates, LMS-delivered modules and optional remote proctoring.
+  priority: SHALL
+  phase: P5
+  module: HED
+- id: FR-ILP-101
+  text: Provide personal learning plans for any learner with goals linked to curriculum objectives and targets, actions with
+    owners, evidence from LMS and assessment, and status.
+  priority: SHALL
+  phase: P3
+  module: ILP
+- id: FR-ILP-102
+  text: Provide state and institution plan templates that keep their version, can be copied, and can be applied to a whole
+    group in one step.
+  priority: SHALL
+  phase: P3
+  module: ILP
+- id: FR-ILP-103
+  text: Let learners add reflections to their plan in age-appropriate language and parents view and comment.
+  priority: SHALL
+  phase: P3
+  module: ILP
+- id: FR-ILP-104
+  text: Schedule plan reviews with automatic reminders to all participants, escalate overdue reviews, and show progress, time
+    and cost at a glance.
+  priority: SHALL
+  phase: P3
+  module: ILP
+- id: FR-INS-01
+  text: Create institutions only through the controlled registration workflow (INS-03); institution users cannot create institutions.
+  priority: SHALL
+  phase: P1
+  module: INS
+- id: FR-INS-02
+  text: Run duplicate detection on proposed name (fuzzy ≥ 0.92), registration number, address and geo-distance (≤ 5 km) before
+    creation; probable duplicates require a reviewer decision with reason.
+  priority: SHALL
+  phase: P1
+  module: INS
+- id: FR-INS-03
+  text: 'Capture: institution ID, government registration number, name, type/category, ownership, accreditation status, licence
+    and expiry, address, coordinates, campuses, levels, programmes, departments, capacity, enrolment (derived), staff (derived),
+    facilities, inspection history, curriculum, examination and certification authorisations, regulatory status.'
+  priority: SHALL
+  phase: P1
+  module: INS
+- id: FR-INS-04
+  text: Treat master fields (name, registration number, ownership, category, address, coordinates) as editable only by the
+    registering authority via a change request; institution administrators edit operational fields.
+  priority: SHALL
+  phase: P1
+  module: INS
+- id: FR-INS-05
+  text: Manage licences, accreditations and authorisations (exam centre, certificate issuer, programme accreditation) with
+    issue/expiry dates, conditions and status.
+  priority: SHALL
+  phase: P1
+  module: INS
+- id: FR-INS-06
+  text: Set status Expired automatically the day after expiry; raise an alert 90/60/30 days before expiry and on expiry.
+  priority: SHALL
+  phase: P1
+  module: INS
+- id: FR-INS-07
+  text: Block certificate issuance and new examination entries for institutions whose relevant authorisation is expired or
+    suspended at the award/entry date.
+  priority: SHALL
+  phase: P2
+  module: INS
+- id: FR-INS-08
+  text: Maintain effective-dated organisation structure (campus → faculty → department → unit) with cost centres and heads
+    (INS-06).
+  priority: SHALL
+  phase: P1
+  module: INS
+- id: FR-INS-09
+  text: Provide Institution 360 with tabs for overview, accreditation, curriculum compliance, learners, staff, attendance,
+    academic, exams & certificates, safeguarding, SEND, infrastructure, finance & funding, inspections, risks & actions, audit
+    — each tab hidden when the user lacks access.
+  priority: SHALL
+  phase: P1
+  module: INS
+- id: FR-INS-10
+  text: Expose to state/LGA users only the configured regulatory dataset for private institutions.
+  priority: SHALL
+  phase: P6
+  module: INS
+- id: FR-INS-11
+  text: Support institution merge (e.g. amalgamation) with alias resolution and history.
+  priority: SHOULD
+  phase: P4
+  module: INS
+- id: FR-INS-12
+  text: Show the institution on a map for government users with layer filters (type, ownership, health band).
+  priority: SHOULD
+  phase: P6
+  module: INS
+- id: FR-INSP-01
+  text: Generate a risk-based inspection programme from health index, compliance, alerts and time since last inspection, for
+    inspectorate approval.
+  priority: SHALL
+  phase: P6
+  module: INSP
+- id: FR-INSP-02
+  text: Provide an offline-capable inspection workspace pre-loaded with applicable curriculum, requirements, evidence and
+    history.
+  priority: SHALL
+  phase: P6
+  module: INSP
+- id: FR-INSP-03
+  text: Record findings with judgements and evidence; findings requiring action create corrective action plans on report approval.
+  priority: SHALL
+  phase: P6
+  module: INSP
+- id: FR-INSP-04
+  text: Track compliance requirements inherited down the policy hierarchy with statuses Compliant, Attention required, Overdue,
+    Critical.
+  priority: SHALL
+  phase: P4
+  module: INSP
+- id: FR-INSP-05
+  text: Create improvement workspaces with problem, evidence, contributing indicators, actions, owner, review and outcome
+    measured against target and counterfactual trend.
+  priority: SHALL
+  phase: P6
+  module: INSP
+- id: FR-INSP-06
+  text: Run the government intervention workflow when compliance falls below thresholds, through follow-up inspection to reassessment.
+  priority: SHALL
+  phase: P6
+  module: INSP
+- id: FR-INSP-101
+  text: Track fire inspections, health and safety checks and required certifications with expiry dates in the compliance centre.
+  priority: SHALL
+  phase: P4
+  module: INSP
+- id: FR-INT-01
+  text: Answer natural-language questions with the user's own permissions; every figure linked to source records with time
+    window, record count and data-quality index.
+  priority: SHALL
+  phase: P7
+  module: INT
+- id: FR-INT-02
+  text: Show finding, evidence, confidence, recommendation and human decision for every AI recommendation; record decisions
+    and outcomes.
+  priority: SHALL
+  phase: P7
+  module: INT
+- id: FR-INT-03
+  text: Extract structured data from documents (forms, PDFs, certificates, transcripts, invoices) with confidence per field;
+    require human validation for consequential fields.
+  priority: SHALL
+  phase: P7
+  module: INT
+- id: FR-INT-04
+  text: Maintain a model register with purpose, owner, data, excluded features, performance, fairness, drift and oversight
+    level.
+  priority: SHALL
+  phase: P7
+  module: INT
+- id: FR-INT-05
+  text: Never autonomously expel, reject an applicant, determine safeguarding outcomes, dismiss staff, deny educational access,
+    make discriminatory decisions or classify a child as dangerous or unsuitable.
+  priority: SHALL
+  phase: P1
+  module: INT
+- id: FR-INT-06
+  text: Exclude special-category data from model training unless a lawful basis and DPIA exist; never train on assistant conversations.
+  priority: SHALL
+  phase: P7
+  module: INT
+- id: FR-INT-101
+  text: Have document intelligence flag missing information, duplicates, contradictions, expired documents and important dates,
+    and create reminders for the dates.
+  priority: SHALL
+  phase: P7
+  module: INT
+- id: FR-LMS-101
+  text: Create a course space for every class-subject and course section automatically, with roster sync from enrolment and
+    registration.
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LMS-102
+  text: Structure course spaces in units generated from the scheme of work, tagged to curriculum objectives.
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LMS-103
+  text: Support notes, files, video, audio, links, H5P interactives and state content-library items, each taggable to objectives.
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LMS-104
+  text: Provide the eight assignment types in 8.2, individual and group.
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LMS-105
+  text: 'Capture for each assignment: instructions, resources, objectives, type, mark scheme or rubric, markbook weighting,
+    open and due dates, late policy, group settings, accessibility options, AI policy.'
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LMS-106
+  text: Apply authorised SEND adjustments to assignments automatically, without exposing need detail to other learners.
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LMS-107
+  text: Accept text, files (up to 200 MB per submission, configurable), photos and audio/video recordings; issue a hashed,
+    timestamped receipt per submission.
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LMS-108
+  text: Autosave drafts and allow resubmission until the due date when permitted; keep every version.
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LMS-109
+  text: Accept and flag late work; support individual extensions with reason; never auto-assign zero.
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LMS-110
+  text: Provide split-view marking with rubrics, comment banks, inline annotation, audio feedback and auto-marking of objective
+    items.
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LMS-111
+  text: Support moderation sampling for CA and coursework.
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LMS-112
+  text: Release marks and feedback on a scheduled date to learners and parents; post marks to the markbook and objective results
+    to curriculum evidence.
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LMS-113
+  text: Provide online quizzes and CBT with question banks, randomisation, timing, secure mode and invigilator console.
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LMS-114
+  text: Provide live video classes with attendance captured to the register and consent-based recording.
+  priority: SHALL
+  phase: P3
+  module: LMS
+- id: FR-LMS-115
+  text: Provide moderated discussions, with age-based restrictions and no private learner-to-learner messaging.
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LMS-116
+  text: 'Work offline in the learner app: download materials, complete work, queue submissions, sync with device and server
+    timestamps.'
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LMS-117
+  text: Provide low-data mode, upload compression and data-cost estimates; support zero-rated domains.
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LMS-118
+  text: Provide a USSD/SMS path for due dates and completion confirmation for learners without smartphones.
+  priority: SHOULD
+  phase: P3
+  module: LMS
+- id: FR-LMS-119
+  text: Split class batches of scanned handwritten work to individual learners using QR cover sheets.
+  priority: SHALL
+  phase: P3
+  module: LMS
+- id: FR-LMS-120
+  text: Provide originality checking through a configurable provider, reported to the teacher only.
+  priority: SHALL
+  phase: P3
+  module: LMS
+- id: FR-LMS-121
+  text: Record an AI-use declaration per submission against the assignment's AI policy.
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LMS-122
+  text: Maintain the state digital skills framework, learner and teacher digital levels, and evidence from LMS activity.
+  priority: SHALL
+  phase: P3
+  module: LMS
+- id: FR-LMS-123
+  text: Count LMS training and evidenced digital teaching practice as CPD.
+  priority: SHOULD
+  phase: P4
+  module: LMS
+- id: FR-LMS-124
+  text: Show teachers My marking, Class progress and Objective coverage views with one-click nudges.
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LMS-125
+  text: Give parents visibility of work set, submission status, marks and feedback for each child.
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LMS-126
+  text: Report digital adoption and coursework indicators to the central dashboard.
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LMS-127
+  text: Show a homework calendar to learners and parents; enforce a class homework timetable with a nightly limit (override
+    with reason); report on-time, late and missing submissions by class, subject and learner.
+  priority: SHALL
+  phase: P2
+  module: LMS
+- id: FR-LRN-01
+  text: Register learners of any age (0+) through one registration path (LRN-02) used by registrars, the online application
+    (PUB-03) and imports.
+  priority: SHALL
+  phase: P1
+  module: LRN
+- id: FR-LRN-02
+  text: 'Run the identity matching engine before creating a learner: exact identifier match → link existing; probable match
+    (0.80–0.98) → manual review (LRN-03); no match → create.'
+  priority: SHALL
+  phase: P1
+  module: LRN
+- id: FR-LRN-03
+  text: Never create a new learner record because a learner changes institution or education level; transfers and progressions
+    create new enrolments on the same Learner 360.
+  priority: SHALL
+  phase: P1
+  module: LRN
+- id: FR-LRN-04
+  text: 'Capture NIN where the jurisdiction rule requires or allows it (Nigeria: required ≥ 16, captured 0–15 where issued);
+    verify via the NIMC adapter when enabled; store encrypted; display masked; reveal only with purpose and audit.'
+  priority: SHALL
+  phase: P1
+  module: LRN
+- id: FR-LRN-05
+  text: Configure legal-age thresholds, consent and guardian requirements per jurisdiction; do not hard-code 16 or 18.
+  priority: SHALL
+  phase: P1
+  module: LRN
+- id: FR-LRN-06
+  text: Require at least one guardian with parental responsibility for learners under the age of majority; keep minor and
+    guardian identities distinct.
+  priority: SHALL
+  phase: P1
+  module: LRN
+- id: FR-LRN-07
+  text: Generate the Global Learner ID with check digit at creation; never reuse it.
+  priority: SHALL
+  phase: P1
+  module: LRN
+- id: FR-LRN-08
+  text: Support enrolment into institution, level, class/arm, programme, course and cohort, with effective dates and capacity
+    checks (hard, unless head approves over-capacity).
+  priority: SHALL
+  phase: P1
+  module: LRN
+- id: FR-LRN-09
+  text: Provide bulk promotion/progression using policy rules; repeat-year decisions require human approval.
+  priority: SHALL
+  phase: P1
+  module: LRN
+- id: FR-LRN-10
+  text: Transfer learners between institutions with records sharing per policy; transfer safeguarding files DSL-to-DSL and
+    SEND files SENCO-to-SENCO with acknowledgement within the configured days.
+  priority: SHALL
+  phase: P1
+  module: LRN
+- id: FR-LRN-101
+  text: Include professional learning and CPD records in the Education Passport for adult learners and teaching professionals.
+  priority: SHOULD
+  phase: P7
+  module: LRN
+- id: FR-LRN-102
+  text: Produce a printable and shareable student report combining attendance, behaviour, badges, wellbeing summary, homework,
+    on-report history and learning-plan progress, trimmed to the viewer's permissions.
+  priority: SHALL
+  phase: P1
+  module: LRN
+- id: FR-LRN-11
+  text: Record leaving with date, reason and destination; refer compulsory-age learners with unknown destination to the LGA
+    as child missing education.
+  priority: SHALL
+  phase: P1
+  module: LRN
+- id: FR-LRN-12
+  text: Provide Learner 360 assembling identity, family, enrolment history, timetable, attendance, behaviour, assessment,
+    exams, qualifications/certificates, SEND, safeguarding, wellbeing/interventions, finance, communications, documents and
+    audit, permission-trimmed per tab.
+  priority: SHALL
+  phase: P2
+  module: LRN
+- id: FR-LRN-13
+  text: Audit every view of special-category tabs with purpose.
+  priority: SHALL
+  phase: P2
+  module: LRN
+- id: FR-LRN-14
+  text: Merge confirmed duplicates with survivorship rules, re-pointing all references, alias resolution and 90-day un-merge
+    (LRN-08).
+  priority: SHALL
+  phase: P1
+  module: LRN
+- id: FR-LRN-15
+  text: Provide the learner-facing Education Passport with qualifications, certificates, skills, competencies, credits, transcripts,
+    badges and achievements; consented, time-limited, revocable sharing; and the holder's verification log.
+  priority: SHALL
+  phase: P7
+  module: LRN
+- id: FR-LRN-16
+  text: Receive authorised historical records from previous institutions at enrolment instead of asking families to re-supply
+    them.
+  priority: SHALL
+  phase: P1
+  module: LRN
+- id: FR-MED-01
+  text: Plan clinical rotations across hospitals/departments with capacity, supervisors and prerequisites (competencies, immunisation/occupational
+    health clearance) before patient-facing placements.
+  priority: SHALL
+  phase: P5
+  module: MED
+- id: FR-MED-02
+  text: Provide anonymised logbooks (procedures/cases with level of involvement and reflection) with supervisor verification
+    and competency sign-off.
+  priority: SHALL
+  phase: P5
+  module: MED
+- id: FR-MED-03
+  text: Block save of logbook text containing patient identifiers (name lists, hospital-number patterns).
+  priority: SHALL
+  phase: P5
+  module: MED
+- id: FR-MED-04
+  text: Track clinical hours and readiness against professional-registration requirements (e.g. MDCN, NMCN) and export to
+    regulators.
+  priority: SHALL
+  phase: P5
+  module: MED
+- id: FR-MED-05
+  text: Integrate with hospital information systems only for placement attendance confirmation; never store patient records.
+  priority: SHALL
+  phase: P5
+  module: MED
+- id: FR-MED-101
+  text: Book skills laboratories and simulation sessions with equipment, facilitators and competency outcomes recorded.
+  priority: SHALL
+  phase: P5
+  module: MED
+- id: FR-MED-102
+  text: Design and score OSCE stations and track readiness and results for professional licensing examinations.
+  priority: SHALL
+  phase: P5
+  module: MED
+- id: FR-MED-103
+  text: Provide configurable programme families for medicine, dentistry, nursing, midwifery, pharmacy, physiotherapy, radiography,
+    medical laboratory science, community and public health and other allied health professions. Each family carries its own
+    regulator (in Nigeria, for example, MDCN, NMCN, PCN, MRTB, RRBN, MLSCN and CHPRBN), clinical-hour and competency requirements,
+    indexing and registration rules, and licensing-examination readiness, and exports to that regulator.
+  priority: SHALL
+  phase: P5
+  module: MED
+- id: FR-OPS-01
+  text: Maintain buildings and rooms with type, capacity, accessibility, ICT and condition; feed infrastructure indicators.
+  priority: SHALL
+  phase: P3
+  module: OPS
+- id: FR-OPS-02
+  text: Maintain an asset register with custodian, location, value, condition and service dates; support stock-takes.
+  priority: SHALL
+  phase: P3
+  module: OPS
+- id: FR-OPS-03
+  text: Manage maintenance requests with safety-risk rating; critical risk raises a Priority 1 item to the head and LGA.
+  priority: SHALL
+  phase: P3
+  module: OPS
+- id: FR-OPS-04
+  text: Manage transport routes, vehicles, drivers (with checks), allocations and boarding records.
+  priority: SHALL
+  phase: P3
+  module: OPS
+- id: FR-OPS-05
+  text: Manage clubs and activities with enrolment, attendance and achievements (badges to passport).
+  priority: SHALL
+  phase: P3
+  module: OPS
+- id: FR-OPS-06
+  text: 'Manage trips: planning, risk assessment, approval, consent, payment and on-the-day register; block learners without
+    consent.'
+  priority: SHALL
+  phase: P3
+  module: OPS
+- id: FR-OPS-07
+  text: Record meals served, dietary requirements and feeding-programme numbers; reconcile against attendance.
+  priority: SHALL
+  phase: P3
+  module: OPS
+- id: FR-OPS-08
+  text: Manage library loans or integrate with a library system.
+  priority: SHOULD
+  phase: P3
+  module: OPS
+- id: FR-OPS-101
+  text: Run clubs and events booking with targeted eligibility, numbered parent preferences, fair allocation, waiting lists
+    and online or cash payment.
+  priority: SHALL
+  phase: P3
+  module: OPS
+- id: FR-OPS-102
+  text: Predict asset maintenance needs from condition, age and usage, and plan preventive work.
+  priority: SHOULD
+  phase: P3
+  module: OPS
+- id: FR-OPS-103
+  text: Record facility safety incidents with location, severity, photos and follow-up.
+  priority: SHALL
+  phase: P3
+  module: OPS
+- id: FR-OPS-104
+  text: Link asset condition to a multi-year capital plan with cost estimates and priorities.
+  priority: SHOULD
+  phase: P4
+  module: OPS
+- id: FR-OPS-105
+  text: Keep a mapping archive of campus plans and structural changes over time.
+  priority: MAY
+  phase: P4
+  module: OPS
+- id: FR-OPS-106
+  text: Let technicians inspect assets on a mobile app, offline, with checklists and photos.
+  priority: SHALL
+  phase: P3
+  module: OPS
+- id: FR-OPS-107
+  text: 'Track textbooks and learning materials (government-supplied and institution-bought) by title, curriculum subject
+    and level: stock, issue to learners or classes, return, loss and condition. Report textbook-to-learner ratios to the state
+    command centre, and link digital resources to curriculum objectives.'
+  priority: SHALL
+  phase: P3
+  module: OPS
+- id: FR-P16-01
+  text: Support subject-option selection with combination rules, capacity and guidance against entry requirements (e.g. JAMB/UTME
+    subject combinations).
+  priority: SHALL
+  phase: P1
+  module: P16
+- id: FR-P16-02
+  text: Track university/college applications, references, work experience and career plans.
+  priority: SHALL
+  phase: P5
+  module: P16
+- id: FR-P16-03
+  text: 'Track destinations: further education, employment, apprenticeship, entrepreneurship, professional qualification.'
+  priority: SHALL
+  phase: P7
+  module: P16
+- id: FR-P16-101
+  text: 'Track higher-education applications through configurable adapters (JAMB UTME and CAPS admission status in Nigeria;
+    UCAS-equivalent services elsewhere): choices, references, personal statements, offers and acceptance.'
+  priority: SHALL
+  phase: P5
+  module: P16
+- id: FR-P16-102
+  text: Record student-finance guidance and loan or grant applications (for example the Nigerian Education Loan Fund) with
+    status, without storing lender credentials.
+  priority: SHOULD
+  phase: P5
+  module: P16
+- id: FR-P16-103
+  text: 'Provide career guidance from junior secondary: counsellor sessions, interest and aptitude records, and guided stream
+    selection at the end of junior secondary (science, arts, commercial, technical) against results and subject-combination
+    rules. Guidance records flow into post-16 options and the Education Passport.'
+  priority: SHALL
+  phase: P2
+  module: P16
+- id: FR-PMT-01
+  text: Accept bank transfer (incl. per-family virtual accounts), card, direct debit, mobile money, USSD, gateways (e.g. Paystack,
+    Flutterwave, Remita), cash, cheque, government, employer and scholarship payments.
+  priority: SHALL
+  phase: P1
+  module: PMT
+- id: FR-PMT-02
+  text: Process gateway webhooks idempotently; issue receipts only after confirmation.
+  priority: SHALL
+  phase: P1
+  module: PMT
+- id: FR-PMT-03
+  text: Never handle raw card data (hosted fields/redirect; PCI DSS SAQ-A scope).
+  priority: SHALL
+  phase: P1
+  module: PMT
+- id: FR-PMT-04
+  text: 'Allocate automatically: virtual account → reference → payer contact → heuristic suggestion; route unallocated items
+    to a queue.'
+  priority: SHALL
+  phase: P1
+  module: PMT
+- id: FR-PMT-05
+  text: Detect duplicate payments (hard on gateway ID, soft on payer+amount within 10 minutes).
+  priority: SHALL
+  phase: P1
+  module: PMT
+- id: FR-PMT-06
+  text: Import bank statements and reconcile to payments and disbursements.
+  priority: SHALL
+  phase: P4
+  module: PMT
+- id: FR-PMT-07
+  text: Support multiple currencies with local and reporting currency, rate source, rate captured per transaction and tax
+    rules.
+  priority: SHALL
+  phase: P1
+  module: PMT
+- id: FR-PMT-101
+  text: Support Paystack, Flutterwave, Interswitch, Monnify, Remita and other licensed gateways through the gateway adapter,
+    configurable per tenant.
+  priority: SHALL
+  phase: P1
+  module: PMT
+- id: FR-PTM-101
+  text: Schedule parents' meetings across one or more days with in-person, video and hybrid slots per teacher.
+  priority: SHALL
+  phase: P2
+  module: PTM
+- id: FR-PTM-102
+  text: Let parents book slots for each of their children's teachers, with clash prevention and automatic travel gaps for
+    in-person meetings.
+  priority: SHALL
+  phase: P2
+  module: PTM
+- id: FR-PTM-103
+  text: Run encrypted video meetings in the browser with countdown timer, text chat and screen share; no recording unless
+    all parties consent.
+  priority: SHALL
+  phase: P2
+  module: PTM
+- id: FR-PTM-104
+  text: Show organisers which learners have no appointment and which teachers are full; send reminders to unbooked parents
+    by WhatsApp, SMS or e-mail.
+  priority: SHALL
+  phase: P2
+  module: PTM
+- id: FR-PTM-105
+  text: Record attendance and short notes per meeting to the learner timeline.
+  priority: SHOULD
+  phase: P2
+  module: PTM
+- id: FR-PTM-106
+  text: Support interpreters as a third participant and per-parent language preference.
+  priority: SHOULD
+  phase: P2
+  module: PTM
+- id: FR-PVT-101
+  text: Let proprietors create verified accounts and apply online for approval of one or more institutions.
+  priority: SHALL
+  phase: P1
+  module: PVT
+- id: FR-PVT-102
+  text: Run duplicate detection on provider and proposed institution (name, CAC number, address, geo-distance) before an application
+    is accepted.
+  priority: SHALL
+  phase: P1
+  module: PVT
+- id: FR-PVT-103
+  text: Provide the guided application with draft save, document upload, map pin, photos and a completeness check against
+    the state checklist.
+  priority: SHALL
+  phase: P1
+  module: PVT
+- id: FR-PVT-104
+  text: Configure approval checklists, minimum standards and fee schedules per state and level as policy data.
+  priority: SHALL
+  phase: P1
+  module: PVT
+- id: FR-PVT-105
+  text: Collect application, inspection, approval and renewal fees through approved gateways (Remita for government revenue),
+    with receipts and reconciliation.
+  priority: SHALL
+  phase: P1
+  module: PVT
+- id: FR-PVT-106
+  text: 'Run the approval workflow: desk review → inspection → decision → issue, with SLAs, queries to the applicant, four-eyes
+    decisions and appeal.'
+  priority: SHALL
+  phase: P1
+  module: PVT
+- id: FR-PVT-107
+  text: Issue digitally signed approval certificates with QR verification, approved levels, capacity, conditions and expiry.
+  priority: SHALL
+  phase: P1
+  module: PVT
+- id: FR-PVT-108
+  text: Create the private tenant and Institution 360 automatically on approval and start guided onboarding.
+  priority: SHALL
+  phase: P1
+  module: PVT
+- id: FR-PVT-109
+  text: Bring existing unregistered institutions into compliance through the same process with a regularisation flag and transitional
+    conditions.
+  priority: SHALL
+  phase: P1
+  module: PVT
+- id: FR-PVT-110
+  text: Support proprietors with several institutions under one provider account.
+  priority: SHALL
+  phase: P1
+  module: PVT
+- id: FR-PVT-111
+  text: Share the configured regulatory dataset with the state continuously and enforce it as read-only for the regulator.
+  priority: SHALL
+  phase: P1
+  module: PVT
+- id: FR-PVT-112
+  text: Track approval conditions as corrective actions with evidence and verification.
+  priority: SHALL
+  phase: P2
+  module: PVT
+- id: FR-PVT-113
+  text: Manage renewals with reminders and pre-filled renewal applications.
+  priority: SHALL
+  phase: P2
+  module: PVT
+- id: FR-PVT-114
+  text: Run sanctions through the workflow with evidence, approval and appeal, and automatic restriction of new admissions
+    or exam entries when suspended.
+  priority: SHALL
+  phase: P2
+  module: PVT
+- id: FR-PVT-115
+  text: 'Protect learners on closure: keep records, list alternative institutions, and track re-enrolment by the LGA.'
+  priority: SHALL
+  phase: P2
+  module: PVT
+- id: FR-PVT-116
+  text: Publish the approved private institution directory with approval status and verification QR.
+  priority: SHALL
+  phase: P2
+  module: PVT
+- id: FR-PVT-117
+  text: Onboard private tertiary and medical institutions with evidence of federal regulator approval (NUC, NBTE, NCCE, MDCN
+    or NMCN) captured and checked.
+  priority: SHALL
+  phase: P1
+  module: PVT
+- id: FR-RPT-01
+  text: Provide a report library with standard, statutory and saved reports by scope.
+  priority: SHALL
+  phase: P1
+  module: RPT
+- id: FR-RPT-02
+  text: Provide a self-service report builder over a governed semantic layer (metrics, dimensions) with permission trimming
+    and small-number suppression.
+  priority: SHALL
+  phase: P6
+  module: RPT
+- id: FR-RPT-03
+  text: Generate government returns from live master records; institutions review, explain anomalies and certify; corrections
+    are made in source records.
+  priority: SHALL
+  phase: P6
+  module: RPT
+- id: FR-RPT-04
+  text: Provide data lineage for every reported number down to permitted records.
+  priority: SHALL
+  phase: P6
+  module: RPT
+- id: FR-RPT-05
+  text: Schedule report delivery with recipients and formats.
+  priority: SHALL
+  phase: P1
+  module: RPT
+- id: FR-RPT-06
+  text: Run analytics in a separate warehouse; operational performance must not be affected.
+  priority: SHALL
+  phase: P6
+  module: RPT
+- id: FR-RPT-101
+  text: Provide a governed connector for Power BI and other BI tools over the semantic layer, with the same permission trimming.
+  priority: SHOULD
+  phase: P6
+  module: RPT
+- id: FR-RPT-102
+  text: Offer one-click Excel export of any permitted table or chart's data.
+  priority: SHALL
+  phase: P1
+  module: RPT
+- id: FR-SAF-01
+  text: Allow any staff member to record a concern; after submission the reporter sees only a receipt.
+  priority: SHALL
+  phase: P2
+  module: SAF
+- id: FR-SAF-02
+  text: Notify the DSL and deputies immediately (in-app + SMS without content).
+  priority: SHALL
+  phase: P2
+  module: SAF
+- id: FR-SAF-03
+  text: Link concerns about the same learner; assemble the chronology automatically from concerns, attendance, behaviour and
+    agency contacts the DSL may see.
+  priority: SHALL
+  phase: P2
+  module: SAF
+- id: FR-SAF-04
+  text: Alert the DSL when configured thresholds (count/severity/time) are met.
+  priority: SHALL
+  phase: P2
+  module: SAF
+- id: FR-SAF-05
+  text: 'Manage cases: risk assessment, actions, referrals, meetings, reviews, closure with reason and sign-off.'
+  priority: SHALL
+  phase: P2
+  module: SAF
+- id: FR-SAF-06
+  text: Restrict access to DSL, named deputies and explicitly granted users; audit every view, export and print; show an access
+    log on the case.
+  priority: SHALL
+  phase: P2
+  module: SAF
+- id: FR-SAF-07
+  text: Route allegations about staff to the head/LGA designated officer, not the institution DSL alone.
+  priority: SHALL
+  phase: P2
+  module: SAF
+- id: FR-SAF-08
+  text: Transfer files DSL-to-DSL on learner transfer with acknowledgement.
+  priority: SHALL
+  phase: P2
+  module: SAF
+- id: FR-SAF-09
+  text: Never let AI decide risk levels or outcomes; AI may summarise and highlight patterns for the DSL.
+  priority: SHALL
+  phase: P7
+  module: SAF
+- id: FR-SAF-101
+  text: Provide anonymous community reporting for learners and parents by QR code and web link; reports go to the DSL triage
+    queue with no reporter identity unless volunteered.
+  priority: SHALL
+  phase: P2
+  module: SAF
+- id: FR-SAF-102
+  text: Record allegations, low-level concerns and self-referrals about adults in a restricted area visible only to the head,
+    the LGA designated officer and named HR staff, routing allegations about the head to the LGA or state, with chronology,
+    decisions, documents, tamper-evident audit and standard outcomes.
+  priority: SHALL
+  phase: P2
+  module: SAF
+- id: FR-SAF-103
+  text: Log low-level concerns and staff self-referrals and alert the designated officer when concerns about the same adult
+    reach the configured pattern (default 3 in 12 months).
+  priority: SHALL
+  phase: P2
+  module: SAF
+- id: FR-SAF-104
+  text: Provide a community reporting form builder with branding, mandatory and optional fields and languages, published by
+    link, QR poster, website embed and WhatsApp keyword; anonymous by default, no IP or device data stored, two-way reply
+    by one-time code, into the DSL triage queue. Extends FR-SAF-101.
+  priority: SHALL
+  phase: P2
+  module: SAF
+- id: FR-SAF-105
+  text: Seed standard concern categories from the jurisdiction pack (Nigerian default includes insecurity and abduction risk,
+    child labour, early and forced marriage, trafficking and risk of dropping out), configurable per state.
+  priority: SHALL
+  phase: P2
+  module: SAF
+- id: FR-SAF-106
+  text: Provide safeguarding reports by category, time, profile and institution, saved and reusable, a governing-board report
+    and an inspection pack, with area dashboards that show counts only and suppress groups under 10.
+  priority: SHALL
+  phase: P2
+  module: SAF
+- id: FR-SAF-107
+  text: Share selected chronology entries or a case bundle with a named external professional by time-limited, watermarked
+    link, with purpose, legal basis, access log and bundle hash. Extends SAF-04.
+  priority: SHALL
+  phase: P2
+  module: SAF
+- id: FR-SAF-108
+  text: Hold statutory references, categories, timescales and forms in jurisdiction packs (Nigerian default; international
+    packs such as the UK's Keeping Children Safe in Education for private schools that need them), changed by configuration
+    only.
+  priority: SHALL
+  phase: P2
+  module: SAF
+- id: FR-SEN-01
+  text: Maintain a SEND register with need areas, support level, plan type and review dates.
+  priority: SHALL
+  phase: P2
+  module: SEN
+- id: FR-SEN-02
+  text: 'Provide the Individual Learner Support Profile: strengths, needs, preferences, communication, adjustments, strategies,
+    accessibility, assistive technology, interventions, progress, learner voice, parent/carer input.'
+  priority: SHALL
+  phase: P2
+  module: SEN
+- id: FR-SEN-03
+  text: Separate authorised adjustments (visible to the learner's teachers) from need detail (SENCO and cleared leaders only).
+  priority: SHALL
+  phase: P2
+  module: SEN
+- id: FR-SEN-04
+  text: Manage IEP/ISP and EHCP-equivalent statutory plans with outcomes, provision, participants and review cycle; alert
+    on overdue reviews.
+  priority: SHALL
+  phase: P2
+  module: SEN
+- id: FR-SEN-05
+  text: Map provision (type, learners, staff, hours, cost, impact) and compare demand with provision.
+  priority: SHALL
+  phase: P2
+  module: SEN
+- id: FR-SEN-06
+  text: Feed adjustments to timetable room allocation, exam access arrangements and class pages automatically.
+  priority: SHALL
+  phase: P3
+  module: SEN
+- id: FR-SEN-07
+  text: Give government users aggregated SEND indicators only, unless purpose-granted.
+  priority: SHALL
+  phase: P6
+  module: SEN
+- id: FR-SEN-101
+  text: Maintain a Gifted and Talented register alongside the SEND register with provision tracking.
+  priority: SHALL
+  phase: P2
+  module: SEN
+- id: FR-SEN-102
+  text: Manage therapy and external-agency referrals (speech, occupational, educational psychology, health) with consent,
+    status tracking and returned reports stored in the support profile.
+  priority: SHALL
+  phase: P2
+  module: SEN
+- id: FR-STF-01
+  text: Maintain Staff 360 with many posts per person (institution, unit, title, grade/step, contract, FTE, employer, line
+    manager, dates).
+  priority: SHALL
+  phase: P1
+  module: STF
+- id: FR-STF-02
+  text: Record qualifications, professional registrations (e.g. TRCN), subject/level teaching authorisations and safer-recruitment
+    checks with expiry and verification status.
+  priority: SHALL
+  phase: P1
+  module: STF
+- id: FR-STF-03
+  text: Gate system access to learner data until mandatory checks pass or a time-limited supervised exception is approved
+    by the head.
+  priority: SHALL
+  phase: P4
+  module: STF
+- id: FR-STF-04
+  text: Raise a Teacher Qualification Alert when a teacher is timetabled to a curriculum subject/level they are not authorised
+    to teach.
+  priority: SHALL
+  phase: P3
+  module: STF
+- id: FR-STF-05
+  text: 'Run recruitment through the workflow engine: vacancy → application → shortlist → interview → references → checks
+    → offer → appointment; blind scoring by default.'
+  priority: SHALL
+  phase: P4
+  module: STF
+- id: FR-STF-06
+  text: Record absence and trigger the cover process (affected lessons, qualified available staff, fairness) (§22).
+  priority: SHALL
+  phase: P3
+  module: STF
+- id: FR-STF-07
+  text: Track CPD and mandatory training with expiry; report compliance by institution, LGA and state.
+  priority: SHALL
+  phase: P4
+  module: STF
+- id: FR-STF-08
+  text: Support annual appraisal with objectives, evidence, ratings and development plans.
+  priority: SHOULD
+  phase: P4
+  module: STF
+- id: FR-STF-09
+  text: Calculate payroll with versioned tax tables (PAYE, pension, NHF), exceptions review, two-person approval, bank file
+    export and ledger posting; integrate with government payroll systems where they are the system of record.
+  priority: SHALL
+  phase: P4
+  module: STF
+- id: FR-STF-10
+  text: Provide a state/LGA teacher deployment view of supply vs curriculum demand by subject and school (STF-10).
+  priority: SHALL
+  phase: P6
+  module: STF
+- id: FR-STF-101
+  text: Provide a staff app (iOS, Android, PWA) with registers, timetable including cover, learner reports, medical alerts,
+    incidents and messages; calendar sync.
+  priority: SHALL
+  phase: P1
+  module: STF
+- id: FR-STF-102
+  text: Attach staff documents (contracts, checks, first-aid and other certificates) with expiry tracking.
+  priority: SHALL
+  phase: P1
+  module: STF
+- id: FR-STF-103
+  text: Record safeguarding and other mandatory training completion with expiry.
+  priority: SHALL
+  phase: P4
+  module: STF
+- id: FR-STF-104
+  text: 'Support staff wellbeing: anonymous pulse surveys reported only in aggregate, workload indicators from timetable and
+    cover data, and referral to employee assistance.'
+  priority: SHALL
+  phase: P4
+  module: STF
+- id: FR-STF-105
+  text: Deliver safeguarding and statutory training in native LMS staff course spaces (with optional SCORM or xAPI content),
+    with role-based assignment, assessments, pass marks, certificates, renewal cycles, compliance by institution, LGA and
+    state, and an inspection evidence report.
+  priority: SHALL
+  phase: P2
+  module: STF
+- id: FR-STF-106
+  text: Optionally prevent an adult without valid safeguarding training from being named DSL, trip leader or on-call responder.
+  priority: SHOULD
+  phase: P2
+  module: STF
+- id: FR-STF-11
+  text: Deactivate system access automatically from the HR leaving date.
+  priority: SHALL
+  phase: P1
+  module: STF
+- id: FR-SUB-101
+  text: 'Assign every institution a financing channel from its ownership in Institution 360: SDAF for public institutions,
+    direct subscription for private providers; apply an ownership change from the next billing period; never bill a learner
+    in both channels in one period.'
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-102
+  text: Maintain a state-approved SDAF rate card in naira by institution type and level, per term or per semester, versioned
+    and effective-dated, with propose, approve and publish steps; refuse any charge without an approved rate.
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-103
+  text: Derive billing periods from each institution type's academic calendar, with a configurable census date per period
+    (default end of week 3 of a term, week 4 of a semester).
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-104
+  text: Count billable learners on the census date as verified, active, unique learners from the Learner master; bill each
+    learner once per period at the institution holding the enrolment on that date; exclude withdrawals, duplicates and unverified
+    records and list them for correction.
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-105
+  text: Flag possible ghost learners before a count is frozen (no attendance since period start, identity conflicts, unexplained
+    enrolment rises) and require the head to clear or explain each flag.
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-106
+  text: Let the head confirm the institution's count within a set window; allow evidence-based challenges; version and audit
+    amendments; freeze and hash the confirmed count.
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-107
+  text: Configure the SDAF payer per institution type and level (government, parent or student, sponsor, scholarship, or a
+    split), and refuse any non-government payer for public primary and junior secondary learners (UBE Act 2004, section 3).
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-108
+  text: Manage SDAF exemption categories with evidence, approval and the funding rule (borne by the state or waived); keep
+    exempted learners in the headcount and report exemptions separately.
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-109
+  text: Issue SDAF demand notices per institution and period, consolidated to a government payer or individual to other payers,
+    each with the state revenue code and the state collection system's payment reference, by app, WhatsApp, SMS and e-mail,
+    labelled as a state levy.
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-110
+  text: Accept SDAF payments only into the state's designated revenue account through state-approved channels (state e-revenue
+    portal, Remita, bank, POS, USSD, transfer) via adapters; link each state e-receipt to the platform record; never route
+    SDAF to SDIN or institution accounts.
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-111
+  text: Post state payment notifications to the SDAF ledger idempotently, reconcile daily against state collection-account
+    statements, queue unmatched items and hold duplicates.
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-112
+  text: Record each remittance from the state to SDIN with its advice (period, institutions, amount, bank reference), allocate
+    it to collections, show collected-but-not-remitted variance with ageing, escalate against agreed timelines and calculate
+    any agreed late-remittance terms.
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-113
+  text: Produce a reconciliation statement per period (billed, exempted, collected, remitted, outstanding) for dual sign-off
+    by the state finance officer and SDIN finance; log disputes by line; lock and hash signed statements.
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-114
+  text: 'Enforce segregation of duties: SDIN read-only on collections and remittances, state unable to alter operator invoices,
+    no single person both recording and approving a remittance, all changes append-only and audited.'
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-115
+  text: Provide the Ministry SDAF dashboard by LGA, institution type and institution, an optional aggregated public summary
+    each term, and an audit evidence pack for the Auditor-General and the State House of Assembly.
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-116
+  text: Never block learners' registers, lessons, LMS, results, examinations, transfers or certificates because the SDAF or
+    a subscription is unpaid, and never publish learner names for non-payment.
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-117
+  text: Maintain SDIN's versioned private plan catalogue (Starter, Standard, Advanced, Tertiary, Group) with modules, limits,
+    price basis and add-ons; issue quotes; capture acceptance of subscription terms by e-signature; support configurable trials
+    linked to onboarding.
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-118
+  text: Invoice private providers each period from the census count, with VAT where applicable, proration for upgrades, downgrades
+    and mid-period starts, consolidated group invoices by campus, approved discounts, credit notes and refunds.
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-119
+  text: Accept private subscription payments directly into SDIN's accounts by gateway, dedicated virtual account or direct
+    debit, with automatic receipts and reconciliation to invoices.
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-120
+  text: Provide a provider self-service billing portal showing plan, usage, invoices, receipts and statement, with payment-method
+    and plan-change management.
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-121
+  text: Send subscription reminders before and after the due date, apply a configurable grace period (default 30 days), then
+    restrict administrative features only, restoring access on payment; handle suspension and termination per contract while
+    preserving data export.
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-122
+  text: Keep state regulatory fees for private providers separate from subscriptions in collection, display and status; neither
+    affects the other.
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-123
+  text: Let private providers optionally add a labelled digital-services line to their parent fee schedules through the Billing
+    engine.
+  priority: MAY
+  phase: P1
+  module: SUB
+- id: FR-SUB-124
+  text: Keep SDIN's receivables ledger by channel (SDAF remittances, private subscriptions, other services), recognise revenue
+    by period, export to SDIN's accounting system, apply VAT to private invoices where applicable, and connect to national
+    e-invoicing where required.
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-SUB-125
+  text: Calculate service credits from measured availability and support performance under the BOO service-level agreement
+    and apply them to the state statement or private invoices as agreed.
+  priority: SHALL
+  phase: P2
+  module: SUB
+- id: FR-SUB-126
+  text: Run the termly SDAF timeline (rate published, census, confirmation, demand, collection window, remittance due) with
+    reminders to heads, state revenue officers and SDIN, and scheduled reports to the Commissioner.
+  priority: SHALL
+  phase: P1
+  module: SUB
+- id: FR-TIM-01
+  text: Construct timetables with hard constraints (teacher/room/class clashes, room capacity, accessibility needs of learners
+    in the class, mandatory curriculum hours) and soft constraints (preferences, spread, consecutive periods, travel).
+  priority: SHALL
+  phase: P3
+  module: TIM
+- id: FR-TIM-02
+  text: Provide an auto-scheduler (constraint solver, e.g. OR-Tools CP-SAT) and manual drag-and-drop editing with live validation.
+  priority: SHALL
+  phase: P3
+  module: TIM
+- id: FR-TIM-03
+  text: Block publication while mandatory curriculum requirements are systematically unmet unless an exception exists.
+  priority: SHALL
+  phase: P3
+  module: TIM
+- id: FR-TIM-04
+  text: Show personal timetables for learners, teachers, classes and rooms with today's changes.
+  priority: SHALL
+  phase: P3
+  module: TIM
+- id: FR-TIM-05
+  text: 'Rank cover candidates: qualified for subject and level → free → lowest cover load this term → same department; never
+    auto-assign unqualified cover; raise cover-gap alerts.'
+  priority: SHALL
+  phase: P3
+  module: TIM
+- id: FR-TIM-06
+  text: Support room and resource booking with accessibility attributes.
+  priority: SHALL
+  phase: P3
+  module: TIM
+- id: FR-TIM-07
+  text: Support multi-campus timetables with travel-time constraints.
+  priority: SHOULD
+  phase: P3
+  module: TIM
+- id: FR-TIM-101
+  text: Support one- and two-week timetable cycles and different structures per year group.
+  priority: SHALL
+  phase: P3
+  module: TIM
+- id: FR-TIM-102
+  text: Manage break and duty rotas with fair distribution.
+  priority: SHALL
+  phase: P3
+  module: TIM
+- id: FR-TIM-103
+  text: Book rooms and shared resources (laptop trolleys, labs, halls) with recurring bookings, approval rules, weekly hour
+    limits and alternative suggestions.
+  priority: SHALL
+  phase: P3
+  module: TIM
+- id: FR-TIM-104
+  text: Allow external lettings of facilities with charges posted to finance.
+  priority: SHOULD
+  phase: P3
+  module: TIM
+- id: FR-TVT-01
+  text: Track competencies against qualification frameworks (NSQ, NABTEB trade syllabuses, industry certifications) with evidence
+    and assessor sign-off, including approved workplace assessors.
+  priority: SHALL
+  phase: P5
+  module: TVT
+- id: FR-TVT-02
+  text: Allocate workshops, bays and equipment; block allocation of equipment past its safety-check date.
+  priority: SHALL
+  phase: P5
+  module: TVT
+- id: FR-TVT-03
+  text: 'Manage industry placements and apprenticeships: matching, agreements, attendance, workplace assessment, employer
+    funding.'
+  priority: SHALL
+  phase: P5
+  module: TVT
+- id: FR-TVT-04
+  text: Maintain Employer Partner 360 with placements, sponsorships, assessors, agreements and hiring outcomes.
+  priority: SHALL
+  phase: P5
+  module: TVT
+- id: FR-TVT-05
+  text: Provide a trainee skills passport (part of the Education Passport).
+  priority: SHALL
+  phase: P5
+  module: TVT
+- id: FR-TVT-06
+  text: Report employment outcomes by programme where legally available.
+  priority: SHOULD
+  phase: P7
+  module: TVT
+- id: FR-TVT-101
+  text: 'Manage industrial training (SIWES in Nigeria): placement letters, employer acceptance, logbook, supervisor visits,
+    ITF forms, assessment and grading linked to the student''s record.'
+  priority: SHALL
+  phase: P5
+  module: TVT
+- id: FR-WEL-01
+  text: Offer opt-in, age-appropriate wellbeing check-ins in the learner portal; staff see trends and follow-up lists.
+  priority: SHOULD
+  phase: P2
+  module: WEL
+- id: FR-WEL-02
+  text: Screen free text for risk keywords and alert the DSL, without auto-classifying learners.
+  priority: SHALL
+  phase: P2
+  module: WEL
+- id: FR-WEL-03
+  text: Plan interventions with baseline, target, learners, lead and review date; record outcome on closure.
+  priority: SHALL
+  phase: P2
+  module: WEL
+- id: FR-WEL-04
+  text: Provide learner-level early warning (dropout, attendance, behaviour, academic decline, wellbeing, SEND support gaps)
+    with explanation per flag; exclude protected characteristics from model features; monitor fairness.
+  priority: SHALL
+  phase: P7
+  module: WEL
+- id: FR-WEL-101
+  text: Let learners and parents report wellbeing concerns in the app with configurable concern types, routed to a pastoral
+    lead within a set time, with DSL alert on safeguarding keywords.
+  priority: SHALL
+  phase: P2
+  module: WEL
+- id: FR-WEL-102
+  text: Let staff record wellbeing observations on a five-point scale and configurable trackers, shown alongside learner and
+    parent reports.
+  priority: SHOULD
+  phase: P2
+  module: WEL
+- id: FR-WEL-103
+  text: Provide wellbeing analytics by source and group, counsellor caseload, and the impact of each intervention as wellbeing
+    before and after.
+  priority: SHALL
+  phase: P2
+  module: WEL
+- id: NFR-A11Y-01
+  text: WCAG 2.2 AA across all pages; AAA contrast in high-contrast theme; tested with assistive technology each release.
+  area: A11Y
+- id: NFR-A11Y-101
+  text: All v2 pages WCAG 2.2 AA; parent and learner portals tested with low-literacy users and screen-reader users in English
+    and at least one Nigerian language.
+  area: A11Y
+- id: NFR-AVAIL-01
+  text: Availability 99.9% monthly (standard) / 99.95% (government contract tier), excluding announced maintenance (≤ 4 h/month,
+    outside school hours).
+  area: AVAIL
+- id: NFR-AVAIL-02
+  text: RPO ≤ 15 minutes, RTO ≤ 4 hours (standard); RPO ≤ 5 minutes, RTO ≤ 1 hour (government tier).
+  area: AVAIL
+- id: NFR-AVAIL-03
+  text: Multi-AZ deployment; cross-region (in-country where residency requires) encrypted backups; quarterly DR test with
+    report.
+  area: AVAIL
+- id: NFR-AVAIL-04
+  text: 'Graceful degradation: if analytics is down, operational pages still work; if messaging is down, messages queue.'
+  area: AVAIL
+- id: NFR-AVAIL-101
+  text: Government tier 99.95% monthly for the central dashboard, verification and registers; LMS 99.9%, with offline mode
+    covering outages.
+  area: AVAIL
+- id: NFR-I18N-01
+  text: UI fully translatable; English, French, Spanish, Portuguese, Arabic (RTL), German, Chinese, Japanese, Hausa, Igbo,
+    Yorùbá at launch of the respective markets.
+  area: I18N
+- id: NFR-MAINT-01
+  text: Module import contracts enforced in CI; ≥ 85% line coverage on domain packages; type-checked; ADRs for architecture
+    decisions; zero-downtime migrations.
+  area: MAINT
+- id: NFR-OBS-01
+  text: OpenTelemetry traces across web, workers and adapters; RED metrics per endpoint; SLO dashboards and burn-rate alerts;
+    structured logs without personal data.
+  area: OBS
+- id: NFR-PERF-01
+  text: Page server render ≤ 300 ms p95 for list/record pages; dashboards ≤ 800 ms p95 from warehouse cache.
+  area: PERF
+- id: NFR-PERF-02
+  text: 'Core Web Vitals at p75 on a mid-range Android over 3G-fast: LCP < 2.5 s, INP < 200 ms, CLS < 0.1.'
+  area: PERF
+- id: NFR-PERF-03
+  text: API p95 ≤ 250 ms for reads, ≤ 500 ms for writes; public verification ≤ 300 ms p95.
+  area: PERF
+- id: NFR-PERF-04
+  text: Register submission for 40 learners ≤ 1 s round trip.
+  area: PERF
+- id: NFR-PERF-05
+  text: Billing run for 50,000 learners ≤ 15 minutes; eligibility run for 100,000 candidates ≤ 30 minutes.
+  area: PERF
+- id: NFR-PERF-101
+  text: 'LMS: assignment publish to learner devices ≤ 2 minutes; submission upload of 10 MB on 3G-fast ≤ 60 s with resumable
+    upload; marking view opens ≤ 1.5 s p95.'
+  area: PERF
+- id: NFR-PERF-102
+  text: 'Central dashboard: state-level tiles ≤ 2 s p95 from cache; live tiles refreshed every ≤ 15 minutes in school hours.'
+  area: PERF
+- id: NFR-PERF-103
+  text: 'Records search: ≤ 1.5 s p95 across 50 million indexed pages per state.'
+  area: PERF
+- id: NFR-PERF-104
+  text: Certificate verification ≤ 300 ms p95; registry propagation ≤ 60 s.
+  area: PERF
+- id: NFR-PLAT-101
+  text: Run all server components on Red Hat Enterprise Linux 10 (or RHEL-based UBI 10 container images on OpenShift).
+  priority: SHALL
+  phase: P0
+  area: PLAT
+- id: NFR-PLAT-102
+  text: Use MySQL 9.7 LTS as the operational database with the configuration baseline in 16.5; no Innovation releases in production.
+  priority: SHALL
+  phase: P0
+  area: PLAT
+- id: NFR-PLAT-103
+  text: Implement the PostgreSQL-to-MySQL design mappings in 16.2 and deliver the MySQL DDL as code.
+  priority: SHALL
+  phase: P0
+  area: PLAT
+- id: NFR-PLAT-104
+  text: Enforce tenant isolation with the four layers in 16.3, with automated cross-tenant leakage tests that block release
+    on failure.
+  priority: SHALL
+  phase: P0
+  area: PLAT
+- id: NFR-PLAT-105
+  text: Deploy MySQL as InnoDB Cluster with a ClusterSet replica in a second in-country site, meeting the RPO and RTO in 16.4.
+  priority: SHALL
+  phase: P0
+  area: PLAT
+- id: NFR-PLAT-106
+  text: Encrypt MySQL data, redo, undo and binary logs at rest with keys in an external key manager; encrypt sensitive fields
+    in the application.
+  priority: SHALL
+  phase: P0
+  area: PLAT
+- id: NFR-PLAT-107
+  text: Harden RHEL hosts to CIS Level 2 (or DISA STIG), with SELinux enforcing and FIPS mode for the government tier.
+  priority: SHALL
+  phase: P0
+  area: PLAT
+- id: NFR-PLAT-108
+  text: Build the application on Python 3.12 and Django 5.2 LTS, following the standards in 16.7.
+  priority: SHALL
+  phase: P0
+  area: PLAT
+- id: NFR-PLAT-109
+  text: Run database tests against MySQL 9.7 in CI.
+  priority: SHALL
+  phase: P0
+  area: PLAT
+- id: NFR-PLAT-110
+  text: Keep analytics on a separate store fed by CDC so analytical queries never run on the operational primary.
+  priority: SHALL
+  phase: P6
+  area: PLAT
+- id: NFR-PLAT-111
+  text: Upgrade MySQL, Django and RHEL only within supported LTS paths, with a rehearsed upgrade in staging.
+  priority: SHALL
+  phase: Ongoing
+  area: PLAT
+- id: NFR-PLAT-112
+  text: Store all text as utf8mb4 and pass a test suite of names with Nigerian-language diacritics and Arabic script through
+    every form, search and export.
+  priority: SHALL
+  phase: P0
+  area: PLAT
+- id: NFR-PORT-01
+  text: Runs on any Kubernetes (EKS, AKS, GKE, on-prem/sovereign cloud); S3-compatible storage; no proprietary database features
+    beyond PostgreSQL extensions listed.
+  area: PORT
+- id: NFR-PRIV-01
+  text: Compliance by configuration with NDPA 2023 (Nigeria), UK GDPR / Data Protection Act 2018, EU GDPR and other local
+    laws; DPIA for each deployment and each AI model.
+  area: PRIV
+- id: NFR-PRIV-02
+  text: Data minimisation, purpose limitation, retention schedules enforced automatically; legal holds.
+  area: PRIV
+- id: NFR-PRIV-03
+  text: Data-subject rights handled in ADM-10 within statutory deadlines; children's data handled with age-appropriate design.
+  area: PRIV
+- id: NFR-PRIV-04
+  text: 'Residency: data stored and processed in the configured region; sub-processors listed and approved.'
+  area: PRIV
+- id: NFR-PRIV-101
+  text: WhatsApp and Zenzap processing covered by data-processing agreements; no special-category content on external channels;
+    NDPA 2023 assessments for each channel.
+  area: PRIV
+- id: NFR-PRIV-102
+  text: Facial match for reissue only with explicit consent, templates discarded after the check, and a non-biometric alternative
+    always offered.
+  area: PRIV
+- id: NFR-SCAL-01
+  text: 'National deployment target: 50 million learners, 1.5 million staff, 150,000 institutions per country tenant.'
+  area: SCAL
+- id: NFR-SCAL-02
+  text: 'Peak: 2 million registers between 07:30 and 09:30 local time; 20,000 verifications/minute during admissions season.'
+  area: SCAL
+- id: NFR-SCAL-03
+  text: Horizontal scaling of web and worker tiers; database read replicas; partitioning of attendance, audit and ledger tables
+    by time.
+  area: SCAL
+- id: NFR-SCAL-101
+  text: 'Messaging gateway: 2 million messages per day per state, bursts of 500 messages per second, provider throughput limits
+    respected with queueing.'
+  area: SCAL
+- id: NFR-SCAL-102
+  text: 'LMS storage: 5 GB per institution per session included, elastic beyond; submissions retained per the retention schedule.'
+  area: SCAL
+- id: NFR-SCAL-103
+  text: 'Digitisation: ingest 500,000 pages per day per state across hubs.'
+  area: SCAL
+- id: NFR-SEC-01
+  text: ISO 27001-aligned ISMS; ISO 27701 privacy extension; annual penetration test and continuous DAST/SAST/dependency scanning.
+  area: SEC
+- id: NFR-SEC-02
+  text: TLS 1.2+ (1.3 preferred), HSTS; encryption at rest (AES-256) with per-tenant keys; field-level encryption for restricted/special
+    data.
+  area: SEC
+- id: NFR-SEC-03
+  text: OWASP ASVS Level 2 (Level 3 for certificate issuance, identity and payments).
+  area: SEC
+- id: NFR-SEC-04
+  text: Secrets in a vault; no secrets in code or images; key rotation ≤ 12 months; certificate signing keys in HSM.
+  area: SEC
+- id: NFR-SEC-05
+  text: Security headers (CSP without unsafe-inline for scripts, X-Frame-Options/frame-ancestors, Referrer-Policy, Permissions-Policy).
+  area: SEC
+- id: NFR-SEC-06
+  text: 'Vulnerability SLAs: critical 7 days, high 30 days.'
+  area: SEC
+- id: NFR-SEC-101
+  text: 'Agents: separate service identities, least privilege, no standing access to special-category data, full action logs,
+    quarterly red-team test of prompt-injection defences.'
+  area: SEC
+- id: NFR-SEC-102
+  text: 'Messaging: provider tokens in the vault, webhook signatures verified, phone numbers stored hashed for lookup and
+    encrypted at rest.'
+  area: SEC
+- id: NFR-SEC-103
+  text: 'Digitisation: WORM storage for masters, hashes verified on every read, scanning hubs with access control, CCTV and
+    clean-desk policy; operators vetted.'
+  area: SEC
+- id: NFR-SEC-104
+  text: 'Certificates: HSM-held signing keys, key ceremony with ministry witnesses, dual control for key use, annual rotation
+    of issuing keys with long-lived verification of old signatures.'
+  area: SEC

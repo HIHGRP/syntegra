@@ -1,0 +1,803 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/28_reporting.schema.json",
+  "title": "CEDA RPT — Reporting, semantic layer registry, government returns, scheduled reports and lineage",
+  "$defs": {
+    "MetricDefinition": {
+      "title": "MetricDefinition",
+      "description": "Published semantic-layer metric (definition, formula, grain, source, owner, refresh, target, suppression)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "metric_definition",
+        "zone": "registry",
+        "domain": "RPT",
+        "kind": "config",
+        "classification": "public",
+        "history": "versioned",
+        "module": "reporting"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "metric_code": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "e.g. ATT-RATE, CUR-COVERAGE"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "definition": {
+          "type": "object",
+          "description": "From metrics.yaml at the published CEDA version"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "higher_is_better",
+            "lower_is_better",
+            "target_band"
+          ]
+        },
+        "label_kind": {
+          "type": "string",
+          "enum": [
+            "verified",
+            "calculated",
+            "estimated"
+          ],
+          "description": "verified, calculated, estimated"
+        },
+        "is_equity_indicator": {
+          "type": "boolean",
+          "description": "Shown only where jurisdiction policy allows"
+        },
+        "ceda_version": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "metric_code",
+        "name",
+        "definition",
+        "direction",
+        "label_kind",
+        "is_equity_indicator",
+        "ceda_version",
+        "version",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ReportDefinition": {
+      "title": "ReportDefinition",
+      "description": "Report in the library (standard, statutory or saved builder query) with permission trimming and suppression",
+      "type": "object",
+      "x-ceda": {
+        "entity": "report_definition",
+        "zone": "registry",
+        "domain": "RPT",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "reporting"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 48,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "report_kind": {
+          "type": "string",
+          "enum": [
+            "standard",
+            "statutory",
+            "saved_query",
+            "board_report",
+            "inspection_pack"
+          ]
+        },
+        "query": {
+          "type": "object",
+          "description": "Metrics, dimensions, filters over the semantic layer"
+        },
+        "min_cell_size": {
+          "type": "integer"
+        },
+        "owner_user_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "code",
+        "title",
+        "report_kind",
+        "query",
+        "min_cell_size",
+        "version",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ReportSchedule": {
+      "title": "ReportSchedule",
+      "description": "Scheduled delivery of a report (recipients, formats, cadence)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "report_schedule",
+        "zone": "registry",
+        "domain": "RPT",
+        "kind": "config",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "reporting"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "report_definition_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "report_definition"
+        },
+        "cron": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "recipients": {
+          "type": "object"
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "xlsx",
+            "csv",
+            "pdf",
+            "json"
+          ]
+        },
+        "last_run_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "report_definition_id",
+        "cron",
+        "recipients",
+        "format",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ReportExport": {
+      "title": "ReportExport",
+      "description": "Export of a permitted table, chart or report (Excel/CSV/PDF), logged; bulk exports of confidential data audited",
+      "type": "object",
+      "x-ceda": {
+        "entity": "report_export",
+        "zone": "ops",
+        "domain": "RPT",
+        "kind": "event",
+        "classification": "internal",
+        "history": "append",
+        "module": "reporting"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "requested_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Page region, report code or BI connector"
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "xlsx",
+            "csv",
+            "pdf",
+            "json"
+          ]
+        },
+        "row_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "object_key": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1024,
+              "description": "Expiring export object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "requested_by",
+        "source",
+        "format",
+        "row_count",
+        "expires_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "ReturnDefinition": {
+      "title": "ReturnDefinition",
+      "description": "Statutory return definition (UBEC census, capitation, exam-body, regulator exports) with validation rules",
+      "type": "object",
+      "x-ceda": {
+        "entity": "return_definition",
+        "zone": "registry",
+        "domain": "RPT",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "reporting"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "recipient": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "spec": {
+          "type": "object",
+          "description": "Datasets, metrics and validation"
+        },
+        "calendar": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Due dates"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "code",
+        "title",
+        "recipient",
+        "spec",
+        "version",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ReturnSubmission": {
+      "title": "ReturnSubmission",
+      "description": "Return generated from live data, validated, reviewed, head-certified and submitted (Accepted / Queried)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "return_submission",
+        "zone": "registry",
+        "domain": "RPT",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "reporting"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "return_definition_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "return_definition"
+        },
+        "institution_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "institution"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "period_label": {
+          "type": "string",
+          "maxLength": 20,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "anomalies": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Explained anomalies (Returns Agent draft)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "certified_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "certified_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "submitted_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content_hash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "contentEncoding": "base64"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recipient_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "generated",
+            "validated",
+            "institution_review",
+            "certified",
+            "submitted",
+            "accepted",
+            "queried"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "return_definition_id",
+        "period_label",
+        "generated_at",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

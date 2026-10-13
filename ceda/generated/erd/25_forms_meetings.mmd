@@ -1,0 +1,88 @@
+erDiagram
+    form_definition {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ code
+        VARCHAR_300_ title
+        JSON field_schema
+        JSON raised_by_roles
+        VARCHAR_32_ confidentiality
+        BINARY_16_ workflow_definition_id FK
+        BIGINT cost_minor
+        CHAR_3_ currency
+        BOOLEAN requires_payment_before_continue
+        VARCHAR_32_ files_to
+        BOOLEAN is_template_library
+        INT version
+        VARCHAR_32_ status
+    }
+    form_response {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ form_id FK
+        INT form_version
+        VARCHAR_32_ subject_kind
+        BINARY_16_ subject_id
+        BINARY_16_ submitted_by
+        BINARY_16_ on_behalf_of
+        JSON answers
+        JSON attachment_document_ids
+        BINARY_16_ invoice_id FK
+        BINARY_16_ workflow_instance_id FK
+        DATETIME_6_ submitted_at
+        VARCHAR_32_ status
+    }
+    meeting_event {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ title
+        JSON class_group_ids
+        JSON days
+        SMALLINT slot_minutes
+        SMALLINT travel_gap_minutes
+        JSON modes
+        DATETIME_6_ booking_opens_at
+        DATETIME_6_ booking_closes_at
+        VARCHAR_32_ status
+    }
+    meeting_booking {
+        BINARY_16_ id PK
+        BINARY_16_ meeting_event_id FK
+        BINARY_16_ staff_id FK
+        BINARY_16_ guardian_id FK
+        BINARY_16_ learner_id FK
+        DATETIME_6_ starts_at
+        VARCHAR_32_ mode
+        VARCHAR_35_ interpreter_language
+        VARCHAR_200_ video_room_ref
+        BOOLEAN recording_consent_all
+        BOOLEAN attended
+        VARCHAR_1000_ note
+        VARCHAR_32_ status
+    }
+    guardian {
+        BINARY_16 id PK
+    }
+    invoice {
+        BINARY_16 id PK
+    }
+    learner {
+        BINARY_16 id PK
+    }
+    staff {
+        BINARY_16 id PK
+    }
+    workflow_definition {
+        BINARY_16 id PK
+    }
+    workflow_instance {
+        BINARY_16 id PK
+    }
+    form_definition ||--o{ form_response : "form_id"
+    guardian ||--o{ meeting_booking : "guardian_id"
+    invoice ||--o{ form_response : "invoice_id"
+    learner ||--o{ meeting_booking : "learner_id"
+    meeting_event ||--o{ meeting_booking : "meeting_event_id"
+    staff ||--o{ meeting_booking : "staff_id"
+    workflow_definition ||--o{ form_definition : "workflow_definition_id"
+    workflow_instance ||--o{ form_response : "workflow_instance_id"

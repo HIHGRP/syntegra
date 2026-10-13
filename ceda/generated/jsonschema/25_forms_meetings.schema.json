@@ -1,0 +1,642 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/25_forms_meetings.schema.json",
+  "title": "CEDA FRM — Forms and Daybook engine and parents' meetings",
+  "$defs": {
+    "FormDefinition": {
+      "title": "FormDefinition",
+      "description": "Form template (versioned; text, number, date, choice, signature, upload, body-map, cost and table fields)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "form_definition",
+        "zone": "ops",
+        "domain": "FRM",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "forms"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "field_schema": {
+          "type": "object",
+          "description": "Fields, mandatory and conditional rules"
+        },
+        "raised_by_roles": {
+          "type": "object",
+          "description": "Staff, learners, parents, on behalf"
+        },
+        "confidentiality": {
+          "type": "string",
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "restricted",
+            "special"
+          ]
+        },
+        "workflow_definition_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "workflow_definition"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cost_minor": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "description": "(minor units)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requires_payment_before_continue": {
+          "type": "boolean"
+        },
+        "files_to": {
+          "type": "string",
+          "enum": [
+            "learner",
+            "staff",
+            "family",
+            "institution"
+          ]
+        },
+        "is_template_library": {
+          "type": "boolean"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "code",
+        "title",
+        "field_schema",
+        "raised_by_roles",
+        "confidentiality",
+        "requires_payment_before_continue",
+        "files_to",
+        "is_template_library",
+        "version",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "FormResponse": {
+      "title": "FormResponse",
+      "description": "Submitted form (keeps the version it was submitted on; filed to the Daybook timeline)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "form_response",
+        "zone": "ops",
+        "domain": "FRM",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "forms"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "form_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "form_definition"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "form_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "subject_kind": {
+          "type": "string",
+          "enum": [
+            "learner",
+            "guardian",
+            "staff",
+            "provider_person",
+            "applicant",
+            "visitor"
+          ]
+        },
+        "subject_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "submitted_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "on_behalf_of": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "answers": {
+          "type": "object"
+        },
+        "attachment_document_ids": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "invoice_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "invoice"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "workflow_instance_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "workflow_instance"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "submitted_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "submitted",
+            "in_workflow",
+            "awaiting_payment",
+            "approved",
+            "rejected",
+            "filed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "form_version",
+        "subject_kind",
+        "subject_id",
+        "submitted_by",
+        "answers",
+        "submitted_at",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "MeetingEvent": {
+      "title": "MeetingEvent",
+      "description": "Parents' meeting event across one or more days (in-person, video and hybrid slots per teacher)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "meeting_event",
+        "zone": "ops",
+        "domain": "FRM",
+        "kind": "config",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "forms"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "class_group_ids": {
+          "type": "object"
+        },
+        "days": {
+          "type": "object",
+          "description": "Dates and session windows"
+        },
+        "slot_minutes": {
+          "type": "integer"
+        },
+        "travel_gap_minutes": {
+          "type": "integer"
+        },
+        "modes": {
+          "type": "object",
+          "description": "in_person, video, hybrid"
+        },
+        "booking_opens_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "booking_closes_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "title",
+        "class_group_ids",
+        "days",
+        "slot_minutes",
+        "travel_gap_minutes",
+        "modes",
+        "booking_opens_at",
+        "booking_closes_at",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "MeetingBooking": {
+      "title": "MeetingBooking",
+      "description": "Booked slot for a parent with a teacher (clash prevention; interpreter; attendance and notes to the learner timeline)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "meeting_booking",
+        "zone": "ops",
+        "domain": "FRM",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "forms"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "meeting_event_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "meeting_event"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff"
+        },
+        "guardian_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "guardian"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "starts_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "in_person",
+            "video",
+            "hybrid"
+          ]
+        },
+        "interpreter_language": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 35
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "video_room_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recording_consent_all": {
+          "type": "boolean"
+        },
+        "attended": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "requested",
+            "confirmed",
+            "declined",
+            "cancelled",
+            "completed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "meeting_event_id",
+        "staff_id",
+        "guardian_id",
+        "learner_id",
+        "starts_at",
+        "mode",
+        "recording_consent_all",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

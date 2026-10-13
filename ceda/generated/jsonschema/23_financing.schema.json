@@ -1,0 +1,2160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/23_financing.schema.json",
+  "title": "CEDA SUB — Programme financing — Student Digital Access Fee (SDAF) rates, census, payers, exemptions, demand, collection, remittance and reconciliation",
+  "$defs": {
+    "SdafRateCard": {
+      "title": "SdafRateCard",
+      "description": "Version of the state-approved SDAF rate card (propose → approve → publish)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "sdaf_rate_card",
+        "zone": "registry",
+        "domain": "SUB",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "financing"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "proposed_by": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "approved_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user",
+              "description": "Commissioner or State Executive Council"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approval_instrument": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200,
+              "description": "Approval reference (D25/D26)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "effective_from": {
+          "type": "string",
+          "format": "date"
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "version",
+        "proposed_by",
+        "effective_from",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "SdafRate": {
+      "title": "SdafRate",
+      "description": "Rate in a rate card for an institution type and level, per term or per semester (naira)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "sdaf_rate",
+        "zone": "registry",
+        "domain": "SUB",
+        "kind": "config",
+        "classification": "internal",
+        "history": "append",
+        "module": "financing"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "rate_card_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "sdaf_rate_card"
+        },
+        "institution_type": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "institution_category"
+        },
+        "education_level": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "education_level"
+        },
+        "charge_period": {
+          "type": "string",
+          "enum": [
+            "per_term",
+            "per_semester"
+          ]
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "rate_card_id",
+        "institution_type",
+        "education_level",
+        "charge_period",
+        "amount_minor",
+        "currency",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "BillingPeriod": {
+      "title": "BillingPeriod",
+      "description": "Term or semester billing period with census date (from each institution type's academic calendar)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "billing_period",
+        "zone": "registry",
+        "domain": "SUB",
+        "kind": "config",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "financing"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "academic_period_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "academic_period"
+        },
+        "institution_types": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "x-code-list": "institution_category"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "e.g. 2026/27-T1-BASIC, 2026/27-S1-TERTIARY"
+        },
+        "census_on": {
+          "type": "string",
+          "format": "date",
+          "description": "Default end of week 3 (term) or week 4 (semester)"
+        },
+        "confirmation_closes_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "collection_window_ends_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "remittance_due_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "planned",
+            "census_open",
+            "confirming",
+            "demand_issued",
+            "collecting",
+            "remitting",
+            "reconciled",
+            "closed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "academic_period_id",
+        "institution_types",
+        "label",
+        "census_on",
+        "confirmation_closes_on",
+        "collection_window_ends_on",
+        "remittance_due_on",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "SdafPayerRule": {
+      "title": "SdafPayerRule",
+      "description": "Who pays the SDAF for an institution type and level (government only for public primary and JSS)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "sdaf_payer_rule",
+        "zone": "registry",
+        "domain": "SUB",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "financing"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "institution_type": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "institution_category"
+        },
+        "education_level": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "education_level"
+        },
+        "is_basic_education": {
+          "type": "boolean",
+          "description": "Public primary or junior secondary"
+        },
+        "payer": {
+          "type": "string",
+          "enum": [
+            "government",
+            "parent_or_student",
+            "sponsor",
+            "scholarship",
+            "split"
+          ]
+        },
+        "split": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Shares when payer = split"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "institution_type",
+        "education_level",
+        "is_basic_education",
+        "payer",
+        "version",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "SdafExemptionCategory": {
+      "title": "SdafExemptionCategory",
+      "description": "Exemption category (SEND, orphans and vulnerable children, IDPs, scholarship holders) with funding rule",
+      "type": "object",
+      "x-ceda": {
+        "entity": "sdaf_exemption_category",
+        "zone": "registry",
+        "domain": "SUB",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "financing"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "funding_rule": {
+          "type": "string",
+          "enum": [
+            "borne_by_state",
+            "waived"
+          ]
+        },
+        "evidence_required": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "code",
+        "title",
+        "funding_rule",
+        "evidence_required",
+        "version",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "SdafExemption": {
+      "title": "SdafExemption",
+      "description": "Approved SDAF exemption for a learner and period (learner stays in the headcount; reported separately)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "sdaf_exemption",
+        "zone": "registry",
+        "domain": "SUB",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "financing"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "billing_period_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "billing_period"
+        },
+        "category_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "sdaf_exemption_category"
+        },
+        "evidence_document_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "requested_by": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "approved_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "submitted",
+            "in_review",
+            "approved",
+            "rejected",
+            "cancelled",
+            "fulfilled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "learner_id",
+        "billing_period_id",
+        "category_id",
+        "evidence_document_id",
+        "requested_by",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "CensusSnapshot": {
+      "title": "CensusSnapshot",
+      "description": "Billable-learner count of an institution for a period (flags cleared, head-confirmed, frozen and hashed; amendments versioned)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "census_snapshot",
+        "zone": "registry",
+        "domain": "SUB",
+        "kind": "snapshot",
+        "classification": "confidential",
+        "history": "versioned",
+        "module": "financing"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "billing_period_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "billing_period"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "enrolled": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "verified": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "excluded": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "exempted": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "billable": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "open_flags": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count cannot be frozen while flags are open"
+        },
+        "confirmed_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "confirmed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "frozen_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content_hash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "contentEncoding": "base64"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "challenge": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Evidence-based challenge and decision"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "flags_open",
+            "awaiting_confirmation",
+            "confirmed",
+            "challenged",
+            "frozen",
+            "superseded"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "institution_id",
+        "billing_period_id",
+        "version",
+        "enrolled",
+        "verified",
+        "excluded",
+        "exempted",
+        "billable",
+        "open_flags",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "CensusLearner": {
+      "title": "CensusLearner",
+      "description": "Learner included or excluded in a census snapshot, with reason (append-only)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "census_learner",
+        "zone": "registry",
+        "domain": "SUB",
+        "kind": "snapshot",
+        "classification": "confidential",
+        "history": "append",
+        "module": "financing"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "snapshot_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "census_snapshot"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "enrolment_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "enrolment"
+        },
+        "inclusion": {
+          "type": "string",
+          "enum": [
+            "billable",
+            "excluded",
+            "exempt"
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "withdrawn_before_census",
+                "duplicate",
+                "unverified",
+                "other_institution_holds",
+                "exempt"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "snapshot_id",
+        "learner_id",
+        "enrolment_id",
+        "inclusion",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "CensusFlag": {
+      "title": "CensusFlag",
+      "description": "Ghost-learner flag before freezing (no attendance since period start, identity conflict, unexplained rise) — cleared or explained by the head",
+      "type": "object",
+      "x-ceda": {
+        "entity": "census_flag",
+        "zone": "registry",
+        "domain": "SUB",
+        "kind": "queue",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "financing"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "snapshot_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "census_snapshot"
+        },
+        "learner_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "learner"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "flag_kind": {
+          "type": "string",
+          "enum": [
+            "no_attendance_since_start",
+            "identity_conflict",
+            "unexplained_rise"
+          ]
+        },
+        "evidence": {
+          "type": "object"
+        },
+        "resolution": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "cleared",
+                "explained",
+                "removed_from_count"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "explanation": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resolved_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "in_progress",
+            "resolved",
+            "dismissed",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "snapshot_id",
+        "flag_kind",
+        "evidence",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "BillingPeriodBilled": {
+      "title": "BillingPeriodBilled",
+      "description": "Once-per-period billing guard — a learner is billed once per period across channels and institutions",
+      "type": "object",
+      "x-ceda": {
+        "entity": "billing_period_billed",
+        "zone": "registry",
+        "domain": "SUB",
+        "kind": "link",
+        "classification": "confidential",
+        "history": "append",
+        "module": "financing"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "billing_period_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "billing_period"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "channel": {
+          "type": "string",
+          "enum": [
+            "sdaf",
+            "direct_subscription"
+          ]
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "snapshot_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "census_snapshot"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "billing_period_id",
+        "learner_id",
+        "channel",
+        "institution_id",
+        "snapshot_id",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "SdafDemand": {
+      "title": "SdafDemand",
+      "description": "SDAF demand notice (consolidated to a government payer) or individual assessment (never at basic-education level)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "sdaf_demand",
+        "zone": "registry",
+        "domain": "SUB",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "financing"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "demand_number": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "billing_period_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "billing_period"
+        },
+        "snapshot_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "census_snapshot"
+        },
+        "payer_kind": {
+          "type": "string",
+          "enum": [
+            "government",
+            "parent_or_student",
+            "sponsor",
+            "scholarship",
+            "split"
+          ]
+        },
+        "payer_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Government payer, guardian, learner or sponsor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "learner_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "learner",
+              "description": "Individual assessments only"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "billable_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "waived_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rate_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "sdaf_rate"
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(billable − waived) × rate (minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "revenue_code": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "payment_reference": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "Remita RRR or state e-revenue reference"
+        },
+        "issued_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "is_basic_education": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "issued",
+            "part_paid",
+            "paid",
+            "overdue",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "demand_number",
+        "institution_id",
+        "billing_period_id",
+        "snapshot_id",
+        "payer_kind",
+        "billable_count",
+        "waived_count",
+        "rate_id",
+        "amount_minor",
+        "currency",
+        "revenue_code",
+        "payment_reference",
+        "issued_at",
+        "is_basic_education",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "SdafCollection": {
+      "title": "SdafCollection",
+      "description": "Payment into the state revenue account against a demand (posted idempotently from state notifications; append-only)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "sdaf_collection",
+        "zone": "registry",
+        "domain": "SUB",
+        "kind": "event",
+        "classification": "confidential",
+        "history": "append",
+        "module": "financing"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "demand_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "sdaf_demand"
+        },
+        "state_receipt_ref": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "State e-receipt / collection-system id — idempotency key"
+        },
+        "channel": {
+          "type": "string",
+          "enum": [
+            "state_portal",
+            "remita",
+            "bank_branch",
+            "pos",
+            "ussd",
+            "bank_transfer"
+          ]
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "paid_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "statement_matched_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "description": "Daily reconciliation against the state collection-account statement"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "demand_id",
+        "state_receipt_ref",
+        "channel",
+        "amount_minor",
+        "currency",
+        "paid_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "UnmatchedCollection": {
+      "title": "UnmatchedCollection",
+      "description": "State collection notification not matched to a demand, or a held duplicate",
+      "type": "object",
+      "x-ceda": {
+        "entity": "unmatched_collection",
+        "zone": "registry",
+        "domain": "SUB",
+        "kind": "queue",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "financing"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "state_receipt_ref": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "payload": {
+          "type": "object"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "no_reference",
+            "unknown_reference",
+            "amount_mismatch",
+            "duplicate"
+          ]
+        },
+        "resolved_demand_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "sdaf_demand"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resolved_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "in_progress",
+            "resolved",
+            "dismissed",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "state_receipt_ref",
+        "payload",
+        "reason",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Remittance": {
+      "title": "Remittance",
+      "description": "Remittance of collected SDAF from the State Government to SDIN, with advice (recorder ≠ approver; append-only)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "remittance",
+        "zone": "registry",
+        "domain": "SUB",
+        "kind": "event",
+        "classification": "confidential",
+        "history": "append",
+        "module": "financing"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "billing_period_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "billing_period"
+        },
+        "advice_ref": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "bank_ref": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "remitted_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "recorded_by": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "approved_by": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "billing_period_id",
+        "advice_ref",
+        "bank_ref",
+        "amount_minor",
+        "currency",
+        "remitted_on",
+        "recorded_by",
+        "approved_by",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "RemittanceAllocation": {
+      "title": "RemittanceAllocation",
+      "description": "Allocation of a remittance to the collections it covers",
+      "type": "object",
+      "x-ceda": {
+        "entity": "remittance_allocation",
+        "zone": "registry",
+        "domain": "SUB",
+        "kind": "link",
+        "classification": "confidential",
+        "history": "append",
+        "module": "financing"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "remittance_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "remittance"
+        },
+        "collection_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "sdaf_collection"
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "remittance_id",
+        "collection_id",
+        "amount_minor",
+        "currency",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "ReconciliationStatement": {
+      "title": "ReconciliationStatement",
+      "description": "Period statement — billed, exempted, collected, remitted, outstanding — with dual sign-off (state + SDIN), locked and hashed",
+      "type": "object",
+      "x-ceda": {
+        "entity": "reconciliation_statement",
+        "zone": "registry",
+        "domain": "SUB",
+        "kind": "snapshot",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "financing"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "billing_period_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "billing_period"
+        },
+        "billed_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "exempted_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "collected_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "remitted_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "outstanding_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "late_remittance_charge_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "service_credits_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "state_signed_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "state_signed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "operator_signed_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "operator_signed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content_hash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "contentEncoding": "base64"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "state_signed",
+            "operator_signed",
+            "signed_locked",
+            "disputed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "billing_period_id",
+        "billed_minor",
+        "exempted_minor",
+        "collected_minor",
+        "remitted_minor",
+        "outstanding_minor",
+        "late_remittance_charge_minor",
+        "service_credits_minor",
+        "currency",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ReconciliationLine": {
+      "title": "ReconciliationLine",
+      "description": "Line of a reconciliation statement by institution (with logged disputes)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "reconciliation_line",
+        "zone": "registry",
+        "domain": "SUB",
+        "kind": "snapshot",
+        "classification": "confidential",
+        "history": "append",
+        "module": "financing"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "statement_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "reconciliation_statement"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "billed_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "exempted_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "collected_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "remitted_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "dispute": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Dispute logged against the line"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "statement_id",
+        "institution_id",
+        "billed_minor",
+        "exempted_minor",
+        "collected_minor",
+        "remitted_minor",
+        "currency",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "SdafPublicSummary": {
+      "title": "SdafPublicSummary",
+      "description": "Optional aggregated public summary per term (no learner data)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "sdaf_public_summary",
+        "zone": "registry",
+        "domain": "SUB",
+        "kind": "snapshot",
+        "classification": "public",
+        "history": "append",
+        "module": "financing"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "billing_period_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "billing_period"
+        },
+        "published_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "summary": {
+          "type": "object"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "billing_period_id",
+        "published_at",
+        "summary",
+        "created_at"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

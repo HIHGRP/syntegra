@@ -1,0 +1,972 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/12_timetable.schema.json",
+  "title": "CEDA TIM — Timetable, lesson occurrences, cover rota, duties and room bookings",
+  "$defs": {
+    "Timetable": {
+      "title": "Timetable",
+      "description": "Timetable version for an institution and session (one- or two-week cycles, structures per year group)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "timetable",
+        "zone": "ops",
+        "domain": "TIM",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "timetable"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "period_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "academic_period"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cycle_weeks": {
+          "type": "integer"
+        },
+        "sessions_per_day": {
+          "type": "integer",
+          "description": "Double-shift schools"
+        },
+        "solver_run": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Constraint set, objective value and unmet soft constraints"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unmet_requirements": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Mandatory hours not met (publication blocked unless an exception exists)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exception_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "policy_exception"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "institution_id",
+        "period_id",
+        "version",
+        "cycle_weeks",
+        "sessions_per_day",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "PeriodStructure": {
+      "title": "PeriodStructure",
+      "description": "Bell schedule — named periods with times per day of the cycle and per year-group structure",
+      "type": "object",
+      "x-ceda": {
+        "entity": "period_structure",
+        "zone": "ops",
+        "domain": "TIM",
+        "kind": "config",
+        "classification": "internal",
+        "history": "none",
+        "module": "timetable"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "timetable_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "timetable"
+        },
+        "structure_code": {
+          "type": "string",
+          "maxLength": 20,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "Year-group structure"
+        },
+        "cycle_day": {
+          "type": "integer"
+        },
+        "period_code": {
+          "type": "string",
+          "maxLength": 16,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "starts_at": {
+          "type": "string",
+          "format": "time"
+        },
+        "ends_at": {
+          "type": "string",
+          "format": "time"
+        },
+        "is_teaching": {
+          "type": "boolean",
+          "description": "Breaks and registration periods are not teaching"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "timetable_id",
+        "structure_code",
+        "cycle_day",
+        "period_code",
+        "starts_at",
+        "ends_at",
+        "is_teaching",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "TimetableLesson": {
+      "title": "TimetableLesson",
+      "description": "Recurring scheduled lesson (class or section × subject × teacher × room × cycle slot)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "timetable_lesson",
+        "zone": "ops",
+        "domain": "TIM",
+        "kind": "config",
+        "classification": "internal",
+        "history": "none",
+        "module": "timetable"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "timetable_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "timetable"
+        },
+        "class_group_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "class_group"
+        },
+        "class_subject_plan_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "class_subject_plan"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "course_section_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "course_section"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "subject_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "subject"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff"
+        },
+        "room_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "room"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cycle_day": {
+          "type": "integer"
+        },
+        "period_code": {
+          "type": "string",
+          "maxLength": 16,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "duration_minutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lesson_kind": {
+          "type": "string",
+          "enum": [
+            "lesson",
+            "lecture",
+            "tutorial",
+            "practical",
+            "live_class",
+            "registration"
+          ],
+          "description": "lesson, lecture, tutorial, practical, live_class"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "timetable_id",
+        "class_group_id",
+        "subject_id",
+        "staff_id",
+        "cycle_day",
+        "period_code",
+        "duration_minutes",
+        "lesson_kind",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "LessonOccurrence": {
+      "title": "LessonOccurrence",
+      "description": "Dated occurrence of a lesson, materialised when a register, cover, delivery log or rating refers to it",
+      "type": "object",
+      "x-ceda": {
+        "entity": "lesson_occurrence",
+        "zone": "ops",
+        "domain": "TIM",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "timetable"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "timetable_lesson_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "timetable_lesson"
+        },
+        "occurs_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "starts_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ends_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff",
+          "description": "Teacher actually responsible (cover changes it)"
+        },
+        "room_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "room"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_remote": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "scheduled",
+            "taught",
+            "covered",
+            "cancelled",
+            "remote"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "timetable_lesson_id",
+        "occurs_on",
+        "starts_at",
+        "ends_at",
+        "staff_id",
+        "is_remote",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "DutyRota": {
+      "title": "DutyRota",
+      "description": "Break, duty or on-call rota slot (fair distribution; on-call responders for BEH-105)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "duty_rota",
+        "zone": "ops",
+        "domain": "TIM",
+        "kind": "config",
+        "classification": "internal",
+        "history": "effective",
+        "module": "timetable"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "duty_kind": {
+          "type": "string",
+          "enum": [
+            "break_duty",
+            "lunch_duty",
+            "gate_duty",
+            "on_call",
+            "bus_duty"
+          ]
+        },
+        "location": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 120
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cycle_day": {
+          "type": "integer"
+        },
+        "period_code": {
+          "type": "string",
+          "maxLength": 16,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff"
+        },
+        "backup_staff_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "staff"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective from (inclusive) — history: effective",
+          "readOnly": true
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective to (inclusive); NULL = open-ended — history: effective",
+          "readOnly": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "institution_id",
+        "duty_kind",
+        "cycle_day",
+        "period_code",
+        "staff_id",
+        "valid_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "RoomBooking": {
+      "title": "RoomBooking",
+      "description": "Booking of a room or shared resource (labs, halls, laptop trolleys) — recurring, approval rules, weekly limits",
+      "type": "object",
+      "x-ceda": {
+        "entity": "room_booking",
+        "zone": "ops",
+        "domain": "TIM",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "timetable"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "room_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "room"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "asset_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "asset",
+              "description": "Shared resource"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "booked_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "purpose": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "starts_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ends_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "recurrence": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "RRULE for recurring bookings"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approved_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "requested",
+            "confirmed",
+            "declined",
+            "cancelled",
+            "completed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "booked_by",
+        "purpose",
+        "starts_at",
+        "ends_at",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Letting": {
+      "title": "Letting",
+      "description": "External letting of facilities with charges posted to finance",
+      "type": "object",
+      "x-ceda": {
+        "entity": "letting",
+        "zone": "ops",
+        "domain": "TIM",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "timetable"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "room_booking_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "room_booking"
+        },
+        "hirer_name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "hirer_contact": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200,
+              "x-personal-data": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "charge_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "invoice_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "invoice"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "requested",
+            "confirmed",
+            "declined",
+            "cancelled",
+            "completed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "room_booking_id",
+        "hirer_name",
+        "charge_minor",
+        "currency",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

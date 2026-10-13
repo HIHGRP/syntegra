@@ -1,0 +1,287 @@
+erDiagram
+    certificate {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ certificate_number
+        VARCHAR_16_ verification_code
+        VARCHAR_32_ credential_kind
+        BINARY_16_ learner_id FK
+        BINARY_16_ institution_id FK
+        BINARY_16_ qualification_id FK
+        BINARY_16_ programme_id FK
+        BINARY_16_ curriculum_version_id FK
+        DATE award_date
+        VARCHAR_40_ award_class
+        VARCHAR_200_ holder_name_on_award
+        BINARY_16_ eligibility_result_id FK
+        BINARY_16_ exception_id FK
+        BINARY_16_ template_id FK
+        BINARY_16_ signatory_id FK
+        JSON payload
+        BINARY_32_ payload_hash
+        VARBINARY_512_ signature
+        BINARY_16_ signing_key_id FK
+        JSON vc_document
+        BINARY_16_ pdf_document_id
+        BINARY_16_ supersedes_id FK
+        BINARY_16_ superseded_by FK
+        BINARY_16_ legacy_award_id FK
+        VARCHAR_32_ status
+        DATETIME_6_ status_changed_at
+        VARCHAR_120_ award_key
+    }
+    certificate_event {
+        BINARY_16_ id PK
+        BINARY_16_ certificate_id FK
+        VARCHAR_32_ event_kind
+        TEXT reason
+        JSON evidence_document_ids
+        BINARY_16_ actor_user_id FK
+        BINARY_16_ approver_user_id FK
+        BINARY_16_ workflow_instance_id FK
+        DATETIME_6_ occurred_at
+    }
+    certificate_template {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ code
+        VARCHAR_32_ credential_kind
+        BINARY_16_ qualification_id FK
+        JSON layout
+        JSON print_profile
+        INT version
+        VARCHAR_32_ status
+    }
+    signatory {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ user_id FK
+        VARCHAR_300_ title_on_award
+        BINARY_16_ signature_image_document_id
+        INT max_batch_without_second
+        DATE valid_from
+        DATE valid_to
+    }
+    signing_key {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_64_ kid
+        VARCHAR_16_ algorithm
+        JSON public_jwk
+        VARCHAR_255_ hsm_key_ref
+        BINARY_16_ ceremony_document_id
+        DATETIME_6_ activated_at
+        DATETIME_6_ retired_at
+        VARCHAR_32_ status
+    }
+    eligibility_run {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ qualification_id FK
+        JSON cohort_filter
+        INT learners_total
+        INT learners_eligible
+        INT learners_blocked
+        BINARY_16_ requested_by FK
+        VARCHAR_32_ status
+    }
+    eligibility_result {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ run_id FK
+        BINARY_16_ learner_id FK
+        BINARY_16_ qualification_id FK
+        JSON checks
+        BOOLEAN is_eligible
+        DATETIME_6_ evaluated_at
+    }
+    verification {
+        BINARY_16_ id PK
+        BINARY_16_ certificate_id FK
+        VARCHAR_40_ queried_number
+        VARCHAR_32_ channel
+        BINARY_16_ api_client_id FK
+        VARCHAR_32_ result
+        BINARY_32_ ip_hash
+        DATETIME_6_ verified_at PK
+    }
+    registry_publication {
+        BINARY_16_ id PK
+        BINARY_16_ certificate_event_id FK
+        VARCHAR_32_ target
+        SMALLINT attempts
+        DATETIME_6_ published_at
+        VARCHAR_1000_ last_error
+        VARCHAR_32_ status
+    }
+    security_stock {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ serial
+        VARCHAR_40_ batch_ref
+        BINARY_16_ holder_institution_id FK
+        BINARY_16_ certificate_id FK
+        VARCHAR_32_ state
+        DATETIME_6_ state_changed_at
+        VARCHAR_200_ destruction_witness
+    }
+    print_job {
+        BINARY_16_ id PK
+        BINARY_16_ certificate_id FK
+        BINARY_16_ stock_id FK
+        VARCHAR_64_ printer_ref
+        BINARY_16_ printed_by FK
+        VARCHAR_32_ outcome
+        DATETIME_6_ printed_at
+    }
+    certificate_delivery {
+        BINARY_16_ id PK
+        BINARY_16_ certificate_id FK
+        VARCHAR_32_ method
+        VARCHAR_200_ recipient_name
+        VARCHAR_120_ recipient_id_checked
+        VARCHAR_64_ courier_tracking
+        DATETIME_6_ delivered_at
+    }
+    legacy_award {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        BINARY_16_ institution_id FK
+        VARCHAR_300_ qualification_label
+        SMALLINT award_year
+        VARCHAR_40_ original_number
+        BINARY_16_ source_document_id
+        BINARY_16_ verified_by FK
+        VARCHAR_32_ status
+    }
+    fee_schedule {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ service
+        VARCHAR_40_ variant
+        BIGINT amount_minor
+        CHAR_3_ currency
+        VARCHAR_40_ revenue_code
+        INT version
+        VARCHAR_32_ status
+    }
+    reissue_case {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ case_number
+        BINARY_16_ certificate_id FK
+        BINARY_16_ legacy_award_id FK
+        BINARY_16_ applicant_user_id FK
+        VARCHAR_200_ applicant_name
+        VARCHAR_16_ applicant_phone
+        VARCHAR_32_ reason
+        VARCHAR_32_ urgency
+        JSON evidence_document_ids
+        BINARY_16_ fee_schedule_id FK
+        BIGINT amount_due_minor
+        CHAR_3_ currency
+        VARCHAR_64_ payment_reference
+        DATETIME_6_ paid_at
+        BINARY_16_ waiver_approved_by FK
+        BOOLEAN integrity_flag
+        BINARY_16_ reviewer_id FK
+        BINARY_16_ second_approver_id FK
+        BINARY_16_ new_certificate_id FK
+        VARCHAR_32_ status
+    }
+    identity_check {
+        BINARY_16_ id PK
+        BINARY_16_ reissue_case_id FK
+        VARCHAR_32_ method
+        VARCHAR_32_ outcome
+        BOOLEAN consent_captured
+        JSON detail
+        DATETIME_6_ checked_at
+    }
+    forgery_report {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ queried_number
+        BINARY_16_ certificate_id FK
+        VARCHAR_300_ reporter_org
+        VARCHAR_200_ reporter_contact
+        BINARY_16_ evidence_document_id
+        BINARY_16_ investigator_id FK
+        VARCHAR_32_ outcome
+        VARCHAR_32_ status
+    }
+    api_client {
+        BINARY_16 id PK
+    }
+    app_user {
+        BINARY_16 id PK
+    }
+    curriculum_version {
+        BINARY_16 id PK
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    learner {
+        BINARY_16 id PK
+    }
+    policy_exception {
+        BINARY_16 id PK
+    }
+    programme {
+        BINARY_16 id PK
+    }
+    qualification {
+        BINARY_16 id PK
+    }
+    workflow_instance {
+        BINARY_16 id PK
+    }
+    api_client ||--o{ verification : "api_client_id"
+    app_user ||--o{ certificate_event : "actor_user_id"
+    app_user ||--o{ certificate_event : "approver_user_id"
+    app_user ||--o{ eligibility_run : "requested_by"
+    app_user ||--o{ forgery_report : "investigator_id"
+    app_user ||--o{ legacy_award : "verified_by"
+    app_user ||--o{ print_job : "printed_by"
+    app_user ||--o{ reissue_case : "applicant_user_id"
+    app_user ||--o{ reissue_case : "reviewer_id"
+    app_user ||--o{ reissue_case : "second_approver_id"
+    app_user ||--o{ reissue_case : "waiver_approved_by"
+    app_user ||--o{ signatory : "user_id"
+    certificate ||--o{ certificate : "superseded_by"
+    certificate ||--o{ certificate : "supersedes_id"
+    certificate ||--o{ certificate_delivery : "certificate_id"
+    certificate ||--o{ certificate_event : "certificate_id"
+    certificate ||--o{ forgery_report : "certificate_id"
+    certificate ||--o{ print_job : "certificate_id"
+    certificate ||--o{ reissue_case : "certificate_id"
+    certificate ||--o{ reissue_case : "new_certificate_id"
+    certificate ||--o{ security_stock : "certificate_id"
+    certificate ||--o{ verification : "certificate_id"
+    certificate_event ||--o{ registry_publication : "certificate_event_id"
+    certificate_template ||--o{ certificate : "template_id"
+    curriculum_version ||--o{ certificate : "curriculum_version_id"
+    eligibility_result ||--o{ certificate : "eligibility_result_id"
+    eligibility_run ||--o{ eligibility_result : "run_id"
+    fee_schedule ||--o{ reissue_case : "fee_schedule_id"
+    institution ||--o{ certificate : "institution_id"
+    institution ||--o{ legacy_award : "institution_id"
+    institution ||--o{ security_stock : "holder_institution_id"
+    learner ||--o{ certificate : "learner_id"
+    learner ||--o{ eligibility_result : "learner_id"
+    learner ||--o{ legacy_award : "learner_id"
+    legacy_award ||--o{ certificate : "legacy_award_id"
+    legacy_award ||--o{ reissue_case : "legacy_award_id"
+    policy_exception ||--o{ certificate : "exception_id"
+    programme ||--o{ certificate : "programme_id"
+    qualification ||--o{ certificate : "qualification_id"
+    qualification ||--o{ certificate_template : "qualification_id"
+    qualification ||--o{ eligibility_result : "qualification_id"
+    qualification ||--o{ eligibility_run : "qualification_id"
+    reissue_case ||--o{ identity_check : "reissue_case_id"
+    security_stock ||--o{ print_job : "stock_id"
+    signatory ||--o{ certificate : "signatory_id"
+    signing_key ||--o{ certificate : "signing_key_id"
+    workflow_instance ||--o{ certificate_event : "workflow_instance_id"

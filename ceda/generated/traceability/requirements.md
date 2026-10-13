@@ -1,0 +1,523 @@
+# Requirement → data traceability
+
+517 functional requirements in SYN-MFS-002 v2.4: 510 are realised by CEDA entities or metrics; 7 are behavioural (UI, workflow or engine behaviour over data already modelled) and name the entity they operate on. Generated; do not edit.
+
+| Requirement | Priority | Phase | Realised by | Text |
+|---|---|---|---|---|
+| FR-ACA-01 | SHALL | P1 | `code_list`, `code_value` | Use country education-level and grade codes; institutions choose from them and cannot invent new level codes. |
+| FR-ACA-02 | SHALL | P1 | `academic_period`, `calendar_event`, `class_group`, `config_version`, `policy_exception` | Inherit the state/country academic calendar; institutions may add closures but cannot reduce teaching days below the curriculum minimum without an approved exception. |
+| FR-ACA-03 | SHALL | P1 | `course`, `subject` | Maintain subject/course catalogue mapped to Subject 360 and to curricula. |
+| FR-ACA-04 | SHALL | P5 | `programme`, `programme_component`, `qualification` | Build programmes from components with credits, core/elective status, prerequisites (cycle-checked), progression and award rules, classification scheme and accrediting body. |
+| FR-ACA-05 | SHALL | P1 | behavioural — uses `class_group`: Teacher class page (ACA-05) is a view over class membership, timetable, adjustments and LMS homework. | Provide a teacher class page with roster, today's lessons, authorised adjustments, homework and quick actions (ACA-05). |
+| FR-ACA-06 | SHALL | P1 | `academic_period` | Support semesters, sessions, terms, modules and credits for tertiary institutions, and terms/arms for schools, in the same model. |
+| FR-ACA-101 | SHALL | P1 | `class_group`, `class_membership` | Maintain Class 360 for every class (arm) per session with level, arm, stream, capacity, form teacher, language of instruction and enrolled learners. |
+| FR-ACA-102 | SHALL | P1 | `class_subject_plan` | Provide the class subject plan with pre-filled mandatory subjects, stream combination rules, periods, teacher of record, co-teachers, room type and curriculum version. |
+| FR-ACA-103 | SHALL | P1 | `class_subject_plan`, `stream_combination_rule` | Validate stream subject combinations against configured examination-body rules (WAEC, NECO, NABTEB). |
+| FR-ACA-104 | SHALL | P1 | `class_group`, `class_membership` | Support sets and cross-class groupings with a parent class link, so a learner's subject teacher is always resolvable. |
+| FR-ACA-105 | SHALL | P1 | `class_subject_plan`, `teaching_assignment` | Support the primary class-teacher model with specialist overrides per subject. |
+| FR-ACA-106 | SHALL | P1 | `class_subject_plan` | Copy a class subject plan to other arms of the same level, then allow differences. |
+| FR-ACA-107 | SHALL | P1 | `class_group`, `enrolment` | Roll classes, plans and enrolments to the next session with the Academic Year Rollover Wizard, keeping history. |
+| FR-ACA-108 | SHALL | P1 | `course`, `department`, `licence`, `org_unit`, `programme`, `subject_area` | Maintain Department 360 for every academic department with faculty, HOD, subject areas, programmes owned, accreditation, lecturers, load policy and facilities. |
+| FR-ACA-109 | SHALL | P1 | `course`, `subject_area` | Map each subject area and course to the applicable national benchmark (NUC CCMAS, NBTE, NCCE). |
+| FR-ACA-110 | SHALL | P1 | `course_section` | Maintain Course 360 per semester with sections, lecturer of record, co-lecturers, teaching assistants, outline, timetable, students, LMS space, assessment components and results. |
+| FR-ACA-111 | SHALL | P1 | `course_section`, `teaching_assignment` | Provide course allocation with specialism matching, live load totals against rank limits, service courses and HOD approval. |
+| FR-ACA-112 | SHALL | P1 | `course_registration`, `course_section`, `coverage_gap`, `policy_exception` | Block opening of course registration while any compulsory course in the semester lacks a lecturer of record, unless the dean approves an exception. |
+| FR-ACA-113 | SHALL | P1 | `staff`, `staff_qualification` | Record lecturer specialisms, ranks, qualifications and professional registrations on Staff 360 and use them in allocation. |
+| FR-ACA-114 | SHOULD | P5 | `department` | Record external examiners and moderators per course. |
+| FR-ACA-115 | SHALL | P2 | `class_subject_plan`, `course_space` | Create LMS course spaces and rosters automatically from published class subject plans and course allocations. |
+| FR-ACA-116 | SHALL | P1 | `staff`, `staff_post`, `teaching_assignment` | Show every teaching professional their complete teaching assignment across institutions (for staff with posts in more than one). |
+| FR-ACA-117 | SHALL | P1 | `class_group`, `metric:PTR` | Report class sizes, teacher–learner ratios and lecturer–student ratios per subject, department, institution and LGA. |
+| FR-ACA-118 | SHALL | P1 | `teaching_assignment` | Keep effective-dated history of every class, department, assignment and allocation so past results always show who taught them. |
+| FR-ADM-01 | SHALL | P1 | `feature_flag`, `platform_user`, `tenant` | Provision and manage tenants with residency, plan and status (provider staff have no learner-data access by default). |
+| FR-ADM-02 | SHALL | P1 | `code_list`, `config_version` | Maintain versioned country configuration and institution configuration with validation. |
+| FR-ADM-03 | SHALL | P1 | `access_review`, `app_user`, `credential_reset`, `mfa_factor`, `role_grant`, `user_session` | Manage users, role-at-scope grants, access reviews and automatic deactivation of leavers. |
+| FR-ADM-04 | SHALL | P1 | `role`, `role_permission` | Maintain the role and permission matrix; custom roles cannot exceed the creator's clearance. |
+| FR-ADM-05 | SHALL | P2 | `outbox_event`, `policy_rule`, `policy_rule_test`, `workflow_definition`, `workflow_instance`, `workflow_transition` | Author, test and publish policy rules and workflow definitions. |
+| FR-ADM-06 | SHALL | P1 | `api_client`, `data_sharing_agreement`, `exchange_transfer`, `integration_connection`, `webhook_delivery`, `webhook_subscription` | Provide an integration marketplace and API client/data-sharing agreement management. |
+| FR-ADM-07 | SHALL | P1 | `break_glass_grant`, `data_sharing_agreement`, `legal_hold`, `privacy_request`, `record_series` | Provide the Data Governance Engine: classification, retention schedules, consent and legal basis, residency, subject access and erasure (respecting legal holds), exports and minimisation reviews. |
+| FR-ADM-08 | SHALL | P1 | `audit_anchor`, `audit_event` | Provide the audit log explorer. |
+| FR-ADM-09 | SHALL | P1 | `config_version`, `translation` | Manage platform-level translations, terminology overrides and RTL languages. |
+| FR-ADM-10 | SHALL | P1 | `tenant_domain` | Manage branding with contrast validation. |
+| FR-ADM-101 | SHALL | P2 | `live_class` | Provide voice interaction (voice search, voice commands and dictation into forms), captions for video and live classes, and alternative formats (large print, easy-read, braille-ready export). |
+| FR-ADM-11 | SHALL | P1 | `subscription`, `subscription_plan` | Bill the platform itself per learner, institution, module, user, campus, enterprise, government contract, national deployment, trust or university-group licence, combinable. |
+| FR-ADM-12 | SHALL | P1 | `import_job`, `import_row_issue` | Import and migrate legacy data with mapping, validation, master matching, staged commit and 30-day rollback. |
+| FR-ADM-13 | SHALL | P1 | `backup_run`, `platform_user` | Show system health, backups and DR readiness to provider staff. |
+| FR-AGT-101 | SHALL | P3 | `agent`, `service_identity` | Provide an agent runtime that executes agents on events and schedules under scoped service identities bound to a human owner. |
+| FR-AGT-102 | SHALL | P3 | `agent` | Support autonomy levels A0–A3 with state maximums and institution overrides downward. |
+| FR-AGT-103 | SHALL | P3 | `agent_template` | Hard-code consequential decisions as human-only so no configuration can automate them. |
+| FR-AGT-104 | SHALL | P3 | `agent_action` | Restrict agents to declared, typed tools that call platform commands through the validation, policy and audit pipeline. |
+| FR-AGT-105 | SHALL | P3–P7 | `agent_template` | Ship the 16 agents in 12.2 as configurable templates. |
+| FR-AGT-106 | SHALL | P3 | `agent` | Enforce per-agent rate, spend and record limits. |
+| FR-AGT-107 | SHALL | P3 | `agent` | Provide instant pause (kill switch) at owner, institution and state level, holding queued actions. |
+| FR-AGT-108 | SHALL | P3 | `agent_action` | Provide 24-hour undo for reversible A2 actions. |
+| FR-AGT-109 | SHALL | P3 | `agent_action`, `audit_event` | Record every agent action with trigger, evidence, rule, tool call, outcome and owner; display "Agent X for Owner Y" in all histories. |
+| FR-AGT-110 | SHALL | P3 | `agent` | Provide sandbox simulation against historical data before activation. |
+| FR-AGT-111 | SHALL | P3 | `agent` | Require owner approval, and head-level approval for A2 and above, before activation; quarterly re-approval. |
+| FR-AGT-112 | SHALL | P3 | `agent` | Measure agent precision, errors, overrides and complaints; lower autonomy automatically when thresholds are breached. |
+| FR-AGT-113 | SHALL | P3 | `agent_action` | Defend against prompt injection: retrieved content is data, never instructions; tool parameters are typed and validated. |
+| FR-AGT-114 | SHALL | P3 | `agent_action`, `conversation` | Identify automated assistants to families and staff in every conversation and offer hand-over to a person. |
+| FR-AGT-115 | SHALL | P3 | `ai_model` | Register each AI-based agent in the model register (AIX-03) with purpose, data, risks and oversight. |
+| FR-ASM-01 | SHALL | P1 | `assessment` | Define assessments (formative, summative, coursework, practical, competency, examination) with max mark, weight, date, grading scale and the curriculum objectives assessed. |
+| FR-ASM-02 | SHALL | P1 | `assessment`, `assessment_result` | Provide markbooks per class/subject with validation (hard: ≤ max mark; soft: outliers), missing-work flags and access arrangements. |
+| FR-ASM-03 | SHALL | P1 | `grade_band`, `grading_scale` | Configure grading scales: percentage, letter, grade points, GPA/CGPA, pass/fail, competency levels, degree classifications; bands contiguous and non-overlapping. |
+| FR-ASM-04 | SHALL | P1 | `moderation_sample` | Support moderation with sampling, moderator marks and tolerance rules. |
+| FR-ASM-05 | SHALL | P1 | `assessment_result` | Lock results after approval; corrections require head approval and are audited. |
+| FR-ASM-06 | SHALL | P1 | `report_card`, `report_card_run` | Generate report cards from markbooks, attendance, behaviour and comments in branded templates, with completeness checks and publication to the parent portal. |
+| FR-ASM-07 | SHALL | P1 | `recovery_policy`, `report_card_run` | Never withhold reports for unpaid fees by default; any withholding policy must be explicitly approved and cannot apply to learners flagged for SEND or safeguarding. |
+| FR-ASM-101 | SHALL | P1 | `metric:PROGRESS-TARGET`, `target_grade` | Set target grades automatically from prior attainment and tracking points; show progress against target with red, amber and green status and the numeric gap. |
+| FR-ASM-102 | SHALL | P1 | `external_assessment_import`, `import_job` | Import historical and external assessment data for longitudinal tracking and benchmarking against previous cohorts and national standards. |
+| FR-ASM-103 | SHALL | P1 | `import_job`, `markbook_column` | Let teachers build marksheets with yes/no, numeric, grade, date and comment columns, and export or import them to spreadsheets for offline work. |
+| FR-ATT-01 | SHALL | P1 | `attendance_mark`, `attendance_register`, `lesson_occurrence` | Provide daily and lesson registers with country attendance codes, minutes late and notes; ‘all present’ and keyboard shortcuts. |
+| FR-ATT-02 | SHALL | P1 | `absence_report`, `attendance_mark` | Pre-fill known absences (parent-reported, trips, exams, exclusions) and show them in the register. |
+| FR-ATT-03 | SHALL | P1 | `attendance_mark`, `idempotency_key` | Work offline with queued sync and conflict resolution (latest teacher mark wins; office overrides audited). |
+| FR-ATT-04 | SHALL | P1 | `attendance_register` | Flag missing registers after a configurable delay and notify the attendance lead. |
+| FR-ATT-05 | SHALL | P1 | `attendance_mark`, `metric:ATT-PERSISTENT`, `metric:ATT-RATE`, `metric:ATT-SEVERE` | Calculate attendance and punctuality rates by learner, class, year, institution, LGA, state; identify persistent (< 90%) and severe (< 50%) absence (thresholds configurable). |
+| FR-ATT-06 | SHALL | P1 | `absence_contact` | Run first-day absence contact workflow (SMS/call), record reasons, escalate repeated absence; alert DSL for vulnerable learners not contacted by the configured time. |
+| FR-ATT-07 | SHALL | P2 | behavioural — uses `attendance_register`: Cross-module attendance flow is triggered by ATT.REGISTER_SUBMITTED and the alert rules; no new data. | Trigger the cross-module attendance flow (§20) when thresholds are breached. |
+| FR-ATT-08 | MAY | P4 | `metric:STF-PRESENCE`, `staff_attendance` | Record staff attendance where institutions choose (biometric/clock-in integration). |
+| FR-ATT-101 | SHALL | P1 | `absence_contact`, `message` | Send automatic absence notifications to parents on the configured channel after the register closes. |
+| FR-ATT-102 | SHALL | P1 | `evacuation_event`, `visitor_visit` | Produce emergency and fire-drill registers of everyone on site (learners, staff, visitors) from live attendance, printable and on mobile. |
+| FR-ATT-103 | SHALL | P1 | `absence_report` | Accept absence reports from parents by app, WhatsApp and web with reason and attachments; staff acknowledge, accept (pre-filling the register code) or query, in a message thread. |
+| FR-ATT-104 | SHALL | P1 | `attendance_register`, `metric:REG-COMPLIANCE` | Show missing and incomplete registers live, nudge the teacher with a direct link at the deadline plus 10 minutes, escalate at plus 30 minutes, and report compliance by teacher, institution and LGA. |
+| FR-ATT-105 | SHALL | P1 | `evacuation_event`, `evacuation_mark`, `staff_attendance`, `visitor_visit` | Run evacuation and drill roll calls at assembly points on mobile, offline, from live attendance, staff sign-in and visitor log, with real-time unaccounted list, all-clear and drill timing records. Extends FR-ATT-102. |
+| FR-ATT-106 | SHOULD | P1 | `attendance_register` | Let each institution share attendance with parents live or after a configured delay, in one daily view with behaviour, homework and detentions. |
+| FR-BEH-01 | SHALL | P2 | `behaviour_event`, `behaviour_policy` | Log positive and concern events against the behaviour policy with categories, points, location, description and action. |
+| FR-BEH-02 | SHALL | P2 | `behaviour_event` | Route bullying events with target learners to the pastoral lead. |
+| FR-BEH-03 | SHALL | P2 | `behaviour_event` | Analyse patterns by learner, class, period, location, category and link to attendance. |
+| FR-BEH-04 | SHALL | P2 | `behaviour_event` | Record exclusions/suspensions as head decisions with reason and appeal route; the platform never decides sanctions above detention. |
+| FR-BEH-101 | SHALL | P2 | `seating_plan` | Provide interactive seating plans per class with drag-and-drop arrangement and one-tap behaviour logging on the plan. |
+| FR-BEH-102 | SHALL | P2 | `adjustment`, `seating_field_set` | Show learner context icons on the seating plan (SEND adjustments, free meals, gifted, target grade) to staff entitled to see them. |
+| FR-BEH-103 | MAY | P7 | behavioural — uses `influence_score`: Superseded by FR-BEH-109 (MFS §18.12). | Suggest seating arrangements from behaviour interaction data (who works well together), for the teacher to accept or ignore. |
+| FR-BEH-104 | SHALL | P2 | `detention`, `detention_type` | Manage detentions: sessions, capacity, location, supervising staff, parent notification and attendance (Attended, Pending, Not attended, Escalated). |
+| FR-BEH-105 | SHALL | P2 | `intel_rule`, `policy_rule` | Trigger configurable event actions (for example 10 negative incidents in 7 days → pastoral review) through the policy engine. |
+| FR-BEH-106 | SHALL | P2 | `behaviour_framework`, `behaviour_policy`, `behaviour_type` | Configure a versioned behaviour policy per institution (positive and negative behaviours with icon, points, default outcome, use in reports and in influences) on top of a state minimum framework; a published version is i |
+| FR-BEH-107 | SHALL | P2 | `behaviour_event` | Let staff log behaviour for one or several learners in no more than two taps from the register, class list, seating plan or mobile app, adding lesson, room and time automatically, online or offline. |
+| FR-BEH-108 | SHOULD | P2 | `badge_award`, `reward_badge` | Award achievement badges at points thresholds or by rule and show them in learner and parent apps and on the student report; badges are recognition only and never enter the certificate registry. |
+| FR-BEH-109 | SHALL | P2 | `influence_score` | Compute pairwise influence scores from behaviour in shared lessons (adjacent versus apart), with a minimum of 20 events, the evidence shown for each pair, no protected characteristics, visible only to the class's teacher |
+| FR-BEH-110 | SHALL | P2 | `room_layout`, `seating_field_set`, `seating_plan`, `seating_plan_print` | Provide seating field sets of up to 16 learner data fields per class, subject or level, reusable room layouts, arrangement strategies (ability, mixed, alphabetical, random, separate negative influences), a board-safe vie |
+| FR-BEH-111 | SHALL | P2 | `detention`, `detention_type`, `transport_allocation` | Manage a detention ladder: types with duration, room and supervisor; automatic creation from behaviours or intelligence events; re-issue at the next level when missed without valid reason; minutes owed; parent notice per |
+| FR-BEH-112 | SHALL | P2 | `on_report_card`, `on_report_rating`, `on_report_target` | Provide on-report cards with period, level, owner and personalised targets that appear in every timetabled lesson for rating and comment, visible to parents and the learner with comments, and closed with an outcome that  |
+| FR-BEH-113 | SHALL | P2 | `duty_rota`, `oncall_request` | Provide an on-call request from any classroom (room, class, teacher, reason) routed to the on-call rota from the timetable, with acknowledgement target, escalation, an emergency reason that starts the emergency procedure |
+| FR-BEH-114 | SHALL | P2 | `metric:BEH-RATIO`, `report_definition` | Provide behaviour analytics with saved report templates, breakdowns by teacher, learner, gender, year, tutor group, house, subject, time and location, scheduled delivery, and state roll-up with small-number suppression. |
+| FR-BEH-115 | SHALL | P2 | `intel_firing`, `intel_firing_reversal`, `intel_rule` | Extend intelligence events to attendance, homework and wellbeing data, with actions (notify, message parent, detention, on report, intervention, badge, DSL alert), a 30-day simulation before activation, positive mileston |
+| FR-BIL-01 | SHALL | P1 | `billing_rule` | Support billing bases: per term, semester, annual, monthly, weekly, course, credit, module, session, hour, exam, registration, learner, family, service, subscription, pay-as-you-go. |
+| FR-BIL-02 | SHALL | P1 | `billing_rule`, `funding_source` | Support funding models: government-funded, mixed, scholarships, bursaries, grants, sponsorship, employer-funded, loans, instalments. |
+| FR-BIL-03 | SHALL | P1 | `charge_type`, `tax_rule` | Define charge types (tuition, registration, exam, accommodation, transport, meals, uniform, books, ICT, laboratory, clinical placement, sports, clubs, trips, graduation, certification, professional training, miscellaneou |
+| FR-BIL-04 | SHALL | P1 | `billing_rule`, `invoice_line` | Define versioned, effective-dated rules by institution, campus, programme, course, year group, learner category, residency, citizenship, scholarship, family, funding source and level; test rules against sample learners b |
+| FR-BIL-05 | SHALL | P1 | `billing_rule` | Reject conflicting rules at the same priority. |
+| FR-BIL-06 | SHALL | P1 | `billing_run`, `credit_note`, `invoice` | Run billing runs with preview, exceptions, approval and issue; prevent duplicate invoices per learner per period. |
+| FR-BIL-07 | SHALL | P1 | `account`, `family`, `invoice`, `ledger_entry` | Maintain individual learner ledgers and produce consolidated family statements with sibling/family discounts, multiple payers, sponsors, split payments and shared invoices. |
+| FR-BIL-08 | SHALL | P5 | `billing_rule`, `programme` | Allow each programme to have a unique billing structure (universities, TVET). |
+| FR-BIL-09 | SHALL | P6 | `funding_award`, `funding_source`, `government_funding_receipt`, `invoice_line`, `metric:CAPITATION-RECON` | Reconcile Government funding + Student payment + Scholarship + Sponsor funding = Total student funding without double counting. |
+| FR-BIL-10 | SHALL | P1 | `payment_plan`, `recovery_policy` | Offer payment plans and hardship assessment; configure ethical recovery policies; core education restrictions cannot be configured. |
+| FR-CER-01 | SHALL | P2 | `certificate`, `eligibility_result`, `eligibility_run`, `qualification` | Evaluate the eligibility chain before issuance: learner identity → institution → programme → curriculum → enrolment → attendance/participation → required subjects → assessment → examination → credits/results → progressio |
+| FR-CER-02 | SHALL | P2 | `certificate`, `eligibility_result` | Block issuance when any mandatory check fails; allow progression only through an authorised exception with reason, evidence and approver recorded on the certificate. |
+| FR-CER-03 | SHALL | P2 | `eligibility_run` | Run batch eligibility for cohorts/series and route blocked learners to resolution. |
+| FR-CER-04 | SHALL | P2 | `certificate`, `certificate_template`, `signatory`, `signing_key` | Generate certificate numbers (authority sequence + check digit), QR code, verification code, canonical JSON payload, SHA-256 hash and digital signature with keys held in KMS/HSM; optionally issue W3C Verifiable Credentia |
+| FR-CER-05 | SHALL | P2 | `certificate` | Never reuse certificate numbers. |
+| FR-CER-06 | SHALL | P2 | `verification` | Provide a public verification service by number + surname, QR or secure link, with minimum disclosure, rate limiting, logging and holder visibility of verifications. |
+| FR-CER-07 | SHOULD | P2 | `api_client`, `verification` | Support bulk verification for registered employers and institutions via API. |
+| FR-CER-08 | SHALL | P2 | `certificate_event` | Support correction, replacement, reissue, suspension and revocation with authorised user, reason, date/time, evidence and approval; revocation requires two approvers; original records are never deleted. |
+| FR-CER-09 | SHALL | P2 | `certificate` | Detect duplicates: certificate number, learner qualification, award, multiple certificates for one qualification, issuer not approved. |
+| FR-CER-10 | SHALL | P6 | `alert`, `forgery_report`, `metric:CERT-INTEGRITY` | Raise education integrity alerts for unusual patterns: issuance outside award windows, issuer accreditation expired, no matching exam record, obsolete curriculum, unusual grade patterns, duplicate identities, multiple in |
+| FR-CER-101 | SHALL | P2 | `certificate` | Maintain the state certificate registry as the single authoritative register of all certificates issued in the state, with status and history. |
+| FR-CER-102 | SHALL | P2 | `certificate_event`, `outbox_event`, `registry_publication` | Publish every issue, reissue, correction and revocation to the registry within 60 seconds and to linked state and national platforms and the Education Passport. |
+| FR-CER-103 | SHALL | P2 | `security_stock` | Track security-paper stock by serial number from receipt to use, spoilage or destruction; record the stock serial on each printed certificate. |
+| FR-CER-104 | SHALL | P2 | `print_job`, `security_stock` | Print certificates only on registered security stock through authorised printers; block printing for unsigned or unapproved certificates. |
+| FR-CER-105 | SHALL | P2 | `legacy_award` | Create legacy award records from digitised archives, linked to Learner 360 and marked with their source documents. |
+| FR-CER-106 | SHALL | P2 | `reissue_case` | Provide an online reissue application for holders, with the reasons and evidence in 11.5. |
+| FR-CER-107 | SHALL | P2 | `identity_check`, `identity_verification`, `reissue_case` | Verify reissue applicants' identity through NIN verification, OTP and, where enabled, facial match with liveness; route mismatches to manual review. |
+| FR-CER-108 | SHALL | P2 | `fee_schedule`, `reissue_case` | Charge the configured handling fee per certificate type, reason and urgency before processing; support audited waivers. |
+| FR-CER-109 | SHALL | P2 | `certificate`, `certificate_event`, `reissue_case` | Issue reissued certificates with new numbers linked to the original, marked "Reissued", and supersede the original at the same moment. |
+| FR-CER-110 | SHALL | P2 | `certificate`, `verification` | Show superseded, corrected and revoked status with date to verifiers, with minimal disclosure. |
+| FR-CER-111 | SHALL | P2 | `certificate_delivery` | Record collection or courier delivery of printed certificates with recipient identity. |
+| FR-CER-112 | SHALL | P2 | `forgery_report` | Accept suspected-forgery reports from verifiers with evidence images and route them to integrity investigators. |
+| FR-CER-113 | SHALL | P6 | `alert`, `security_stock`, `verification` | Detect repeated failed verification attempts on similar numbers and spoiled-stock anomalies, and raise integrity alerts. |
+| FR-CER-114 | SHOULD | P5 | `external_exam_record` | Link verified exam-body results to Learner 360 and show them on the verification result where the holder consents. |
+| FR-CMD-01 | SHALL | P6 | `health_index_policy`, `metric:ENR-COUNT`, `metric:GLOBAL-INDICATORS`, `metric:HEALTH-INDEX`, `metric:NETWORK-SUMMARY` | Provide command centres for global, national (federal), state, LGA, network and institution levels with the indicator sets in §16 and Gov §3–4. |
+| FR-CMD-02 | SHALL | P6 | `metric:HEALTH-INDEX`, `scope_closure`, `scope_node` | Support drill-down Country → State → LGA → Institution → Campus → Department → Programme/Class → Learner, limited by clearance, showing performance, attendance, behaviour, safeguarding, SEND, staffing, finance, infrastru |
+| FR-CMD-03 | SHALL | P6 | `alert`, `notification` | Generate a personalised morning briefing grouped Priority 1, Priority 2, Priority 3 and Information (positive developments). |
+| FR-CMD-04 | SHALL | P6 | `alert`, `alert_event`, `alert_rule` | Provide the Alert Centre with Critical/High/Moderate/Informational alerts, each explaining what changed, why it matters, evidence, severity, recommended action, owner and due date; deduplicate and escalate. |
+| FR-CMD-05 | SHALL | P6 | `investigation` | Provide Follow-the-Problem investigations from symptom → evidence → root cause → action → outcome, with lineage to records. |
+| FR-CMD-06 | SHALL | P6 | `institution_profile`, `metric:HEALTH-INDEX` | Compare entities of the same type with contextual indicators; suppress rank order when contexts are not comparable. |
+| FR-CMD-07 | SHALL | P6 | `recommendation`, `resource_proposal` | Identify resource imbalances with evidence and create proposals for human decision; never reallocate automatically. |
+| FR-CMD-08 | SHALL | P7 | `planning_scenario` | Run planning scenarios showing assumptions, current capacity, forecast, gap, cost estimate and scenario comparison. |
+| FR-CMD-09 | SHALL | P7 | `intervention`, `metric:HEALTH-INDEX`, `practice_share` | Surface what is working: high performers, successful interventions, improving indicators, with practice sharing. |
+| FR-CMD-10 | SHALL | P7 | `metric:GLOBAL-INDICATORS`, `metric_definition` | Label all global/international indicators as verified, calculated or estimated; suppress cells below the minimum aggregation size. |
+| FR-CMD-101 | SHALL | P1 | `institution`, `metric:INS-LIVE` | Maintain the state institution register covering every institution of every level and ownership, with onboarding status. |
+| FR-CMD-102 | SHALL | P1 | `metric:INS-LIVE`, `onboarding_check`, `onboarding_target` | Provide the onboarding tracker with readiness checks per institution and targets per LGA. |
+| FR-CMD-103 | SHALL | P1 | `alert`, `data_quality_issue`, `unknown_institution_reference` | Detect references to institutions not on the register (transfers, exam entries, certificates) and alert the regulator. |
+| FR-CMD-104 | SHALL | P1 | `data_quality_issue`, `data_quality_rule`, `dataset_freshness`, `metric:DATA-FRESHNESS`, `metric:DQI`, `metric:DUP-RATE` | Show data freshness per institution per dataset, and flag stale institutions on the dashboard. |
+| FR-CMD-105 | SHALL | P1 / P6 | `metric:ATT-RATE`, `metric:CUR-COVERAGE`, `metric:CUR-GAPS-OPEN`, `metric:ENR-COUNT`, `metric:INS-LIVE`, `metric:INST-PERFORMANCE` | Provide the State Education Control Room with the four regions in 7.2 and the KPI catalogue in 7.3, available read-only from Phase 1 and fully from Phase 6. |
+| FR-CMD-106 | SHALL | P1 | `metric:INST-PERFORMANCE` | Provide an institution performance table for all institutions in scope with the listed columns, filters, saved views and export. |
+| FR-CMD-107 | SHALL | P1 | `audit_event`, `learner`, `purpose_code` | Provide state-wide learner search with phonetic matching and permission trimming, and audited purpose for opening a record. |
+| FR-CMD-108 | SHALL | P1 | `metric:INST-PERFORMANCE` | Apply small-number suppression to every aggregate leaving the institution scope. |
+| FR-CMD-109 | SHALL | P6 | `institution_profile`, `metric:HEALTH-INDEX` | Provide contextual comparison of institutions within comparable groups (CMD-102). |
+| FR-CMD-110 | SHALL | P6 | `report_schedule` | Provide the executive mobile view and the automatic monthly briefing pack. |
+| FR-CMD-111 | MAY | P7 | `institution` | Publish optional public school report cards controlled by state policy. |
+| FR-CMD-112 | SHALL | P1 | `attendance_register`, `metric:ATT-RATE`, `metric:LGA-TODAY`, `metric:REG-COMPLIANCE`, `metric:STF-PRESENCE` | Refresh live indicators (attendance, registers, staff presence) at least every 15 minutes during school hours. |
+| FR-CMD-113 | SHALL | P6 | `metric:ATT-DROPOUT`, `metric:ENR-GER`, `metric:ENR-NER`, `metric:ENR-OOSC`, `metric:ENR-TRANSITION`, `metric:STF-QUALIFIED-RATE`, `metric_definition` | Provide every government indicator listed in §13, with gender and equity indicators shown only where the jurisdiction's policy allows. |
+| FR-CMD-114 | SHALL | P6 | `metric:CA-AVERAGE`, `metric:ENR-COUNT`, `metric:EXAM-5CREDITS`, `metric:FEE-COLLECTION`, `metric:INFRA-BASICS`, `metric:INFRA-CLASSROOM`, `metric:PARENT-APP`, `metric_definition` | Show every indicator group of the executive overview in §16 (institutions, learners, staff, academic, safeguarding, SEND, finance, infrastructure) on the control room, each linked to its lineage. |
+| FR-CMD-115 | SHALL | P6 | `alert`, `user_pin` | Organise the administrator briefing by time horizon (today, this week, this month, this year) as well as by priority. |
+| FR-CMD-116 | SHALL | P7 | `planning_scenario` | Forecast university places, technical skills demand and ICT requirements alongside learners, teachers, classrooms and budget in planning scenarios. |
+| FR-CMD-117 | SHOULD | P7 | `practice_share`, `recommendation` | Recognise outstanding teachers and successful practice from evidence (progress, attendance, feedback), shared only with the teacher's consent and never as a public ranking. |
+| FR-CMD-118 | SHALL | P6 | `investigation`, `scope_node` | Make drill-down two-way. From any record (learner, class, programme, department, campus, institution, LGA) the administrator can roll up to every ancestor scope with the same indicators. Follow-the-Problem runs Problem → |
+| FR-CMD-119 | SHALL | P6 | `app_user`, `investigation`, `role_grant` | Provide the Education Administrator 360: the administrator's scopes and delegations, portfolio of institutions, open alerts, investigations and improvement plans they own, decisions made with their outcomes, and briefing |
+| FR-COM-01 | SHALL | P1 | `broadcast_campaign`, `message` | Compose messages to audiences defined by rules; deliver by app, e-mail, SMS, WhatsApp or voice per recipient preference and cost policy. |
+| FR-COM-02 | SHALL | P1 | `contact_restriction`, `message` | Exclude restricted contacts and withdrawn consents automatically. |
+| FR-COM-03 | SHALL | P1 | `broadcast_campaign`, `message_template` | Support multilingual templates and merge fields; show SMS segment count and estimated cost. |
+| FR-COM-04 | SHALL | P1 | `message` | Track delivery, read and acknowledgement. |
+| FR-COM-05 | SHALL | P1 | `notification`, `notification_rule`, `outbox_event` | Generate notifications from domain events via configurable rules with digests, quiet hours (except Priority 1 and DSL safeguarding) and escalation. |
+| FR-COM-101 | SHALL | P1 | `mail_merge_job`, `message_template` | Produce mail-merge letters, labels and name badges from Word-compatible templates, printed or e-mailed, with every letter stored to the recipient record. |
+| FR-COM-102 | SHALL | P1 | `message_channel` | Provide a messaging gateway with a channel-adapter port; ship adapters for WhatsApp Business Platform, Zenzap, SMS aggregators, USSD, e-mail, push and voice. |
+| FR-COM-103 | SHALL | P1 | `message_channel` | Connect verified WhatsApp Business numbers per institution or per state, with numbers held by the tenant, not the provider. |
+| FR-COM-104 | SHALL | P1 | `message_template` | Manage WhatsApp templates: draft, translate, categorise, submit, track approval, version and retire. |
+| FR-COM-105 | SHALL | P1 | `message` | Route outbound messages to the cheapest compliant channel per recipient, prefer open service windows, show cost estimates, and enforce spend caps. |
+| FR-COM-106 | SHALL | P1 | `channel_contact`, `conversation`, `inbound_webhook` | Provide the Conversations inbox for two-way WhatsApp with matching to guardians and learners, assignment to offices, family context panel, canned replies and SLA timers. |
+| FR-COM-107 | SHALL | P2 | `absence_report` | Provide WhatsApp self-service menus for absence reporting, fee balance, payment link, homework, consents and meeting booking. |
+| FR-COM-108 | SHALL | P1 | `channel_opt_in` | Record opt-in and opt-out per channel with evidence; honour STOP immediately. |
+| FR-COM-109 | SHALL | P2 | `message_channel`, `workspace_channel` | Provision Zenzap (or alternative workspace) channels from the hierarchy and staff posts, with SSO and automatic removal on leaving. |
+| FR-COM-110 | SHALL | P2 | `conversation`, `workspace_channel` | Open linked threads from alerts, gaps, corrective actions, inspections and reissue cases, and write thread decisions back to the record history. |
+| FR-COM-111 | SHOULD | P3 | `workflow_task`, `workspace_channel` | Sync tasks between workspace messaging and My tasks. |
+| FR-COM-112 | SHALL | P1 | `message` | Block special-category content on external channels by classification-aware content rules. |
+| FR-COM-113 | SHALL | P1 | `message` | Block direct staff-to-learner WhatsApp conversations for learners under 16. |
+| FR-COM-114 | SHALL | P1 | `message` | Store every message with delivery, read and failure status against the recipient record; apply retention. |
+| FR-COM-115 | SHALL | P1 | `message` | Enforce quiet hours with Priority 1 and safeguarding exceptions. |
+| FR-COM-116 | SHALL | P1 | `broadcast_campaign` | Provide broadcast campaigns with audience rules, scheduling, A/B language variants, throttling and results. |
+| FR-COM-117 | SHALL | P1 | `message`, `metric:MSG-DELIVERY`, `report_definition` | Report messaging volumes, delivery rates, response times and cost by tenant, institution and channel. |
+| FR-COM-118 | SHOULD | P3 | `conversation` | Provide the state public helpdesk on WhatsApp with menus and hand-over to staff. |
+| FR-COM-119 | SHALL | P1 | `announcement_recipient`, `staff_announcement` | Send staff announcements to relationship-based audiences (timetabled teachers of a learner, heads of year or house, form tutors, named staff) with read receipts, optional acknowledgement and expiry. |
+| FR-COM-120 | SHALL | P1 | `consent_record`, `consent_request` | Send consent requests to parents with response by app, web or WhatsApp buttons, comments, reminders to pending parents only, and responses written to the consent record with the request version. |
+| FR-CUR-01 | SHALL | P2 | `curriculum`, `curriculum_version` | Allow authorised authority officials to create, version, approve, publish, amend, withdraw and schedule curricula with effective dates. |
+| FR-CUR-02 | SHALL | P2 | `curriculum_node` | Structure curricula as subject → strand → topic → learning objective/competency, each with status (mandatory, optional, recommended, restricted), minimum hours, assessment requirement, teacher-qualification and resource  |
+| FR-CUR-03 | SHALL | P2 | `curriculum_version` | Record author, approver, version, date, effective date, reason and audit trail for every change; approver must differ from author. |
+| FR-CUR-04 | SHALL | P2 | `curriculum_version` | Make published versions immutable; editing creates a new version (copy-on-write). |
+| FR-CUR-05 | SHALL | P2 | `curriculum` | Support international and vocational frameworks (Cambridge, IB, Pearson, competency frameworks) and institution-specific curricula without hard-coding any examination system. |
+| FR-CUR-06 | SHALL | P2 | `policy_conflict`, `policy_rule` | Allow state adaptations layered on federal curricula; prevent lower authorities from relaxing higher mandatory rules unless an exception is approved. |
+| FR-CUR-07 | SHALL | P2 | `curriculum_adoption` | Resolve automatically which curriculum version applies to an institution, level, year group, cohort and academic year, and store it on the class for history. |
+| FR-CUR-08 | SHALL | P2 | `curriculum_node`, `policy_rule` | Prevent institutions from marking a mandatory component as optional. |
+| FR-CUR-09 | SHALL | P2 | `delivery_log`, `metric:CUR-COMPLIANCE`, `metric:CUR-HOURS` | Calculate curriculum compliance per institution from evidence: required subjects offered, scheduled vs delivered teaching hours, objectives delivered (delivery logs), assessment coverage of objectives, qualified-teacher  |
+| FR-CUR-10 | SHALL | P2 | `curriculum_version`, `metric:CUR-COMPLIANCE` | Show compliance as Compliant (≥ 95%), Partially compliant (80–94.9%), Non-compliant (< 80%) or Not assessed (insufficient data), always with the specific deficiencies. |
+| FR-CUR-101 | SHALL | P1 | `curriculum`, `curriculum_version` | Capture the federal and state curricula for every level and programme as structured Curriculum 360 records, including from digitised documents, with human approval before publication. |
+| FR-CUR-102 | SHALL | P1 | `class_group`, `class_subject_plan`, `curriculum_adoption` | Resolve and stamp the applicable curriculum version on every class and course in every institution, public and private, at session start and on publication. |
+| FR-CUR-103 | SHALL | P1 | `class_group`, `curriculum_adoption` | Prevent any class from being activated for a session without an adopted curriculum for each of its levels' mandatory subjects. |
+| FR-CUR-104 | SHALL | P1 | `teaching_assignment` | Maintain a teaching assignment for every class-subject (school) and every course section (tertiary) with one teacher of record, optional co-teachers, and effective dates. |
+| FR-CUR-105 | SHALL | P1 | `policy_exception`, `staff_qualification`, `teaching_assignment` | Validate every assignment against the teacher's authorisation for subject and level; block unauthorised assignments unless a time-boxed exception is approved by the head and reported to the LGA. |
+| FR-CUR-106 | SHALL | P2 | `coverage_gap` | Evaluate coverage invariants G1–G12 on the triggers listed in 5.3 and nightly; create, update and close gap records automatically. |
+| FR-CUR-107 | SHALL | P2 | `coverage_gap`, `gap_event` | Assign every gap an owner, severity, due date and escalation chain from policy; escalate automatically on breach. |
+| FR-CUR-108 | SHALL | P2 | `assignment`, `coverage_gap`, `cpd_record` | Suggest fixes for each gap, including ranked qualified teachers with spare load inside the institution, the LGA, and remote-teaching options. |
+| FR-CUR-109 | SHALL | P1 | `coverage_gap`, `staff_post`, `teaching_assignment` | Block the leaving or transfer of a teacher of record from taking effect until every assignment is handed over or a gap is accepted by the head. |
+| FR-CUR-11 | SHALL | P6 | `coverage_gap` | Detect blind spots: missing content, repeated content, uncovered objectives, wrong subject allocation, insufficient hours, assessment gaps, teacher mismatches, programme inconsistencies, version mismatch. |
+| FR-CUR-110 | SHALL | P2 | `scheme_of_work`, `scheme_week` | Auto-draft a scheme of work for each assignment from curriculum hours and the academic calendar; let teachers edit within curriculum constraints. |
+| FR-CUR-111 | SHALL | P2 | `assessment`, `delivery_log` | Record lesson delivery against curriculum objectives from the teacher class page, the staff app or a completed LMS lesson. |
+| FR-CUR-112 | SHALL | P6 | `metric:TCH-DEMAND-SUPPLY`, `planning_scenario` | Compute teacher demand and supply by subject, level and LGA, and feed the recruitment and deployment pages. |
+| FR-CUR-113 | SHALL | P2 | `coverage_gap`, `metric:CUR-COVERAGE`, `metric:CUR-GAPS-OPEN` | Provide a state coverage heatmap and gap-ageing view with drill-down to the class-subject. |
+| FR-CUR-114 | SHALL | P2 | `curriculum_adoption`, `reg_dataset_definition`, `reg_snapshot` | Include coverage status in the private-institution regulatory dataset and in approval and renewal checks. |
+| FR-CUR-115 | SHALL | P2 | `curriculum`, `jurisdiction_pack`, `subject` | Ship curriculum framework templates for national curricula, the British and American curricula, IB, Cambridge, Pearson and competency frameworks, none of them hard-coded. |
+| FR-CUR-12 | SHALL | P6 | `alert`, `alert_rule`, `corrective_action` | Raise curriculum compliance alerts and create corrective action workflows when thresholds are breached. |
+| FR-CUR-13 | SHALL | P6 | `metric:CUR-COMPLIANCE`, `metric:CUR-COVERAGE` | Provide geographic and hierarchical compliance heatmaps filterable by subject, level, type, ownership, region and year. |
+| FR-CUR-14 | SHALL | P6 | `inspection` | Pre-load the applicable curriculum, requirements and historical compliance into inspection workspaces. |
+| FR-CUR-15 | SHALL | P3 | `timetable_lesson` | Connect curriculum to timetable (required vs scheduled hours), teacher (authorisation), assessment (objective traceability) and examination (valid combinations). |
+| FR-DOC-101 | SHALL | P1 | `digitisation_batch`, `digitisation_site_survey` | Provide a digitisation programme dashboard with survey data, page estimates, batch schedule, throughput, quality and cost by site and LGA. |
+| FR-DOC-102 | SHALL | P1 | `custody_event`, `digitisation_batch` | Track boxes and volumes with barcodes and chain-of-custody events from collection to disposition. |
+| FR-DOC-103 | SHALL | P1 | `document`, `scanned_page` | Capture images to the specified resolutions and formats, hash them at capture, keep immutable masters and derived access copies. |
+| FR-DOC-104 | SHALL | P1 | `scanned_page` | Apply image clean-up to access copies only. |
+| FR-DOC-105 | SHALL | P1 | `scanned_page` | Run OCR and HTR with models tuned for local names and register layouts, including table recognition. |
+| FR-DOC-106 | SHALL | P1 | `document_category`, `extracted_field` | Classify documents and extract index fields with confidence scores. |
+| FR-DOC-107 | SHALL | P1 | `extracted_field`, `qa_sample` | Provide the QA workstation with image crops, double-keying for key fields and batch sampling to target accuracy. |
+| FR-DOC-108 | SHALL | P1 | `document_link`, `extracted_field`, `learner`, `match_review`, `staff` | Match extracted people to master records and create historic Learner 360 and Staff 360 records when no match exists. |
+| FR-DOC-109 | SHALL | P1 | `document` | Store documents in WORM storage with metadata, classification and retention at ingest; index full text except special-category documents. |
+| FR-DOC-110 | SHALL | P1 | `document` | Provide fielded, phonetic and full-text search with hit highlighting, trimmed by permission and document category. |
+| FR-DOC-111 | SHALL | P1 | `document`, `document_link` | Show a Documents tab on every 360 record listing linked documents. |
+| FR-DOC-112 | SHALL | P1 | `document` | Provide a viewer with watermarking of downloads and prints. |
+| FR-DOC-113 | SHALL | P2 | `redaction` | Redact third-party personal data automatically before external release, with human review. |
+| FR-DOC-114 | SHOULD | P2 | `fee_schedule`, `record_request` | Accept public requests for copies of personal records with identity verification and configured fees. |
+| FR-DOC-115 | SHALL | P1 | `disposal`, `legal_hold`, `record_series` | Maintain file plans, retention schedules, legal holds and approved disposal with disposal certificates. |
+| FR-DOC-116 | SHALL | P1 | `document`, `document_link`, `message` | Capture born-digital documents automatically against the right records (letters, messages, reports, invoices, receipts, forms, submissions). |
+| FR-DOC-117 | SHALL | P1 | `document_category` | Restrict special-category documents to cleared operators and named users throughout capture, QA and retrieval. |
+| FR-DOC-118 | SHALL | P1 | `digitisation_batch`, `metric:DIGITISATION` | Report digitisation progress to the central dashboard. |
+| FR-EXM-01 | SHALL | P1 | `exam_series`, `stream_combination_rule` | Create examination series linked to body, qualification, approved curriculum and programme; reject invalid subject combinations. |
+| FR-EXM-02 | SHALL | P1 | `exam_entry` | Enter candidates with eligibility checks (enrolment, subjects studied, identity verified, attendance where policy applies), access arrangements and fees. |
+| FR-EXM-03 | SHALL | P1 | `exam_paper`, `exam_sitting` | Plan sittings, rooms, seating, invigilation and clash resolution. |
+| FR-EXM-04 | SHALL | P1 | `exam_result`, `result_import` | Import results from boards (file/API) with candidate matching to Learner 360, validation and anomaly review; commit immutably. |
+| FR-EXM-05 | SHALL | P1 | `exam_series` | Approve and schedule release of results to learners and parents. |
+| FR-EXM-06 | SHALL | P5 | `academic_standing` | Compute GPA/CGPA, credits, progression and degree classification; flag borderline cases for board discretion. |
+| FR-EXM-07 | SHALL | P5 | `certificate`, `transcript` | Generate digitally signed, verifiable transcripts. |
+| FR-EXM-08 | SHALL | P6 | `exam_anomaly`, `result_import` | Detect statistical anomalies (grade distributions, similarity clusters, improbable improvements) for human review; never penalise automatically. |
+| FR-EXM-101 | SHALL | P1 | `exam_sitting` | Plan exam rooms with customisable desk layouts, candidate desk labels, invigilator allocation and external candidates. |
+| FR-EXM-102 | SHALL | P1 | `exam_result`, `grade_broadsheet` | Produce grade broadsheets per class, subject and series, exportable to spreadsheet. |
+| FR-EYR-01 | SHALL | P1 | `development_milestone`, `eyr_observation` | Record observations (text, photo, video) against development areas and milestones, shared with parents. |
+| FR-EYR-02 | SHALL | P1 | `consent_record`, `eyr_observation` | Share photos only when every pictured child has photo consent. |
+| FR-EYR-03 | SHALL | P1 | `care_log`, `eyr_observation` | Track development, nutrition, health information and daily care logs. |
+| FR-EYR-101 | SHALL | P1 | `authorised_collector`, `care_log`, `collection_record`, `eyr_session_booking`, `learner_guardian` | Support daycare-linked early-years settings: session booking, authorised collectors with photo check at pick-up, daily care log (meals, sleep, nappies, medication given) shared with parents, and staff-to-child ratio moni |
+| FR-FAM-01 | SHALL | P1 | `external_identifier`, `guardian`, `match_review` | Maintain guardians as master records matched on phone, e-mail, NIN and name before creation. |
+| FR-FAM-02 | SHALL | P1 | `learner_guardian` | Model relationship type, parental responsibility, contact priority, lives-with and effective dates for each learner–guardian link. |
+| FR-FAM-03 | SHALL | P1 | `family`, `family_member` | Allow one guardian to belong to several families and one learner to have guardians in several households. |
+| FR-FAM-04 | SHALL | P1 | `authorised_collector`, `contact_restriction`, `learner_guardian` | Record contact restrictions (court orders) as special-category data and enforce them system-wide: no communications, no collection, no portal access to the restricted child. |
+| FR-FAM-05 | SHALL | P1 | `consent_record` | Provide consent records by type (photography, trips, data sharing, medical, biometrics, digital services) with legal basis, given-by, expiry and withdrawal that propagates immediately. |
+| FR-FAM-06 | SHALL | P1 | `guardian` | Provide a parent portal (web, mobile, low-bandwidth) with each child's day, attendance, homework, results, fees, messages, consents and events (FAM-03). |
+| FR-FAM-07 | SHALL | P1 | `absence_report` | Allow parents to report absences that pre-fill the register. |
+| FR-FAM-08 | SHOULD | P1 | `absence_report` | Support SMS, WhatsApp and USSD fallbacks for absence reporting, fee balance and payment links. |
+| FR-FAM-101 | SHALL | P1 | `organisation_contact` | Store unlimited contacts per learner with relationship, priority and channel preference, and organisation contacts (other schools, doctors, suppliers). |
+| FR-FAM-102 | SHALL | P1 | `admission_application`, `admission_enquiry` | Provide a website admissions widget that posts enquiries directly into the admissions pipeline, styled to the school's brand. |
+| FR-FAM-103 | SHALL | P1 | `admission_application`, `admission_enquiry` | Manage enquiries, open days, visits and automated waiting lists, with conversion reporting from enquiry to enrolment. |
+| FR-FAM-104 | SHALL | P1 | behavioural — uses `guardian`: Parent app is a channel over Family 360, timetable, LMS, results, fees, consents, meetings and messages. | Provide a parent app with push notifications, timetable, homework, results, fees, payments, consents, meetings and messages. |
+| FR-FIN-01 | SHALL | P4 | `budget` | Prepare budgets by cost centre and account linked to enrolment and staffing forecasts; approve via workflow. |
+| FR-FIN-02 | SHALL | P4 | `budget`, `metric:BUDGET-EXECUTION` | Monitor budget vs actual with variance explanations and forecast outturn. |
+| FR-FIN-03 | SHALL | P4 | `purchase_order`, `requisition` | Run procurement: requisition → approval (delegated limits) → PO → receipt → three-way match → payment; detect split purchases. |
+| FR-FIN-04 | SHALL | P4 | `match_review`, `supplier` | Maintain Supplier 360 with duplicate detection; require call-back verification and dual approval for bank-detail changes. |
+| FR-FIN-05 | SHALL | P4 | `account`, `fiscal_period`, `journal`, `ledger_entry` | Post double-entry journals; close periods; reverse instead of edit. |
+| FR-FIN-06 | SHALL | P4 | `integration_connection`, `journal` | Integrate with external ERPs (Sage, QuickBooks, Odoo, government IFMIS) where they are the ledger of record. |
+| FR-FRM-101 | SHALL | P2 | `form_definition` | Provide a no-code forms builder (Daybook forms) with text, number, date, choice, signature, upload, body-map, cost and table fields; mandatory and conditional fields; per-form security and confidentiality. |
+| FR-FRM-102 | SHALL | P2 | `form_definition`, `form_response` | Let forms be raised by staff, learners or parents, or on their behalf, per form permission. |
+| FR-FRM-103 | SHALL | P2 | `form_response`, `workflow_definition` | Run multi-stage forms through the workflow engine with counter-signatures, approvals and alerts to individuals or groups. |
+| FR-FRM-104 | SHALL | P2 | `form_definition`, `invoice` | Allow a form to carry a cost that posts to the learner account, and an optional Pay Now step that must complete before the workflow continues. |
+| FR-FRM-105 | SHALL | P2 | `document_link`, `form_response` | File completed forms automatically to the learner, staff or family Daybook timeline, with attachments stored in the document store. |
+| FR-FRM-106 | SHOULD | P2 | `form_definition` | Provide a template library of common paper forms (trip consent, medical, incident, leave request, transfer request, uniform order) that institutions can copy and adapt. |
+| FR-FRM-107 | SHALL | P2 | `form_definition`, `form_response` | Version forms; responses always keep the version they were submitted on. |
+| FR-FRM-108 | SHOULD | P2 | `form_response`, `report_definition` | Report on form volumes, turnaround and overdue stages per institution. |
+| FR-HED-01 | SHALL | P1 | `admission_application`, `external_exam_record` | Manage applicants from application to enrolment with entry-requirement checks, O'Level verification via Certificate 360 or exam-body adapters, decisions and offers. |
+| FR-HED-02 | SHALL | P5 | `course_registration` | Support semester course registration with unit limits, prerequisites, carry-overs, clashes and adviser approval. |
+| FR-HED-03 | SHALL | P5 | `accommodation_allocation`, `room` | Manage accommodation applications and allocation including accessibility needs. |
+| FR-HED-04 | SHALL | P5 | `ethics_application`, `research_candidature` | Manage research students: supervision, milestones, progression reviews, ethics applications and thesis examination. |
+| FR-HED-05 | SHALL | P5 | `academic_standing`, `alumnus`, `graduation_list` | Produce graduation lists from classification and certificate eligibility; manage ceremonies and alumni. |
+| FR-HED-06 | SHALL | P4 | `funding_award`, `funding_source` | Manage scholarships and bursaries linked to billing so funding is never double counted. |
+| FR-HED-07 | SHOULD | P5 | `international_student_record` | Record institutional information for international students (visa-related records) as restricted data. |
+| FR-HED-101 | SHALL | P5 | `course_space`, `programme` | Support delivery modes (on-campus, distance, online, blended) and continuing-education programmes with flexible start dates, LMS-delivered modules and optional remote proctoring. |
+| FR-ILP-101 | SHALL | P3 | `learning_plan`, `learning_plan_entry`, `learning_plan_goal`, `target_grade` | Provide personal learning plans for any learner with goals linked to curriculum objectives and targets, actions with owners, evidence from LMS and assessment, and status. |
+| FR-ILP-102 | SHALL | P3 | `learning_plan_template` | Provide state and institution plan templates that keep their version, can be copied, and can be applied to a whole group in one step. |
+| FR-ILP-103 | SHALL | P3 | `learning_plan_entry` | Let learners add reflections to their plan in age-appropriate language and parents view and comment. |
+| FR-ILP-104 | SHALL | P3 | `learning_plan`, `learning_plan_entry` | Schedule plan reviews with automatic reminders to all participants, escalate overdue reviews, and show progress, time and cost at a glance. |
+| FR-INS-01 | SHALL | P1 | `institution` | Create institutions only through the controlled registration workflow (INS-03); institution users cannot create institutions. |
+| FR-INS-02 | SHALL | P1 | `match_review` | Run duplicate detection on proposed name (fuzzy ≥ 0.92), registration number, address and geo-distance (≤ 5 km) before creation; probable duplicates require a reviewer decision with reason. |
+| FR-INS-03 | SHALL | P1 | `institution` | Capture: institution ID, government registration number, name, type/category, ownership, accreditation status, licence and expiry, address, coordinates, campuses, levels, programmes, departments, capacity, enrolment (der |
+| FR-INS-04 | SHALL | P1 | `institution`, `institution_change_request` | Treat master fields (name, registration number, ownership, category, address, coordinates) as editable only by the registering authority via a change request; institution administrators edit operational fields. |
+| FR-INS-05 | SHALL | P1 | `licence` | Manage licences, accreditations and authorisations (exam centre, certificate issuer, programme accreditation) with issue/expiry dates, conditions and status. |
+| FR-INS-06 | SHALL | P1 | `alert`, `alert_rule`, `licence` | Set status Expired automatically the day after expiry; raise an alert 90/60/30 days before expiry and on expiry. |
+| FR-INS-07 | SHALL | P2 | `exam_entry`, `licence` | Block certificate issuance and new examination entries for institutions whose relevant authorisation is expired or suspended at the award/entry date. |
+| FR-INS-08 | SHALL | P1 | `campus`, `org_unit`, `scope_node` | Maintain effective-dated organisation structure (campus → faculty → department → unit) with cost centres and heads (INS-06). |
+| FR-INS-09 | SHALL | P1 | `institution` | Provide Institution 360 with tabs for overview, accreditation, curriculum compliance, learners, staff, attendance, academic, exams & certificates, safeguarding, SEND, infrastructure, finance & funding, inspections, risks |
+| FR-INS-10 | SHALL | P6 | `institution`, `reg_dataset_definition` | Expose to state/LGA users only the configured regulatory dataset for private institutions. |
+| FR-INS-11 | SHOULD | P4 | `merge_journal` | Support institution merge (e.g. amalgamation) with alias resolution and history. |
+| FR-INS-12 | SHOULD | P6 | `institution` | Show the institution on a map for government users with layer filters (type, ownership, health band). |
+| FR-INSP-01 | SHALL | P6 | `inspection`, `inspection_programme` | Generate a risk-based inspection programme from health index, compliance, alerts and time since last inspection, for inspectorate approval. |
+| FR-INSP-02 | SHALL | P6 | `inspection` | Provide an offline-capable inspection workspace pre-loaded with applicable curriculum, requirements, evidence and history. |
+| FR-INSP-03 | SHALL | P6 | `corrective_action`, `inspection_finding` | Record findings with judgements and evidence; findings requiring action create corrective action plans on report approval. |
+| FR-INSP-04 | SHALL | P4 | `compliance_requirement`, `compliance_status`, `policy_rule` | Track compliance requirements inherited down the policy hierarchy with statuses Compliant, Attention required, Overdue, Critical. |
+| FR-INSP-05 | SHALL | P6 | `improvement_plan`, `intervention` | Create improvement workspaces with problem, evidence, contributing indicators, actions, owner, review and outcome measured against target and counterfactual trend. |
+| FR-INSP-06 | SHALL | P6 | `corrective_action`, `improvement_plan`, `inspection` | Run the government intervention workflow when compliance falls below thresholds, through follow-up inspection to reassessment. |
+| FR-INSP-101 | SHALL | P4 | `compliance_requirement`, `compliance_status`, `facility_check`, `inspection` | Track fire inspections, health and safety checks and required certifications with expiry dates in the compliance centre. |
+| FR-INT-01 | SHALL | P7 | `assistant_conversation` | Answer natural-language questions with the user's own permissions; every figure linked to source records with time window, record count and data-quality index. |
+| FR-INT-02 | SHALL | P7 | `recommendation` | Show finding, evidence, confidence, recommendation and human decision for every AI recommendation; record decisions and outcomes. |
+| FR-INT-03 | SHALL | P7 | `document`, `document_extraction`, `extracted_field` | Extract structured data from documents (forms, PDFs, certificates, transcripts, invoices) with confidence per field; require human validation for consequential fields. |
+| FR-INT-04 | SHALL | P7 | `ai_model`, `ai_model_version`, `model_deployment` | Maintain a model register with purpose, owner, data, excluded features, performance, fairness, drift and oversight level. |
+| FR-INT-05 | SHALL | P1 | behavioural — uses `agent_template`: Prohibited autonomous decisions are enforced in code: the services that expel, reject, dismiss, deny access or set safeguarding outcomes accept only human-authored commands; agent_template.human_only_actions records them. | Never autonomously expel, reject an applicant, determine safeguarding outcomes, dismiss staff, deny educational access, make discriminatory decisions or classify a child as dangerous or unsuitable. |
+| FR-INT-06 | SHALL | P7 | `ai_model`, `assistant_conversation`, `llm_call_log`, `model_deployment` | Exclude special-category data from model training unless a lawful basis and DPIA exist; never train on assistant conversations. |
+| FR-INT-101 | SHALL | P7 | `document`, `document_extraction` | Have document intelligence flag missing information, duplicates, contradictions, expired documents and important dates, and create reminders for the dates. |
+| FR-LMS-101 | SHALL | P2 | `course_member`, `course_space` | Create a course space for every class-subject and course section automatically, with roster sync from enrolment and registration. |
+| FR-LMS-102 | SHALL | P2 | `lms_unit`, `scheme_of_work` | Structure course spaces in units generated from the scheme of work, tagged to curriculum objectives. |
+| FR-LMS-103 | SHALL | P2 | `content_library_item`, `lms_content` | Support notes, files, video, audio, links, H5P interactives and state content-library items, each taggable to objectives. |
+| FR-LMS-104 | SHALL | P2 | `assignment` | Provide the eight assignment types in 8.2, individual and group. |
+| FR-LMS-105 | SHALL | P2 | `assignment` | Capture for each assignment: instructions, resources, objectives, type, mark scheme or rubric, markbook weighting, open and due dates, late policy, group settings, accessibility options, AI policy. |
+| FR-LMS-106 | SHALL | P2 | `adjustment`, `assignment`, `quiz_attempt` | Apply authorised SEND adjustments to assignments automatically, without exposing need detail to other learners. |
+| FR-LMS-107 | SHALL | P2 | `submission`, `submission_file` | Accept text, files (up to 200 MB per submission, configurable), photos and audio/video recordings; issue a hashed, timestamped receipt per submission. |
+| FR-LMS-108 | SHALL | P2 | `submission` | Autosave drafts and allow resubmission until the due date when permitted; keep every version. |
+| FR-LMS-109 | SHALL | P2 | `assignment`, `extension` | Accept and flag late work; support individual extensions with reason; never auto-assign zero. |
+| FR-LMS-110 | SHALL | P2 | `rubric`, `submission_mark` | Provide split-view marking with rubrics, comment banks, inline annotation, audio feedback and auto-marking of objective items. |
+| FR-LMS-111 | SHALL | P2 | `moderation_sample` | Support moderation sampling for CA and coursework. |
+| FR-LMS-112 | SHALL | P2 | `assessment`, `assessment_result`, `submission_mark` | Release marks and feedback on a scheduled date to learners and parents; post marks to the markbook and objective results to curriculum evidence. |
+| FR-LMS-113 | SHALL | P2 | `question`, `quiz_attempt` | Provide online quizzes and CBT with question banks, randomisation, timing, secure mode and invigilator console. |
+| FR-LMS-114 | SHALL | P3 | `attendance_mark`, `live_class` | Provide live video classes with attendance captured to the register and consent-based recording. |
+| FR-LMS-115 | SHALL | P2 | `discussion_post` | Provide moderated discussions, with age-based restrictions and no private learner-to-learner messaging. |
+| FR-LMS-116 | SHALL | P2 | `submission` | Work offline in the learner app: download materials, complete work, queue submissions, sync with device and server timestamps. |
+| FR-LMS-117 | SHALL | P2 | `lms_content` | Provide low-data mode, upload compression and data-cost estimates; support zero-rated domains. |
+| FR-LMS-118 | SHOULD | P3 | `ussd_session` | Provide a USSD/SMS path for due dates and completion confirmation for learners without smartphones. |
+| FR-LMS-119 | SHALL | P3 | `scanned_page`, `submission` | Split class batches of scanned handwritten work to individual learners using QR cover sheets. |
+| FR-LMS-120 | SHALL | P3 | `originality_report` | Provide originality checking through a configurable provider, reported to the teacher only. |
+| FR-LMS-121 | SHALL | P2 | `assignment`, `submission` | Record an AI-use declaration per submission against the assignment's AI policy. |
+| FR-LMS-122 | SHALL | P3 | `competency_framework`, `digital_skill_level`, `metric:DIGITAL-SKILLS`, `passport_entry` | Maintain the state digital skills framework, learner and teacher digital levels, and evidence from LMS activity. |
+| FR-LMS-123 | SHOULD | P4 | `cpd_record`, `digital_skill_level` | Count LMS training and evidenced digital teaching practice as CPD. |
+| FR-LMS-124 | SHALL | P2 | `submission_mark` | Show teachers My marking, Class progress and Objective coverage views with one-click nudges. |
+| FR-LMS-125 | SHALL | P2 | `assignment` | Give parents visibility of work set, submission status, marks and feedback for each child. |
+| FR-LMS-126 | SHALL | P2 | `digital_skill_level`, `metric:LMS-ADOPTION`, `metric:LMS-COMPLETION` | Report digital adoption and coursework indicators to the central dashboard. |
+| FR-LMS-127 | SHALL | P2 | `assignment`, `homework_limit` | Show a homework calendar to learners and parents; enforce a class homework timetable with a nightly limit (override with reason); report on-time, late and missing submissions by class, subject and learner. |
+| FR-LRN-01 | SHALL | P1 | `learner` | Register learners of any age (0+) through one registration path (LRN-02) used by registrars, the online application (PUB-03) and imports. |
+| FR-LRN-02 | SHALL | P1 | `match_pair_decision`, `match_review` | Run the identity matching engine before creating a learner: exact identifier match → link existing; probable match (0.80–0.98) → manual review (LRN-03); no match → create. |
+| FR-LRN-03 | SHALL | P1 | `learner` | Never create a new learner record because a learner changes institution or education level; transfers and progressions create new enrolments on the same Learner 360. |
+| FR-LRN-04 | SHALL | P1 | `external_identifier`, `identity_verification` | Capture NIN where the jurisdiction rule requires or allows it (Nigeria: required ≥ 16, captured 0–15 where issued); verify via the NIMC adapter when enabled; store encrypted; display masked; reveal only with purpose and  |
+| FR-LRN-05 | SHALL | P1 | `code_list`, `learner` | Configure legal-age thresholds, consent and guardian requirements per jurisdiction; do not hard-code 16 or 18. |
+| FR-LRN-06 | SHALL | P1 | `learner`, `learner_guardian` | Require at least one guardian with parental responsibility for learners under the age of majority; keep minor and guardian identities distinct. |
+| FR-LRN-07 | SHALL | P1 | `glid_block`, `learner` | Generate the Global Learner ID with check digit at creation; never reuse it. |
+| FR-LRN-08 | SHALL | P1 | `enrolment` | Support enrolment into institution, level, class/arm, programme, course and cohort, with effective dates and capacity checks (hard, unless head approves over-capacity). |
+| FR-LRN-09 | SHALL | P1 | `enrolment` | Provide bulk promotion/progression using policy rules; repeat-year decisions require human approval. |
+| FR-LRN-10 | SHALL | P1 | `exchange_transfer`, `learner_transfer` | Transfer learners between institutions with records sharing per policy; transfer safeguarding files DSL-to-DSL and SEND files SENCO-to-SENCO with acknowledgement within the configured days. |
+| FR-LRN-101 | SHOULD | P7 | `cpd_record`, `passport_entry` | Include professional learning and CPD records in the Education Passport for adult learners and teaching professionals. |
+| FR-LRN-102 | SHALL | P1 | `learner`, `report_card` | Produce a printable and shareable student report combining attendance, behaviour, badges, wellbeing summary, homework, on-report history and learning-plan progress, trimmed to the viewer's permissions. |
+| FR-LRN-11 | SHALL | P1 | `cme_referral`, `enrolment` | Record leaving with date, reason and destination; refer compulsory-age learners with unknown destination to the LGA as child missing education. |
+| FR-LRN-12 | SHALL | P2 | `learner` | Provide Learner 360 assembling identity, family, enrolment history, timetable, attendance, behaviour, assessment, exams, qualifications/certificates, SEND, safeguarding, wellbeing/interventions, finance, communications,  |
+| FR-LRN-13 | SHALL | P2 | `audit_event`, `case_access_log`, `purpose_code` | Audit every view of special-category tabs with purpose. |
+| FR-LRN-14 | SHALL | P1 | `merge_journal` | Merge confirmed duplicates with survivorship rules, re-pointing all references, alias resolution and 90-day un-merge (LRN-08). |
+| FR-LRN-15 | SHALL | P7 | `passport_entry`, `passport_share`, `passport_view` | Provide the learner-facing Education Passport with qualifications, certificates, skills, competencies, credits, transcripts, badges and achievements; consented, time-limited, revocable sharing; and the holder's verificat |
+| FR-LRN-16 | SHALL | P1 | `exchange_transfer`, `historical_record_import`, `learner_transfer` | Receive authorised historical records from previous institutions at enrolment instead of asking families to re-supply them. |
+| FR-MED-01 | SHALL | P5 | `clinical_site`, `placement` | Plan clinical rotations across hospitals/departments with capacity, supervisors and prerequisites (competencies, immunisation/occupational health clearance) before patient-facing placements. |
+| FR-MED-02 | SHALL | P5 | `competency_framework`, `competency_record`, `logbook_entry` | Provide anonymised logbooks (procedures/cases with level of involvement and reflection) with supervisor verification and competency sign-off. |
+| FR-MED-03 | SHALL | P5 | `logbook_entry` | Block save of logbook text containing patient identifiers (name lists, hospital-number patterns). |
+| FR-MED-04 | SHALL | P5 | `professional_body`, `registration_readiness`, `return_definition` | Track clinical hours and readiness against professional-registration requirements (e.g. MDCN, NMCN) and export to regulators. |
+| FR-MED-05 | SHALL | P5 | `placement` | Integrate with hospital information systems only for placement attendance confirmation; never store patient records. |
+| FR-MED-101 | SHALL | P5 | `competency_record`, `room_booking`, `skills_lab_session` | Book skills laboratories and simulation sessions with equipment, facilitators and competency outcomes recorded. |
+| FR-MED-102 | SHALL | P5 | `exam_paper`, `exam_series`, `registration_readiness` | Design and score OSCE stations and track readiness and results for professional licensing examinations. |
+| FR-MED-103 | SHALL | P5 | `professional_body`, `programme`, `registration_readiness`, `staff_qualification` | Provide configurable programme families for medicine, dentistry, nursing, midwifery, pharmacy, physiotherapy, radiography, medical laboratory science, community and public health and other allied health professions. Each |
+| FR-OPS-01 | SHALL | P3 | `building`, `metric:INFRA-CLASSROOM`, `room` | Maintain buildings and rooms with type, capacity, accessibility, ICT and condition; feed infrastructure indicators. |
+| FR-OPS-02 | SHALL | P3 | `asset`, `asset_inspection` | Maintain an asset register with custodian, location, value, condition and service dates; support stock-takes. |
+| FR-OPS-03 | SHALL | P3 | `alert`, `maintenance_request` | Manage maintenance requests with safety-risk rating; critical risk raises a Priority 1 item to the head and LGA. |
+| FR-OPS-04 | SHALL | P3 | `boarding_record`, `transport_allocation`, `transport_route`, `vehicle` | Manage transport routes, vehicles, drivers (with checks), allocations and boarding records. |
+| FR-OPS-05 | SHALL | P3 | `activity`, `activity_enrolment`, `badge_award` | Manage clubs and activities with enrolment, attendance and achievements (badges to passport). |
+| FR-OPS-06 | SHALL | P3 | `consent_record`, `consent_request`, `trip`, `trip_participant` | Manage trips: planning, risk assessment, approval, consent, payment and on-the-day register; block learners without consent. |
+| FR-OPS-07 | SHALL | P3 | `dietary_requirement`, `meal_service`, `metric:FEEDING-RECON` | Record meals served, dietary requirements and feeding-programme numbers; reconcile against attendance. |
+| FR-OPS-08 | SHOULD | P3 | `library_item`, `library_loan` | Manage library loans or integrate with a library system. |
+| FR-OPS-101 | SHALL | P3 | `activity`, `activity_enrolment`, `invoice` | Run clubs and events booking with targeted eligibility, numbered parent preferences, fair allocation, waiting lists and online or cash payment. |
+| FR-OPS-102 | SHOULD | P3 | `asset`, `maintenance_request` | Predict asset maintenance needs from condition, age and usage, and plan preventive work. |
+| FR-OPS-103 | SHALL | P3 | `facility_incident`, `metric:FACILITY-INCIDENTS` | Record facility safety incidents with location, severity, photos and follow-up. |
+| FR-OPS-104 | SHOULD | P4 | `capital_plan_item` | Link asset condition to a multi-year capital plan with cost estimates and priorities. |
+| FR-OPS-105 | MAY | P4 | `building` | Keep a mapping archive of campus plans and structural changes over time. |
+| FR-OPS-106 | SHALL | P3 | `asset_inspection` | Let technicians inspect assets on a mobile app, offline, with checklists and photos. |
+| FR-OPS-107 | SHALL | P3 | `content_library_item`, `learning_resource`, `metric:INFRA-TEXTBOOK`, `resource_issue` | Track textbooks and learning materials (government-supplied and institution-bought) by title, curriculum subject and level: stock, issue to learners or classes, return, loss and condition. Report textbook-to-learner rati |
+| FR-P16-01 | SHALL | P1 | `option_choice`, `stream_combination_rule` | Support subject-option selection with combination rules, capacity and guidance against entry requirements (e.g. JAMB/UTME subject combinations). |
+| FR-P16-02 | SHALL | P5 | `he_application` | Track university/college applications, references, work experience and career plans. |
+| FR-P16-03 | SHALL | P7 | `destination_record` | Track destinations: further education, employment, apprenticeship, entrepreneurship, professional qualification. |
+| FR-P16-101 | SHALL | P5 | `external_exam_record`, `he_application` | Track higher-education applications through configurable adapters (JAMB UTME and CAPS admission status in Nigeria; UCAS-equivalent services elsewhere): choices, references, personal statements, offers and acceptance. |
+| FR-P16-102 | SHOULD | P5 | `guidance_session`, `student_finance_application` | Record student-finance guidance and loan or grant applications (for example the Nigerian Education Loan Fund) with status, without storing lender credentials. |
+| FR-P16-103 | SHALL | P2 | `guidance_session`, `option_choice`, `passport_entry` | Provide career guidance from junior secondary: counsellor sessions, interest and aptitude records, and guided stream selection at the end of junior secondary (science, arts, commercial, technical) against results and sub |
+| FR-PMT-01 | SHALL | P1 | `payment` | Accept bank transfer (incl. per-family virtual accounts), card, direct debit, mobile money, USSD, gateways (e.g. Paystack, Flutterwave, Remita), cash, cheque, government, employer and scholarship payments. |
+| FR-PMT-02 | SHALL | P1 | `idempotency_key`, `inbound_webhook`, `payment` | Process gateway webhooks idempotently; issue receipts only after confirmation. |
+| FR-PMT-03 | SHALL | P1 | `payment` | Never handle raw card data (hosted fields/redirect; PCI DSS SAQ-A scope). |
+| FR-PMT-04 | SHALL | P1 | `payment_allocation` | Allocate automatically: virtual account → reference → payer contact → heuristic suggestion; route unallocated items to a queue. |
+| FR-PMT-05 | SHALL | P1 | `payment` | Detect duplicate payments (hard on gateway ID, soft on payer+amount within 10 minutes). |
+| FR-PMT-06 | SHALL | P4 | `bank_statement_line` | Import bank statements and reconcile to payments and disbursements. |
+| FR-PMT-07 | SHALL | P1 | `fx_rate`, `payment`, `tax_rule` | Support multiple currencies with local and reporting currency, rate source, rate captured per transaction and tax rules. |
+| FR-PMT-101 | SHALL | P1 | `integration_connection`, `payment` | Support Paystack, Flutterwave, Interswitch, Monnify, Remita and other licensed gateways through the gateway adapter, configurable per tenant. |
+| FR-PTM-101 | SHALL | P2 | `meeting_event` | Schedule parents' meetings across one or more days with in-person, video and hybrid slots per teacher. |
+| FR-PTM-102 | SHALL | P2 | `meeting_booking` | Let parents book slots for each of their children's teachers, with clash prevention and automatic travel gaps for in-person meetings. |
+| FR-PTM-103 | SHALL | P2 | `consent_record`, `meeting_booking` | Run encrypted video meetings in the browser with countdown timer, text chat and screen share; no recording unless all parties consent. |
+| FR-PTM-104 | SHALL | P2 | `meeting_event`, `metric:PTM-ATTENDANCE` | Show organisers which learners have no appointment and which teachers are full; send reminders to unbooked parents by WhatsApp, SMS or e-mail. |
+| FR-PTM-105 | SHOULD | P2 | `meeting_booking` | Record attendance and short notes per meeting to the learner timeline. |
+| FR-PTM-106 | SHOULD | P2 | `meeting_booking` | Support interpreters as a third participant and per-parent language preference. |
+| FR-PVT-101 | SHALL | P1 | `external_identifier`, `identity_verification`, `provider`, `provider_application`, `provider_person` | Let proprietors create verified accounts and apply online for approval of one or more institutions. |
+| FR-PVT-102 | SHALL | P1 | `match_review`, `provider` | Run duplicate detection on provider and proposed institution (name, CAC number, address, geo-distance) before an application is accepted. |
+| FR-PVT-103 | SHALL | P1 | `application_evidence`, `provider_application` | Provide the guided application with draft save, document upload, map pin, photos and a completeness check against the state checklist. |
+| FR-PVT-104 | SHALL | P1 | `approval_checklist_item`, `fee_schedule` | Configure approval checklists, minimum standards and fee schedules per state and level as policy data. |
+| FR-PVT-105 | SHALL | P1 | `regulatory_fee` | Collect application, inspection, approval and renewal fees through approved gateways (Remita for government revenue), with receipts and reconciliation. |
+| FR-PVT-106 | SHALL | P1 | `application_query`, `document_extraction`, `inspection`, `provider_application`, `workflow_definition` | Run the approval workflow: desk review → inspection → decision → issue, with SLAs, queries to the applicant, four-eyes decisions and appeal. |
+| FR-PVT-107 | SHALL | P1 | `approval`, `certificate` | Issue digitally signed approval certificates with QR verification, approved levels, capacity, conditions and expiry. |
+| FR-PVT-108 | SHALL | P1 | `onboarding_check`, `tenant` | Create the private tenant and Institution 360 automatically on approval and start guided onboarding. |
+| FR-PVT-109 | SHALL | P1 | `provider_application` | Bring existing unregistered institutions into compliance through the same process with a regularisation flag and transitional conditions. |
+| FR-PVT-110 | SHALL | P1 | `provider` | Support proprietors with several institutions under one provider account. |
+| FR-PVT-111 | SHALL | P1 | `policy_conflict`, `reg_dataset_definition`, `reg_snapshot` | Share the configured regulatory dataset with the state continuously and enforce it as read-only for the regulator. |
+| FR-PVT-112 | SHALL | P2 | `approval_condition`, `corrective_action` | Track approval conditions as corrective actions with evidence and verification. |
+| FR-PVT-113 | SHALL | P2 | `approval`, `provider_application` | Manage renewals with reminders and pre-filled renewal applications. |
+| FR-PVT-114 | SHALL | P2 | `enrolment`, `exam_entry`, `sanction` | Run sanctions through the workflow with evidence, approval and appeal, and automatic restriction of new admissions or exam entries when suspended. |
+| FR-PVT-115 | SHALL | P2 | `closure_case`, `cme_referral` | Protect learners on closure: keep records, list alternative institutions, and track re-enrolment by the LGA. |
+| FR-PVT-116 | SHALL | P2 | `approval`, `institution` | Publish the approved private institution directory with approval status and verification QR. |
+| FR-PVT-117 | SHALL | P1 | `identity_verification`, `licence`, `provider_application` | Onboard private tertiary and medical institutions with evidence of federal regulator approval (NUC, NBTE, NCCE, MDCN or NMCN) captured and checked. |
+| FR-RPT-01 | SHALL | P1 | `report_definition` | Provide a report library with standard, statutory and saved reports by scope. |
+| FR-RPT-02 | SHALL | P6 | `metric_definition`, `report_definition` | Provide a self-service report builder over a governed semantic layer (metrics, dimensions) with permission trimming and small-number suppression. |
+| FR-RPT-03 | SHALL | P6 | `return_definition`, `return_submission` | Generate government returns from live master records; institutions review, explain anomalies and certify; corrections are made in source records. |
+| FR-RPT-04 | SHALL | P6 | `metric_definition` | Provide data lineage for every reported number down to permitted records. |
+| FR-RPT-05 | SHALL | P1 | `report_schedule` | Schedule report delivery with recipients and formats. |
+| FR-RPT-06 | SHALL | P6 | `metric:GLOBAL-INDICATORS` | Run analytics in a separate warehouse; operational performance must not be affected. |
+| FR-RPT-101 | SHOULD | P6 | `report_export` | Provide a governed connector for Power BI and other BI tools over the semantic layer, with the same permission trimming. |
+| FR-RPT-102 | SHALL | P1 | `report_definition`, `report_export` | Offer one-click Excel export of any permitted table or chart's data. |
+| FR-SAF-01 | SHALL | P2 | `safeguarding_concern` | Allow any staff member to record a concern; after submission the reporter sees only a receipt. |
+| FR-SAF-02 | SHALL | P2 | `safeguarding_concern` | Notify the DSL and deputies immediately (in-app + SMS without content). |
+| FR-SAF-03 | SHALL | P2 | `safeguarding_case`, `safeguarding_entry` | Link concerns about the same learner; assemble the chronology automatically from concerns, attendance, behaviour and agency contacts the DSL may see. |
+| FR-SAF-04 | SHALL | P2 | `safeguarding_concern` | Alert the DSL when configured thresholds (count/severity/time) are met. |
+| FR-SAF-05 | SHALL | P2 | `safeguarding_case`, `safeguarding_entry`, `safeguarding_referral` | Manage cases: risk assessment, actions, referrals, meetings, reviews, closure with reason and sign-off. |
+| FR-SAF-06 | SHALL | P2 | `audit_event`, `case_access_grant`, `case_access_log`, `safeguarding_case` | Restrict access to DSL, named deputies and explicitly granted users; audit every view, export and print; show an access log on the case. |
+| FR-SAF-07 | SHALL | P2 | `staff_case` | Route allegations about staff to the head/LGA designated officer, not the institution DSL alone. |
+| FR-SAF-08 | SHALL | P2 | `learner_transfer`, `safeguarding_case` | Transfer files DSL-to-DSL on learner transfer with acknowledgement. |
+| FR-SAF-09 | SHALL | P7 | `safeguarding_case` | Never let AI decide risk levels or outcomes; AI may summarise and highlight patterns for the DSL. |
+| FR-SAF-101 | SHALL | P2 | `community_report`, `reporting_form` | Provide anonymous community reporting for learners and parents by QR code and web link; reports go to the DSL triage queue with no reporter identity unless volunteered. |
+| FR-SAF-102 | SHALL | P2 | `staff_case`, `staff_case_entry` | Record allegations, low-level concerns and self-referrals about adults in a restricted area visible only to the head, the LGA designated officer and named HR staff, routing allegations about the head to the LGA or state, |
+| FR-SAF-103 | SHALL | P2 | `staff_case` | Log low-level concerns and staff self-referrals and alert the designated officer when concerns about the same adult reach the configured pattern (default 3 in 12 months). |
+| FR-SAF-104 | SHALL | P2 | `community_report`, `community_report_reply`, `reporting_form` | Provide a community reporting form builder with branding, mandatory and optional fields and languages, published by link, QR poster, website embed and WhatsApp keyword; anonymous by default, no IP or device data stored,  |
+| FR-SAF-105 | SHALL | P2 | `jurisdiction_pack` | Seed standard concern categories from the jurisdiction pack (Nigerian default includes insecurity and abduction risk, child labour, early and forced marriage, trafficking and risk of dropping out), configurable per state |
+| FR-SAF-106 | SHALL | P2 | `metric:SAF-CONCERNS`, `report_definition` | Provide safeguarding reports by category, time, profile and institution, saved and reusable, a governing-board report and an inspection pack, with area dashboards that show counts only and suppress groups under 10. |
+| FR-SAF-107 | SHALL | P2 | `case_share` | Share selected chronology entries or a case bundle with a named external professional by time-limited, watermarked link, with purpose, legal basis, access log and bundle hash. Extends SAF-04. |
+| FR-SAF-108 | SHALL | P2 | `jurisdiction_pack` | Hold statutory references, categories, timescales and forms in jurisdiction packs (Nigerian default; international packs such as the UK's Keeping Children Safe in Education for private schools that need them), changed by |
+| FR-SEN-01 | SHALL | P2 | `send_need`, `send_profile` | Maintain a SEND register with need areas, support level, plan type and review dates. |
+| FR-SEN-02 | SHALL | P2 | `send_profile` | Provide the Individual Learner Support Profile: strengths, needs, preferences, communication, adjustments, strategies, accessibility, assistive technology, interventions, progress, learner voice, parent/carer input. |
+| FR-SEN-03 | SHALL | P2 | `adjustment`, `send_profile` | Separate authorised adjustments (visible to the learner's teachers) from need detail (SENCO and cleared leaders only). |
+| FR-SEN-04 | SHALL | P2 | `support_plan`, `support_plan_review` | Manage IEP/ISP and EHCP-equivalent statutory plans with outcomes, provision, participants and review cycle; alert on overdue reviews. |
+| FR-SEN-05 | SHALL | P2 | `provision`, `provision_allocation` | Map provision (type, learners, staff, hours, cost, impact) and compare demand with provision. |
+| FR-SEN-06 | SHALL | P3 | `adjustment` | Feed adjustments to timetable room allocation, exam access arrangements and class pages automatically. |
+| FR-SEN-07 | SHALL | P6 | `metric:SEND-COVERAGE`, `send_profile` | Give government users aggregated SEND indicators only, unless purpose-granted. |
+| FR-SEN-101 | SHALL | P2 | `gifted_register_entry`, `provision` | Maintain a Gifted and Talented register alongside the SEND register with provision tracking. |
+| FR-SEN-102 | SHALL | P2 | `external_referral` | Manage therapy and external-agency referrals (speech, occupational, educational psychology, health) with consent, status tracking and returned reports stored in the support profile. |
+| FR-STF-01 | SHALL | P1 | `staff`, `staff_post` | Maintain Staff 360 with many posts per person (institution, unit, title, grade/step, contract, FTE, employer, line manager, dates). |
+| FR-STF-02 | SHALL | P1 | `external_identifier`, `professional_registration_check`, `staff_qualification` | Record qualifications, professional registrations (e.g. TRCN), subject/level teaching authorisations and safer-recruitment checks with expiry and verification status. |
+| FR-STF-03 | SHALL | P4 | `role_grant` | Gate system access to learner data until mandatory checks pass or a time-limited supervised exception is approved by the head. |
+| FR-STF-04 | SHALL | P3 | `staff_qualification`, `teaching_assignment` | Raise a Teacher Qualification Alert when a teacher is timetabled to a curriculum subject/level they are not authorised to teach. |
+| FR-STF-05 | SHALL | P4 | `job_application`, `vacancy` | Run recruitment through the workflow engine: vacancy → application → shortlist → interview → references → checks → offer → appointment; blind scoring by default. |
+| FR-STF-06 | SHALL | P3 | `cover_assignment`, `lesson_occurrence`, `staff_absence` | Record absence and trigger the cover process (affected lessons, qualified available staff, fairness) (§22). |
+| FR-STF-07 | SHALL | P4 | `cpd_record`, `metric:CPD-COMPLIANCE` | Track CPD and mandatory training with expiry; report compliance by institution, LGA and state. |
+| FR-STF-08 | SHOULD | P4 | `appraisal` | Support annual appraisal with objectives, evidence, ratings and development plans. |
+| FR-STF-09 | SHALL | P4 | `ledger_entry`, `payroll_run`, `payroll_tax_table`, `payslip` | Calculate payroll with versioned tax tables (PAYE, pension, NHF), exceptions review, two-person approval, bank file export and ledger posting; integrate with government payroll systems where they are the system of record |
+| FR-STF-10 | SHALL | P6 | `metric:TCH-DEMAND-SUPPLY`, `planning_scenario` | Provide a state/LGA teacher deployment view of supply vs curriculum demand by subject and school (STF-10). |
+| FR-STF-101 | SHALL | P1 | behavioural — uses `staff`: Staff app (iOS, Android, PWA) is a channel over registers, timetable, cover, learner reports, medical alerts, incidents and messages. | Provide a staff app (iOS, Android, PWA) with registers, timetable including cover, learner reports, medical alerts, incidents and messages; calendar sync. |
+| FR-STF-102 | SHALL | P1 | `staff_qualification` | Attach staff documents (contracts, checks, first-aid and other certificates) with expiry tracking. |
+| FR-STF-103 | SHALL | P4 | `training_completion`, `training_course` | Record safeguarding and other mandatory training completion with expiry. |
+| FR-STF-104 | SHALL | P4 | `staff_pulse_response` | Support staff wellbeing: anonymous pulse surveys reported only in aggregate, workload indicators from timetable and cover data, and referral to employee assistance. |
+| FR-STF-105 | SHALL | P2 | `course_space`, `metric:CPD-COMPLIANCE`, `training_completion`, `training_course` | Deliver safeguarding and statutory training in native LMS staff course spaces (with optional SCORM or xAPI content), with role-based assignment, assessments, pass marks, certificates, renewal cycles, compliance by instit |
+| FR-STF-106 | SHOULD | P2 | `role_grant`, `training_completion`, `trip` | Optionally prevent an adult without valid safeguarding training from being named DSL, trip leader or on-call responder. |
+| FR-STF-11 | SHALL | P1 | `app_user`, `staff_post` | Deactivate system access automatically from the HR leaving date. |
+| FR-SUB-101 | SHALL | P1 | `billing_period_billed`, `census_learner`, `institution`, `subscription` | Assign every institution a financing channel from its ownership in Institution 360: SDAF for public institutions, direct subscription for private providers; apply an ownership change from the next billing period; never b |
+| FR-SUB-102 | SHALL | P1 | `sdaf_rate`, `sdaf_rate_card` | Maintain a state-approved SDAF rate card in naira by institution type and level, per term or per semester, versioned and effective-dated, with propose, approve and publish steps; refuse any charge without an approved rat |
+| FR-SUB-103 | SHALL | P1 | `academic_period`, `billing_period` | Derive billing periods from each institution type's academic calendar, with a configurable census date per period (default end of week 3 of a term, week 4 of a semester). |
+| FR-SUB-104 | SHALL | P1 | `billing_period_billed`, `census_learner`, `census_snapshot`, `enrolment` | Count billable learners on the census date as verified, active, unique learners from the Learner master; bill each learner once per period at the institution holding the enrolment on that date; exclude withdrawals, dupli |
+| FR-SUB-105 | SHALL | P1 | `census_flag`, `census_snapshot` | Flag possible ghost learners before a count is frozen (no attendance since period start, identity conflicts, unexplained enrolment rises) and require the head to clear or explain each flag. |
+| FR-SUB-106 | SHALL | P1 | `census_snapshot` | Let the head confirm the institution's count within a set window; allow evidence-based challenges; version and audit amendments; freeze and hash the confirmed count. |
+| FR-SUB-107 | SHALL | P1 | `sdaf_demand`, `sdaf_payer_rule` | Configure the SDAF payer per institution type and level (government, parent or student, sponsor, scholarship, or a split), and refuse any non-government payer for public primary and junior secondary learners (UBE Act 200 |
+| FR-SUB-108 | SHALL | P1 | `sdaf_exemption`, `sdaf_exemption_category` | Manage SDAF exemption categories with evidence, approval and the funding rule (borne by the state or waived); keep exempted learners in the headcount and report exemptions separately. |
+| FR-SUB-109 | SHALL | P1 | `sdaf_demand` | Issue SDAF demand notices per institution and period, consolidated to a government payer or individual to other payers, each with the state revenue code and the state collection system's payment reference, by app, WhatsA |
+| FR-SUB-110 | SHALL | P1 | `sdaf_collection` | Accept SDAF payments only into the state's designated revenue account through state-approved channels (state e-revenue portal, Remita, bank, POS, USSD, transfer) via adapters; link each state e-receipt to the platform re |
+| FR-SUB-111 | SHALL | P1 | `inbound_webhook`, `sdaf_collection`, `unmatched_collection` | Post state payment notifications to the SDAF ledger idempotently, reconcile daily against state collection-account statements, queue unmatched items and hold duplicates. |
+| FR-SUB-112 | SHALL | P1 | `metric:SDAF-COLLECTION`, `remittance`, `remittance_allocation` | Record each remittance from the state to SDIN with its advice (period, institutions, amount, bank reference), allocate it to collections, show collected-but-not-remitted variance with ageing, escalate against agreed time |
+| FR-SUB-113 | SHALL | P1 | `reconciliation_line`, `reconciliation_statement` | Produce a reconciliation statement per period (billed, exempted, collected, remitted, outstanding) for dual sign-off by the state finance officer and SDIN finance; log disputes by line; lock and hash signed statements. |
+| FR-SUB-114 | SHALL | P1 | `audit_event`, `remittance`, `sdaf_collection` | Enforce segregation of duties: SDIN read-only on collections and remittances, state unable to alter operator invoices, no single person both recording and approving a remittance, all changes append-only and audited. |
+| FR-SUB-115 | SHALL | P1 | `metric:SDAF-COLLECTION`, `reconciliation_statement`, `sdaf_public_summary` | Provide the Ministry SDAF dashboard by LGA, institution type and institution, an optional aggregated public summary each term, and an audit evidence pack for the Auditor-General and the State House of Assembly. |
+| FR-SUB-116 | SHALL | P1 | behavioural — uses `subscription`: Guardrail: subscription and SDAF status are never read by register, lesson, LMS, results, exam, transfer or certificate services; enforced by import contracts and tests. | Never block learners' registers, lessons, LMS, results, examinations, transfers or certificates because the SDAF or a subscription is unpaid, and never publish learner names for non-payment. |
+| FR-SUB-117 | SHALL | P1 | `subscription`, `subscription_plan`, `subscription_quote` | Maintain SDIN's versioned private plan catalogue (Starter, Standard, Advanced, Tertiary, Group) with modules, limits, price basis and add-ons; issue quotes; capture acceptance of subscription terms by e-signature; suppor |
+| FR-SUB-118 | SHALL | P1 | `census_snapshot`, `subscription_credit_note`, `subscription_invoice`, `subscription_invoice_line` | Invoice private providers each period from the census count, with VAT where applicable, proration for upgrades, downgrades and mid-period starts, consolidated group invoices by campus, approved discounts, credit notes an |
+| FR-SUB-119 | SHALL | P1 | `subscription_payment` | Accept private subscription payments directly into SDIN's accounts by gateway, dedicated virtual account or direct debit, with automatic receipts and reconciliation to invoices. |
+| FR-SUB-120 | SHALL | P1 | `subscription_invoice` | Provide a provider self-service billing portal showing plan, usage, invoices, receipts and statement, with payment-method and plan-change management. |
+| FR-SUB-121 | SHALL | P1 | `subscription` | Send subscription reminders before and after the due date, apply a configurable grace period (default 30 days), then restrict administrative features only, restoring access on payment; handle suspension and termination p |
+| FR-SUB-122 | SHALL | P1 | `regulatory_fee` | Keep state regulatory fees for private providers separate from subscriptions in collection, display and status; neither affects the other. |
+| FR-SUB-123 | MAY | P1 | `charge_type` | Let private providers optionally add a labelled digital-services line to their parent fee schedules through the Billing engine. |
+| FR-SUB-124 | SHALL | P1 | `operator_receivable` | Keep SDIN's receivables ledger by channel (SDAF remittances, private subscriptions, other services), recognise revenue by period, export to SDIN's accounting system, apply VAT to private invoices where applicable, and co |
+| FR-SUB-125 | SHALL | P2 | `reconciliation_statement`, `service_credit` | Calculate service credits from measured availability and support performance under the BOO service-level agreement and apply them to the state statement or private invoices as agreed. |
+| FR-SUB-126 | SHALL | P1 | `billing_period`, `report_schedule` | Run the termly SDAF timeline (rate published, census, confirmation, demand, collection window, remittance due) with reminders to heads, state revenue officers and SDIN, and scheduled reports to the Commissioner. |
+| FR-TIM-01 | SHALL | P3 | `timetable`, `timetable_lesson` | Construct timetables with hard constraints (teacher/room/class clashes, room capacity, accessibility needs of learners in the class, mandatory curriculum hours) and soft constraints (preferences, spread, consecutive peri |
+| FR-TIM-02 | SHALL | P3 | `timetable` | Provide an auto-scheduler (constraint solver, e.g. OR-Tools CP-SAT) and manual drag-and-drop editing with live validation. |
+| FR-TIM-03 | SHALL | P3 | `policy_exception`, `timetable` | Block publication while mandatory curriculum requirements are systematically unmet unless an exception exists. |
+| FR-TIM-04 | SHALL | P3 | `lesson_occurrence`, `timetable_lesson` | Show personal timetables for learners, teachers, classes and rooms with today's changes. |
+| FR-TIM-05 | SHALL | P3 | `cover_assignment` | Rank cover candidates: qualified for subject and level → free → lowest cover load this term → same department; never auto-assign unqualified cover; raise cover-gap alerts. |
+| FR-TIM-06 | SHALL | P3 | `room`, `room_booking` | Support room and resource booking with accessibility attributes. |
+| FR-TIM-07 | SHOULD | P3 | `timetable` | Support multi-campus timetables with travel-time constraints. |
+| FR-TIM-101 | SHALL | P3 | `period_structure`, `timetable` | Support one- and two-week timetable cycles and different structures per year group. |
+| FR-TIM-102 | SHALL | P3 | `duty_rota` | Manage break and duty rotas with fair distribution. |
+| FR-TIM-103 | SHALL | P3 | `room_booking` | Book rooms and shared resources (laptop trolleys, labs, halls) with recurring bookings, approval rules, weekly hour limits and alternative suggestions. |
+| FR-TIM-104 | SHOULD | P3 | `invoice`, `letting` | Allow external lettings of facilities with charges posted to finance. |
+| FR-TVT-01 | SHALL | P5 | `competency_framework`, `competency_record` | Track competencies against qualification frameworks (NSQ, NABTEB trade syllabuses, industry certifications) with evidence and assessor sign-off, including approved workplace assessors. |
+| FR-TVT-02 | SHALL | P5 | `asset`, `room` | Allocate workshops, bays and equipment; block allocation of equipment past its safety-check date. |
+| FR-TVT-03 | SHALL | P5 | `employer_partner`, `placement` | Manage industry placements and apprenticeships: matching, agreements, attendance, workplace assessment, employer funding. |
+| FR-TVT-04 | SHALL | P5 | `employer_partner` | Maintain Employer Partner 360 with placements, sponsorships, assessors, agreements and hiring outcomes. |
+| FR-TVT-05 | SHALL | P5 | `competency_record`, `passport_entry` | Provide a trainee skills passport (part of the Education Passport). |
+| FR-TVT-06 | SHOULD | P7 | `destination_record` | Report employment outcomes by programme where legally available. |
+| FR-TVT-101 | SHALL | P5 | `industrial_training` | Manage industrial training (SIWES in Nigeria): placement letters, employer acceptance, logbook, supervisor visits, ITF forms, assessment and grading linked to the student's record. |
+| FR-WEL-01 | SHOULD | P2 | `wellbeing_checkin` | Offer opt-in, age-appropriate wellbeing check-ins in the learner portal; staff see trends and follow-up lists. |
+| FR-WEL-02 | SHALL | P2 | `safeguarding_concern`, `wellbeing_concern` | Screen free text for risk keywords and alert the DSL, without auto-classifying learners. |
+| FR-WEL-03 | SHALL | P2 | `intervention` | Plan interventions with baseline, target, learners, lead and review date; record outcome on closure. |
+| FR-WEL-04 | SHALL | P7 | `risk_flag` | Provide learner-level early warning (dropout, attendance, behaviour, academic decline, wellbeing, SEND support gaps) with explanation per flag; exclude protected characteristics from model features; monitor fairness. |
+| FR-WEL-101 | SHALL | P2 | `safeguarding_concern`, `wellbeing_concern` | Let learners and parents report wellbeing concerns in the app with configurable concern types, routed to a pastoral lead within a set time, with DSL alert on safeguarding keywords. |
+| FR-WEL-102 | SHOULD | P2 | `wellbeing_checkin` | Let staff record wellbeing observations on a five-point scale and configurable trackers, shown alongside learner and parent reports. |
+| FR-WEL-103 | SHALL | P2 | `intervention`, `wellbeing_concern` | Provide wellbeing analytics by source and group, counsellor caseload, and the impact of each intervention as wellbeing before and after. |

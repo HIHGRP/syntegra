@@ -1,0 +1,1975 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/01_platform.schema.json",
+  "title": "CEDA PLT — Platform, tenancy and operator commercial records",
+  "$defs": {
+    "ResidencyRegion": {
+      "title": "ResidencyRegion",
+      "description": "Data-residency region (in-country hosting location for a group of tenants)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "residency_region",
+        "zone": "platform",
+        "domain": "PLT",
+        "kind": "reference",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "platform"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "Region code, e.g. ng-lagos, ng-abuja"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "country": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$",
+          "description": "Country whose law governs the data (NDPA 2023 for NG)"
+        },
+        "primary_site": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Primary data centre"
+        },
+        "secondary_site": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 120,
+              "description": "ClusterSet replica site (second in-country data centre)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "code",
+        "name",
+        "country",
+        "primary_site",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Tenant": {
+      "title": "Tenant",
+      "description": "Tenant — data boundary, configuration and billing unit (global, country, state, network, private provider)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "tenant",
+        "zone": "platform",
+        "domain": "PLT",
+        "kind": "master",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "platform"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "tenant",
+              "description": "Parent tenant (state for a private provider, country for a state)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "global",
+            "country",
+            "state",
+            "network",
+            "private_provider",
+            "institution",
+            "department"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "Stable tenant code, e.g. ng, ng-ab, pvt-ng-ab-000123"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "residency_region_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "residency_region"
+        },
+        "state_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z]{2}-[A-Z0-9]{1,3}$",
+              "description": "ISO 3166-2 state for state and private-provider tenants"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "isolation": {
+          "type": "string",
+          "enum": [
+            "dedicated_schema",
+            "pooled_schema"
+          ],
+          "description": "Dedicated schema or pooled schema (MFS §16.3 layer 1)"
+        },
+        "ops_schema": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "MySQL schema of the tenant's ops zone"
+        },
+        "time_zone": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "IANA time zone applied on display"
+        },
+        "default_language": {
+          "type": "string",
+          "maxLength": 35
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "proposed",
+            "provisioning",
+            "active",
+            "suspended",
+            "closed"
+          ]
+        },
+        "activated_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "closed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "code",
+        "name",
+        "residency_region_id",
+        "isolation",
+        "ops_schema",
+        "time_zone",
+        "default_language",
+        "currency",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "TenantDomain": {
+      "title": "TenantDomain",
+      "description": "Hostname that resolves to a tenant at sign-in (tenant is never chosen from a list)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "tenant_domain",
+        "zone": "platform",
+        "domain": "PLT",
+        "kind": "config",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "platform"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "tenant"
+        },
+        "hostname": {
+          "type": "string",
+          "maxLength": 253,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "e.g. abia.syntegra.ng or portal.schoolname.ng"
+        },
+        "is_primary": {
+          "type": "boolean"
+        },
+        "verified_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "description": "DNS ownership verified"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tls_certificate_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200,
+              "description": "Certificate manager reference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "hostname",
+        "is_primary",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "FeatureFlag": {
+      "title": "FeatureFlag",
+      "description": "Feature flag per tenant and phase (continuous delivery, freeze windows)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "feature_flag",
+        "zone": "platform",
+        "domain": "PLT",
+        "kind": "config",
+        "classification": "internal",
+        "history": "none",
+        "module": "platform"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "tenant",
+              "description": "NULL = platform default"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "flag_key": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "is_enabled": {
+          "type": "boolean"
+        },
+        "rollout_percent": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "description": "Progressive rollout share"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 8,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Delivery phase gating the feature (P0–P7)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 300
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "flag_key",
+        "is_enabled",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "PlatformUser": {
+      "title": "PlatformUser",
+      "description": "Operator staff account (PLAT role) — no learner-data access by default; break-glass only",
+      "type": "object",
+      "x-ceda": {
+        "entity": "platform_user",
+        "zone": "platform",
+        "domain": "PLT",
+        "kind": "master",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "platform"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 254,
+          "x-personal-data": true
+        },
+        "display_name": {
+          "type": "string",
+          "maxLength": 200,
+          "x-personal-data": true
+        },
+        "idp_subject": {
+          "type": "string",
+          "maxLength": 255,
+          "description": "Subject in Red Hat Identity Management / operator IdP (MFA enforced)"
+        },
+        "is_break_glass_eligible": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "invited",
+            "active",
+            "locked",
+            "suspended",
+            "deactivated"
+          ]
+        },
+        "last_sign_in_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "display_name",
+        "idp_subject",
+        "is_break_glass_eligible",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "GlidBlock": {
+      "title": "GlidBlock",
+      "description": "Block of Global Learner ID serials leased to a state registry (national uniqueness without per-insert coordination)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "glid_block",
+        "zone": "platform",
+        "domain": "PLT",
+        "kind": "config",
+        "classification": "internal",
+        "history": "append",
+        "module": "platform"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "tenant",
+          "description": "State tenant that holds the lease"
+        },
+        "first_serial": {
+          "type": "integer"
+        },
+        "last_serial": {
+          "type": "integer"
+        },
+        "leased_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "first_serial",
+        "last_serial",
+        "leased_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "SubscriptionPlan": {
+      "title": "SubscriptionPlan",
+      "description": "Operator plan and price-list version for private providers (and the State Enterprise plan)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "subscription_plan",
+        "zone": "platform",
+        "domain": "PLT",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "platform"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "Starter, Standard, Advanced, Tertiary, Group, State Enterprise"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "tier": {
+          "type": "string",
+          "enum": [
+            "starter",
+            "standard",
+            "advanced",
+            "tertiary",
+            "group",
+            "state_enterprise"
+          ]
+        },
+        "price_basis": {
+          "type": "string",
+          "enum": [
+            "per_learner_term",
+            "per_learner_semester",
+            "flat_term",
+            "per_campus_term",
+            "sdaf"
+          ]
+        },
+        "unit_price_minor": {
+          "type": "integer",
+          "description": "Price per unit of the price basis (minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "modules": {
+          "type": "object",
+          "description": "Module codes included (INS, LRN, LMS …)"
+        },
+        "limits": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Learner, campus, storage and messaging limits"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "add_ons": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Digitisation, messaging bundles, storage — with prices"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "vat_applicable": {
+          "type": "boolean"
+        },
+        "effective_from": {
+          "type": "string",
+          "format": "date"
+        },
+        "effective_to": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "approved_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "platform_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "code",
+        "version",
+        "name",
+        "tier",
+        "price_basis",
+        "unit_price_minor",
+        "currency",
+        "modules",
+        "vat_applicable",
+        "effective_from",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Subscription": {
+      "title": "Subscription",
+      "description": "A tenant's subscription to a plan (private providers pay SDIN directly; state tenants are SDAF-financed)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "subscription",
+        "zone": "platform",
+        "domain": "PLT",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "platform"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "tenant"
+        },
+        "plan_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "subscription_plan"
+        },
+        "financing_channel": {
+          "type": "string",
+          "enum": [
+            "sdaf",
+            "direct_subscription"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "trial",
+            "active",
+            "grace",
+            "restricted",
+            "suspended",
+            "terminated"
+          ]
+        },
+        "starts_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "ends_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "trial_ends_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "grace_days": {
+          "type": "integer"
+        },
+        "restricted_since": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "description": "Administrative features restricted (never registers, teaching, results, certificates — P9)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "terms_version": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "description": "Subscription terms accepted"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "terms_accepted_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "terms_accepted_by_name": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200,
+              "x-personal-data": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "billing_email": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "email",
+              "maxLength": 254,
+              "x-personal-data": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "payment_method": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "gateway",
+                "virtual_account",
+                "bank_transfer",
+                "direct_debit"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "virtual_account_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Dedicated virtual account for transfers"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "plan_id",
+        "financing_channel",
+        "status",
+        "starts_on",
+        "grace_days",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "SubscriptionQuote": {
+      "title": "SubscriptionQuote",
+      "description": "Quote issued to a private provider before subscription acceptance",
+      "type": "object",
+      "x-ceda": {
+        "entity": "subscription_quote",
+        "zone": "platform",
+        "domain": "PLT",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "platform"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "tenant",
+              "description": "Set once the provider tenant exists"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provider_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Registry provider id (soft) before tenant creation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "plan_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "subscription_plan"
+        },
+        "learner_estimate": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "campus_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "valid_until": {
+          "type": "string",
+          "format": "date"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "sent",
+            "accepted",
+            "expired",
+            "withdrawn"
+          ]
+        },
+        "document_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Quote PDF (records zone)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "plan_id",
+        "learner_estimate",
+        "amount_minor",
+        "currency",
+        "valid_until",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "SubscriptionInvoice": {
+      "title": "SubscriptionInvoice",
+      "description": "Invoice from the operator to a private provider (never edited after issue; credit notes for changes)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "subscription_invoice",
+        "zone": "platform",
+        "domain": "PLT",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "platform"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "subscription_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "subscription"
+        },
+        "invoice_number": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "SDIN-<year>-<seq>"
+        },
+        "period_start": {
+          "type": "string",
+          "format": "date"
+        },
+        "period_end": {
+          "type": "string",
+          "format": "date"
+        },
+        "census_learners": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "description": "From the census count used for SDAF (one counting rule)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "net_amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "discount_amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "vat_amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "total_amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "issued_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "due_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "issued",
+            "part_paid",
+            "paid",
+            "overdue",
+            "credited",
+            "void"
+          ]
+        },
+        "content_hash": {
+          "type": "string",
+          "contentEncoding": "base64",
+          "description": "SHA-256 of the canonical invoice at issue"
+        },
+        "e_invoice_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "National e-invoicing reference where required (D27)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "subscription_id",
+        "invoice_number",
+        "period_start",
+        "period_end",
+        "net_amount_minor",
+        "discount_amount_minor",
+        "vat_amount_minor",
+        "total_amount_minor",
+        "currency",
+        "issued_on",
+        "due_on",
+        "status",
+        "content_hash",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "SubscriptionInvoiceLine": {
+      "title": "SubscriptionInvoiceLine",
+      "description": "Line of an operator invoice (per campus for group invoices, proration, add-ons)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "subscription_invoice_line",
+        "zone": "platform",
+        "domain": "PLT",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "append",
+        "module": "platform"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "invoice_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "subscription_invoice"
+        },
+        "line_no": {
+          "type": "integer"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "campus_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Registry campus id for group breakdowns (soft)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "quantity": {
+          "type": "string",
+          "format": "decimal"
+        },
+        "unit_price_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "is_proration": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "invoice_id",
+        "line_no",
+        "description",
+        "quantity",
+        "unit_price_minor",
+        "amount_minor",
+        "currency",
+        "is_proration",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "SubscriptionCreditNote": {
+      "title": "SubscriptionCreditNote",
+      "description": "Credit note or refund against an operator invoice",
+      "type": "object",
+      "x-ceda": {
+        "entity": "subscription_credit_note",
+        "zone": "platform",
+        "domain": "PLT",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "append",
+        "module": "platform"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "invoice_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "subscription_invoice"
+        },
+        "credit_number": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "is_refund": {
+          "type": "boolean"
+        },
+        "approved_by": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "platform_user",
+          "description": "SDIN finance approval"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "invoice_id",
+        "credit_number",
+        "reason",
+        "amount_minor",
+        "currency",
+        "is_refund",
+        "approved_by",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "SubscriptionPayment": {
+      "title": "SubscriptionPayment",
+      "description": "Payment by a private provider directly to the operator",
+      "type": "object",
+      "x-ceda": {
+        "entity": "subscription_payment",
+        "zone": "platform",
+        "domain": "PLT",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "append",
+        "module": "platform"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "invoice_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "subscription_invoice"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "gateway",
+            "virtual_account",
+            "bank_transfer",
+            "direct_debit"
+          ]
+        },
+        "gateway": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "paystack, flutterwave, bank"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "gateway_ref": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "Idempotency: one row per gateway transaction"
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "received_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "receipt_number": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "invoice_id",
+        "method",
+        "gateway_ref",
+        "amount_minor",
+        "currency",
+        "received_at",
+        "receipt_number",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "ServiceCredit": {
+      "title": "ServiceCredit",
+      "description": "Service credit under the BOO service-level agreement",
+      "type": "object",
+      "x-ceda": {
+        "entity": "service_credit",
+        "zone": "platform",
+        "domain": "PLT",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "append",
+        "module": "platform"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "tenant"
+        },
+        "period_start": {
+          "type": "string",
+          "format": "date"
+        },
+        "period_end": {
+          "type": "string",
+          "format": "date"
+        },
+        "sla_metric": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "availability_gov_tier, support_p1_response …"
+        },
+        "target": {
+          "type": "string",
+          "format": "decimal"
+        },
+        "measured": {
+          "type": "string",
+          "format": "decimal"
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "applied_to_kind": {
+          "type": "string",
+          "enum": [
+            "reconciliation_statement",
+            "subscription_invoice"
+          ]
+        },
+        "applied_to_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Reconciliation statement (registry) or subscription invoice"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "period_start",
+        "period_end",
+        "sla_metric",
+        "target",
+        "measured",
+        "amount_minor",
+        "currency",
+        "applied_to_kind",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "OperatorReceivable": {
+      "title": "OperatorReceivable",
+      "description": "Operator receivables ledger line by channel (SDAF remittance, private subscription, other services)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "operator_receivable",
+        "zone": "platform",
+        "domain": "PLT",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "append",
+        "module": "platform"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "channel": {
+          "type": "string",
+          "enum": [
+            "sdaf_remittance",
+            "private_subscription",
+            "other_service"
+          ]
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "tenant"
+        },
+        "source_kind": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "remittance, subscription_invoice, digitisation_order …"
+        },
+        "source_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Source record (soft; may be in the state registry)"
+        },
+        "revenue_period": {
+          "type": "string",
+          "maxLength": 7,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "YYYY-MM recognition period"
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "recognised_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "exported_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "description": "Exported to SDIN accounting through the adapter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "channel",
+        "tenant_id",
+        "source_kind",
+        "source_id",
+        "revenue_period",
+        "amount_minor",
+        "currency",
+        "recognised_on",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "BackupRun": {
+      "title": "BackupRun",
+      "description": "Database backup or restore test (DR readiness evidence for provider staff)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "backup_run",
+        "zone": "platform",
+        "domain": "PLT",
+        "kind": "event",
+        "classification": "internal",
+        "history": "append",
+        "module": "platform"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "residency_region_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "residency_region"
+        },
+        "store": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "mysql-ops, mysql-registry, objectstore, opensearch …"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "full_backup",
+            "incremental_backup",
+            "binlog_stream",
+            "tenant_restore_test",
+            "site_failover_test"
+          ]
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "finished_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "succeeded",
+            "failed",
+            "partial"
+          ]
+        },
+        "size_bytes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rpo_seconds": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "description": "Measured recovery point for failover tests"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rto_seconds": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "description": "Measured recovery time for failover tests"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "report_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Published test report document"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "residency_region_id",
+        "store",
+        "kind",
+        "started_at",
+        "outcome",
+        "created_at"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

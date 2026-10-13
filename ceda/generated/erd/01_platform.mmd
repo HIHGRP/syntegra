@@ -1,0 +1,217 @@
+erDiagram
+    residency_region {
+        BINARY_16_ id PK
+        VARCHAR_32_ code
+        VARCHAR_300_ name
+        CHAR_2_ country
+        VARCHAR_120_ primary_site
+        VARCHAR_120_ secondary_site
+        VARCHAR_32_ status
+    }
+    tenant {
+        BINARY_16_ id PK
+        BINARY_16_ parent_id FK
+        VARCHAR_32_ kind
+        VARCHAR_40_ code
+        VARCHAR_300_ name
+        BINARY_16_ residency_region_id FK
+        VARCHAR_6_ state_code
+        VARCHAR_32_ isolation
+        VARCHAR_64_ ops_schema
+        VARCHAR_64_ time_zone
+        VARCHAR_35_ default_language
+        CHAR_3_ currency
+        VARCHAR_32_ status
+        DATETIME_6_ activated_at
+        DATETIME_6_ closed_at
+    }
+    tenant_domain {
+        BINARY_16_ id PK
+        BINARY_16_ tenant_id FK
+        VARCHAR_253_ hostname
+        BOOLEAN is_primary
+        DATETIME_6_ verified_at
+        VARCHAR_200_ tls_certificate_ref
+        VARCHAR_32_ status
+    }
+    feature_flag {
+        BINARY_16_ id PK
+        BINARY_16_ tenant_id FK
+        VARCHAR_80_ flag_key
+        BOOLEAN is_enabled
+        SMALLINT rollout_percent
+        VARCHAR_8_ phase
+        VARCHAR_300_ reason
+    }
+    platform_user {
+        BINARY_16_ id PK
+        VARCHAR_254_ email
+        VARCHAR_200_ display_name
+        VARCHAR_255_ idp_subject
+        BOOLEAN is_break_glass_eligible
+        VARCHAR_32_ status
+        DATETIME_6_ last_sign_in_at
+    }
+    glid_block {
+        BINARY_16_ id PK
+        BINARY_16_ tenant_id FK
+        BIGINT first_serial
+        BIGINT last_serial
+        DATETIME_6_ leased_at
+    }
+    subscription_plan {
+        BINARY_16_ id PK
+        VARCHAR_40_ code
+        INT version
+        VARCHAR_300_ name
+        VARCHAR_32_ tier
+        VARCHAR_32_ price_basis
+        BIGINT unit_price_minor
+        CHAR_3_ currency
+        JSON modules
+        JSON limits
+        JSON add_ons
+        BOOLEAN vat_applicable
+        DATE effective_from
+        DATE effective_to
+        VARCHAR_32_ status
+        BINARY_16_ approved_by FK
+    }
+    subscription {
+        BINARY_16_ id PK
+        BINARY_16_ tenant_id FK
+        BINARY_16_ plan_id FK
+        VARCHAR_32_ financing_channel
+        VARCHAR_32_ status
+        DATE starts_on
+        DATE ends_on
+        DATE trial_ends_on
+        SMALLINT grace_days
+        DATETIME_6_ restricted_since
+        VARCHAR_32_ terms_version
+        DATETIME_6_ terms_accepted_at
+        VARCHAR_200_ terms_accepted_by_name
+        VARCHAR_254_ billing_email
+        VARCHAR_32_ payment_method
+        VARCHAR_40_ virtual_account_ref
+    }
+    subscription_quote {
+        BINARY_16_ id PK
+        BINARY_16_ tenant_id FK
+        BINARY_16_ provider_ref
+        BINARY_16_ plan_id FK
+        INT learner_estimate
+        SMALLINT campus_count
+        BIGINT amount_minor
+        CHAR_3_ currency
+        DATE valid_until
+        VARCHAR_32_ status
+        BINARY_16_ document_ref
+    }
+    subscription_invoice {
+        BINARY_16_ id PK
+        BINARY_16_ subscription_id FK
+        VARCHAR_32_ invoice_number
+        DATE period_start
+        DATE period_end
+        INT census_learners
+        BIGINT net_amount_minor
+        BIGINT discount_amount_minor
+        BIGINT vat_amount_minor
+        BIGINT total_amount_minor
+        CHAR_3_ currency
+        DATE issued_on
+        DATE due_on
+        VARCHAR_32_ status
+        BINARY_32_ content_hash
+        VARCHAR_64_ e_invoice_ref
+    }
+    subscription_invoice_line {
+        BINARY_16_ id PK
+        BINARY_16_ invoice_id FK
+        SMALLINT line_no
+        VARCHAR_300_ description
+        BINARY_16_ campus_ref
+        DECIMAL_12_3_ quantity
+        BIGINT unit_price_minor
+        BIGINT amount_minor
+        CHAR_3_ currency
+        BOOLEAN is_proration
+    }
+    subscription_credit_note {
+        BINARY_16_ id PK
+        BINARY_16_ invoice_id FK
+        VARCHAR_32_ credit_number
+        VARCHAR_500_ reason
+        BIGINT amount_minor
+        CHAR_3_ currency
+        BOOLEAN is_refund
+        BINARY_16_ approved_by FK
+    }
+    subscription_payment {
+        BINARY_16_ id PK
+        BINARY_16_ invoice_id FK
+        VARCHAR_32_ method
+        VARCHAR_32_ gateway
+        VARCHAR_128_ gateway_ref
+        BIGINT amount_minor
+        CHAR_3_ currency
+        DATETIME_6_ received_at
+        VARCHAR_32_ receipt_number
+    }
+    service_credit {
+        BINARY_16_ id PK
+        BINARY_16_ tenant_id FK
+        DATE period_start
+        DATE period_end
+        VARCHAR_40_ sla_metric
+        DECIMAL_9_4_ target
+        DECIMAL_9_4_ measured
+        BIGINT amount_minor
+        CHAR_3_ currency
+        VARCHAR_32_ applied_to_kind
+        BINARY_16_ applied_to_id
+    }
+    operator_receivable {
+        BINARY_16_ id PK
+        VARCHAR_32_ channel
+        BINARY_16_ tenant_id FK
+        VARCHAR_40_ source_kind
+        BINARY_16_ source_id
+        VARCHAR_7_ revenue_period
+        BIGINT amount_minor
+        CHAR_3_ currency
+        DATE recognised_on
+        DATETIME_6_ exported_at
+    }
+    backup_run {
+        BINARY_16_ id PK
+        BINARY_16_ residency_region_id FK
+        VARCHAR_40_ store
+        VARCHAR_32_ kind
+        DATETIME_6_ started_at
+        DATETIME_6_ finished_at
+        VARCHAR_32_ outcome
+        BIGINT size_bytes
+        INT rpo_seconds
+        INT rto_seconds
+        BINARY_16_ report_ref
+    }
+    platform_user ||--o{ subscription_credit_note : "approved_by"
+    platform_user ||--o{ subscription_plan : "approved_by"
+    residency_region ||--o{ backup_run : "residency_region_id"
+    residency_region ||--o{ tenant : "residency_region_id"
+    subscription ||--o{ subscription_invoice : "subscription_id"
+    subscription_invoice ||--o{ subscription_credit_note : "invoice_id"
+    subscription_invoice ||--o{ subscription_invoice_line : "invoice_id"
+    subscription_invoice ||--o{ subscription_payment : "invoice_id"
+    subscription_plan ||--o{ subscription : "plan_id"
+    subscription_plan ||--o{ subscription_quote : "plan_id"
+    tenant ||--o{ feature_flag : "tenant_id"
+    tenant ||--o{ glid_block : "tenant_id"
+    tenant ||--o{ operator_receivable : "tenant_id"
+    tenant ||--o{ service_credit : "tenant_id"
+    tenant ||--o{ subscription : "tenant_id"
+    tenant ||--o{ subscription_quote : "tenant_id"
+    tenant ||--o{ tenant : "parent_id"
+    tenant ||--o{ tenant_domain : "tenant_id"

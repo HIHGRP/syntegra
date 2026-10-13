@@ -1,0 +1,387 @@
+erDiagram
+    development_milestone {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ area_code
+        VARCHAR_32_ milestone_code
+        TEXT statement
+        VARCHAR_16_ age_band_months
+        INT version
+        VARCHAR_32_ status
+    }
+    eyr_observation {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        BINARY_16_ observed_by_staff_id FK
+        DATETIME_6_ observed_at
+        JSON milestone_codes
+        TEXT note
+        JSON media_document_ids
+        JSON pictured_learner_ids
+        DATETIME_6_ shared_with_parents_at
+    }
+    eyr_session_booking {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        DATE session_date
+        VARCHAR_16_ session_code
+        BINARY_16_ invoice_id FK
+        VARCHAR_32_ status
+    }
+    authorised_collector {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        BINARY_16_ guardian_id FK
+        VARCHAR_200_ name
+        VARCHAR_16_ phone
+        BINARY_16_ photo_document_id
+        VARBINARY_1024_ password_phrase_enc
+        DATE valid_from
+        DATE valid_to
+    }
+    collection_record {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        BINARY_16_ collector_id FK
+        BOOLEAN is_verified
+        BINARY_16_ staff_id FK
+        DATETIME_6_ collected_at
+        VARCHAR_500_ exception_note
+    }
+    care_log {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        VARCHAR_32_ log_kind
+        MEDIUMBLOB detail
+        BINARY_16_ recorded_by
+        DATETIME_6_ recorded_at
+        DATETIME_6_ shared_with_parents_at
+    }
+    option_choice {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        BINARY_16_ period_id FK
+        VARCHAR_32_ stream
+        JSON choices
+        JSON rule_check
+        BINARY_16_ counsellor_override_by
+        VARCHAR_32_ status
+    }
+    guidance_session {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        BINARY_16_ counsellor_staff_id FK
+        DATE held_on
+        VARCHAR_32_ topic
+        JSON interests
+        JSON aptitude
+        VARCHAR_32_ recommended_stream
+        TEXT next_steps
+    }
+    he_application {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        VARCHAR_32_ scheme
+        JSON choices
+        BINARY_16_ personal_statement_document_id
+        JSON reference_document_ids
+        JSON offer
+        VARCHAR_200_ accepted_choice
+        VARCHAR_64_ external_ref
+        VARCHAR_32_ status
+    }
+    student_finance_application {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        VARCHAR_32_ scheme
+        BIGINT amount_requested_minor
+        CHAR_3_ currency
+        VARCHAR_32_ status
+        VARCHAR_64_ external_ref
+    }
+    destination_record {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        BINARY_16_ enrolment_id FK
+        VARCHAR_32_ destination
+        JSON detail
+        DATE recorded_on
+        VARCHAR_32_ source
+    }
+    competency_framework {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ code
+        VARCHAR_300_ title
+        VARCHAR_32_ framework_kind
+        JSON units
+        INT version
+        VARCHAR_32_ status
+    }
+    competency_record {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        BINARY_16_ framework_id FK
+        VARCHAR_40_ unit_code
+        JSON evidence_document_ids
+        VARCHAR_32_ assessor_kind
+        BINARY_16_ assessor_ref
+        VARCHAR_16_ level_achieved
+        DATETIME_6_ signed_off_at
+        VARCHAR_32_ status
+    }
+    employer_partner {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ name
+        VARCHAR_20_ cac_number
+        VARCHAR_32_ sector
+        JSON address
+        JSON contacts
+        JSON agreements
+        VARCHAR_32_ status
+    }
+    placement {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        VARCHAR_32_ placement_kind
+        BINARY_16_ employer_partner_id FK
+        BINARY_16_ clinical_site_id FK
+        VARCHAR_200_ supervisor_name
+        DATE starts_on
+        DATE ends_on
+        JSON prerequisites_met
+        BINARY_16_ agreement_document_id
+        JSON funding
+        SMALLINT attendance_confirmed_days
+        VARCHAR_32_ status
+    }
+    industrial_training {
+        BINARY_16_ id PK
+        BINARY_16_ placement_id FK
+        VARCHAR_40_ itf_reference
+        BINARY_16_ logbook_document_id
+        JSON supervisor_visits
+        VARCHAR_16_ grade
+        VARCHAR_32_ status
+    }
+    clinical_site {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ name
+        VARCHAR_120_ department
+        SMALLINT capacity
+        VARCHAR_2048_ fhir_endpoint
+        VARCHAR_32_ status
+    }
+    logbook_entry {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        BINARY_16_ placement_id FK
+        VARCHAR_40_ procedure_code
+        VARCHAR_32_ involvement
+        TEXT reflection
+        DATE occurred_on
+        VARCHAR_200_ supervisor_verified_by
+        DATETIME_6_ verified_at
+        INT clinical_minutes
+    }
+    professional_body {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_16_ code
+        VARCHAR_300_ name
+        VARCHAR_32_ cadre
+        JSON indexing_rules
+        JSON registration_rules
+        SMALLINT required_clinical_hours
+        VARCHAR_80_ export_format
+    }
+    registration_readiness {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        BINARY_16_ professional_body_id FK
+        DECIMAL_7_1_ clinical_hours
+        SMALLINT competencies_signed
+        BOOLEAN is_ready
+        DATE as_of
+        DATETIME_6_ exported_at
+    }
+    skills_lab_session {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ room_booking_id FK
+        VARCHAR_300_ scenario
+        JSON facilitator_staff_ids
+        JSON equipment_asset_ids
+        JSON participant_learner_ids
+        JSON outcomes
+    }
+    international_student_record {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        CHAR_2_ nationality
+        VARBINARY_1024_ visa_reference_enc
+        CHAR_4_ visa_reference_last4
+        DATE visa_expires_on
+        VARCHAR_120_ sponsor_institution_ref
+        JSON document_ids
+    }
+    accommodation_allocation {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        BINARY_16_ period_id FK
+        BINARY_16_ room_id FK
+        VARCHAR_16_ bed_label
+        BOOLEAN has_accessibility_need
+        BINARY_16_ invoice_id FK
+        VARCHAR_32_ status
+    }
+    research_candidature {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        BINARY_16_ enrolment_id FK
+        JSON supervisor_staff_ids
+        VARCHAR_300_ thesis_title
+        JSON milestones
+        JSON examination
+        VARCHAR_32_ status
+    }
+    ethics_application {
+        BINARY_16_ id PK
+        BINARY_16_ candidature_id FK
+        VARCHAR_300_ title
+        BINARY_16_ document_id
+        VARCHAR_32_ decision
+        DATE decided_on
+    }
+    graduation_list {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        BINARY_16_ period_id FK
+        DATE ceremony_on
+        JSON learner_ids
+        BINARY_16_ approved_by
+        VARCHAR_32_ status
+    }
+    alumnus {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        DATE graduated_on
+        BOOLEAN contact_consent
+        VARCHAR_254_ contact_email
+    }
+    admission_enquiry {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        VARCHAR_200_ contact_name
+        VARCHAR_16_ contact_phone
+        VARCHAR_254_ contact_email
+        VARCHAR_200_ child_name
+        VARCHAR_32_ intended_level
+        VARCHAR_32_ source
+        DATETIME_6_ visit_at
+        INT waiting_list_position
+        BINARY_16_ application_id FK
+        VARCHAR_32_ status
+    }
+    admission_application {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        BINARY_16_ programme_id FK
+        VARCHAR_32_ education_level
+        BINARY_16_ learner_id FK
+        VARCHAR_200_ applicant_name
+        DATE applicant_dob
+        VARCHAR_254_ applicant_email
+        VARCHAR_16_ applicant_phone
+        VARCHAR_32_ channel
+        JSON answers
+        JSON olevel_verification
+        VARCHAR_32_ decision
+        BINARY_16_ decided_by
+        DATE offer_expires_on
+        VARCHAR_32_ status
+    }
+    academic_period {
+        BINARY_16 id PK
+    }
+    enrolment {
+        BINARY_16 id PK
+    }
+    guardian {
+        BINARY_16 id PK
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    invoice {
+        BINARY_16 id PK
+    }
+    learner {
+        BINARY_16 id PK
+    }
+    programme {
+        BINARY_16 id PK
+    }
+    room {
+        BINARY_16 id PK
+    }
+    room_booking {
+        BINARY_16 id PK
+    }
+    staff {
+        BINARY_16 id PK
+    }
+    academic_period ||--o{ accommodation_allocation : "period_id"
+    academic_period ||--o{ graduation_list : "period_id"
+    academic_period ||--o{ option_choice : "period_id"
+    admission_application ||--o{ admission_enquiry : "application_id"
+    authorised_collector ||--o{ collection_record : "collector_id"
+    clinical_site ||--o{ placement : "clinical_site_id"
+    competency_framework ||--o{ competency_record : "framework_id"
+    employer_partner ||--o{ placement : "employer_partner_id"
+    enrolment ||--o{ destination_record : "enrolment_id"
+    enrolment ||--o{ research_candidature : "enrolment_id"
+    guardian ||--o{ authorised_collector : "guardian_id"
+    institution ||--o{ admission_application : "institution_id"
+    institution ||--o{ admission_enquiry : "institution_id"
+    institution ||--o{ graduation_list : "institution_id"
+    invoice ||--o{ accommodation_allocation : "invoice_id"
+    invoice ||--o{ eyr_session_booking : "invoice_id"
+    learner ||--o{ accommodation_allocation : "learner_id"
+    learner ||--o{ admission_application : "learner_id"
+    learner ||--o{ alumnus : "learner_id"
+    learner ||--o{ authorised_collector : "learner_id"
+    learner ||--o{ care_log : "learner_id"
+    learner ||--o{ collection_record : "learner_id"
+    learner ||--o{ competency_record : "learner_id"
+    learner ||--o{ destination_record : "learner_id"
+    learner ||--o{ eyr_observation : "learner_id"
+    learner ||--o{ eyr_session_booking : "learner_id"
+    learner ||--o{ guidance_session : "learner_id"
+    learner ||--o{ he_application : "learner_id"
+    learner ||--o{ international_student_record : "learner_id"
+    learner ||--o{ logbook_entry : "learner_id"
+    learner ||--o{ option_choice : "learner_id"
+    learner ||--o{ placement : "learner_id"
+    learner ||--o{ registration_readiness : "learner_id"
+    learner ||--o{ research_candidature : "learner_id"
+    learner ||--o{ student_finance_application : "learner_id"
+    placement ||--o{ industrial_training : "placement_id"
+    placement ||--o{ logbook_entry : "placement_id"
+    professional_body ||--o{ registration_readiness : "professional_body_id"
+    programme ||--o{ admission_application : "programme_id"
+    research_candidature ||--o{ ethics_application : "candidature_id"
+    room ||--o{ accommodation_allocation : "room_id"
+    room_booking ||--o{ skills_lab_session : "room_booking_id"
+    staff ||--o{ collection_record : "staff_id"
+    staff ||--o{ eyr_observation : "observed_by_staff_id"
+    staff ||--o{ guidance_session : "counsellor_staff_id"

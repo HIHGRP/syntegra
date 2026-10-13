@@ -1,0 +1,194 @@
+erDiagram
+    provider {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ legal_name
+        VARCHAR_300_ trading_name
+        VARCHAR_20_ cac_number
+        VARCHAR_20_ tin
+        BINARY_16_ provider_tenant_id
+        JSON registered_address
+        VARCHAR_16_ phone
+        VARCHAR_254_ email
+        VARCHAR_32_ status
+    }
+    provider_person {
+        BINARY_16_ id PK
+        BINARY_16_ provider_id FK
+        BINARY_16_ user_id FK
+        VARCHAR_200_ given_name
+        VARCHAR_200_ family_name
+        VARCHAR_32_ role
+        BOOLEAN nin_verified
+        DECIMAL_6_3_ ownership_share
+        DATE valid_from
+        DATE valid_to
+    }
+    provider_application {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ provider_id FK
+        VARCHAR_32_ application_number
+        VARCHAR_32_ kind
+        JSON proposed_institution
+        POINT proposed_location
+        BINARY_16_ institution_id FK
+        JSON federal_approval
+        DECIMAL_6_3_ completeness
+        DATETIME_6_ submitted_at
+        DATE desk_review_due_on
+        DATE inspection_due_on
+        VARCHAR_32_ decision
+        TEXT decision_reasons
+        BINARY_16_ decided_by FK
+        BINARY_16_ second_approver_id FK
+        DATETIME_6_ decided_at
+        VARCHAR_500_ appeal_route
+        VARCHAR_32_ status
+    }
+    approval_checklist_item {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ item_key
+        VARCHAR_32_ area
+        VARCHAR_300_ title
+        JSON levels
+        BOOLEAN is_mandatory
+        JSON minimum_standard
+        INT version
+        VARCHAR_32_ status
+    }
+    application_evidence {
+        BINARY_16_ id PK
+        BINARY_16_ application_id FK
+        BINARY_16_ checklist_item_id FK
+        BINARY_16_ document_id
+        JSON ai_precheck
+        VARCHAR_32_ reviewer_status
+        VARCHAR_1000_ reviewer_note
+    }
+    application_query {
+        BINARY_16_ id PK
+        BINARY_16_ application_id FK
+        TEXT question
+        BINARY_16_ asked_by FK
+        TEXT reply
+        DATETIME_6_ replied_at
+        VARCHAR_32_ status
+    }
+    regulatory_fee {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ provider_id FK
+        BINARY_16_ application_id FK
+        VARCHAR_32_ fee_kind
+        BIGINT amount_minor
+        CHAR_3_ currency
+        VARCHAR_40_ revenue_code
+        VARCHAR_64_ payment_reference
+        DATETIME_6_ paid_at
+        VARCHAR_64_ receipt_number
+        VARCHAR_32_ status
+    }
+    approval {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        BINARY_16_ application_id FK
+        VARCHAR_40_ approval_number
+        JSON approved_levels
+        INT approved_capacity
+        DATE valid_from_on
+        DATE expires_on
+        BINARY_16_ certificate_id FK
+        VARCHAR_32_ status
+    }
+    approval_condition {
+        BINARY_16_ id PK
+        BINARY_16_ approval_id FK
+        TEXT condition_text
+        DATE due_on
+        BINARY_16_ corrective_action_id FK
+        VARCHAR_32_ status
+    }
+    sanction {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        VARCHAR_32_ step
+        TEXT grounds
+        JSON evidence_document_ids
+        BOOLEAN blocks_admissions
+        BOOLEAN blocks_exam_entries
+        BINARY_16_ decided_by FK
+        DATE effective_on
+        VARCHAR_32_ appeal_status
+        DATE lifted_on
+        VARCHAR_32_ status
+    }
+    closure_case {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        BINARY_16_ sanction_id FK
+        INT learners_affected
+        INT learners_reenrolled
+        JSON alternatives
+        BINARY_16_ lga_officer_id FK
+        VARCHAR_32_ status
+    }
+    reg_dataset_definition {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ dataset
+        JSON fields
+        VARCHAR_32_ frequency
+        INT version
+        VARCHAR_32_ status
+    }
+    reg_snapshot {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        VARCHAR_32_ dataset
+        BINARY_16_ definition_id FK
+        DATETIME_6_ as_of
+        JSON payload
+        BINARY_32_ payload_hash
+    }
+    app_user {
+        BINARY_16 id PK
+    }
+    certificate {
+        BINARY_16 id PK
+    }
+    corrective_action {
+        BINARY_16 id PK
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    app_user ||--o{ application_query : "asked_by"
+    app_user ||--o{ closure_case : "lga_officer_id"
+    app_user ||--o{ provider_application : "decided_by"
+    app_user ||--o{ provider_application : "second_approver_id"
+    app_user ||--o{ provider_person : "user_id"
+    app_user ||--o{ sanction : "decided_by"
+    approval ||--o{ approval_condition : "approval_id"
+    approval_checklist_item ||--o{ application_evidence : "checklist_item_id"
+    certificate ||--o{ approval : "certificate_id"
+    corrective_action ||--o{ approval_condition : "corrective_action_id"
+    institution ||--o{ approval : "institution_id"
+    institution ||--o{ closure_case : "institution_id"
+    institution ||--o{ provider_application : "institution_id"
+    institution ||--o{ reg_snapshot : "institution_id"
+    institution ||--o{ sanction : "institution_id"
+    provider ||--o{ provider_application : "provider_id"
+    provider ||--o{ provider_person : "provider_id"
+    provider ||--o{ regulatory_fee : "provider_id"
+    provider_application ||--o{ application_evidence : "application_id"
+    provider_application ||--o{ application_query : "application_id"
+    provider_application ||--o{ approval : "application_id"
+    provider_application ||--o{ regulatory_fee : "application_id"
+    reg_dataset_definition ||--o{ reg_snapshot : "definition_id"
+    sanction ||--o{ closure_case : "sanction_id"

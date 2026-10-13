@@ -1,0 +1,156 @@
+erDiagram
+    safeguarding_concern {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        BINARY_16_ case_id FK
+        VARCHAR_32_ category
+        BINARY_16_ reported_by
+        VARCHAR_32_ source
+        MEDIUMBLOB body
+        JSON body_map
+        DATETIME_6_ occurred_at
+        VARCHAR_16_ receipt_code
+        BINARY_16_ community_report_id FK
+        BINARY_16_ wellbeing_concern_id FK
+    }
+    safeguarding_case {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_20_ case_reference
+        BINARY_16_ learner_id FK
+        BINARY_16_ dsl_user_id
+        VARCHAR_32_ risk_level
+        DATETIME_6_ opened_at
+        DATE review_due_on
+        MEDIUMBLOB closure_reason
+        DATETIME_6_ closed_at
+        BINARY_16_ closed_signed_by
+        BINARY_16_ transferred_to_institution_id
+        DATETIME_6_ transfer_acknowledged_at
+        VARCHAR_32_ status
+    }
+    safeguarding_entry {
+        BINARY_16_ id PK
+        BINARY_16_ case_id FK
+        VARCHAR_32_ entry_kind
+        DATETIME_6_ occurred_at
+        BINARY_16_ author_user_id
+        MEDIUMBLOB body
+        JSON source_ref
+        JSON document_ids
+    }
+    safeguarding_referral {
+        BINARY_16_ id PK
+        BINARY_16_ case_id FK
+        VARCHAR_200_ agency
+        MEDIUMBLOB agency_contact
+        DATETIME_6_ referred_at
+        VARCHAR_32_ legal_basis
+        MEDIUMBLOB outcome
+        VARCHAR_32_ status
+    }
+    case_access_grant {
+        BINARY_16_ id PK
+        VARCHAR_32_ case_kind
+        BINARY_16_ case_id
+        BINARY_16_ user_id
+        BINARY_16_ granted_by
+        VARCHAR_500_ reason
+        DATE valid_from
+        DATE valid_to
+    }
+    case_access_log {
+        BINARY_16_ id PK
+        VARCHAR_32_ case_kind
+        BINARY_16_ case_id
+        BINARY_16_ user_id
+        VARCHAR_32_ access
+        VARCHAR_40_ purpose_code
+        DATETIME_6_ accessed_at PK
+    }
+    case_share {
+        BINARY_16_ id PK
+        BINARY_16_ case_id FK
+        MEDIUMBLOB recipient_name
+        BINARY_32_ recipient_email_hmac
+        VARCHAR_300_ purpose
+        VARCHAR_32_ legal_basis
+        JSON entry_ids
+        BINARY_32_ bundle_hash
+        BINARY_32_ token_hash
+        DATETIME_6_ expires_at
+        DATETIME_6_ revoked_at
+    }
+    staff_case {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_20_ case_reference
+        BINARY_16_ subject_staff_id
+        VARCHAR_32_ case_kind
+        BOOLEAN is_about_head
+        BINARY_16_ designated_officer_user_id
+        VARCHAR_32_ outcome
+        DATETIME_6_ trcn_referral_at
+        DATETIME_6_ police_informed_at
+        VARCHAR_32_ status
+    }
+    staff_case_entry {
+        BINARY_16_ id PK
+        BINARY_16_ staff_case_id FK
+        VARCHAR_32_ entry_kind
+        BINARY_16_ author_user_id
+        MEDIUMBLOB body
+        JSON document_ids
+        BINARY_32_ content_hash
+        DATETIME_6_ occurred_at
+    }
+    reporting_form {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ title
+        JSON fields
+        JSON languages
+        JSON branding
+        VARCHAR_64_ public_slug
+        VARCHAR_32_ whatsapp_keyword
+        INT version
+        VARCHAR_32_ status
+    }
+    community_report {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ form_id FK
+        INT form_version
+        MEDIUMBLOB answers
+        MEDIUMBLOB reporter_identity
+        BINARY_32_ reply_code_hash
+        DATETIME_6_ received_at
+        BINARY_16_ triaged_by
+        VARCHAR_32_ status
+    }
+    community_report_reply {
+        BINARY_16_ id PK
+        BINARY_16_ report_id FK
+        VARCHAR_32_ direction
+        MEDIUMBLOB body
+        BINARY_16_ author_user_id
+        DATETIME_6_ sent_at
+    }
+    learner {
+        BINARY_16 id PK
+    }
+    wellbeing_concern {
+        BINARY_16 id PK
+    }
+    community_report ||--o{ community_report_reply : "report_id"
+    community_report ||--o{ safeguarding_concern : "community_report_id"
+    learner ||--o{ safeguarding_case : "learner_id"
+    learner ||--o{ safeguarding_concern : "learner_id"
+    reporting_form ||--o{ community_report : "form_id"
+    safeguarding_case ||--o{ case_share : "case_id"
+    safeguarding_case ||--o{ safeguarding_concern : "case_id"
+    safeguarding_case ||--o{ safeguarding_entry : "case_id"
+    safeguarding_case ||--o{ safeguarding_referral : "case_id"
+    staff_case ||--o{ staff_case_entry : "staff_case_id"
+    wellbeing_concern ||--o{ safeguarding_concern : "wellbeing_concern_id"

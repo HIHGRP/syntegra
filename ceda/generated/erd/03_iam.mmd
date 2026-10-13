@@ -1,0 +1,152 @@
+erDiagram
+    app_user {
+        BINARY_16_ id PK
+        VARCHAR_254_ username
+        VARCHAR_200_ display_name
+        VARCHAR_16_ phone
+        VARCHAR_32_ person_kind
+        BINARY_16_ person_id
+        VARCHAR_32_ idp
+        VARCHAR_255_ idp_subject
+        VARCHAR_255_ password_hash
+        VARCHAR_32_ status
+        DATETIME_6_ locked_until
+        SMALLINT failed_attempts
+        DATETIME_6_ last_sign_in_at
+        JSON preferences
+        DATETIME_6_ deactivated_at
+    }
+    mfa_factor {
+        BINARY_16_ id PK
+        BINARY_16_ user_id FK
+        VARCHAR_32_ factor_type
+        VARCHAR_80_ label
+        VARBINARY_1024_ secret_enc
+        VARCHAR_255_ credential_id
+        DATETIME_6_ last_used_at
+        VARCHAR_32_ status
+    }
+    user_session {
+        BINARY_16_ id PK
+        BINARY_16_ user_id FK
+        BINARY_32_ session_hash
+        BINARY_16_ active_grant_id FK
+        VARCHAR_120_ device_label
+        BOOLEAN is_trusted_device
+        VARBINARY_16_ ip
+        VARCHAR_400_ user_agent
+        DATETIME_6_ mfa_at
+        DATETIME_6_ started_at
+        DATETIME_6_ last_seen_at
+        DATETIME_6_ expires_at
+        DATETIME_6_ revoked_at
+    }
+    credential_reset {
+        BINARY_16_ id PK
+        BINARY_16_ user_id FK
+        VARCHAR_32_ purpose
+        BINARY_32_ token_hash
+        VARBINARY_16_ requested_ip
+        DATETIME_6_ expires_at
+        DATETIME_6_ used_at
+    }
+    role {
+        BINARY_16_ id PK
+        VARCHAR_16_ code
+        VARCHAR_300_ name
+        VARCHAR_32_ clearance
+        BOOLEAN is_builtin
+        BINARY_16_ cloned_from_id FK
+        VARCHAR_32_ created_by_clearance
+        VARCHAR_32_ status
+    }
+    role_permission {
+        BINARY_16_ id PK
+        BINARY_16_ role_id FK
+        VARCHAR_80_ permission
+        JSON abac_condition
+        JSON field_scope
+    }
+    role_grant {
+        BINARY_16_ id PK
+        BINARY_16_ user_id FK
+        BINARY_16_ role_id FK
+        BINARY_16_ scope_id FK
+        VARCHAR_32_ clearance_cap
+        BINARY_16_ granted_by FK
+        DATE review_due_on
+        BINARY_16_ delegation_of_id FK
+        DATE supervised_until
+        VARCHAR_32_ status
+        DATE valid_from
+        DATE valid_to
+    }
+    access_review {
+        BINARY_16_ id PK
+        BINARY_16_ grant_id FK
+        BINARY_16_ reviewer_id FK
+        VARCHAR_32_ decision
+        VARCHAR_500_ reason
+        DATETIME_6_ reviewed_at
+    }
+    break_glass_grant {
+        BINARY_16_ id PK
+        BINARY_16_ user_id FK
+        BINARY_16_ scope_id FK
+        TEXT reason
+        DATETIME_6_ starts_at
+        DATETIME_6_ ends_at
+        DATETIME_6_ dpo_notified_at
+        BINARY_16_ reviewed_by FK
+        DATETIME_6_ reviewed_at
+        VARCHAR_32_ review_outcome
+    }
+    service_identity {
+        BINARY_16_ id PK
+        VARCHAR_32_ kind
+        VARCHAR_300_ name
+        BINARY_16_ owner_user_id FK
+        BINARY_16_ owner_grant_id FK
+        JSON allowed_tools
+        VARCHAR_32_ status
+        DATETIME_6_ paused_at
+        BINARY_16_ paused_by FK
+    }
+    purpose_code {
+        BINARY_16_ id PK
+        VARCHAR_40_ code
+        VARCHAR_300_ label
+        BOOLEAN requires_reason_text
+        JSON allowed_roles
+    }
+    user_pin {
+        BINARY_16_ id PK
+        BINARY_16_ user_id FK
+        VARCHAR_32_ target_kind
+        VARCHAR_300_ target_ref
+        VARCHAR_120_ label
+        SMALLINT sort_order
+    }
+    scope_node {
+        BINARY_16 id PK
+    }
+    app_user ||--o{ access_review : "reviewer_id"
+    app_user ||--o{ break_glass_grant : "reviewed_by"
+    app_user ||--o{ break_glass_grant : "user_id"
+    app_user ||--o{ credential_reset : "user_id"
+    app_user ||--o{ mfa_factor : "user_id"
+    app_user ||--o{ role_grant : "granted_by"
+    app_user ||--o{ role_grant : "user_id"
+    app_user ||--o{ service_identity : "owner_user_id"
+    app_user ||--o{ service_identity : "paused_by"
+    app_user ||--o{ user_pin : "user_id"
+    app_user ||--o{ user_session : "user_id"
+    role ||--o{ role : "cloned_from_id"
+    role ||--o{ role_grant : "role_id"
+    role ||--o{ role_permission : "role_id"
+    role_grant ||--o{ access_review : "grant_id"
+    role_grant ||--o{ role_grant : "delegation_of_id"
+    role_grant ||--o{ service_identity : "owner_grant_id"
+    role_grant ||--o{ user_session : "active_grant_id"
+    scope_node ||--o{ break_glass_grant : "scope_id"
+    scope_node ||--o{ role_grant : "scope_id"

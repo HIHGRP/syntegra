@@ -1,0 +1,298 @@
+erDiagram
+    building {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ campus_id FK
+        VARCHAR_300_ name
+        SMALLINT built_year
+        VARCHAR_32_ condition_grade
+        JSON facilities
+        JSON plan_document_ids
+        VARCHAR_32_ status
+    }
+    room {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ campus_id FK
+        BINARY_16_ building_id FK
+        VARCHAR_32_ code
+        VARCHAR_300_ name
+        VARCHAR_32_ room_type
+        SMALLINT capacity
+        JSON accessibility
+        VARCHAR_32_ condition_grade
+        JSON ict
+        VARCHAR_32_ status
+    }
+    asset {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ asset_tag
+        VARCHAR_300_ name
+        VARCHAR_32_ category
+        BINARY_16_ room_id FK
+        BINARY_16_ custodian_staff_id FK
+        DATE acquired_on
+        BIGINT value_minor
+        CHAR_3_ currency
+        VARCHAR_32_ condition_grade
+        DATE next_service_on
+        DATE safety_check_due_on
+        DATE predicted_failure_on
+        VARCHAR_32_ status
+    }
+    asset_inspection {
+        BINARY_16_ id PK
+        BINARY_16_ asset_id FK
+        BINARY_16_ inspected_by
+        JSON checklist
+        JSON photo_document_ids
+        VARCHAR_32_ condition_grade
+        DATETIME_6_ inspected_at
+        BINARY_16_ client_op_id
+    }
+    maintenance_request {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ asset_id FK
+        BINARY_16_ room_id FK
+        TEXT description
+        VARCHAR_32_ risk
+        BOOLEAN is_preventive
+        BINARY_16_ reported_by
+        BINARY_16_ assigned_to
+        DATE due_on
+        DATETIME_6_ completed_at
+        BIGINT cost_minor
+        CHAR_3_ currency
+        VARCHAR_32_ status
+    }
+    facility_incident {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ room_id FK
+        VARCHAR_200_ location_text
+        VARCHAR_32_ severity
+        TEXT description
+        JSON photo_document_ids
+        DATETIME_6_ occurred_at
+        TEXT follow_up
+        VARCHAR_32_ status
+    }
+    capital_plan_item {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ building_id FK
+        BINARY_16_ asset_id FK
+        VARCHAR_300_ title
+        SMALLINT planned_year
+        BIGINT estimate_minor
+        CHAR_3_ currency
+        SMALLINT priority
+        VARCHAR_32_ status
+    }
+    transport_route {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ name
+        JSON stops
+        BINARY_16_ vehicle_id FK
+        BINARY_16_ driver_staff_id FK
+        VARCHAR_32_ status
+    }
+    vehicle {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_16_ registration
+        SMALLINT capacity
+        DATE roadworthy_until
+        DATE insured_until
+        VARCHAR_32_ status
+    }
+    transport_allocation {
+        BINARY_16_ id PK
+        BINARY_16_ route_id FK
+        BINARY_16_ learner_id FK
+        VARCHAR_16_ stop_code
+        VARCHAR_32_ direction
+        DATE valid_from
+        DATE valid_to
+    }
+    boarding_record {
+        BINARY_16_ id PK
+        BINARY_16_ route_id FK
+        BINARY_16_ learner_id FK
+        DATE boarded_on PK
+        VARCHAR_32_ event
+        DATETIME_6_ at
+        BINARY_16_ recorded_by
+    }
+    activity {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ name
+        VARCHAR_32_ activity_kind
+        JSON eligibility_rule
+        SMALLINT capacity
+        BIGINT fee_minor
+        CHAR_3_ currency
+        VARCHAR_32_ allocation_method
+        BINARY_16_ period_id FK
+        VARCHAR_32_ status
+    }
+    activity_enrolment {
+        BINARY_16_ id PK
+        BINARY_16_ activity_id FK
+        BINARY_16_ learner_id FK
+        SMALLINT preference_rank
+        VARCHAR_32_ allocation
+        SMALLINT waiting_position
+        BINARY_16_ invoice_id FK
+        SMALLINT sessions_attended
+    }
+    trip {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ title
+        VARCHAR_300_ destination
+        DATETIME_6_ departs_at
+        DATETIME_6_ returns_at
+        BINARY_16_ leader_staff_id FK
+        BINARY_16_ risk_assessment_document_id
+        BINARY_16_ workflow_instance_id FK
+        BIGINT charge_minor
+        CHAR_3_ currency
+        VARCHAR_32_ status
+    }
+    trip_participant {
+        BINARY_16_ id PK
+        BINARY_16_ trip_id FK
+        BINARY_16_ learner_id FK
+        BINARY_16_ consent_record_id FK
+        BINARY_16_ invoice_id FK
+        BOOLEAN present_out
+        BOOLEAN present_return
+    }
+    meal_service {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        DATE served_on
+        VARCHAR_32_ meal_session
+        VARCHAR_32_ programme
+        INT meals_served
+        INT learners_present
+        JSON menu
+        VARCHAR_500_ variance_note
+    }
+    dietary_requirement {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        VARCHAR_32_ requirement
+        BOOLEAN is_allergy
+        DATE valid_from
+        DATE valid_to
+    }
+    library_item {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ title
+        VARCHAR_500_ authors
+        VARCHAR_17_ isbn
+        SMALLINT copies
+        VARCHAR_200_ external_ref
+    }
+    library_loan {
+        BINARY_16_ id PK
+        BINARY_16_ library_item_id FK
+        VARCHAR_32_ borrower_kind
+        BINARY_16_ borrower_id
+        DATE loaned_on
+        DATE due_on
+        DATE returned_on
+    }
+    learning_resource {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ title
+        BINARY_16_ subject_id FK
+        VARCHAR_32_ education_level
+        VARCHAR_32_ source
+        INT stock
+        BINARY_16_ content_library_item_id FK
+        VARCHAR_32_ status
+    }
+    resource_issue {
+        BINARY_16_ id PK
+        BINARY_16_ resource_id FK
+        BINARY_16_ learner_id FK
+        BINARY_16_ class_group_id FK
+        SMALLINT quantity
+        DATE issued_on
+        DATE returned_on
+        VARCHAR_32_ outcome
+        VARCHAR_32_ condition_grade
+    }
+    academic_period {
+        BINARY_16 id PK
+    }
+    campus {
+        BINARY_16 id PK
+    }
+    class_group {
+        BINARY_16 id PK
+    }
+    consent_record {
+        BINARY_16 id PK
+    }
+    content_library_item {
+        BINARY_16 id PK
+    }
+    invoice {
+        BINARY_16 id PK
+    }
+    learner {
+        BINARY_16 id PK
+    }
+    staff {
+        BINARY_16 id PK
+    }
+    subject {
+        BINARY_16 id PK
+    }
+    workflow_instance {
+        BINARY_16 id PK
+    }
+    academic_period ||--o{ activity : "period_id"
+    activity ||--o{ activity_enrolment : "activity_id"
+    asset ||--o{ asset_inspection : "asset_id"
+    asset ||--o{ capital_plan_item : "asset_id"
+    asset ||--o{ maintenance_request : "asset_id"
+    building ||--o{ capital_plan_item : "building_id"
+    building ||--o{ room : "building_id"
+    campus ||--o{ building : "campus_id"
+    campus ||--o{ room : "campus_id"
+    class_group ||--o{ resource_issue : "class_group_id"
+    consent_record ||--o{ trip_participant : "consent_record_id"
+    content_library_item ||--o{ learning_resource : "content_library_item_id"
+    invoice ||--o{ activity_enrolment : "invoice_id"
+    invoice ||--o{ trip_participant : "invoice_id"
+    learner ||--o{ activity_enrolment : "learner_id"
+    learner ||--o{ boarding_record : "learner_id"
+    learner ||--o{ dietary_requirement : "learner_id"
+    learner ||--o{ resource_issue : "learner_id"
+    learner ||--o{ transport_allocation : "learner_id"
+    learner ||--o{ trip_participant : "learner_id"
+    learning_resource ||--o{ resource_issue : "resource_id"
+    library_item ||--o{ library_loan : "library_item_id"
+    room ||--o{ asset : "room_id"
+    room ||--o{ facility_incident : "room_id"
+    room ||--o{ maintenance_request : "room_id"
+    staff ||--o{ asset : "custodian_staff_id"
+    staff ||--o{ transport_route : "driver_staff_id"
+    staff ||--o{ trip : "leader_staff_id"
+    subject ||--o{ learning_resource : "subject_id"
+    transport_route ||--o{ boarding_record : "route_id"
+    transport_route ||--o{ transport_allocation : "route_id"
+    trip ||--o{ trip_participant : "trip_id"
+    vehicle ||--o{ transport_route : "vehicle_id"
+    workflow_instance ||--o{ trip : "workflow_instance_id"

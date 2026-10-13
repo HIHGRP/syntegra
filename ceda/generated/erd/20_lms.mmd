@@ -1,0 +1,268 @@
+erDiagram
+    course_space {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ space_kind
+        BINARY_16_ class_subject_plan_id FK
+        BINARY_16_ course_section_id FK
+        VARCHAR_300_ title
+        BINARY_16_ owner_staff_id FK
+        JSON external_lms
+        BIGINT storage_bytes
+        VARCHAR_32_ status
+    }
+    course_member {
+        BINARY_16_ id PK
+        BINARY_16_ course_space_id FK
+        VARCHAR_32_ member_kind
+        BINARY_16_ member_id
+        VARCHAR_32_ space_role
+        DATE valid_from
+        DATE valid_to
+    }
+    lms_unit {
+        BINARY_16_ id PK
+        BINARY_16_ course_space_id FK
+        VARCHAR_300_ title
+        SMALLINT sort_order
+        JSON node_ids
+        BINARY_16_ scheme_week_id FK
+    }
+    lms_content {
+        BINARY_16_ id PK
+        BINARY_16_ unit_id FK
+        VARCHAR_32_ content_kind
+        VARCHAR_300_ title
+        TEXT body
+        VARCHAR_1024_ object_key
+        BIGINT size_bytes
+        BINARY_16_ library_item_id FK
+        JSON node_ids
+        BOOLEAN is_offline_pack
+    }
+    content_library_item {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ title
+        VARCHAR_32_ content_kind
+        VARCHAR_1024_ object_key
+        JSON node_refs
+        VARCHAR_120_ licence
+        INT version
+        VARCHAR_32_ status
+    }
+    assignment {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ course_space_id FK
+        BINARY_16_ unit_id FK
+        VARCHAR_32_ assignment_kind
+        VARCHAR_300_ title
+        TEXT instructions
+        JSON node_ids
+        DECIMAL_7_3_ max_mark
+        BINARY_16_ rubric_id FK
+        DECIMAL_6_3_ markbook_weight
+        BINARY_16_ assessment_id FK
+        DATETIME_6_ opens_at
+        DATETIME_6_ due_at
+        VARCHAR_32_ late_policy
+        BOOLEAN allow_resubmission
+        JSON group_settings
+        JSON accessibility_options
+        VARCHAR_32_ ai_policy
+        DATETIME_6_ release_at
+        VARCHAR_300_ homework_reason
+        VARCHAR_32_ status
+    }
+    rubric {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ title
+        JSON criteria
+        VARCHAR_60_ framework_ref
+        INT version
+    }
+    submission {
+        BINARY_16_ id PK
+        BINARY_16_ assignment_id FK
+        BINARY_16_ learner_id FK
+        VARCHAR_40_ group_ref
+        SMALLINT version_no
+        BOOLEAN is_draft
+        TEXT text_body
+        DATETIME_6_ device_submitted_at
+        DATETIME_6_ synced_at
+        BOOLEAN is_late
+        BINARY_32_ receipt_hash
+        VARCHAR_32_ ai_declaration
+        VARCHAR_32_ source
+        BINARY_16_ client_op_id
+    }
+    submission_file {
+        BINARY_16_ id PK
+        BINARY_16_ submission_id FK
+        VARCHAR_1024_ object_key
+        VARCHAR_127_ mime_type
+        BIGINT size_bytes
+        BINARY_32_ sha256
+    }
+    submission_mark {
+        BINARY_16_ id PK
+        BINARY_16_ submission_id FK
+        BINARY_16_ marker_staff_id FK
+        DECIMAL_7_3_ score
+        JSON rubric_levels
+        TEXT feedback
+        VARCHAR_1024_ annotation_object_key
+        VARCHAR_1024_ audio_feedback_object_key
+        JSON objective_results
+        BOOLEAN is_auto_marked
+        DATETIME_6_ released_at
+    }
+    extension {
+        BINARY_16_ id PK
+        BINARY_16_ assignment_id FK
+        BINARY_16_ learner_id FK
+        DATETIME_6_ new_due_at
+        VARCHAR_500_ reason
+        BINARY_16_ granted_by FK
+    }
+    originality_report {
+        BINARY_16_ id PK
+        BINARY_16_ submission_id FK
+        VARCHAR_40_ provider
+        DECIMAL_6_3_ similarity_pct
+        VARCHAR_500_ report_ref
+        DATETIME_6_ checked_at
+    }
+    question {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ bank_code
+        VARCHAR_32_ item_kind
+        TEXT stem
+        JSON options
+        VARBINARY_1024_ answer_key_enc
+        JSON node_ids
+        DECIMAL_7_6_ difficulty
+        DECIMAL_5_3_ discrimination
+        VARCHAR_200_ qti_ref
+        INT version
+        VARCHAR_32_ status
+    }
+    quiz_attempt {
+        BINARY_16_ id PK
+        BINARY_16_ assignment_id FK
+        BINARY_16_ learner_id FK
+        JSON item_order
+        JSON responses
+        INT time_allowed_minutes
+        DATETIME_6_ started_at
+        DATETIME_6_ submitted_at
+        JSON device_log
+        DECIMAL_7_3_ auto_score
+        BINARY_16_ invigilator_staff_id FK
+    }
+    live_class {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ course_space_id FK
+        BINARY_16_ lesson_occurrence_id FK
+        DATETIME_6_ starts_at
+        VARCHAR_200_ provider_room_ref
+        VARCHAR_1024_ recording_object_key
+        BOOLEAN recording_consent_complete
+        VARCHAR_1024_ captions_object_key
+    }
+    discussion_post {
+        BINARY_16_ id PK
+        BINARY_16_ course_space_id FK
+        BINARY_16_ thread_ref
+        VARCHAR_32_ author_kind
+        BINARY_16_ author_id
+        TEXT body
+        VARCHAR_32_ moderation
+        DATETIME_6_ posted_at
+    }
+    homework_limit {
+        BINARY_16_ id PK
+        BINARY_16_ class_group_id FK
+        SMALLINT weekday
+        SMALLINT max_items
+        JSON subject_slots
+        DATE valid_from
+        DATE valid_to
+    }
+    digital_skill_level {
+        BINARY_16_ id PK
+        VARCHAR_32_ person_kind
+        BINARY_16_ person_id
+        VARCHAR_32_ strand
+        SMALLINT level
+        JSON evidence
+        DATE valid_from
+        DATE valid_to
+    }
+    ussd_session {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        BINARY_32_ msisdn_hmac
+        VARCHAR_32_ action
+        BINARY_16_ assignment_id FK
+        DATETIME_6_ occurred_at
+    }
+    assessment {
+        BINARY_16 id PK
+    }
+    class_group {
+        BINARY_16 id PK
+    }
+    class_subject_plan {
+        BINARY_16 id PK
+    }
+    course_section {
+        BINARY_16 id PK
+    }
+    learner {
+        BINARY_16 id PK
+    }
+    lesson_occurrence {
+        BINARY_16 id PK
+    }
+    scheme_week {
+        BINARY_16 id PK
+    }
+    staff {
+        BINARY_16 id PK
+    }
+    assessment ||--o{ assignment : "assessment_id"
+    assignment ||--o{ extension : "assignment_id"
+    assignment ||--o{ quiz_attempt : "assignment_id"
+    assignment ||--o{ submission : "assignment_id"
+    assignment ||--o{ ussd_session : "assignment_id"
+    class_group ||--o{ homework_limit : "class_group_id"
+    class_subject_plan ||--o{ course_space : "class_subject_plan_id"
+    content_library_item ||--o{ lms_content : "library_item_id"
+    course_section ||--o{ course_space : "course_section_id"
+    course_space ||--o{ assignment : "course_space_id"
+    course_space ||--o{ course_member : "course_space_id"
+    course_space ||--o{ discussion_post : "course_space_id"
+    course_space ||--o{ live_class : "course_space_id"
+    course_space ||--o{ lms_unit : "course_space_id"
+    learner ||--o{ extension : "learner_id"
+    learner ||--o{ quiz_attempt : "learner_id"
+    learner ||--o{ submission : "learner_id"
+    learner ||--o{ ussd_session : "learner_id"
+    lesson_occurrence ||--o{ live_class : "lesson_occurrence_id"
+    lms_unit ||--o{ assignment : "unit_id"
+    lms_unit ||--o{ lms_content : "unit_id"
+    rubric ||--o{ assignment : "rubric_id"
+    scheme_week ||--o{ lms_unit : "scheme_week_id"
+    staff ||--o{ course_space : "owner_staff_id"
+    staff ||--o{ extension : "granted_by"
+    staff ||--o{ quiz_attempt : "invigilator_staff_id"
+    staff ||--o{ submission_mark : "marker_staff_id"
+    submission ||--o{ originality_report : "submission_id"
+    submission ||--o{ submission_file : "submission_id"
+    submission ||--o| submission_mark : "submission_id"

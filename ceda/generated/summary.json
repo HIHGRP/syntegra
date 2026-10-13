@@ -1,0 +1,35 @@
+{
+  "ceda": "SYN-CEDA-001",
+  "version": "1.0.0",
+  "domains": 31,
+  "entities": 458,
+  "tables": 484,
+  "tables_by_zone": {
+    "platform": 22,
+    "registry": 165,
+    "ops": 216,
+    "vault": 25,
+    "records": 18,
+    "dw": 38
+  },
+  "origin": {
+    "appj": 174,
+    "ceda": 284
+  },
+  "columns": 7294,
+  "foreign_keys": 601,
+  "soft_references": 330,
+  "append_only_tables": 93,
+  "partitioned_tables": 21,
+  "enums": 305,
+  "code_lists": 51,
+  "events": 133,
+  "metrics": 51,
+  "retention_series": 32,
+  "pages_covered": 260,
+  "pages_total": 260,
+  "fr_total": 517,
+  "fr_data_mapped": 510,
+  "appj_tables_mapped": 174,
+  "appj_tables_total": 174
+}

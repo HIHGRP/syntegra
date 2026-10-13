@@ -1,0 +1,361 @@
+# CEDA fixed enumerations (global core). Each becomes a CHECK constraint, a Django choices list,
+# a JSON Schema enum and an OpenAPI enum. Values are stable snake_case codes (≤ 32 chars); the UI shows
+# translated labels. Lists that a country, state or institution may change are NOT here — they are
+# jurisdiction code lists (model/reference/*.yaml, type cl(...)). Adding a value is an additive change;
+# renaming or removing one is a breaking change (CEDA §15).
+
+enums:
+  # ---------------------------------------------------------------- generic lifecycle
+  record_status: {title: Generic record status, values: [active, inactive, retired]}
+  version_status: {title: Versioned configuration status, values: [draft, in_review, approved, published, superseded, retired, withdrawn]}
+  queue_status: {title: Work-queue item status, values: [open, in_progress, resolved, dismissed, cancelled]}
+  request_status: {title: Request status, values: [draft, submitted, in_review, approved, rejected, cancelled, fulfilled]}
+  case_status: {title: Case status, values: [open, in_progress, on_hold, closed, transferred]}
+  run_status: {title: Batch run status, values: [draft, previewed, running, awaiting_approval, approved, issued, completed, failed, cancelled]}
+  run_outcome: {title: Run outcome, values: [succeeded, failed, partial]}
+  step_status: {title: Step status, values: [not_started, in_progress, done, blocked, not_applicable]}
+  work_status: {title: Work-order status, values: [reported, triaged, scheduled, in_progress, completed, cancelled]}
+  plan_status: {title: Plan status, values: [draft, active, under_review, completed, closed, cancelled]}
+  goal_status: {title: Goal status, values: [not_started, in_progress, achieved, partly_achieved, not_achieved, dropped]}
+  delivery_status: {title: Delivery status, values: [queued, sent, delivered, read, failed, retrying, abandoned, processed]}
+  import_status: {title: Import status, values: [uploaded, mapped, validating, validated, matching, staged, committed, rolled_back, failed]}
+  severity: {title: Severity, values: [critical, high, moderate, info]}
+  test_result: {title: Test result, values: [pass, fail, error]}
+  review_decision: {title: Review decision, values: [keep, reduce, revoke, escalate]}
+  review_outcome: {title: Review outcome, values: [no_issue, explained, action_taken, referred, confirmed]}
+  rag: {title: Red-amber-green status, values: [red, amber, green]}
+  urgency: {title: Service urgency, values: [standard, express]}
+
+  # ---------------------------------------------------------------- platform & tenancy
+  tenant_kind: {title: Tenant kind, values: [global, country, state, network, private_provider, institution, department]}
+  tenant_status: {title: Tenant status, values: [proposed, provisioning, active, suspended, closed]}
+  isolation_mode: {title: Tenant isolation, values: [dedicated_schema, pooled_schema]}
+  plan_tier: {title: Operator plan tier, values: [starter, standard, advanced, tertiary, group, state_enterprise]}
+  price_basis: {title: Plan price basis, values: [per_learner_term, per_learner_semester, flat_term, per_campus_term, sdaf]}
+  financing_channel: {title: Financing channel (MFS §20.1), values: [sdaf, direct_subscription]}
+  subscription_status: {title: Subscription status, values: [trial, active, grace, restricted, suspended, terminated]}
+  sub_payment_method: {title: Subscription payment method, values: [gateway, virtual_account, bank_transfer, direct_debit]}
+  quote_status: {title: Quote status, values: [draft, sent, accepted, expired, withdrawn]}
+  invoice_status: {title: Invoice status, values: [draft, issued, part_paid, paid, overdue, credited, void]}
+  credit_target: {title: Service credit applied to, values: [reconciliation_statement, subscription_invoice]}
+  receivable_channel: {title: Operator receivable channel, values: [sdaf_remittance, private_subscription, other_service]}
+  backup_kind: {title: Backup or DR exercise, values: [full_backup, incremental_backup, binlog_stream, tenant_restore_test, site_failover_test]}
+  account_status: {title: Account status, values: [invited, active, locked, suspended, deactivated]}
+
+  # ---------------------------------------------------------------- governance, policy, workflow
+  scope_level: {title: Governance hierarchy level, values: [global, country, state, authority, lga, network, institution, campus, faculty, department, programme, class]}
+  scope_ref_kind: {title: Entity a scope node represents, values: [tenant, institution, campus, org_unit, class_group, course_section, programme, network]}
+  config_layer: {title: Configuration layer, values: [global, country, state, network, institution, department]}
+  rule_domain: {title: Policy rule domain, values: [attendance, curriculum, coverage, teacher_qualification, examination, progression, certification, accreditation, registration, alerting, billing, behaviour, safeguarding, financing, identity, messaging, agents]}
+  exception_status: {title: Policy exception status, values: [requested, approved, rejected, active, expired, renewed, revoked]}
+  conflict_resolution: {title: Policy conflict resolution, values: [cancelled, exception_requested, revised]}
+  workflow_status: {title: Workflow instance status, values: [running, waiting, completed, cancelled, failed]}
+  task_status: {title: Workflow task status, values: [open, claimed, completed, escalated, reassigned, cancelled]}
+  approval_type: {title: Approval type, values: [single, any_of, all_of, sequential]}
+  classification: {title: Data classification (MFS §2.2), values: [public, internal, confidential, restricted, special]}
+
+  # ---------------------------------------------------------------- identity & access
+  person_kind: {title: Person master kind, values: [learner, guardian, staff, provider_person, applicant, visitor]}
+  identity_provider: {title: Identity provider, values: [local, gov_sso, entra, google, magic_link, otp]}
+  mfa_type: {title: MFA factor, values: [totp, passkey, sms_otp, email_otp]}
+  service_identity_kind: {title: Service identity kind, values: [agent, api_client, integration, system_job]}
+  pin_kind: {title: Pinned item kind, values: [page, record, saved_view]}
+  actor_kind: {title: Audit actor kind, values: [user, agent, api_client, system, platform_operator]}
+
+  # ---------------------------------------------------------------- master data & identity
+  identifier_status: {title: External identifier status, values: [unverified, verified, mismatch, revoked]}
+  verification_channel: {title: Identity verification channel, values: [nimc, registrar, exam_body, trcn, cac, manual]}
+  verification_outcome: {title: Verification outcome, values: [match, partial_match, no_match, manual_review, error]}
+  identity_level: {title: Learner identity verification level, values: [unverified, document_seen, nin_verified, archive_verified]}
+  match_entity: {title: Matched entity kind, values: [learner, guardian, staff, institution, provider, supplier, course, programme]}
+  match_source: {title: Match source, values: [registration, import, transfer, digitisation, exam_import, application, nightly_scan]}
+  match_decision: {title: Steward decision, values: [same, different, unsure]}
+  dq_dimension: {title: DQI dimension, values: [completeness, uniqueness, validity, timeliness, consistency, verification]}
+  dataset_kind: {title: Dataset, values: [enrolment, attendance, staffing, curriculum_coverage, results, safety, fees, compliance, finance, registers]}
+  validation_level: {title: Validation level (Book 3 §13.1), values: [hard, soft, anomaly]}
+  date_precision: {title: Date precision, values: [day, month, year]}
+
+  # ---------------------------------------------------------------- institutions & regulation
+  institution_status: {title: Institution lifecycle, values: [proposed, active, suspended, closed, merged]}
+  onboarding_status: {title: Onboarding status (MFS §7.1), values: [not_onboarded, onboarding, live, suspended, closed]}
+  regulatory_status: {title: Regulatory status, values: [approved, approved_with_conditions, regularising, suspended, closed, unregistered, public_owned]}
+  day_boarding: {title: Day or boarding, values: [day, boarding, mixed]}
+  gender_intake: {title: Gender intake, values: [mixed, boys, girls]}
+  location_class: {title: Location class, values: [urban, peri_urban, rural]}
+  unit_type: {title: Organisation unit type, values: [faculty, school, department, unit, centre, house, year_group]}
+  licence_kind: {title: Licence kind, values: [operating_licence, private_approval, accreditation, exam_centre, certificate_issuer, programme_accreditation, federal_approval]}
+  licence_status: {title: Licence status, values: [valid, expiring, expired, suspended, revoked]}
+  inspection_kind: {title: Inspection kind, values: [approval, routine, monitoring, follow_up, thematic, renewal]}
+  inspection_status: {title: Inspection status, values: [planned, scheduled, in_progress, report_draft, report_approved, cancelled]}
+  action_source: {title: Corrective action source, values: [inspection_finding, approval_condition, compliance, curriculum_alert, alert, intervention_workflow]}
+  action_status: {title: Corrective action status, values: [open, plan_submitted, plan_approved, in_progress, evidence_submitted, verified, overdue, closed]}
+  compliance_category: {title: Compliance category, values: [fire, health_safety, structural, food_hygiene, transport, statutory_certification, data_protection, safeguarding]}
+  compliance_state: {title: Compliance state, values: [compliant, attention_required, overdue, critical]}
+  onboarding_step: {title: Onboarding readiness step, values: [structure_set_up, staff_loaded, learners_loaded, learners_matched, curriculum_adopted, first_register, first_results, live]}
+  unknown_ref_source: {title: Unknown institution source, values: [transfer, exam_entry, certificate, digitisation, application]}
+  check_result: {title: Check result, values: [pass, pass_with_actions, fail]}
+
+  # ---------------------------------------------------------------- private providers
+  provider_status: {title: Provider status, values: [registered, applicant, approved, suspended, closed]}
+  provider_person_role: {title: Provider person role, values: [proprietor, director, company_secretary, head_designate]}
+  application_kind: {title: Provider application kind, values: [new, regularisation, renewal, variation]}
+  application_status: {title: Application status, values: [draft, submitted, fee_pending, desk_review, query_raised, inspection, decision, approved, refused, deferred, withdrawn, appealed]}
+  approval_decision: {title: Approval decision, values: [approve, approve_with_conditions, defer, refuse]}
+  approval_status: {title: Approval status, values: [active, expiring, expired, suspended, revoked, superseded]}
+  checklist_area: {title: Approval checklist area, values: [legal, premises, facilities, staffing, curriculum, safeguarding_safety, finance]}
+  evidence_status: {title: Evidence review status, values: [pending, accepted, queried, rejected]}
+  regulatory_fee_kind: {title: Regulatory fee kind, values: [application, inspection, approval, renewal, late_renewal]}
+  fee_status: {title: Fee status, values: [due, paid, waived, refunded]}
+  sanction_step: {title: Sanction ladder step, values: [warning, conditions, admissions_suspended, suspension, closure]}
+  sanction_status: {title: Sanction status, values: [proposed, approved, in_effect, appealed, lifted, upheld]}
+  appeal_status: {title: Appeal status, values: [none, lodged, upheld, dismissed]}
+  refresh_frequency: {title: Refresh frequency, values: [live, daily, weekly, termly, per_series, per_session, as_occurs]}
+
+  # ---------------------------------------------------------------- learners & families
+  learner_status: {title: Learner status, values: [registered, active, left, deceased, merged]}
+  enrolment_basis: {title: Enrolment basis, values: [admission, transfer, promotion, re_enrolment, temporary, repeat]}
+  enrolment_status: {title: Enrolment status, values: [pending, active, completed, withdrawn, transferred, suspended]}
+  transfer_status: {title: Transfer status, values: [requested, accepted, records_sent, handover_pending, completed, cancelled]}
+  cme_outcome: {title: Child-missing-education outcome, values: [located_enrolled, located_not_enrolled, moved_out_of_state, not_located, deceased]}
+  passport_entry_kind: {title: Passport entry kind, values: [qualification, certificate, transcript, badge, competency, credit, cpd, digital_skill, guidance]}
+  family_member_kind: {title: Family member kind, values: [learner, guardian]}
+  org_contact_kind: {title: Organisation contact kind, values: [school, doctor, supplier, agency, employer, other]}
+  restriction_kind: {title: Contact restriction, values: [no_contact, no_collection, no_information, supervised_only]}
+  consent_decision: {title: Consent decision, values: [given, refused, withdrawn]}
+  legal_basis: {title: Lawful basis (NDPA 2023 / GDPR), values: [consent, contract, legal_obligation, vital_interests, public_task, legitimate_interests]}
+  person_status: {title: Person status, values: [active, inactive, merged, deceased]}
+
+  # ---------------------------------------------------------------- staff
+  staff_status: {title: Staff status, values: [onboarding, active, leaver, merged]}
+  contract_kind: {title: Contract kind, values: [permanent, fixed_term, part_time, adjunct, visiting, nysc, volunteer, graduate_assistant]}
+  qualification_kind: {title: Staff qualification kind, values: [degree, certificate, registration, teaching_authorisation, specialism, check]}
+  verification_status: {title: Verification status, values: [unverified, pending, verified, failed, expired]}
+  absence_status: {title: Staff absence status, values: [requested, approved, rejected, recorded, cancelled]}
+  cover_status: {title: Cover status, values: [proposed, booked, confirmed, declined, gap]}
+  cover_alternative: {title: Cover alternative, values: [supervised_study_with_lms_work, merged_class, cancelled_lesson]}
+  vacancy_status: {title: Vacancy status, values: [draft, open, closed, filled, withdrawn]}
+  recruitment_stage: {title: Recruitment stage, values: [applied, shortlisted, interview, references, checks, offer, appointed, rejected, withdrawn]}
+  appraisal_status: {title: Appraisal status, values: [planned, objectives_set, mid_year, final_review, signed_off]}
+  content_package: {title: Training content format, values: [native_lms, scorm, xapi]}
+  training_status: {title: Training status, values: [assigned, in_progress, passed, failed, expired]}
+  payroll_table_kind: {title: Payroll table, values: [paye, pension, nhf, nhis, other]}
+  payrun_status: {title: Pay run status, values: [draft, calculated, exceptions_review, approved, exported, posted, cancelled]}
+
+  # ---------------------------------------------------------------- academic structure & timetable
+  period_kind: {title: Academic period kind, values: [session, term, semester, half_term, billing_period]}
+  calendar_event_kind: {title: Calendar event kind, values: [holiday, closure, exam_window, event, inset_day, mid_term_break]}
+  class_kind: {title: Class kind, values: [arm, set, cohort, course_section, group]}
+  class_status: {title: Class status, values: [draft, active, closed, archived]}
+  session_shift: {title: Session shift, values: [morning, afternoon, evening, single]}
+  delivery_mode: {title: Programme delivery mode, values: [on_campus, distance, online, blended, continuing]}
+  accreditation_status: {title: Accreditation status, values: [full, interim, denied, expired, not_required]}
+  teaching_role: {title: Teaching role, values: [teacher_of_record, co_teacher, teaching_assistant, specialist]}
+  allocation_status: {title: Allocation status, values: [draft, proposed, approved, published, applied, allocated, waitlisted, cancelled]}
+  registration_status: {title: Course registration status, values: [draft, submitted, adviser_approved, registered, dropped]}
+  lesson_kind: {title: Lesson kind, values: [lesson, lecture, tutorial, practical, live_class, registration]}
+  lesson_status: {title: Lesson status, values: [scheduled, taught, covered, cancelled, remote]}
+  duty_kind: {title: Duty kind, values: [break_duty, lunch_duty, gate_duty, on_call, bus_duty]}
+  booking_status: {title: Booking status, values: [requested, confirmed, declined, cancelled, completed]}
+
+  # ---------------------------------------------------------------- curriculum
+  curriculum_status: {title: Curriculum version status, values: [draft, review, approved, published, superseded, withdrawn]}
+  curriculum_node_kind: {title: Curriculum node kind, values: [subject, strand, theme, topic, objective, competency]}
+  requirement_status: {title: Curriculum element status, values: [mandatory, optional, recommended, restricted]}
+  adoption_source: {title: Adoption resolved by, values: [automatic, state_adaptation, institution_addition, exception]}
+  delivery_source: {title: Lesson delivery source, values: [class_page, staff_app, lms_lesson, import]}
+  coverage_rule: {title: Coverage invariant (MFS §5.3), values: [g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11, g12]}
+  gap_status: {title: Gap status, values: [open, in_progress, escalated, accepted, closed]}
+  gap_event_kind: {title: Gap event, values: [opened, updated, reminded, fix_proposed, escalated, accepted, closed, reopened]}
+
+  # ---------------------------------------------------------------- attendance
+  register_kind: {title: Register kind, values: [am, pm, daily, lesson, activity, trip]}
+  register_status: {title: Register status, values: [due, in_progress, submitted, late, missing, corrected]}
+  reason_source: {title: Absence reason source, values: [teacher, parent, office, system]}
+  mark_source: {title: Mark source, values: [teacher, office, kiosk, biometric_device, lms_live_class, parent_prefill, import]}
+  absence_report_status: {title: Absence report status, values: [received, acknowledged, accepted, queried, rejected]}
+  contact_outcome: {title: Contact outcome, values: [reached_reason_given, reached_no_reason, no_answer, message_sent, failed]}
+  escalation_target: {title: Escalation target, values: [pastoral_lead, dsl, head, lga]}
+  sign_direction: {title: Sign direction, values: [in, out]}
+  evacuation_kind: {title: Evacuation kind, values: [fire, drill, lockdown, invacuation, other]}
+  evacuation_status: {title: Evacuation status, values: [in_progress, all_clear, cancelled]}
+  roll_call_person: {title: Roll-call person kind, values: [learner, staff, visitor]}
+  roll_call_state: {title: Roll-call state, values: [safe, missing, absent_today, left_site]}
+
+  # ---------------------------------------------------------------- assessment & exams
+  scale_kind: {title: Grading scale kind, values: [percentage, letter, grade_points, gpa, pass_fail, competency, degree_class]}
+  assessment_kind: {title: Assessment kind, values: [formative, summative, coursework, practical, competency, ca_test, examination, homework, quiz]}
+  assessment_status: {title: Assessment status, values: [draft, open, marking, moderated, approved, locked]}
+  markbook_column_kind: {title: Markbook column kind, values: [yes_no, numeric, grade, date, comment]}
+  target_method: {title: Target-setting method, values: [prior_attainment, tracking_points, manual]}
+  series_status: {title: Exam series status, values: [setup, entries_open, entries_closed, sitting, results_import, results_approved, released, closed]}
+  entry_status: {title: Exam entry status, values: [draft, eligible, blocked, entered, withdrawn, absent, resulted]}
+  anomaly_kind: {title: Exam anomaly kind, values: [distribution_shift, similarity_cluster, improbable_improvement, timing, other]}
+  progression_decision: {title: Progression decision, values: [progress, progress_with_carryover, repeat, probation, withdraw, graduate]}
+
+  # ---------------------------------------------------------------- certificates
+  credential_kind: {title: Credential kind, values: [certificate, transcript, testimonial, approval_certificate, badge, micro_credential, certified_copy]}
+  certificate_status: {title: Certificate status, values: [valid, suspended, revoked, superseded, corrected]}
+  certificate_event_kind: {title: Certificate event, values: [issued, corrected, suspended, reinstated, revoked, reissued, superseded, certified_copy]}
+  key_status: {title: Signing key status, values: [pending, active, retired, compromised]}
+  verification_channel_kind: {title: Verification channel, values: [web_number, qr, secure_link, bulk_api, passport_share]}
+  verification_result: {title: Verification result, values: [valid, superseded, revoked, corrected, suspended, not_found, rate_limited]}
+  publication_target: {title: Registry publication target, values: [state_registry, state_portal, national_service, education_passport]}
+  stock_state: {title: Security stock state, values: [received, issued_to_institution, printed, spoiled, destroyed, lost]}
+  print_outcome: {title: Print outcome, values: [printed, spoiled, refused]}
+  delivery_method: {title: Certificate delivery, values: [collection_in_person, tracked_courier, digital_only]}
+  fee_service: {title: Fee schedule service, values: [certificate_reissue, certified_copy, legacy_digital_copy, record_copy, transcript]}
+  reissue_reason: {title: Reissue reason (MFS §11.5), values: [lost_or_stolen, damaged, change_of_name, issuer_error, certified_copy, legacy_digital_copy]}
+  reissue_status: {title: Reissue case status, values: [submitted, identity_check, archive_search, awaiting_payment, in_review, approved, issued, delivered, rejected, withdrawn]}
+  identity_method: {title: Identity method, values: [nin_check, otp, facial_match, document_review, manual_review]}
+
+  # ---------------------------------------------------------------- behaviour
+  polarity: {title: Behaviour polarity, values: [positive, negative]}
+  behaviour_outcome: {title: Behaviour outcome, values: [none, warning, detention, on_report, parent_contact, intervention, internal_exclusion, suspension, exclusion]}
+  badge_source: {title: Badge source, values: [points_threshold, rule, staff_award, activity]}
+  seating_strategy: {title: Seating strategy, values: [manual, ability, mixed_ability, alphabetical, random, separate_negative_influences]}
+  intel_source: {title: Intelligence rule source, values: [behaviour, attendance, homework, wellbeing, mixed]}
+  detention_attendance: {title: Detention attendance, values: [pending, attended, not_attended, escalated, cancelled]}
+  oncall_reason: {title: On-call reason, values: [behaviour, medical, safeguarding, emergency, other]}
+  oncall_status: {title: On-call status, values: [raised, acknowledged, escalated, resolved, cancelled]}
+  report_level: {title: On-report level, values: [tutor, head_of_year, senior_leadership]}
+  on_report_status: {title: On-report status, values: [active, completed, ended_early]}
+  comment_author: {title: Comment author kind, values: [teacher, owner, parent, learner, staff]}
+
+  # ---------------------------------------------------------------- safeguarding, SEND, wellbeing
+  concern_source: {title: Concern source, values: [staff, learner, parent, community_report, wellbeing_keyword, agency]}
+  chronology_kind: {title: Chronology entry kind, values: [concern, action, decision, agency_contact, meeting, review, note, document]}
+  referral_status: {title: Referral status, values: [drafted, sent, acknowledged, accepted, declined, closed]}
+  vault_case_kind: {title: Vault case kind, values: [safeguarding_case, staff_case, community_report, send_profile]}
+  access_kind: {title: Access kind, values: [view, export, print, share]}
+  staff_case_kind: {title: Staff case kind, values: [allegation, low_level_concern, self_referral]}
+  allegation_outcome: {title: Allegation outcome, values: [substantiated, unsubstantiated, unfounded, 'false', malicious]}
+  wellbeing_source: {title: Wellbeing source, values: [learner, parent, staff]}
+  intervention_status: {title: Intervention status, values: [planned, active, review_due, closed_success, closed_partial, closed_no_effect, cancelled]}
+  plan_entry_kind: {title: Learning plan entry, values: [action, learner_reflection, parent_comment, evidence, review, note]}
+  care_log_kind: {title: Care log kind, values: [meal, sleep, nappy, medication_given, incident, note]}
+
+  # ---------------------------------------------------------------- sectors
+  enquiry_source: {title: Enquiry source, values: [website_widget, walk_in, phone, whatsapp, open_day, referral]}
+  enquiry_status: {title: Enquiry status, values: [new, contacted, visit_booked, applied, waitlisted, enrolled, lost]}
+  application_channel: {title: Application channel, values: [online, office, agent, exam_body_adapter, import]}
+  admission_decision: {title: Admission decision (human-only), values: [offer, conditional_offer, waitlist, refuse]}
+  admission_status: {title: Admission status, values: [draft, submitted, reviewing, assessment, decided, offer_accepted, enrolled, declined, withdrawn]}
+  destination_source: {title: Destination source, values: [learner, institution, survey, exchange]}
+  competency_framework_kind: {title: Competency framework kind, values: [nsq, trade_syllabus, industry_certification, clinical, digital_skills, other]}
+  assessor_kind: {title: Assessor kind, values: [staff, workplace_assessor, clinical_supervisor]}
+  competency_status: {title: Competency status, values: [in_progress, evidence_submitted, signed_off, not_yet_competent]}
+  placement_kind: {title: Placement kind, values: [apprenticeship, industry_placement, siwes, clinical_rotation, teaching_practice]}
+  placement_status: {title: Placement status, values: [proposed, agreed, active, completed, terminated]}
+  involvement_level: {title: Clinical involvement, values: [observed, assisted, performed_supervised, performed_independent]}
+  candidature_status: {title: Research candidature status, values: [active, suspended, under_examination, awarded, withdrawn]}
+
+  # ---------------------------------------------------------------- LMS
+  space_kind: {title: Course space kind, values: [class_subject, course_section, staff_training, programme, community]}
+  course_member_kind: {title: Course member kind, values: [learner, staff]}
+  space_role: {title: Course space role, values: [owner, editor, observer, learner]}
+  content_kind: {title: Content kind, values: [note, file, video, audio, link, h5p, library_item, live_recording]}
+  assignment_kind: {title: Assignment kind (MFS §8.2), values: [homework, coursework, ca_test, quiz_cbt, practical, portfolio, peer_review, digital_skills_task]}
+  late_policy: {title: Late policy, values: [accept_flag, accept_with_penalty, close_at_due]}
+  ai_policy: {title: AI-use policy, values: [not_allowed, allowed_with_acknowledgement, encouraged]}
+  assignment_status: {title: Assignment status, values: [draft, scheduled, published, closed, marked, released, archived]}
+  ai_declaration: {title: AI-use declaration, values: [none_used, used_acknowledged, not_declared]}
+  submission_source: {title: Submission source, values: [app, web, scan_split, ussd_confirmation, offline_sync]}
+  question_kind: {title: Question kind, values: [single_choice, multiple_choice, true_false, numeric, short_text, essay, matching]}
+  moderation_state: {title: Moderation state, values: [visible, pending_moderation, hidden, removed]}
+  ussd_action: {title: USSD action, values: [list_due, confirm_completed, help]}
+  reset_purpose: {title: Credential reset purpose, values: [password_reset, magic_link, mfa_recovery]}
+
+  # ---------------------------------------------------------------- communication
+  channel: {title: Communication channel, values: [in_app, push, sms, whatsapp, email, voice, ussd, workspace, web, post]}
+  template_category: {title: Template category (Meta), values: [utility, authentication, marketing, service, internal]}
+  template_approval: {title: Template approval, values: [draft, submitted, approved, rejected, paused, retired]}
+  opt_decision: {title: Opt decision, values: [opt_in, opt_out]}
+  conversation_status: {title: Conversation status, values: [open, pending, resolved, closed]}
+  office: {title: Office, values: [class_teacher, bursary, admissions, pastoral, attendance, helpdesk, head]}
+  message_direction: {title: Message direction, values: [outbound, inbound]}
+  message_priority: {title: Message priority, values: [p1, high, normal, low]}
+  campaign_status: {title: Campaign status, values: [draft, awaiting_approval, scheduled, sending, completed, cancelled]}
+  merge_output: {title: Mail-merge output, values: [letters_pdf, labels, badges, email]}
+  workspace_audience: {title: Workspace audience, values: [state_heads, lga_heads, all_staff, department, year_group, committee]}
+
+  # ---------------------------------------------------------------- finance
+  account_kind: {title: Account kind, values: [learner, family, sponsor, funder, general_ledger]}
+  account_holder: {title: Account holder, values: [learner, family, guardian, sponsor, funder, government, employer, institution]}
+  gl_type: {title: GL account type, values: [asset, liability, income, expense, equity]}
+  billing_basis: {title: Billing basis (FR-BIL-01), values: [term, semester, annual, monthly, weekly, course, credit, module, session, hour, exam, registration, learner, family, service, subscription, pay_as_you_go]}
+  funding_kind: {title: Funding kind, values: [government, capitation, scholarship, bursary, grant, sponsorship, employer, loan, instalment]}
+  payment_method: {title: Payment method, values: [bank_transfer, virtual_account, card, direct_debit, mobile_money, ussd, gateway, remita, cash, cheque, government, employer, scholarship]}
+  payment_status: {title: Payment status, values: [pending, confirmed, failed, refunded, held_duplicate]}
+  allocation_state: {title: Payment allocation state, values: [unallocated, suggested, part_allocated, allocated]}
+  allocation_method: {title: Allocation method, values: [virtual_account, reference, payer_contact, heuristic, manual]}
+  reconciliation_status: {title: Reconciliation status, values: [unmatched, matched, part_matched, disputed, reconciled]}
+  journal_status: {title: Journal status, values: [draft, posted, reversed]}
+  match_status_3way: {title: Three-way match status, values: [pending, matched, mismatch, override_approved]}
+  po_status: {title: Purchase order status, values: [draft, approved, issued, received, invoiced, paid, closed, cancelled]}
+
+  # ---------------------------------------------------------------- programme financing (SDAF)
+  charge_period: {title: SDAF charge period, values: [per_term, per_semester]}
+  period_state: {title: Billing period state, values: [planned, census_open, confirming, demand_issued, collecting, remitting, reconciled, closed]}
+  sdaf_payer: {title: SDAF payer (MFS §20.2), values: [government, parent_or_student, sponsor, scholarship, split]}
+  exemption_funding: {title: Exemption funding, values: [borne_by_state, waived]}
+  census_status: {title: Census snapshot status, values: [draft, flags_open, awaiting_confirmation, confirmed, challenged, frozen, superseded]}
+  census_inclusion: {title: Census inclusion, values: [billable, excluded, exempt]}
+  census_reason: {title: Census exclusion reason, values: [withdrawn_before_census, duplicate, unverified, other_institution_holds, exempt]}
+  census_flag_kind: {title: Census flag, values: [no_attendance_since_start, identity_conflict, unexplained_rise]}
+  flag_resolution: {title: Flag resolution, values: [cleared, explained, removed_from_count]}
+  demand_status: {title: Demand status, values: [issued, part_paid, paid, overdue, cancelled]}
+  revenue_channel: {title: State revenue channel, values: [state_portal, remita, bank_branch, pos, ussd, bank_transfer]}
+  unmatched_reason: {title: Unmatched collection reason, values: [no_reference, unknown_reference, amount_mismatch, duplicate]}
+  statement_status: {title: Reconciliation statement status, values: [draft, in_review, state_signed, operator_signed, signed_locked, disputed]}
+
+  # ---------------------------------------------------------------- operations, forms, meetings
+  asset_status: {title: Asset status, values: [in_use, in_store, under_repair, condemned, disposed, lost]}
+  route_direction: {title: Route direction, values: [to_school, from_school]}
+  boarding_event: {title: Boarding event, values: [boarded, alighted, no_show]}
+  activity_kind: {title: Activity kind, values: [club, sport, event, trip_series, holiday_programme]}
+  allocation_method_fair: {title: Fair allocation method, values: [first_come, preference_lottery, priority_rules]}
+  allocation_outcome: {title: Allocation outcome, values: [preferred, allocated, waitlisted, declined, withdrawn]}
+  trip_status: {title: Trip status, values: [planning, awaiting_approval, approved, consent_collection, departed, returned, cancelled]}
+  meal_session: {title: Meal session, values: [breakfast, lunch, snack, dinner]}
+  resource_source: {title: Learning resource source, values: [government_supplied, institution_bought, donated]}
+  resource_outcome: {title: Resource issue outcome, values: [returned, lost, damaged, retained]}
+  daybook_target: {title: Daybook filing target, values: [learner, staff, family, institution]}
+  form_status: {title: Form response status, values: [draft, submitted, in_workflow, awaiting_payment, approved, rejected, filed]}
+  meeting_mode: {title: Meeting mode, values: [in_person, video, hybrid]}
+
+  # ---------------------------------------------------------------- records & archives
+  document_origin: {title: Document origin, values: [born_digital, digitised, uploaded, generated]}
+  document_status: {title: Document status, values: [ingested, active, on_hold, disposal_due, disposed]}
+  qa_status: {title: QA status, values: [pending, auto_accepted, needs_review, verified, rejected]}
+  link_basis: {title: Document link basis, values: [explicit, matched, extracted, inherited]}
+  physical_disposition: {title: Physical disposition, values: [returned_to_site, transferred_to_archive, destroyed]}
+  disposal_status: {title: Disposal status, values: [proposed, approved, refused_legal_hold, executed]}
+  pipeline_stage: {title: Digitisation stage (MFS §13.2), values: [surveyed, collected, prepared, captured, cleaned, recognised, extracted, qa, linked, ingested, disposed]}
+  custody_event_kind: {title: Custody event, values: [collected, in_transit, received_at_hub, scanned_on_site, returned, archived, destroyed, exception]}
+
+  # ---------------------------------------------------------------- intelligence & automation
+  briefing_priority: {title: Briefing priority (FR-CMD-03), values: [p1, p2, p3, information]}
+  alert_status: {title: Alert status, values: [open, acknowledged, in_progress, snoozed, escalated, resolved, dismissed]}
+  alert_event_kind: {title: Alert event, values: [raised, acknowledged, assigned, escalated, snoozed, commented, resolved, reopened]}
+  investigation_stage: {title: Follow-the-Problem stage (FR-CMD-118), values: [problem, evidence, root_cause, intervention, responsible_person, outcome]}
+  recommendation_kind: {title: Recommendation kind, values: [intervention, cover, fee_match, resource_reallocation, curriculum_fix, data_fix, seating, recognition]}
+  recommendation_decision: {title: Recommendation decision, values: [accepted, modified, dismissed]}
+  risk_kind: {title: Early-warning flag kind, values: [dropout, attendance, behaviour, academic_decline, wellbeing, send_support_gap]}
+  flag_status: {title: Flag status, values: [new, reviewed, actioned, dismissed, expired]}
+  oversight_level: {title: Model oversight level, values: [advisory, human_in_loop, human_on_loop]}
+  autonomy_level: {title: Agent autonomy level (MFS §12.1), values: [a0, a1, a2, a3]}
+  agent_status: {title: Agent status, values: [draft, sandbox, awaiting_approval, active, paused, level_lowered, retired]}
+  agent_outcome: {title: Agent action outcome, values: [proposed, executed, held_paused, refused_policy, failed, undone]}
+  llm_caller: {title: LLM caller, values: [assistant, agent, document_intelligence, other]}
+  imbalance_kind: {title: Resource imbalance, values: [teachers, classrooms, textbooks, ict, funding]}
+
+  # ---------------------------------------------------------------- reporting & integration
+  metric_direction: {title: Metric direction, values: [higher_is_better, lower_is_better, target_band]}
+  indicator_label: {title: Indicator label (FR-CMD-10), values: [verified, calculated, estimated]}
+  report_kind: {title: Report kind, values: [standard, statutory, saved_query, board_report, inspection_pack]}
+  export_format: {title: Export format, values: [xlsx, csv, pdf, json]}
+  return_status: {title: Return status, values: [generated, validated, institution_review, certified, submitted, accepted, queried]}
+  api_client_kind: {title: API client kind, values: [partner, bulk_verifier, government_system, lms, mobile_app, internal_service]}
+  exchange_dataset: {title: Exchange dataset, values: [learner_record, transcript, results, institution, staff, funding, attendance, outcomes]}
+  import_template: {title: Import template, values: [learners, guardians, staff, classes, enrolments, marks, balances, assessments, curriculum]}
+  dsr_kind: {title: Data-subject request kind, values: [access, rectification, erasure, restriction, portability, objection]}

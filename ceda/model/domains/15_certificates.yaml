@@ -1,0 +1,372 @@
+domain: certificates
+code: CER
+title: Certificate 360 and the state certificate registry — eligibility, issuance, signing, verification, reissue and anti-fraud
+module: certificates
+zone: registry
+retention: RS-CERT-PERM
+summary: >
+  The state certificate registry is the single authoritative register of every certificate, transcript,
+  approval certificate and badge credential issued in the state (FR-CER-101). Issuance passes the full
+  eligibility chain, is approved by an authorised signatory, signed (RFC 8785 canonical JSON, SHA-256,
+  ES256 with HSM-held keys) and published within 60 seconds to the registry and linked platforms. Every
+  lifecycle change is an append-only certificate event. Reissue never creates a second valid original:
+  the original is superseded at the moment of issue. Physical security stock is tracked by serial.
+  Legacy awards are created from the digitised archive and marked "Verified from archive".
+
+entities:
+  certificate:
+    title: Certificate 360 — authoritative award record (status valid, suspended, revoked, superseded, corrected)
+    kind: master
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-CER-01, FR-CER-02, FR-CER-04, FR-CER-05, FR-CER-09, FR-CER-101, FR-CER-109, FR-CER-110, FR-PVT-107, FR-EXM-07]
+    pages: [CER-01, CER-03, CER-04, CER-05, PUB-02, HED-06]
+    events: [CERT.ISSUED, CERT.REVOKED, CERT.REISSUED, CERT.CORRECTED, CERT.SUSPENDED]
+    notes: >
+      scope_node_id is the issuing institution or authority. Status changes only through certificate_event;
+      the row's status is the projection of its latest event. The canonical payload and its hash are immutable.
+    attrs:
+      - "certificate_number: code(32)! uq | <country>-<authority>-<year>-<seq><check>; never reused (decision CD-08)"
+      - "verification_code: code(16)! uq | Separate short code printed with the QR"
+      - "credential_kind: enum(credential_kind)!"
+      - "learner_id: ref(learner) | Holder (NULL only for approval certificates)"
+      - "institution_id: ref(institution)!"
+      - "qualification_id: ref(qualification)"
+      - "programme_id: ref(programme)"
+      - "curriculum_version_id: ref(curriculum_version)"
+      - "award_date: date!"
+      - "award_class: code(40) | Grade, division or classification"
+      - "holder_name_on_award: name! pii | As printed"
+      - "eligibility_result_id: ref(eligibility_result)"
+      - "exception_id: ref(policy_exception) | Authorised exception recorded on the certificate"
+      - "template_id: ref(certificate_template)!"
+      - "signatory_id: ref(signatory)!"
+      - "payload: json! | RFC 8785 canonical JSON payload that was signed"
+      - "payload_hash: hash! uq"
+      - "signature: bytes(512)! | ES256 signature"
+      - "signing_key_id: ref(signing_key)!"
+      - "vc_document: json | W3C Verifiable Credential 2.0 / Open Badges 3.0"
+      - "pdf_document_id: uuid | PDF/A with embedded signature (WORM bucket)"
+      - "supersedes_id: ref(certificate) | Original certificate superseded by this reissue/correction"
+      - "superseded_by: ref(certificate)"
+      - "legacy_award_id: ref(legacy_award) | Digital copy bound to a legacy award"
+      - "status: enum(certificate_status)!"
+      - "status_changed_at: ts!"
+      - "award_key: code(120) derived | One certificate per learner per qualification award while valid"
+    generated:
+      award_key: "IF(`status` IN ('valid','suspended') AND `credential_kind` = 'certificate', CONCAT(HEX(`learner_id`), ':', HEX(`qualification_id`), ':', `award_date`), NULL)"
+    uq: [[award_key]]
+    ix: [[learner_id], [institution_id, award_date]]
+
+  certificate_event:
+    title: Certificate lifecycle event — issue, correct, suspend, reinstate, revoke, reissue, supersede (append-only)
+    kind: event
+    class: confidential
+    history: append
+    origin: appj
+    scope_note: Inherits the certificate's scope.
+    reqs: [FR-CER-08, FR-CER-102, FR-CER-109]
+    pages: [CER-04, CER-05]
+    attrs:
+      - "certificate_id: ref(certificate)!"
+      - "event_kind: enum(certificate_event_kind)!"
+      - "reason: text!"
+      - "evidence_document_ids: json"
+      - "actor_user_id: ref(app_user)!"
+      - "approver_user_id: ref(app_user) | Second approver for revocation and flagged cases"
+      - "workflow_instance_id: ref(workflow_instance)"
+      - "occurred_at: ts!"
+    checks:
+      four_eyes: "approver_user_id IS NULL OR approver_user_id <> actor_user_id"
+
+  certificate_template:
+    title: Certificate template (layout, fields, security-print profile) per credential kind and issuer
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: ceda
+    reqs: [FR-CER-04]
+    pages: [CER-06]
+    attrs:
+      - "code: code(40)!"
+      - "credential_kind: enum(credential_kind)!"
+      - "qualification_id: ref(qualification)"
+      - "layout: json!"
+      - "print_profile: json | Security paper features required"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, code, version]]
+
+  signatory:
+    title: Authorised signatory of an issuing authority (with specimen and authority period)
+    kind: master
+    class: internal
+    history: effective
+    scope: owned
+    origin: ceda
+    reqs: [FR-CER-04]
+    pages: [CER-06]
+    attrs:
+      - "user_id: ref(app_user)!"
+      - "title_on_award: title!"
+      - "signature_image_document_id: uuid"
+      - "max_batch_without_second: int_u | Four-eyes threshold for batches"
+
+  signing_key:
+    title: Metadata of an HSM-held issuing key (the private key never leaves the HSM; public keys at the JWKS endpoint)
+    kind: config
+    class: public
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-CER-04, NFR-SEC-104]
+    pages: [CER-06]
+    attrs:
+      - "kid: code(64)! uq | e.g. abia-moe-2026-01"
+      - "algorithm: code(16)! default=ES256"
+      - "public_jwk: json!"
+      - "hsm_key_ref: str(255)! | Key handle in the HSM/KMS"
+      - "ceremony_document_id: uuid | Key ceremony record with ministry witnesses"
+      - "activated_at: ts!"
+      - "retired_at: ts | Retired keys still verify old signatures"
+      - "status: enum(key_status)!"
+
+  eligibility_run:
+    title: Batch award-eligibility run for a cohort or series
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-CER-01, FR-CER-03]
+    pages: [CER-02]
+    attrs:
+      - "qualification_id: ref(qualification)!"
+      - "cohort_filter: json!"
+      - "learners_total: int_u!"
+      - "learners_eligible: int_u!"
+      - "learners_blocked: int_u!"
+      - "requested_by: ref(app_user)!"
+      - "status: enum(run_status)!"
+
+  eligibility_result:
+    title: Eligibility-chain result for one learner (identity → institution → … → accreditation at award date → award approval)
+    kind: transaction
+    class: confidential
+    history: append
+    scope: owned
+    origin: ceda
+    reqs: [FR-CER-01, FR-CER-02]
+    pages: [CER-02, CER-03]
+    attrs:
+      - "run_id: ref(eligibility_run)"
+      - "learner_id: ref(learner)!"
+      - "qualification_id: ref(qualification)!"
+      - "checks: json! | Ordered checks with pass/fail and evidence"
+      - "is_eligible: bool!"
+      - "evaluated_at: ts!"
+
+  verification:
+    title: Public or API certificate verification (minimum disclosure, rate-limited, visible to the holder)
+    kind: event
+    class: internal
+    history: append
+    origin: appj
+    retention: RS-VERIFY
+    partition: {type: range_month, column: verified_at}
+    scope_note: Holder sees verifications of their certificates; integrity investigators see patterns.
+    reqs: [FR-CER-06, FR-CER-07, FR-CER-110, FR-CER-113]
+    pages: [PUB-01, PUB-02, CER-07]
+    events: [CERT.VERIFIED, CERT.VERIFY_FAILED]
+    attrs:
+      - "certificate_id: ref(certificate) | NULL when no match"
+      - "queried_number: code(40)!"
+      - "channel: enum(verification_channel_kind)!"
+      - "api_client_id: ref(api_client) | Bulk verifiers"
+      - "result: enum(verification_result)!"
+      - "ip_hash: hmac | Keyed hash of the client IP (abuse detection without storing the IP)"
+      - "verified_at: ts!"
+    ix: [[queried_number, verified_at], [certificate_id]]
+
+  registry_publication:
+    title: Publication of a certificate event to the state registry and linked platforms (≤ 60 s) and the Education Passport
+    kind: queue
+    class: internal
+    history: lifecycle
+    origin: appj
+    retention: RS-OPS-7
+    scope_note: Inherits the certificate's scope.
+    reqs: [FR-CER-102]
+    pages: [CER-04]
+    attrs:
+      - "certificate_event_id: ref(certificate_event)!"
+      - "target: enum(publication_target)!"
+      - "attempts: smallint! default=0"
+      - "published_at: ts"
+      - "last_error: str(1000)"
+      - "status: enum(delivery_status)!"
+    uq: [[certificate_event_id, target]]
+
+  security_stock:
+    title: Security paper sheet by serial (received → issued to institution → printed / spoiled / destroyed)
+    kind: master
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-CER-103, FR-CER-104, FR-CER-113]
+    pages: [CER-04, CMD-15]
+    attrs:
+      - "serial: code(32)! uq"
+      - "batch_ref: code(40)!"
+      - "holder_institution_id: ref(institution)"
+      - "certificate_id: ref(certificate) | Certificate printed on this sheet"
+      - "state: enum(stock_state)!"
+      - "state_changed_at: ts!"
+      - "destruction_witness: str(200)"
+
+  print_job:
+    title: Print of a signed, approved certificate on registered stock by an authorised printer
+    kind: event
+    class: restricted
+    history: append
+    origin: ceda
+    scope_note: Inherits the certificate's scope.
+    reqs: [FR-CER-104]
+    pages: [CER-04]
+    attrs:
+      - "certificate_id: ref(certificate)!"
+      - "stock_id: ref(security_stock)!"
+      - "printer_ref: code(64)!"
+      - "printed_by: ref(app_user)!"
+      - "outcome: enum(print_outcome)!"
+      - "printed_at: ts!"
+
+  certificate_delivery:
+    title: Collection in person or tracked courier delivery of a printed certificate, with recipient identity
+    kind: event
+    class: confidential
+    history: append
+    origin: ceda
+    scope_note: Inherits the certificate's scope.
+    reqs: [FR-CER-111]
+    pages: [CER-102]
+    attrs:
+      - "certificate_id: ref(certificate)!"
+      - "method: enum(delivery_method)!"
+      - "recipient_name: name! pii"
+      - "recipient_id_checked: str(120) | Document type checked (no number stored)"
+      - "courier_tracking: code(64)"
+      - "delivered_at: ts!"
+
+  legacy_award:
+    title: Legacy award record created from the digitised archive (marked "Verified from archive" with source pages)
+    kind: master
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-CER-105]
+    pages: [CER-101, DOC-104]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "institution_id: ref(institution)!"
+      - "qualification_label: title!"
+      - "award_year: smallint!"
+      - "original_number: code(40)"
+      - "source_document_id: uuid! | Digitised register, broadsheet or counterfoil page"
+      - "verified_by: ref(app_user)!"
+      - "status: enum(record_status)!"
+
+  fee_schedule:
+    title: State fee schedule for services (certificate reissue by type, reason and urgency; certified copies; record copies)
+    kind: config
+    class: public
+    history: versioned
+    scope: owned
+    origin: ceda
+    retention: RS-FIN
+    reqs: [FR-CER-108, FR-DOC-114, FR-PVT-104]
+    pages: [CER-101, PUB-101]
+    attrs:
+      - "service: enum(fee_service)!"
+      - "variant: code(40)! | Certificate type / reason / urgency key"
+      - "amount: money!"
+      - "currency: currency!"
+      - "revenue_code: code(40)!"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, service, variant, version]]
+
+  reissue_case:
+    title: Certificate reissue, correction, certified copy or legacy digital copy request
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-CER-106, FR-CER-107, FR-CER-108, FR-CER-109]
+    pages: [PUB-101, CER-101, CER-102]
+    events: [CER.REISSUE_REQUESTED, CER.REISSUE_DECIDED]
+    attrs:
+      - "case_number: code(32)! uq"
+      - "certificate_id: ref(certificate) | Located award (or legacy_award_id)"
+      - "legacy_award_id: ref(legacy_award)"
+      - "applicant_user_id: ref(app_user)"
+      - "applicant_name: name! pii"
+      - "applicant_phone: phone! pii"
+      - "reason: enum(reissue_reason)!"
+      - "urgency: enum(urgency)! default=standard"
+      - "evidence_document_ids: json!"
+      - "fee_schedule_id: ref(fee_schedule)"
+      - "amount_due: money!"
+      - "currency: currency!"
+      - "payment_reference: code(64) | Remita RRR"
+      - "paid_at: ts | No payment, no processing"
+      - "waiver_approved_by: ref(app_user) | Audited waiver (e.g. issuer error)"
+      - "integrity_flag: bool! default=false"
+      - "reviewer_id: ref(app_user)"
+      - "second_approver_id: ref(app_user)"
+      - "new_certificate_id: ref(certificate)"
+      - "status: enum(reissue_status)!"
+    checks:
+      four_eyes: "second_approver_id IS NULL OR reviewer_id IS NULL OR second_approver_id <> reviewer_id"
+
+  identity_check:
+    title: Identity-verification step for a reissue or record-request case (NIN, OTP, facial match with liveness, manual review)
+    kind: event
+    class: restricted
+    history: append
+    origin: appj
+    scope_note: Inherits the case's scope.
+    reqs: [FR-CER-107, NFR-PRIV-102]
+    pages: [CER-102]
+    attrs:
+      - "reissue_case_id: ref(reissue_case)!"
+      - "method: enum(identity_method)!"
+      - "outcome: enum(verification_outcome)! | A mismatch routes to manual review, never auto-rejects"
+      - "consent_captured: bool! default=false | Explicit consent for facial match; template discarded after the check"
+      - "detail: json"
+      - "checked_at: ts!"
+
+  forgery_report:
+    title: Suspected-forgery report from a verifier, with evidence image, routed to integrity investigators
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-CER-112, FR-CER-10]
+    pages: [CER-07, CMD-15]
+    attrs:
+      - "queried_number: code(40)!"
+      - "certificate_id: ref(certificate)"
+      - "reporter_org: title"
+      - "reporter_contact: str(200) pii"
+      - "evidence_document_id: uuid"
+      - "investigator_id: ref(app_user)"
+      - "outcome: enum(review_outcome)"
+      - "status: enum(case_status)!"

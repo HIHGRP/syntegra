@@ -1,0 +1,1893 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/06_providers.schema.json",
+  "title": "CEDA PVT — Private education provider admission and regulation",
+  "$defs": {
+    "Provider": {
+      "title": "Provider",
+      "description": "Private education provider (proprietor organisation) — Provider 360",
+      "type": "object",
+      "x-ceda": {
+        "entity": "provider",
+        "zone": "registry",
+        "domain": "PVT",
+        "kind": "master",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "providers"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "legal_name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "trading_name": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 300
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cac_number": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Corporate Affairs Commission registration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tin": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Tax identification number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provider_tenant_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Private tenant created on first approval"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "registered_address": {
+          "type": "object"
+        },
+        "phone": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\+[1-9][0-9]{6,14}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "email": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "email",
+              "maxLength": 254
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "registered",
+            "applicant",
+            "approved",
+            "suspended",
+            "closed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "legal_name",
+        "registered_address",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ProviderPerson": {
+      "title": "ProviderPerson",
+      "description": "Proprietor or director of a provider (identity verified by NIN)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "provider_person",
+        "zone": "registry",
+        "domain": "PVT",
+        "kind": "link",
+        "classification": "restricted",
+        "history": "effective",
+        "module": "providers"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "provider_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "provider"
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user",
+              "description": "Account of the proprietor (PROP role)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "given_name": {
+          "type": "string",
+          "maxLength": 200,
+          "x-personal-data": true
+        },
+        "family_name": {
+          "type": "string",
+          "maxLength": 200,
+          "x-personal-data": true
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "proprietor",
+            "director",
+            "company_secretary",
+            "head_designate"
+          ]
+        },
+        "nin_verified": {
+          "type": "boolean",
+          "description": "External identifier held in external_identifier"
+        },
+        "ownership_share": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective from (inclusive) — history: effective",
+          "readOnly": true
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective to (inclusive); NULL = open-ended — history: effective",
+          "readOnly": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "provider_id",
+        "given_name",
+        "family_name",
+        "role",
+        "nin_verified",
+        "valid_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ProviderApplication": {
+      "title": "ProviderApplication",
+      "description": "Application for approval (new, regularisation or renewal) of one or more proposed institutions",
+      "type": "object",
+      "x-ceda": {
+        "entity": "provider_application",
+        "zone": "registry",
+        "domain": "PVT",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "providers"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "provider_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "provider"
+        },
+        "application_number": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "new",
+            "regularisation",
+            "renewal",
+            "variation"
+          ]
+        },
+        "proposed_institution": {
+          "type": "object",
+          "description": "Name, levels, location, capacity, curricula, fee schedule, staffing plan"
+        },
+        "proposed_location": {
+          "anyOf": [
+            {
+              "type": "object",
+              "x-geojson": "Point",
+              "description": "Map pin (duplicate check within 500 m)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "institution_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "institution",
+              "description": "Existing or created institution"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "federal_approval": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "NUC / NBTE / NCCE / MDCN / NMCN evidence for tertiary and medical (FR-PVT-117)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "completeness": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal",
+              "description": "Share of checklist items evidenced"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "submitted_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "desk_review_due_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date",
+              "description": "10 working days"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "inspection_due_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date",
+              "description": "20 working days"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "decision": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "approve",
+                "approve_with_conditions",
+                "defer",
+                "refuse"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "decision_reasons": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 65535
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "decided_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "second_approver_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user",
+              "description": "Four-eyes decision"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "decided_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "appeal_route": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "submitted",
+            "fee_pending",
+            "desk_review",
+            "query_raised",
+            "inspection",
+            "decision",
+            "approved",
+            "refused",
+            "deferred",
+            "withdrawn",
+            "appealed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "provider_id",
+        "application_number",
+        "kind",
+        "proposed_institution",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ApprovalChecklistItem": {
+      "title": "ApprovalChecklistItem",
+      "description": "State approval checklist item and minimum standard per level (policy data, not code)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "approval_checklist_item",
+        "zone": "registry",
+        "domain": "PVT",
+        "kind": "config",
+        "classification": "public",
+        "history": "versioned",
+        "module": "providers"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "item_key": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "area": {
+          "type": "string",
+          "enum": [
+            "legal",
+            "premises",
+            "facilities",
+            "staffing",
+            "curriculum",
+            "safeguarding_safety",
+            "finance"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "levels": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 32
+              },
+              "x-code-list": "education_level"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_mandatory": {
+          "type": "boolean"
+        },
+        "minimum_standard": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "e.g. classroom size, toilets by sex, laboratories"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "item_key",
+        "area",
+        "title",
+        "is_mandatory",
+        "version",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ApplicationEvidence": {
+      "title": "ApplicationEvidence",
+      "description": "Evidence item against the approval checklist (pre-checked by document intelligence)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "application_evidence",
+        "zone": "registry",
+        "domain": "PVT",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "providers"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "application_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "provider_application"
+        },
+        "checklist_item_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "approval_checklist_item"
+        },
+        "document_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "records zone"
+        },
+        "ai_precheck": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Document-intelligence pre-check result and confidence"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reviewer_status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "accepted",
+            "queried",
+            "rejected"
+          ]
+        },
+        "reviewer_note": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "application_id",
+        "checklist_item_id",
+        "document_id",
+        "reviewer_status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ApplicationQuery": {
+      "title": "ApplicationQuery",
+      "description": "Query sent back to the applicant during desk review, and the reply",
+      "type": "object",
+      "x-ceda": {
+        "entity": "application_query",
+        "zone": "registry",
+        "domain": "PVT",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "providers"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "application_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "provider_application"
+        },
+        "question": {
+          "type": "string",
+          "maxLength": 65535
+        },
+        "asked_by": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "reply": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 65535
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "replied_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "in_progress",
+            "resolved",
+            "dismissed",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "application_id",
+        "question",
+        "asked_by",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "RegulatoryFee": {
+      "title": "RegulatoryFee",
+      "description": "State regulatory fee (application, inspection, approval, renewal) — separate from the operator subscription",
+      "type": "object",
+      "x-ceda": {
+        "entity": "regulatory_fee",
+        "zone": "registry",
+        "domain": "PVT",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "providers"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "provider_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "provider"
+        },
+        "application_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "provider_application"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fee_kind": {
+          "type": "string",
+          "enum": [
+            "application",
+            "inspection",
+            "approval",
+            "renewal",
+            "late_renewal"
+          ]
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "revenue_code": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "State revenue code"
+        },
+        "payment_reference": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Remita RRR"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "paid_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "receipt_number": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "due",
+            "paid",
+            "waived",
+            "refunded"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "provider_id",
+        "fee_kind",
+        "amount_minor",
+        "currency",
+        "revenue_code",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Approval": {
+      "title": "Approval",
+      "description": "Approval certificate of a private institution (signed, QR-verifiable, levels, capacity, conditions, expiry)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "approval",
+        "zone": "registry",
+        "domain": "PVT",
+        "kind": "master",
+        "classification": "public",
+        "history": "lifecycle",
+        "module": "providers"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "application_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "provider_application"
+        },
+        "approval_number": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "approved_levels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "x-code-list": "education_level"
+        },
+        "approved_capacity": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "valid_from_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "expires_on": {
+          "type": "string",
+          "format": "date",
+          "description": "Default 3 years"
+        },
+        "certificate_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "certificate",
+              "description": "Signed approval certificate in the certificate registry"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "expiring",
+            "expired",
+            "suspended",
+            "revoked",
+            "superseded"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "institution_id",
+        "application_id",
+        "approval_number",
+        "approved_levels",
+        "valid_from_on",
+        "expires_on",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ApprovalCondition": {
+      "title": "ApprovalCondition",
+      "description": "Condition attached to an approval, tracked as a corrective action with evidence",
+      "type": "object",
+      "x-ceda": {
+        "entity": "approval_condition",
+        "zone": "registry",
+        "domain": "PVT",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "providers"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "approval_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "approval"
+        },
+        "condition_text": {
+          "type": "string",
+          "maxLength": 65535
+        },
+        "due_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "corrective_action_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "corrective_action"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "plan_submitted",
+            "plan_approved",
+            "in_progress",
+            "evidence_submitted",
+            "verified",
+            "overdue",
+            "closed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "approval_id",
+        "condition_text",
+        "due_on",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Sanction": {
+      "title": "Sanction",
+      "description": "Sanction step on a private institution (warning → conditions → suspension of admissions → suspension → closure) with appeal",
+      "type": "object",
+      "x-ceda": {
+        "entity": "sanction",
+        "zone": "registry",
+        "domain": "PVT",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "providers"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "step": {
+          "type": "string",
+          "enum": [
+            "warning",
+            "conditions",
+            "admissions_suspended",
+            "suspension",
+            "closure"
+          ]
+        },
+        "grounds": {
+          "type": "string",
+          "maxLength": 65535
+        },
+        "evidence_document_ids": {
+          "type": "object"
+        },
+        "blocks_admissions": {
+          "type": "boolean"
+        },
+        "blocks_exam_entries": {
+          "type": "boolean"
+        },
+        "decided_by": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "effective_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "appeal_status": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "lodged",
+                "upheld",
+                "dismissed"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lifted_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "proposed",
+            "approved",
+            "in_effect",
+            "appealed",
+            "lifted",
+            "upheld"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "institution_id",
+        "step",
+        "grounds",
+        "evidence_document_ids",
+        "blocks_admissions",
+        "blocks_exam_entries",
+        "decided_by",
+        "effective_on",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ClosureCase": {
+      "title": "ClosureCase",
+      "description": "Learner protection case when a private institution is suspended or closed (LGA tracks re-enrolment)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "closure_case",
+        "zone": "registry",
+        "domain": "PVT",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "providers"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "sanction_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "sanction"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "learners_affected": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "learners_reenrolled": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "alternatives": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Nearby approved institutions with places"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lga_officer_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "in_progress",
+            "on_hold",
+            "closed",
+            "transferred"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "institution_id",
+        "learners_affected",
+        "learners_reenrolled",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "RegDatasetDefinition": {
+      "title": "RegDatasetDefinition",
+      "description": "Regulatory dataset that private institutions share with the state (configured per country/state, MFS §10.5)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "reg_dataset_definition",
+        "zone": "registry",
+        "domain": "PVT",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "providers"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "dataset": {
+          "type": "string",
+          "enum": [
+            "enrolment",
+            "attendance",
+            "staffing",
+            "curriculum_coverage",
+            "results",
+            "safety",
+            "fees",
+            "compliance",
+            "finance",
+            "registers"
+          ]
+        },
+        "fields": {
+          "type": "object",
+          "description": "Fields included"
+        },
+        "frequency": {
+          "type": "string",
+          "enum": [
+            "live",
+            "daily",
+            "weekly",
+            "termly",
+            "per_series",
+            "per_session",
+            "as_occurs"
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "dataset",
+        "fields",
+        "frequency",
+        "version",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "RegSnapshot": {
+      "title": "RegSnapshot",
+      "description": "Regulatory dataset delivery from a private institution (read-only to the regulator)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "reg_snapshot",
+        "zone": "registry",
+        "domain": "PVT",
+        "kind": "snapshot",
+        "classification": "confidential",
+        "history": "snapshot",
+        "module": "providers"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "dataset": {
+          "type": "string",
+          "enum": [
+            "enrolment",
+            "attendance",
+            "staffing",
+            "curriculum_coverage",
+            "results",
+            "safety",
+            "fees",
+            "compliance",
+            "finance",
+            "registers"
+          ]
+        },
+        "definition_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "reg_dataset_definition"
+        },
+        "as_of": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "payload": {
+          "type": "object",
+          "description": "Aggregates and permitted identities only"
+        },
+        "payload_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "institution_id",
+        "dataset",
+        "definition_id",
+        "as_of",
+        "payload",
+        "payload_hash",
+        "created_at"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,366 @@
+domain: institutions
+code: INS
+title: Institution 360, state institution register, licensing, inspection and compliance
+module: institutions
+zone: registry
+retention: RS-INS-PERM
+summary: >
+  The state institution register: every ECCDE centre, school, technical college, college of education,
+  polytechnic, university and non-formal centre, public and private, held once as Institution 360
+  (MFS §7.1, FR-INS-01–12). Master fields change only through the registering authority's change
+  request. Licences, accreditations and authorisations gate certificate issuance and exam entries.
+  Inspections, findings, corrective actions, compliance requirements, onboarding readiness and the
+  improvement loop live here so the state, LGA and inspectorate see one picture.
+
+entities:
+  institution:
+    title: Institution 360 master (public and private, every level)
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-INS-01, FR-INS-03, FR-INS-04, FR-INS-09, FR-INS-10, FR-INS-12, FR-CMD-101, FR-SUB-101, FR-CMD-111, FR-PVT-116]
+    pages: [INS-01, INS-02, INS-03, CMD-06, CMD-101, PVT-104, HOM-05]
+    events: [INS.REGISTERED, INS.STATUS_CHANGED, INS.MERGED]
+    notes: >
+      scope_node_id is the institution's own node. The financing channel is derived from ownership
+      (FR-SUB-101): public → SDAF, private → direct subscription; a change applies from the next billing period.
+    attrs:
+      - "institution_code: code(20)! uq | INS-<country>-NNNNNN"
+      - "gov_reg_no: code(40) uq | Government registration number, e.g. AB/SS/0412"
+      - "name: title!"
+      - "short_name: str(80)"
+      - "category: cl(institution_category)! | ECCDE, primary, JSS, SSS, technical college, college of education, polytechnic, university, nursing, non-formal …"
+      - "ownership: cl(ownership)! | federal, state, lga, private, faith, community, ngo"
+      - "is_public: bool! | Derived from ownership; drives the financing channel"
+      - "operating_tenant_id: uuid! | Tenant whose ops zone runs the institution (state for public; provider tenant for private)"
+      - "provider_id: ref(provider) | Private provider (proprietor organisation)"
+      - "network_scope_id: ref(scope_node) | Optional network layer"
+      - "lga_scope_id: ref(scope_node)! | LGA the institution belongs to"
+      - "levels: cls(education_level)! | Education levels offered"
+      - "day_boarding: enum(day_boarding)"
+      - "gender_intake: enum(gender_intake)"
+      - "address: json! | Structured address (street, town, LGA, state, postcode)"
+      - "location: point | WGS84; NOT NULL once surveyed (500 m / 5 km duplicate checks)"
+      - "location_class: enum(location_class) | urban, peri-urban, rural (comparison context)"
+      - "capacity: int_u"
+      - "head_staff_id: ref(staff)"
+      - "website: url"
+      - "phone: phone"
+      - "email: email"
+      - "onboarding_status: enum(onboarding_status)! | Not yet onboarded, Onboarding, Live, Suspended, Closed"
+      - "regulatory_status: enum(regulatory_status)! | approved, approved_with_conditions, regularising, suspended, closed, unregistered"
+      - "status: enum(institution_status)!"
+      - "merged_into: ref(institution) | Alias after amalgamation"
+      - "is_regularisation: bool! default=false | Existing unregistered institution brought into compliance"
+    ix: [[lga_scope_id], [ownership, category], [name]]
+
+  institution_change_request:
+    title: Change request to an institution's master fields (name, registration number, ownership, category, address, coordinates)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-INS-04]
+    pages: [INS-02]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "field_changes: json! | [{field, from, to}]"
+      - "reason: text!"
+      - "evidence_document_id: uuid"
+      - "requested_by: ref(app_user)!"
+      - "decided_by: ref(app_user)"
+      - "decided_at: ts"
+      - "status: enum(request_status)!"
+
+  campus:
+    title: Campus / site / branch of an institution
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-INS-08]
+    pages: [INS-06, INS-02]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "name: title!"
+      - "address: json"
+      - "location: point"
+      - "is_main: bool! default=false"
+      - "status: enum(record_status)!"
+
+  org_unit:
+    title: Faculty / school / department / unit (effective-dated tree, cost centres and heads)
+    kind: master
+    class: internal
+    history: effective
+    scope: owned
+    origin: appj
+    reqs: [FR-INS-08, FR-ACA-108]
+    pages: [INS-06, ACA-102]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "campus_id: ref(campus)"
+      - "parent_id: ref(org_unit)"
+      - "unit_type: enum(unit_type)!"
+      - "code: code(20)"
+      - "name: title!"
+      - "head_staff_id: ref(staff)"
+      - "acting_head_staff_id: ref(staff)"
+      - "cost_centre: code(32)"
+
+  licence:
+    title: Licence, accreditation or authorisation (operating licence, exam centre, certificate issuer, programme accreditation)
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-INS-05, FR-INS-06, FR-INS-07, FR-PVT-117, FR-ACA-108]
+    pages: [INS-04, INS-02, ACA-102]
+    events: [INS.LICENCE_EXPIRED, INS.LICENCE_RENEWED]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "kind: enum(licence_kind)!"
+      - "licence_number: code(60)!"
+      - "issuing_body: cl(regulator)! | State MoE, NBTE, NCCE, NUC, MDCN, NMCN, WAEC (centre) …"
+      - "programme_id: ref(programme) | For programme accreditation"
+      - "scope_detail: json | Levels, programmes or subjects covered"
+      - "conditions: text"
+      - "issued_on: date!"
+      - "expires_on: date"
+      - "status: enum(licence_status)! | Expired automatically the day after expiry"
+      - "approval_id: ref(approval) | Private-provider approval that produced it"
+    uq: [[issuing_body, licence_number]]
+    ix: [[institution_id, kind, status], [expires_on]]
+
+  inspection:
+    title: Inspection 360 — approval, routine, monitoring or follow-up inspection
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-INSP-01, FR-INSP-02, FR-INSP-06, FR-CUR-14, FR-PVT-106, FR-INSP-101]
+    pages: [INS-07, INS-08, PVT-102]
+    events: [INSP.REPORT_APPROVED]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "kind: enum(inspection_kind)!"
+      - "programme_id: ref(inspection_programme)"
+      - "provider_application_id: ref(provider_application) | Approval inspection"
+      - "scheduled_on: date!"
+      - "lead_inspector_id: ref(staff)"
+      - "risk_score: score"
+      - "briefing: json | Briefing pack snapshot (coverage, gaps, data, history, complaints)"
+      - "overall_judgement: cl(inspection_judgement)"
+      - "report_document_id: uuid"
+      - "visited_location: point | GPS captured on site"
+      - "status: enum(inspection_status)!"
+
+  inspection_programme:
+    title: Risk-based inspection programme for a period, for inspectorate approval
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-INSP-01]
+    pages: [INS-07]
+    attrs:
+      - "name: title!"
+      - "period_start: date!"
+      - "period_end: date!"
+      - "method: json | Weights: health index, compliance, alerts, time since last inspection"
+      - "approved_by: ref(app_user)"
+      - "status: enum(version_status)!"
+
+  inspection_finding:
+    title: Finding recorded during an inspection (with photos and GPS evidence)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    origin: appj
+    scope_note: Inherits the inspection's institution scope.
+    reqs: [FR-INSP-03]
+    pages: [INS-08]
+    events: [INSP.FINDING_RECORDED]
+    attrs:
+      - "inspection_id: ref(inspection)!"
+      - "area: cl(inspection_area)!"
+      - "judgement: cl(inspection_judgement)!"
+      - "evidence: text!"
+      - "evidence_document_ids: json"
+      - "requires_action: bool! default=false"
+
+  corrective_action:
+    title: Corrective action plan item (from findings, approval conditions, compliance or curriculum alerts)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-INSP-03, FR-INSP-06, FR-CUR-12, FR-PVT-112]
+    pages: [INS-11, PVT-105]
+    events: [INSP.ACTION_VERIFIED]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "source_kind: enum(action_source)!"
+      - "source_id: uuid!"
+      - "description: text!"
+      - "owner_user_id: ref(app_user)"
+      - "due_on: date!"
+      - "evidence_document_ids: json"
+      - "verified_by: ref(app_user)"
+      - "verified_at: ts"
+      - "status: enum(action_status)!"
+
+  compliance_requirement:
+    title: Compliance requirement inherited down the policy hierarchy (fire, health and safety, certifications with expiry)
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: ceda
+    reqs: [FR-INSP-04, FR-INSP-101]
+    pages: [INS-09]
+    attrs:
+      - "requirement_key: code(40)!"
+      - "title: title!"
+      - "category: enum(compliance_category)!"
+      - "applies_to: json! | Institution categories, levels, ownership"
+      - "evidence_required: text"
+      - "renewal_months: smallint"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, requirement_key, version]]
+
+  compliance_status:
+    title: Status of one compliance requirement at one institution (Compliant, Attention required, Overdue, Critical)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-INSP-04, FR-INSP-101]
+    pages: [INS-09]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "requirement_id: ref(compliance_requirement)!"
+      - "evidence_document_id: uuid"
+      - "certified_on: date"
+      - "expires_on: date"
+      - "status: enum(compliance_state)!"
+    uq: [[institution_id, requirement_id]]
+
+  onboarding_check:
+    title: Onboarding readiness step of an institution (structure, staff, learners matched, curriculum adopted, first register, first results)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-CMD-102, FR-PVT-108]
+    pages: [CMD-103, ADM-03]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "step: enum(onboarding_step)!"
+      - "target_on: date"
+      - "completed_at: ts"
+      - "blocking_reason: str(500)"
+      - "status: enum(step_status)!"
+    uq: [[institution_id, step]]
+
+  onboarding_target:
+    title: Onboarding target date and wave per LGA (state rollout in LGA waves)
+    kind: config
+    class: internal
+    history: none
+    scope: owned
+    origin: ceda
+    reqs: [FR-CMD-102]
+    pages: [CMD-103]
+    attrs:
+      - "lga_scope_id: ref(scope_node)!"
+      - "wave: smallint!"
+      - "target_live_on: date!"
+      - "readiness_gate: json | Gate criteria for the wave"
+    uq: [[lga_scope_id]]
+
+  unknown_institution_reference:
+    title: Reference to an institution not on the register (transfer, exam entry, certificate) — alert to the regulator
+    kind: event
+    class: internal
+    history: append
+    origin: ceda
+    scope_note: State-level regulatory queue.
+    reqs: [FR-CMD-103]
+    pages: [CMD-103, PVT-104]
+    attrs:
+      - "source_kind: enum(unknown_ref_source)!"
+      - "source_id: uuid!"
+      - "reported_name: title!"
+      - "reported_address: str(500)"
+      - "lga_scope_id: ref(scope_node)"
+      - "alert_id: uuid | Alert raised to the regulator"
+      - "resolved_institution_id: ref(institution)"
+
+  institution_profile:
+    title: Comparison context of an institution (level, ownership, location band, size, PTR, infrastructure band, share with additional needs)
+    kind: projection
+    class: internal
+    history: snapshot
+    scope: owned
+    origin: ceda
+    reqs: [FR-CMD-06, FR-CMD-109]
+    pages: [CMD-102, CMD-11]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "as_of: date!"
+      - "comparison_group: code(60)! | Group within which ranking is allowed"
+      - "enrolment_band: code(16)"
+      - "ptr_band: code(16)"
+      - "infrastructure_band: code(16)"
+      - "additional_needs_share: pct"
+      - "context: json"
+    uq: [[institution_id, as_of]]
+
+  health_index_policy:
+    title: Versioned health-index weights, targets and bands (decomposable score, P8)
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: ceda
+    reqs: [FR-CMD-01]
+    pages: [INS-05]
+    attrs:
+      - "version: int_u!"
+      - "weights: json! | Indicator → weight (attendance, progress, exam outcomes … resource utilisation)"
+      - "targets: json! | Indicator → normalisation target"
+      - "bands: json! | strong ≥ 80, adequate 65–79, concern 50–64, critical < 50"
+      - "status: enum(version_status)!"
+      - "effective_from: date!"
+    uq: [[scope_node_id, version]]
+
+  facility_check:
+    title: Fire inspection, health and safety check or certification with expiry (compliance centre evidence)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-INSP-101]
+    pages: [INS-09]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "campus_id: ref(campus)"
+      - "check_kind: cl(facility_check_kind)!"
+      - "performed_on: date!"
+      - "performed_by: str(200)"
+      - "result: enum(check_result)!"
+      - "certificate_document_id: uuid"
+      - "expires_on: date"

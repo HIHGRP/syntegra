@@ -1,0 +1,166 @@
+erDiagram
+    curriculum {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_48_ code
+        VARCHAR_300_ title
+        VARCHAR_32_ framework
+        BINARY_16_ subject_id FK
+        JSON levels
+        VARCHAR_32_ authority
+        VARCHAR_32_ status
+    }
+    curriculum_version {
+        BINARY_16_ id PK
+        BINARY_16_ curriculum_id FK
+        VARCHAR_32_ version_label
+        BINARY_16_ base_version_id FK
+        BOOLEAN is_adaptation
+        VARCHAR_35_ language
+        VARCHAR_32_ status
+        DATE effective_from
+        DATE effective_to
+        BINARY_16_ authored_by FK
+        BINARY_16_ approved_by FK
+        TEXT approval_reason
+        BINARY_16_ source_document_id
+        BINARY_32_ content_hash
+    }
+    curriculum_node {
+        BINARY_16_ id PK
+        BINARY_16_ version_id FK
+        BINARY_16_ parent_id FK
+        VARCHAR_48_ node_code
+        VARCHAR_32_ kind
+        TEXT statement
+        VARCHAR_32_ requirement
+        BOOLEAN is_state_addition
+        DECIMAL_6_1_ min_hours
+        BOOLEAN is_assessment_required
+        JSON teacher_requirements
+        JSON resource_requirements
+        SMALLINT term_hint
+        INT sort_key
+    }
+    curriculum_adoption {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        BINARY_16_ version_id FK
+        VARCHAR_32_ education_level
+        SMALLINT cohort_start_year
+        BOOLEAN is_additional
+        VARCHAR_32_ resolved_by
+        DATE valid_from
+        DATE valid_to
+    }
+    scheme_of_work {
+        BINARY_16_ id PK
+        BINARY_16_ class_subject_plan_id FK
+        BINARY_16_ course_section_id FK
+        BINARY_16_ teaching_assignment_id FK
+        BINARY_16_ curriculum_version_id FK
+        INT version
+        BOOLEAN is_auto_drafted
+        VARCHAR_32_ status
+    }
+    scheme_week {
+        BINARY_16_ id PK
+        BINARY_16_ scheme_id FK
+        SMALLINT week_no
+        DATE week_starts_on
+        JSON node_ids
+        INT planned_minutes
+    }
+    delivery_log {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ lesson_occurrence_id FK
+        BINARY_16_ teaching_assignment_id FK
+        BINARY_16_ staff_id FK
+        JSON node_ids
+        INT delivered_minutes
+        BOOLEAN is_as_planned
+        VARCHAR_32_ source
+        SMALLINT learners_present
+        VARCHAR_1000_ note
+        DATE delivered_on
+    }
+    coverage_gap {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ rule
+        VARCHAR_32_ severity
+        BINARY_16_ institution_id FK
+        BINARY_16_ class_subject_plan_id FK
+        BINARY_16_ course_section_id FK
+        BINARY_16_ teaching_assignment_id FK
+        SMALLINT learners_affected
+        VARCHAR_16_ owner_role
+        BINARY_16_ owner_user_id
+        DATE due_on
+        SMALLINT escalation_level
+        BINARY_16_ escalated_to_scope_id
+        JSON suggested_fixes
+        BOOLEAN accepted_by_head
+        DATETIME_6_ opened_at
+        DATETIME_6_ closed_at
+        BINARY_16_ closed_by
+        VARCHAR_32_ status
+        VARCHAR_120_ open_key
+    }
+    gap_event {
+        BINARY_16_ id PK
+        BINARY_16_ gap_id FK
+        VARCHAR_32_ event_kind
+        BINARY_16_ actor
+        JSON detail
+        VARCHAR_128_ linked_thread_ref
+        DATETIME_6_ occurred_at
+    }
+    app_user {
+        BINARY_16 id PK
+    }
+    class_subject_plan {
+        BINARY_16 id PK
+    }
+    course_section {
+        BINARY_16 id PK
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    lesson_occurrence {
+        BINARY_16 id PK
+    }
+    staff {
+        BINARY_16 id PK
+    }
+    subject {
+        BINARY_16 id PK
+    }
+    teaching_assignment {
+        BINARY_16 id PK
+    }
+    app_user ||--o{ curriculum_version : "approved_by"
+    app_user ||--o{ curriculum_version : "authored_by"
+    class_subject_plan ||--o{ coverage_gap : "class_subject_plan_id"
+    class_subject_plan ||--o{ scheme_of_work : "class_subject_plan_id"
+    course_section ||--o{ coverage_gap : "course_section_id"
+    course_section ||--o{ scheme_of_work : "course_section_id"
+    coverage_gap ||--o{ gap_event : "gap_id"
+    curriculum ||--o{ curriculum_version : "curriculum_id"
+    curriculum_node ||--o{ curriculum_node : "parent_id"
+    curriculum_version ||--o{ curriculum_adoption : "version_id"
+    curriculum_version ||--o{ curriculum_node : "version_id"
+    curriculum_version ||--o{ curriculum_version : "base_version_id"
+    curriculum_version ||--o{ scheme_of_work : "curriculum_version_id"
+    institution ||--o{ coverage_gap : "institution_id"
+    institution ||--o{ curriculum_adoption : "institution_id"
+    lesson_occurrence ||--o{ delivery_log : "lesson_occurrence_id"
+    scheme_of_work ||--o{ scheme_week : "scheme_id"
+    staff ||--o{ delivery_log : "staff_id"
+    subject ||--o{ curriculum : "subject_id"
+    teaching_assignment ||--o{ coverage_gap : "teaching_assignment_id"
+    teaching_assignment ||--o{ delivery_log : "teaching_assignment_id"
+    teaching_assignment ||--o{ scheme_of_work : "teaching_assignment_id"

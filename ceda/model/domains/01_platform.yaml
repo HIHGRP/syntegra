@@ -1,0 +1,343 @@
+domain: platform
+code: PLT
+title: Platform, tenancy and operator commercial records
+module: platform
+zone: platform
+retention: RS-PLATFORM
+summary: >
+  The control plane of the SaaS service operated by Syntegra Digital Infrastructure Nigeria Ltd (SDIN):
+  tenants and their residency, hostnames used to resolve the tenant at sign-in, feature flags, the
+  operator's private-provider plan catalogue and subscription billing (MFS §20.7–20.8), service credits,
+  the operator receivables ledger, Global Learner ID block allocation, and backup/DR evidence. The control
+  plane never holds learner-level data (FR-ADM-01); SDAF money and records live in the state registry
+  (domain SUB), never here.
+
+entities:
+  residency_region:
+    title: Data-residency region (in-country hosting location for a group of tenants)
+    kind: reference
+    class: internal
+    history: lifecycle
+    origin: ceda
+    reqs: [NFR-PRIV-04]
+    pages: [ADM-01]
+    attrs:
+      - "code: code(32)! uq | Region code, e.g. ng-lagos, ng-abuja"
+      - "name: title!"
+      - "country: country! | Country whose law governs the data (NDPA 2023 for NG)"
+      - "primary_site: str(120)! | Primary data centre"
+      - "secondary_site: str(120) | ClusterSet replica site (second in-country data centre)"
+      - "status: enum(record_status)!"
+
+  tenant:
+    title: Tenant — data boundary, configuration and billing unit (global, country, state, network, private provider)
+    kind: master
+    class: internal
+    history: lifecycle
+    origin: appj
+    reqs: [FR-ADM-01, FR-PVT-108]
+    pages: [ADM-01]
+    events: [PLT.TENANT_PROVISIONED, PLT.TENANT_STATUS_CHANGED]
+    notes: >
+      Tenants nest (country → state → private provider / network). Every row in the registry, ops, vault and
+      records zones carries tenant_id. Public institutions are scope nodes inside the state tenant; each private
+      provider is its own tenant registered in the state where it operates.
+    attrs:
+      - "parent_id: ref(tenant) | Parent tenant (state for a private provider, country for a state)"
+      - "kind: enum(tenant_kind)!"
+      - "code: code(40)! uq | Stable tenant code, e.g. ng, ng-ab, pvt-ng-ab-000123"
+      - "name: title!"
+      - "residency_region_id: ref(residency_region)!"
+      - "state_code: subdivision | ISO 3166-2 state for state and private-provider tenants"
+      - "isolation: enum(isolation_mode)! | Dedicated schema or pooled schema (MFS §16.3 layer 1)"
+      - "ops_schema: code(64)! | MySQL schema of the tenant's ops zone"
+      - "time_zone: code(64)! default=Africa/Lagos | IANA time zone applied on display"
+      - "default_language: lang! default=en-NG"
+      - "currency: currency! default=NGN"
+      - "status: enum(tenant_status)!"
+      - "activated_at: ts"
+      - "closed_at: ts"
+
+  tenant_domain:
+    title: Hostname that resolves to a tenant at sign-in (tenant is never chosen from a list)
+    kind: config
+    class: internal
+    history: lifecycle
+    origin: ceda
+    reqs: [FR-ADM-10]
+    pages: [AUT-01, ADM-13]
+    attrs:
+      - "tenant_id: ref(tenant)!"
+      - "hostname: code(253)! uq | e.g. abia.syntegra.ng or portal.schoolname.ng"
+      - "is_primary: bool! default=false"
+      - "verified_at: ts | DNS ownership verified"
+      - "tls_certificate_ref: str(200) | Certificate manager reference"
+      - "status: enum(record_status)!"
+
+  feature_flag:
+    title: Feature flag per tenant and phase (continuous delivery, freeze windows)
+    kind: config
+    class: internal
+    history: none
+    origin: ceda
+    reqs: [FR-ADM-01]
+    pages: [ADM-01]
+    attrs:
+      - "tenant_id: ref(tenant) | NULL = platform default"
+      - "flag_key: code(80)!"
+      - "is_enabled: bool! default=false"
+      - "rollout_percent: smallint | Progressive rollout share"
+      - "phase: code(8) | Delivery phase gating the feature (P0–P7)"
+      - "reason: str(300)"
+    uq: [[tenant_id, flag_key]]
+
+  platform_user:
+    title: Operator staff account (PLAT role) — no learner-data access by default; break-glass only
+    kind: master
+    class: restricted
+    history: lifecycle
+    origin: ceda
+    reqs: [FR-ADM-01, FR-ADM-13]
+    pages: [ADM-01, ADM-16]
+    attrs:
+      - "email: email! uq pii"
+      - "display_name: name! pii"
+      - "idp_subject: str(255)! uq | Subject in Red Hat Identity Management / operator IdP (MFA enforced)"
+      - "is_break_glass_eligible: bool! default=false"
+      - "status: enum(account_status)!"
+      - "last_sign_in_at: ts"
+
+  glid_block:
+    title: Block of Global Learner ID serials leased to a state registry (national uniqueness without per-insert coordination)
+    kind: config
+    class: internal
+    history: append
+    origin: ceda
+    reqs: [FR-LRN-07]
+    pages: [ADM-01]
+    notes: >
+      The national GLID allocator leases contiguous blocks (default 10,000 serials) to each state registry.
+      A registry assigns serials from its open block, so Global Learner IDs are unique nationally and never
+      reused, including after merge. Decision CD-07.
+    attrs:
+      - "tenant_id: ref(tenant)! | State tenant that holds the lease"
+      - "first_serial: bigint! uq"
+      - "last_serial: bigint!"
+      - "leased_at: ts!"
+    checks:
+      range: "last_serial >= first_serial"
+
+  subscription_plan:
+    title: Operator plan and price-list version for private providers (and the State Enterprise plan)
+    kind: config
+    class: internal
+    history: versioned
+    origin: appj
+    reqs: [FR-SUB-117, FR-ADM-11]
+    pages: [SUB-108, ADM-14]
+    attrs:
+      - "code: code(40)! | Starter, Standard, Advanced, Tertiary, Group, State Enterprise"
+      - "version: int_u!"
+      - "name: title!"
+      - "tier: enum(plan_tier)!"
+      - "price_basis: enum(price_basis)!"
+      - "unit_price: money! | Price per unit of the price basis"
+      - "currency: currency! default=NGN"
+      - "modules: json! | Module codes included (INS, LRN, LMS …)"
+      - "limits: json | Learner, campus, storage and messaging limits"
+      - "add_ons: json | Digitisation, messaging bundles, storage — with prices"
+      - "vat_applicable: bool! default=true"
+      - "effective_from: date!"
+      - "effective_to: date"
+      - "status: enum(version_status)!"
+      - "approved_by: ref(platform_user)"
+    uq: [[code, version]]
+
+  subscription:
+    title: A tenant's subscription to a plan (private providers pay SDIN directly; state tenants are SDAF-financed)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    origin: appj
+    reqs: [FR-SUB-101, FR-SUB-117, FR-SUB-121, FR-ADM-11]
+    pages: [ADM-14, SUB-107, SUB-108]
+    events: [SUB.SUBSCRIPTION_STATUS_CHANGED]
+    attrs:
+      - "tenant_id: ref(tenant)!"
+      - "plan_id: ref(subscription_plan)!"
+      - "financing_channel: enum(financing_channel)!"
+      - "status: enum(subscription_status)!"
+      - "starts_on: date!"
+      - "ends_on: date"
+      - "trial_ends_on: date"
+      - "grace_days: smallint! default=30"
+      - "restricted_since: ts | Administrative features restricted (never registers, teaching, results, certificates — P9)"
+      - "terms_version: semver | Subscription terms accepted"
+      - "terms_accepted_at: ts"
+      - "terms_accepted_by_name: name pii"
+      - "billing_email: email pii"
+      - "payment_method: enum(sub_payment_method)"
+      - "virtual_account_ref: code(40) | Dedicated virtual account for transfers"
+
+  subscription_quote:
+    title: Quote issued to a private provider before subscription acceptance
+    kind: transaction
+    class: internal
+    history: lifecycle
+    origin: ceda
+    reqs: [FR-SUB-117]
+    pages: [SUB-107, SUB-108]
+    attrs:
+      - "tenant_id: ref(tenant) | Set once the provider tenant exists"
+      - "provider_ref: uuid | Registry provider id (soft) before tenant creation"
+      - "plan_id: ref(subscription_plan)!"
+      - "learner_estimate: int_u!"
+      - "campus_count: smallint"
+      - "amount: money!"
+      - "currency: currency!"
+      - "valid_until: date!"
+      - "status: enum(quote_status)!"
+      - "document_ref: uuid | Quote PDF (records zone)"
+
+  subscription_invoice:
+    title: Invoice from the operator to a private provider (never edited after issue; credit notes for changes)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    origin: appj
+    reqs: [FR-SUB-118, FR-SUB-120]
+    pages: [SUB-107, SUB-108]
+    events: [SUB.INVOICE_ISSUED]
+    attrs:
+      - "subscription_id: ref(subscription)!"
+      - "invoice_number: code(32)! uq | SDIN-<year>-<seq>"
+      - "period_start: date!"
+      - "period_end: date!"
+      - "census_learners: int_u | From the census count used for SDAF (one counting rule)"
+      - "net_amount: money!"
+      - "discount_amount: money! default=0"
+      - "vat_amount: money! default=0"
+      - "total_amount: money!"
+      - "currency: currency!"
+      - "issued_on: date!"
+      - "due_on: date!"
+      - "status: enum(invoice_status)!"
+      - "content_hash: hash! | SHA-256 of the canonical invoice at issue"
+      - "e_invoice_ref: code(64) | National e-invoicing reference where required (D27)"
+
+  subscription_invoice_line:
+    title: Line of an operator invoice (per campus for group invoices, proration, add-ons)
+    kind: transaction
+    class: internal
+    history: append
+    origin: ceda
+    reqs: [FR-SUB-118]
+    pages: [SUB-107]
+    attrs:
+      - "invoice_id: ref(subscription_invoice)!"
+      - "line_no: smallint!"
+      - "description: str(300)!"
+      - "campus_ref: uuid | Registry campus id for group breakdowns (soft)"
+      - "quantity: dec(12,3)!"
+      - "unit_price: money!"
+      - "amount: money!"
+      - "currency: currency!"
+      - "is_proration: bool! default=false"
+    uq: [[invoice_id, line_no]]
+
+  subscription_credit_note:
+    title: Credit note or refund against an operator invoice
+    kind: transaction
+    class: internal
+    history: append
+    origin: ceda
+    reqs: [FR-SUB-118]
+    pages: [SUB-108]
+    attrs:
+      - "invoice_id: ref(subscription_invoice)!"
+      - "credit_number: code(32)! uq"
+      - "reason: str(500)!"
+      - "amount: money!"
+      - "currency: currency!"
+      - "is_refund: bool! default=false"
+      - "approved_by: ref(platform_user)! | SDIN finance approval"
+
+  subscription_payment:
+    title: Payment by a private provider directly to the operator
+    kind: transaction
+    class: internal
+    history: append
+    origin: appj
+    reqs: [FR-SUB-119]
+    pages: [SUB-107, SUB-108]
+    events: [SUB.PAYMENT_RECEIVED]
+    attrs:
+      - "invoice_id: ref(subscription_invoice)!"
+      - "method: enum(sub_payment_method)!"
+      - "gateway: code(32) | paystack, flutterwave, bank"
+      - "gateway_ref: code(128)! uq | Idempotency: one row per gateway transaction"
+      - "amount: money!"
+      - "currency: currency!"
+      - "received_at: ts!"
+      - "receipt_number: code(32)! uq"
+
+  service_credit:
+    title: Service credit under the BOO service-level agreement
+    kind: transaction
+    class: internal
+    history: append
+    origin: ceda
+    reqs: [FR-SUB-125]
+    pages: [SUB-104, SUB-108]
+    attrs:
+      - "tenant_id: ref(tenant)!"
+      - "period_start: date!"
+      - "period_end: date!"
+      - "sla_metric: code(40)! | availability_gov_tier, support_p1_response …"
+      - "target: dec(9,4)!"
+      - "measured: dec(9,4)!"
+      - "amount: money!"
+      - "currency: currency!"
+      - "applied_to_kind: enum(credit_target)!"
+      - "applied_to_id: uuid | Reconciliation statement (registry) or subscription invoice"
+
+  operator_receivable:
+    title: Operator receivables ledger line by channel (SDAF remittance, private subscription, other services)
+    kind: transaction
+    class: internal
+    history: append
+    origin: ceda
+    reqs: [FR-SUB-124]
+    pages: [SUB-108]
+    attrs:
+      - "channel: enum(receivable_channel)!"
+      - "tenant_id: ref(tenant)!"
+      - "source_kind: code(40)! | remittance, subscription_invoice, digitisation_order …"
+      - "source_id: uuid! | Source record (soft; may be in the state registry)"
+      - "revenue_period: code(7)! | YYYY-MM recognition period"
+      - "amount: money! signed"
+      - "currency: currency!"
+      - "recognised_on: date!"
+      - "exported_at: ts | Exported to SDIN accounting through the adapter"
+    ix: [[channel, revenue_period]]
+
+  backup_run:
+    title: Database backup or restore test (DR readiness evidence for provider staff)
+    kind: event
+    class: internal
+    history: append
+    origin: ceda
+    retention: RS-OPS-LOG
+    reqs: [FR-ADM-13, NFR-AVAIL-03, NFR-PLAT-105]
+    pages: [ADM-16]
+    attrs:
+      - "residency_region_id: ref(residency_region)!"
+      - "store: code(40)! | mysql-ops, mysql-registry, objectstore, opensearch …"
+      - "kind: enum(backup_kind)!"
+      - "started_at: ts!"
+      - "finished_at: ts"
+      - "outcome: enum(run_outcome)!"
+      - "size_bytes: bigint"
+      - "rpo_seconds: int | Measured recovery point for failover tests"
+      - "rto_seconds: int | Measured recovery time for failover tests"
+      - "report_ref: uuid | Published test report document"

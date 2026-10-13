@@ -1,0 +1,195 @@
+erDiagram
+    api_client {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ name
+        VARCHAR_32_ client_kind
+        VARCHAR_64_ client_id
+        BINARY_32_ secret_hash
+        BINARY_32_ certificate_thumbprint
+        JSON scopes
+        BINARY_16_ agreement_id FK
+        INT rate_limit_per_minute
+        BINARY_16_ service_identity_id FK
+        VARCHAR_32_ status
+    }
+    data_sharing_agreement {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ title
+        VARCHAR_300_ counterparty
+        TEXT purpose
+        JSON datasets
+        VARCHAR_32_ legal_basis
+        BOOLEAN cross_border
+        DATE expires_on
+        BINARY_16_ document_id
+        INT version
+        VARCHAR_32_ status
+    }
+    exchange_transfer {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ agreement_id FK
+        VARCHAR_32_ direction
+        VARCHAR_32_ dataset
+        BINARY_16_ subject_ref
+        BINARY_32_ payload_hash
+        VARCHAR_32_ payload_format
+        VARCHAR_128_ counterpart_ref
+        DATETIME_6_ occurred_at
+    }
+    integration_connection {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ integration_code
+        VARCHAR_32_ adapter_version
+        JSON settings
+        VARCHAR_255_ credentials_vault_ref
+        DATETIME_6_ last_success_at
+        VARCHAR_32_ status
+    }
+    integration_connection {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ integration_code
+        VARCHAR_32_ adapter_version
+        JSON settings
+        VARCHAR_255_ credentials_vault_ref
+        DATETIME_6_ last_success_at
+        VARCHAR_32_ status
+    }
+    webhook_subscription {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ api_client_id
+        JSON event_types
+        VARCHAR_2048_ target_url
+        VARCHAR_255_ signing_secret_vault_ref
+        VARCHAR_32_ status
+    }
+    webhook_delivery {
+        BINARY_16_ id PK
+        BINARY_16_ subscription_id FK
+        BINARY_16_ event_id
+        SMALLINT attempts
+        DATETIME_6_ next_attempt_at
+        SMALLINT last_status_code
+        DATETIME_6_ delivered_at
+        VARCHAR_32_ status
+    }
+    inbound_webhook {
+        BINARY_16_ id PK
+        VARCHAR_40_ source
+        VARCHAR_128_ external_event_id
+        BOOLEAN signature_valid
+        JSON payload
+        DATETIME_6_ received_at
+        DATETIME_6_ processed_at
+        VARCHAR_1000_ error
+        VARCHAR_32_ status
+    }
+    inbound_webhook {
+        BINARY_16_ id PK
+        VARCHAR_40_ source
+        VARCHAR_128_ external_event_id
+        BOOLEAN signature_valid
+        JSON payload
+        DATETIME_6_ received_at
+        DATETIME_6_ processed_at
+        VARCHAR_1000_ error
+        VARCHAR_32_ status
+    }
+    idempotency_key {
+        BINARY_16_ id PK
+        BINARY_16_ principal_id
+        VARCHAR_128_ idem_key
+        BINARY_32_ request_hash
+        SMALLINT response_status
+        JSON response_body
+        DATETIME_6_ expires_at
+    }
+    idempotency_key {
+        BINARY_16_ id PK
+        BINARY_16_ principal_id
+        VARCHAR_128_ idem_key
+        BINARY_32_ request_hash
+        SMALLINT response_status
+        JSON response_body
+        DATETIME_6_ expires_at
+    }
+    import_job {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ template
+        BINARY_16_ source_document_id
+        JSON mapping
+        INT rows_total
+        INT rows_valid
+        INT rows_matched
+        INT rows_committed
+        DATETIME_6_ committed_at
+        DATETIME_6_ rollback_until
+        DATETIME_6_ rolled_back_at
+        VARCHAR_32_ status
+    }
+    import_job {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ template
+        BINARY_16_ source_document_id
+        JSON mapping
+        INT rows_total
+        INT rows_valid
+        INT rows_matched
+        INT rows_committed
+        DATETIME_6_ committed_at
+        DATETIME_6_ rollback_until
+        DATETIME_6_ rolled_back_at
+        VARCHAR_32_ status
+    }
+    import_row_issue {
+        BINARY_16_ id PK
+        BINARY_16_ job_id FK
+        INT row_no
+        VARCHAR_32_ level
+        VARCHAR_1000_ message
+        VARCHAR_16_ error_code
+        VARCHAR_32_ status
+    }
+    import_row_issue {
+        BINARY_16_ id PK
+        BINARY_16_ job_id FK
+        INT row_no
+        VARCHAR_32_ level
+        VARCHAR_1000_ message
+        VARCHAR_16_ error_code
+        VARCHAR_32_ status
+    }
+    privacy_request {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ request_kind
+        VARCHAR_32_ subject_kind
+        BINARY_16_ subject_id
+        VARCHAR_200_ requester_name
+        DATETIME_6_ identity_verified_at
+        DATETIME_6_ received_at
+        DATETIME_6_ due_at
+        JSON outcome
+        BINARY_16_ export_document_id
+        BINARY_16_ handled_by FK
+        VARCHAR_32_ status
+    }
+    app_user {
+        BINARY_16 id PK
+    }
+    service_identity {
+        BINARY_16 id PK
+    }
+    app_user ||--o{ privacy_request : "handled_by"
+    data_sharing_agreement ||--o{ api_client : "agreement_id"
+    data_sharing_agreement ||--o{ exchange_transfer : "agreement_id"
+    import_job ||--o{ import_row_issue : "job_id"
+    service_identity ||--o{ api_client : "service_identity_id"
+    webhook_subscription ||--o{ webhook_delivery : "subscription_id"

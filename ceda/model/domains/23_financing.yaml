@@ -1,0 +1,390 @@
+domain: financing
+code: SUB
+title: Programme financing — Student Digital Access Fee (SDAF) rates, census, payers, exemptions, demand, collection, remittance and reconciliation
+module: financing
+zone: registry
+retention: RS-SDAF
+summary: >
+  Public institutions are financed by the SDAF, a per-student charge each term or semester by institution
+  type, collected by the State Government into its designated revenue account and remitted in full to
+  SDIN (MFS §20). The platform administers rates, the census-date billable count (one counting rule for
+  public and private), payers (government only for public primary and JSS — UBE Act 2004 s.3), exemptions,
+  demand notices, idempotent posting of state collections, remittances with ageing, and the dual-signed
+  reconciliation statement. It never holds SDAF money. Rates, counts, notices, receipts, remittances and
+  statements are append-only and audited end to end; segregation of duties is enforced in data (SDIN
+  read-only on collections and remittances; recorder ≠ approver). Private subscriptions are in domain PLT.
+
+entities:
+  sdaf_rate_card:
+    title: Version of the state-approved SDAF rate card (propose → approve → publish)
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: appj
+    reqs: [FR-SUB-102]
+    pages: [SUB-101]
+    events: [SUB.RATE_CARD_PUBLISHED]
+    attrs:
+      - "version: int_u!"
+      - "proposed_by: ref(app_user)!"
+      - "approved_by: ref(app_user) | Commissioner or State Executive Council"
+      - "approval_instrument: str(200) | Approval reference (D25/D26)"
+      - "effective_from: date!"
+      - "published_at: ts"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, version]]
+    checks:
+      four_eyes: "approved_by IS NULL OR approved_by <> proposed_by"
+
+  sdaf_rate:
+    title: Rate in a rate card for an institution type and level, per term or per semester (naira)
+    kind: config
+    class: internal
+    history: append
+    origin: appj
+    scope_note: Inherits the rate card's scope.
+    reqs: [FR-SUB-102]
+    pages: [SUB-101]
+    attrs:
+      - "rate_card_id: ref(sdaf_rate_card)!"
+      - "institution_type: cl(institution_category)!"
+      - "education_level: cl(education_level)!"
+      - "charge_period: enum(charge_period)!"
+      - "amount: money! min=0"
+      - "currency: currency! default=NGN"
+    uq: [[rate_card_id, institution_type, education_level]]
+
+  billing_period:
+    title: Term or semester billing period with census date (from each institution type's academic calendar)
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-SUB-103, FR-SUB-126]
+    pages: [SUB-102, SUB-105]
+    attrs:
+      - "academic_period_id: ref(academic_period)!"
+      - "institution_types: cls(institution_category)!"
+      - "label: code(40)! | e.g. 2026/27-T1-BASIC, 2026/27-S1-TERTIARY"
+      - "census_on: date! | Default end of week 3 (term) or week 4 (semester)"
+      - "confirmation_closes_on: date!"
+      - "collection_window_ends_on: date!"
+      - "remittance_due_on: date!"
+      - "status: enum(period_state)!"
+    uq: [[scope_node_id, label]]
+
+  sdaf_payer_rule:
+    title: Who pays the SDAF for an institution type and level (government only for public primary and JSS)
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: appj
+    reqs: [FR-SUB-107]
+    pages: [SUB-106]
+    attrs:
+      - "institution_type: cl(institution_category)!"
+      - "education_level: cl(education_level)!"
+      - "is_basic_education: bool! | Public primary or junior secondary"
+      - "payer: enum(sdaf_payer)!"
+      - "split: json | Shares when payer = split"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, institution_type, education_level, version]]
+    checks:
+      ube_act: "NOT (is_basic_education AND payer <> 'government')"
+
+  sdaf_exemption_category:
+    title: Exemption category (SEND, orphans and vulnerable children, IDPs, scholarship holders) with funding rule
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: ceda
+    reqs: [FR-SUB-108]
+    pages: [SUB-106]
+    attrs:
+      - "code: code(32)!"
+      - "title: title!"
+      - "funding_rule: enum(exemption_funding)!"
+      - "evidence_required: str(500)!"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, code, version]]
+
+  sdaf_exemption:
+    title: Approved SDAF exemption for a learner and period (learner stays in the headcount; reported separately)
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-SUB-108]
+    pages: [SUB-106, SUB-102]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "billing_period_id: ref(billing_period)!"
+      - "category_id: ref(sdaf_exemption_category)!"
+      - "evidence_document_id: uuid!"
+      - "requested_by: ref(app_user)!"
+      - "approved_by: ref(app_user)"
+      - "status: enum(request_status)!"
+    uq: [[learner_id, billing_period_id]]
+    checks:
+      four_eyes: "approved_by IS NULL OR approved_by <> requested_by"
+
+  census_snapshot:
+    title: Billable-learner count of an institution for a period (flags cleared, head-confirmed, frozen and hashed; amendments versioned)
+    kind: snapshot
+    class: confidential
+    history: versioned
+    scope: owned
+    origin: appj
+    reqs: [FR-SUB-104, FR-SUB-105, FR-SUB-106, FR-SUB-118]
+    pages: [SUB-102]
+    events: [SUB.CENSUS_FROZEN]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "billing_period_id: ref(billing_period)!"
+      - "version: int_u!"
+      - "enrolled: int_u!"
+      - "verified: int_u!"
+      - "excluded: int_u!"
+      - "exempted: int_u!"
+      - "billable: int_u!"
+      - "open_flags: int_u! default=0 | Count cannot be frozen while flags are open"
+      - "confirmed_by: ref(app_user)"
+      - "confirmed_at: ts"
+      - "frozen_at: ts"
+      - "content_hash: hash"
+      - "challenge: json | Evidence-based challenge and decision"
+      - "status: enum(census_status)!"
+    uq: [[institution_id, billing_period_id, version]]
+    checks:
+      frozen_needs_clear: "status <> 'frozen' OR (open_flags = 0 AND content_hash IS NOT NULL AND confirmed_by IS NOT NULL)"
+
+  census_learner:
+    title: Learner included or excluded in a census snapshot, with reason (append-only)
+    kind: snapshot
+    class: confidential
+    history: append
+    origin: appj
+    scope_note: Inherits the snapshot's scope.
+    reqs: [FR-SUB-104, FR-SUB-101]
+    pages: [SUB-102]
+    attrs:
+      - "snapshot_id: ref(census_snapshot)!"
+      - "learner_id: ref(learner)!"
+      - "enrolment_id: ref(enrolment)!"
+      - "inclusion: enum(census_inclusion)!"
+      - "reason: enum(census_reason)"
+    uq: [[snapshot_id, learner_id]]
+
+  census_flag:
+    title: Ghost-learner flag before freezing (no attendance since period start, identity conflict, unexplained rise) — cleared or explained by the head
+    kind: queue
+    class: confidential
+    history: lifecycle
+    origin: ceda
+    scope_note: Inherits the snapshot's scope.
+    reqs: [FR-SUB-105]
+    pages: [SUB-102]
+    attrs:
+      - "snapshot_id: ref(census_snapshot)!"
+      - "learner_id: ref(learner)"
+      - "flag_kind: enum(census_flag_kind)!"
+      - "evidence: json!"
+      - "resolution: enum(flag_resolution)"
+      - "explanation: str(1000)"
+      - "resolved_by: ref(app_user)"
+      - "status: enum(queue_status)!"
+
+  billing_period_billed:
+    title: Once-per-period billing guard — a learner is billed once per period across channels and institutions
+    kind: link
+    class: confidential
+    history: append
+    origin: ceda
+    scope_note: Inherits the period's scope.
+    reqs: [FR-SUB-101, FR-SUB-104]
+    pages: [SUB-102, SUB-103]
+    notes: Insert of a second row for the same learner and period fails — the database-level guarantee of FR-SUB-101.
+    attrs:
+      - "billing_period_id: ref(billing_period)!"
+      - "learner_id: ref(learner)!"
+      - "channel: enum(financing_channel)!"
+      - "institution_id: ref(institution)!"
+      - "snapshot_id: ref(census_snapshot)!"
+    uq: [[billing_period_id, learner_id]]
+
+  sdaf_demand:
+    title: SDAF demand notice (consolidated to a government payer) or individual assessment (never at basic-education level)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-SUB-109, FR-SUB-107]
+    pages: [SUB-103, SUB-109]
+    events: [SUB.DEMAND_ISSUED]
+    attrs:
+      - "demand_number: code(32)! uq"
+      - "institution_id: ref(institution)!"
+      - "billing_period_id: ref(billing_period)!"
+      - "snapshot_id: ref(census_snapshot)!"
+      - "payer_kind: enum(sdaf_payer)!"
+      - "payer_ref: uuid | Government payer, guardian, learner or sponsor"
+      - "learner_id: ref(learner) | Individual assessments only"
+      - "billable_count: int_u!"
+      - "waived_count: int_u!"
+      - "rate_id: ref(sdaf_rate)!"
+      - "amount: money! min=0 | (billable − waived) × rate"
+      - "currency: currency!"
+      - "revenue_code: code(40)!"
+      - "payment_reference: code(64)! uq | Remita RRR or state e-revenue reference"
+      - "issued_at: ts!"
+      - "is_basic_education: bool!"
+      - "status: enum(demand_status)!"
+    checks:
+      ube_act: "NOT (is_basic_education AND payer_kind <> 'government')"
+
+  sdaf_collection:
+    title: Payment into the state revenue account against a demand (posted idempotently from state notifications; append-only)
+    kind: event
+    class: confidential
+    history: append
+    origin: appj
+    scope_note: Inherits the demand's scope.
+    reqs: [FR-SUB-110, FR-SUB-111, FR-SUB-114]
+    pages: [SUB-103, SUB-109]
+    events: [SUB.COLLECTION_POSTED]
+    attrs:
+      - "demand_id: ref(sdaf_demand)!"
+      - "state_receipt_ref: code(128)! uq | State e-receipt / collection-system id — idempotency key"
+      - "channel: enum(revenue_channel)!"
+      - "amount: money! min=0"
+      - "currency: currency!"
+      - "paid_at: ts!"
+      - "statement_matched_at: ts | Daily reconciliation against the state collection-account statement"
+
+  unmatched_collection:
+    title: State collection notification not matched to a demand, or a held duplicate
+    kind: queue
+    class: confidential
+    history: lifecycle
+    origin: ceda
+    scope_note: State revenue officers' queue.
+    reqs: [FR-SUB-111]
+    pages: [SUB-103]
+    attrs:
+      - "state_receipt_ref: code(128)!"
+      - "payload: json!"
+      - "reason: enum(unmatched_reason)!"
+      - "resolved_demand_id: ref(sdaf_demand)"
+      - "resolved_by: ref(app_user)"
+      - "status: enum(queue_status)!"
+
+  remittance:
+    title: Remittance of collected SDAF from the State Government to SDIN, with advice (recorder ≠ approver; append-only)
+    kind: event
+    class: confidential
+    history: append
+    scope: owned
+    origin: appj
+    reqs: [FR-SUB-112, FR-SUB-114]
+    pages: [SUB-104]
+    events: [SUB.REMITTANCE_RECORDED]
+    attrs:
+      - "billing_period_id: ref(billing_period)!"
+      - "advice_ref: code(64)! uq"
+      - "bank_ref: code(64)!"
+      - "amount: money! min=0"
+      - "currency: currency!"
+      - "remitted_on: date!"
+      - "recorded_by: ref(app_user)!"
+      - "approved_by: ref(app_user)!"
+    checks:
+      dual_control: "approved_by <> recorded_by"
+
+  remittance_allocation:
+    title: Allocation of a remittance to the collections it covers
+    kind: link
+    class: confidential
+    history: append
+    origin: appj
+    scope_note: Inherits the remittance's scope.
+    reqs: [FR-SUB-112]
+    pages: [SUB-104]
+    attrs:
+      - "remittance_id: ref(remittance)!"
+      - "collection_id: ref(sdaf_collection)!"
+      - "amount: money! min=0"
+      - "currency: currency!"
+    uq: [[remittance_id, collection_id]]
+
+  reconciliation_statement:
+    title: Period statement — billed, exempted, collected, remitted, outstanding — with dual sign-off (state + SDIN), locked and hashed
+    kind: snapshot
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-SUB-113, FR-SUB-115, FR-SUB-125]
+    pages: [SUB-104, SUB-105]
+    events: [SUB.STATEMENT_SIGNED]
+    notes: Once both signatures exist no line changes; corrections go into the next statement.
+    attrs:
+      - "billing_period_id: ref(billing_period)!"
+      - "billed: money!"
+      - "exempted: money!"
+      - "collected: money!"
+      - "remitted: money!"
+      - "outstanding: money!"
+      - "late_remittance_charge: money! default=0"
+      - "service_credits: money! default=0"
+      - "currency: currency!"
+      - "state_signed_by: ref(app_user)"
+      - "state_signed_at: ts"
+      - "operator_signed_by: ref(app_user)"
+      - "operator_signed_at: ts"
+      - "content_hash: hash"
+      - "status: enum(statement_status)!"
+    uq: [[billing_period_id]]
+    checks:
+      dual_signature: "operator_signed_by IS NULL OR state_signed_by IS NULL OR operator_signed_by <> state_signed_by"
+
+  reconciliation_line:
+    title: Line of a reconciliation statement by institution (with logged disputes)
+    kind: snapshot
+    class: confidential
+    history: append
+    origin: ceda
+    scope_note: Inherits the statement's scope.
+    reqs: [FR-SUB-113]
+    pages: [SUB-104]
+    attrs:
+      - "statement_id: ref(reconciliation_statement)!"
+      - "institution_id: ref(institution)!"
+      - "billed: money!"
+      - "exempted: money!"
+      - "collected: money!"
+      - "remitted: money!"
+      - "currency: currency!"
+      - "dispute: json | Dispute logged against the line"
+    uq: [[statement_id, institution_id]]
+
+  sdaf_public_summary:
+    title: Optional aggregated public summary per term (no learner data)
+    kind: snapshot
+    class: public
+    history: append
+    scope: owned
+    origin: ceda
+    reqs: [FR-SUB-115]
+    pages: [SUB-105]
+    attrs:
+      - "billing_period_id: ref(billing_period)!"
+      - "published_at: ts!"
+      - "summary: json!"

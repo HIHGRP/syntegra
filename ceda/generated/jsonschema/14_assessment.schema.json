@@ -1,0 +1,2588 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/14_assessment.schema.json",
+  "title": "CEDA ASM — Assessment, grading, moderation, targets, report cards, examinations, results, GPA and transcripts",
+  "$defs": {
+    "GradingScale": {
+      "title": "GradingScale",
+      "description": "Configurable grading scale (percentage, letter, grade points, GPA, pass/fail, competency levels, degree classes)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "grading_scale",
+        "zone": "registry",
+        "domain": "ASM",
+        "kind": "config",
+        "classification": "public",
+        "history": "versioned",
+        "module": "assessment"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "scale_kind": {
+          "type": "string",
+          "enum": [
+            "percentage",
+            "letter",
+            "grade_points",
+            "gpa",
+            "pass_fail",
+            "competency",
+            "degree_class"
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "code",
+        "name",
+        "scale_kind",
+        "version",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "GradeBand": {
+      "title": "GradeBand",
+      "description": "Band of a grading scale (contiguous and non-overlapping)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "grade_band",
+        "zone": "registry",
+        "domain": "ASM",
+        "kind": "config",
+        "classification": "public",
+        "history": "versioned",
+        "module": "assessment"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "grading_scale_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "grading_scale"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 16,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "A1, B2, C4, Distinction, Level 3"
+        },
+        "min_score": {
+          "type": "string",
+          "format": "decimal"
+        },
+        "max_score": {
+          "type": "string",
+          "format": "decimal"
+        },
+        "grade_points": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_pass": {
+          "type": "boolean"
+        },
+        "is_credit": {
+          "type": "boolean",
+          "description": "Counts as a credit (5 credits incl. English and Mathematics)"
+        },
+        "sort_order": {
+          "type": "integer"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "grading_scale_id",
+        "label",
+        "min_score",
+        "max_score",
+        "is_pass",
+        "is_credit",
+        "sort_order",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Assessment": {
+      "title": "Assessment",
+      "description": "Assessment 360 definition (formative, summative, coursework, practical, competency, CA test, examination)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "assessment",
+        "zone": "ops",
+        "domain": "ASM",
+        "kind": "config",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "assessment"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "class_subject_plan_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "class_subject_plan"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "course_section_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "course_section"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assignment_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "assignment",
+              "description": "LMS assignment that posts its marks here"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "assessment_kind": {
+          "type": "string",
+          "enum": [
+            "formative",
+            "summative",
+            "coursework",
+            "practical",
+            "competency",
+            "ca_test",
+            "examination",
+            "homework",
+            "quiz"
+          ]
+        },
+        "max_mark": {
+          "type": "string",
+          "format": "decimal"
+        },
+        "weight": {
+          "type": "string",
+          "format": "decimal"
+        },
+        "assessed_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "grading_scale_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "grading_scale"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "node_ids": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Curriculum objectives assessed (G7)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_moderated": {
+          "type": "boolean"
+        },
+        "locked_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "description": "Results locked after approval"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "open",
+            "marking",
+            "moderated",
+            "approved",
+            "locked"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "title",
+        "assessment_kind",
+        "max_mark",
+        "weight",
+        "is_moderated",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "MarkbookColumn": {
+      "title": "MarkbookColumn",
+      "description": "Teacher marksheet column (yes/no, numeric, grade, date, comment) for offline spreadsheet round-trips",
+      "type": "object",
+      "x-ceda": {
+        "entity": "markbook_column",
+        "zone": "ops",
+        "domain": "ASM",
+        "kind": "config",
+        "classification": "internal",
+        "history": "none",
+        "module": "assessment"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "class_subject_plan_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "class_subject_plan"
+        },
+        "assessment_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "assessment"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "column_kind": {
+          "type": "string",
+          "enum": [
+            "yes_no",
+            "numeric",
+            "grade",
+            "date",
+            "comment"
+          ]
+        },
+        "sort_order": {
+          "type": "integer"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "class_subject_plan_id",
+        "label",
+        "column_kind",
+        "sort_order",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "AssessmentResult": {
+      "title": "AssessmentResult",
+      "description": "Mark per learner per assessment (hard ≤ max mark; corrections after lock need head approval)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "assessment_result",
+        "zone": "ops",
+        "domain": "ASM",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "assessment"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "assessment_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "assessment"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "grade_label": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 16,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "objective_results": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Per curriculum objective (curriculum evidence)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_missing_work": {
+          "type": "boolean"
+        },
+        "access_arrangement": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200,
+              "description": "Applied adjustment (no need detail)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "comment": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "entered_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "corrected_after_lock": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "assessment_id",
+        "learner_id",
+        "is_missing_work",
+        "entered_by",
+        "corrected_after_lock",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ModerationSample": {
+      "title": "ModerationSample",
+      "description": "Moderation sample with moderator mark and tolerance outcome",
+      "type": "object",
+      "x-ceda": {
+        "entity": "moderation_sample",
+        "zone": "ops",
+        "domain": "ASM",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "assessment"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "assessment_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "assessment"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "submission_mark_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "submission_mark"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "original_score": {
+          "type": "string",
+          "format": "decimal"
+        },
+        "moderated_score": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "moderator_staff_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff"
+        },
+        "within_tolerance": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "learner_id",
+        "original_score",
+        "moderator_staff_id",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "TargetGrade": {
+      "title": "TargetGrade",
+      "description": "Target grade from prior attainment and tracking points, with RAG progress",
+      "type": "object",
+      "x-ceda": {
+        "entity": "target_grade",
+        "zone": "ops",
+        "domain": "ASM",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "effective",
+        "module": "assessment"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "subject_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "subject"
+        },
+        "target_label": {
+          "type": "string",
+          "maxLength": 16,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "prior_attainment",
+            "tracking_points",
+            "manual"
+          ]
+        },
+        "working_at_label": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 16,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rag": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "red",
+                "amber",
+                "green"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "gap_points": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective from (inclusive) — history: effective",
+          "readOnly": true
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective to (inclusive); NULL = open-ended — history: effective",
+          "readOnly": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "learner_id",
+        "subject_id",
+        "target_label",
+        "method",
+        "valid_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ExternalAssessmentImport": {
+      "title": "ExternalAssessmentImport",
+      "description": "Historical or external assessment data import for longitudinal tracking and benchmarking",
+      "type": "object",
+      "x-ceda": {
+        "entity": "external_assessment_import",
+        "zone": "ops",
+        "domain": "ASM",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "assessment"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "cohort_label": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 60
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rows_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rows_matched": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "import_job_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "import_job"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "uploaded",
+            "mapped",
+            "validating",
+            "validated",
+            "matching",
+            "staged",
+            "committed",
+            "rolled_back",
+            "failed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "source",
+        "rows_total",
+        "rows_matched",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ReportCardRun": {
+      "title": "ReportCardRun",
+      "description": "Report-card generation run (templates, completeness checks, publication to the parent portal)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "report_card_run",
+        "zone": "ops",
+        "domain": "ASM",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "assessment"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "period_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "academic_period"
+        },
+        "template_code": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "class_group_ids": {
+          "type": "object"
+        },
+        "completeness": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Missing marks and comments per class"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "withholding_policy_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "policy_rule",
+              "description": "Only an explicitly approved policy; never for SEND or safeguarding-flagged learners"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "previewed",
+            "running",
+            "awaiting_approval",
+            "approved",
+            "issued",
+            "completed",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "institution_id",
+        "period_id",
+        "template_code",
+        "class_group_ids",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ReportCard": {
+      "title": "ReportCard",
+      "description": "Published report card of a learner for a period (document stored to the learner record)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "report_card",
+        "zone": "ops",
+        "domain": "ASM",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "append",
+        "module": "assessment"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "run_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "report_card_run"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "document_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "PDF in the records zone"
+        },
+        "content_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "released_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "run_id",
+        "learner_id",
+        "document_id",
+        "content_hash",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "ExamSeries": {
+      "title": "ExamSeries",
+      "description": "Examination 360 series (internal or external body, qualification, curriculum, programme)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "exam_series",
+        "zone": "ops",
+        "domain": "ASM",
+        "kind": "config",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "assessment"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "exam_body": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "exam_body"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "qualification_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "qualification"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "programme_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "programme"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "curriculum_version_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "curriculum_version"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "entry_opens_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "entry_closes_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "results_release_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "setup",
+            "entries_open",
+            "entries_closed",
+            "sitting",
+            "results_import",
+            "results_approved",
+            "released",
+            "closed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "exam_body",
+        "name",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ExamPaper": {
+      "title": "ExamPaper",
+      "description": "Paper or component of a series (subject, duration, OSCE station)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "exam_paper",
+        "zone": "ops",
+        "domain": "ASM",
+        "kind": "config",
+        "classification": "internal",
+        "history": "none",
+        "module": "assessment"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "series_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "exam_series"
+        },
+        "subject_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "subject"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "paper_code": {
+          "type": "string",
+          "maxLength": 20,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "duration_minutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "is_osce_station": {
+          "type": "boolean"
+        },
+        "station_rubric": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "OSCE station design and scoring"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "series_id",
+        "paper_code",
+        "title",
+        "duration_minutes",
+        "is_osce_station",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ExamEntry": {
+      "title": "ExamEntry",
+      "description": "Candidate entry (eligibility checks, access arrangements, fees)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "exam_entry",
+        "zone": "ops",
+        "domain": "ASM",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "assessment"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "series_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "exam_series"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "enrolment_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "enrolment"
+        },
+        "candidate_number": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "subjects": {
+          "type": "object"
+        },
+        "eligibility": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Checks: enrolment, subjects studied, identity verified, attendance, institution authorisation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "access_arrangements": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Authorised arrangements (no need detail)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_external_candidate": {
+          "type": "boolean"
+        },
+        "invoice_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "invoice"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "eligible",
+            "blocked",
+            "entered",
+            "withdrawn",
+            "absent",
+            "resulted"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "series_id",
+        "learner_id",
+        "enrolment_id",
+        "subjects",
+        "is_external_candidate",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ExamSitting": {
+      "title": "ExamSitting",
+      "description": "Sitting of a paper — room, desk layout, seat allocation and invigilators",
+      "type": "object",
+      "x-ceda": {
+        "entity": "exam_sitting",
+        "zone": "ops",
+        "domain": "ASM",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "assessment"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "paper_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "exam_paper"
+        },
+        "room_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "room"
+        },
+        "starts_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "desk_layout": {
+          "type": "object"
+        },
+        "seat_allocations": {
+          "type": "object",
+          "description": "Candidate → desk label"
+        },
+        "invigilator_staff_ids": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "paper_id",
+        "room_id",
+        "starts_at",
+        "desk_layout",
+        "seat_allocations",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ExamResult": {
+      "title": "ExamResult",
+      "description": "Result per candidate per paper (immutable once committed)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "exam_result",
+        "zone": "ops",
+        "domain": "ASM",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "append",
+        "module": "assessment"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "entry_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "exam_entry"
+        },
+        "paper_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "exam_paper"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "grade_label": {
+          "type": "string",
+          "maxLength": 16,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "result_import_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "result_import"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "committed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "committed_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "entry_id",
+        "paper_id",
+        "grade_label",
+        "committed_at",
+        "committed_by",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "ResultImport": {
+      "title": "ResultImport",
+      "description": "Import of results from an exam body (file or API) with candidate matching and anomaly review",
+      "type": "object",
+      "x-ceda": {
+        "entity": "result_import",
+        "zone": "ops",
+        "domain": "ASM",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "assessment"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "series_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "exam_series"
+        },
+        "source_document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rows_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rows_matched": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rows_in_review": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "anomalies": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "uploaded",
+            "mapped",
+            "validating",
+            "validated",
+            "matching",
+            "staged",
+            "committed",
+            "rolled_back",
+            "failed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "series_id",
+        "rows_total",
+        "rows_matched",
+        "rows_in_review",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ExamAnomaly": {
+      "title": "ExamAnomaly",
+      "description": "Statistical anomaly for human review (distribution shift, similarity cluster, improbable improvement) — never auto-penalised",
+      "type": "object",
+      "x-ceda": {
+        "entity": "exam_anomaly",
+        "zone": "ops",
+        "domain": "ASM",
+        "kind": "queue",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "assessment"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "series_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "exam_series"
+        },
+        "anomaly_kind": {
+          "type": "string",
+          "enum": [
+            "distribution_shift",
+            "similarity_cluster",
+            "improbable_improvement",
+            "timing",
+            "other"
+          ]
+        },
+        "evidence": {
+          "type": "object"
+        },
+        "affected_entry_ids": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assigned_to": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "no_issue",
+                "explained",
+                "action_taken",
+                "referred",
+                "confirmed"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "in_progress",
+            "resolved",
+            "dismissed",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "series_id",
+        "anomaly_kind",
+        "evidence",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "GradeBroadsheet": {
+      "title": "GradeBroadsheet",
+      "description": "Grade broadsheet per class, subject and series (spreadsheet export)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "grade_broadsheet",
+        "zone": "ops",
+        "domain": "ASM",
+        "kind": "projection",
+        "classification": "confidential",
+        "history": "snapshot",
+        "module": "assessment"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "series_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "exam_series"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "class_group_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "class_group"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "document_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "class_group_id",
+        "generated_at",
+        "document_id",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "AcademicStanding": {
+      "title": "AcademicStanding",
+      "description": "GPA/CGPA, credits, progression and classification per learner per period (borderline cases flagged)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "academic_standing",
+        "zone": "ops",
+        "domain": "ASM",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "assessment"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "enrolment_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "enrolment"
+        },
+        "period_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "academic_period"
+        },
+        "credits_attempted": {
+          "type": "string",
+          "format": "decimal"
+        },
+        "credits_earned": {
+          "type": "string",
+          "format": "decimal"
+        },
+        "gpa": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cgpa": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "progression": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "progress",
+                "progress_with_carryover",
+                "repeat",
+                "probation",
+                "withdraw",
+                "graduate"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "classification": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "x-code-list": "degree_class"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_borderline": {
+          "type": "boolean"
+        },
+        "board_decision": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "learner_id",
+        "enrolment_id",
+        "period_id",
+        "credits_attempted",
+        "credits_earned",
+        "is_borderline",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Transcript": {
+      "title": "Transcript",
+      "description": "Digitally signed, verifiable transcript (registered in the certificate registry as a credential of kind transcript)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "transcript",
+        "zone": "ops",
+        "domain": "ASM",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "append",
+        "module": "assessment"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "enrolment_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "enrolment"
+        },
+        "certificate_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "certificate",
+              "description": "Registry record carrying number, hash and signature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "document_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "content_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "issued_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "learner_id",
+        "enrolment_id",
+        "document_id",
+        "content_hash",
+        "issued_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

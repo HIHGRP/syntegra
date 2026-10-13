@@ -1,0 +1,2008 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/26_records.schema.json",
+  "title": "CEDA DOC — Records and archives — document store, file plan, retention, legal holds, disposal and the digitisation pipeline",
+  "$defs": {
+    "RecordSeries": {
+      "title": "RecordSeries",
+      "description": "File-plan record series with owner, classification and retention rule",
+      "type": "object",
+      "x-ceda": {
+        "entity": "record_series",
+        "zone": "records",
+        "domain": "DOC",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "records"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "File plan code"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "owner_role": {
+          "type": "string",
+          "maxLength": 16,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "classification": {
+          "type": "string",
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "restricted",
+            "special"
+          ]
+        },
+        "retention_series": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "CEDA retention series (model/retention.yaml)"
+        },
+        "retention_rule": {
+          "type": "object",
+          "description": "Trigger, period, disposal action"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "code",
+        "title",
+        "owner_role",
+        "classification",
+        "retention_series",
+        "retention_rule",
+        "version",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "DocumentCategory": {
+      "title": "DocumentCategory",
+      "description": "Document type/category with its own view, download and share permissions (on top of role and scope)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "document_category",
+        "zone": "records",
+        "domain": "DOC",
+        "kind": "config",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "records"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "record_series_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "record_series"
+        },
+        "classification": {
+          "type": "string",
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "restricted",
+            "special"
+          ]
+        },
+        "permissions": {
+          "type": "object",
+          "description": "view, download, share by role"
+        },
+        "is_full_text_indexed": {
+          "type": "boolean",
+          "description": "Always false for special category"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "code",
+        "title",
+        "record_series_id",
+        "classification",
+        "permissions",
+        "is_full_text_indexed",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Document": {
+      "title": "Document",
+      "description": "Stored document — born-digital or digitised (object-storage pointer, metadata, classification, retention, hash)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "document",
+        "zone": "records",
+        "domain": "DOC",
+        "kind": "master",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "records"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "category_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "document_category"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "classification": {
+          "type": "string",
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "restricted",
+            "special"
+          ]
+        },
+        "institution_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Registry institution (soft)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lga_scope_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "date_from": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "date_to": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "session_label": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "level_or_class": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 80
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "subject_label": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 120
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "origin": {
+          "type": "string",
+          "enum": [
+            "born_digital",
+            "digitised",
+            "uploaded",
+            "generated"
+          ]
+        },
+        "origin_module": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Born-digital source module"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "batch_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "digitisation_batch"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "page_range": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "master_object_key": {
+          "type": "string",
+          "maxLength": 1024,
+          "description": "WORM bucket"
+        },
+        "access_object_key": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1024,
+              "description": "Derived access copy (PDF/A-2b)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "mime_type": {
+          "type": "string",
+          "maxLength": 127
+        },
+        "size_bytes": {
+          "type": "integer"
+        },
+        "sha256": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "captured_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "qa_status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "auto_accepted",
+            "needs_review",
+            "verified",
+            "rejected"
+          ]
+        },
+        "ocr_text_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1024,
+              "description": "Full text (never for special category)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "legal_hold_count": {
+          "type": "integer"
+        },
+        "disposal_due_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ingested",
+            "active",
+            "on_hold",
+            "disposal_due",
+            "disposed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "category_id",
+        "title",
+        "classification",
+        "origin",
+        "master_object_key",
+        "mime_type",
+        "size_bytes",
+        "sha256",
+        "captured_at",
+        "qa_status",
+        "legal_hold_count",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "DocumentLink": {
+      "title": "DocumentLink",
+      "description": "Link from a document to a person or record (learner, staff, guardian, institution, case …) — powers every 360 Documents tab",
+      "type": "object",
+      "x-ceda": {
+        "entity": "document_link",
+        "zone": "records",
+        "domain": "DOC",
+        "kind": "link",
+        "classification": "confidential",
+        "history": "none",
+        "module": "records"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "document_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "document"
+        },
+        "record_kind": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "record_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "link_basis": {
+          "type": "string",
+          "enum": [
+            "explicit",
+            "matched",
+            "extracted",
+            "inherited"
+          ]
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal",
+              "description": "For links proposed by matching"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "confirmed_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "document_id",
+        "record_kind",
+        "record_id",
+        "link_basis",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "LegalHold": {
+      "title": "LegalHold",
+      "description": "Legal hold suspending disposal for named people, institutions or series",
+      "type": "object",
+      "x-ceda": {
+        "entity": "legal_hold",
+        "zone": "records",
+        "domain": "DOC",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "records"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "subject_filter": {
+          "type": "object",
+          "description": "People, institutions, series"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 65535
+        },
+        "placed_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "released_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "title",
+        "subject_filter",
+        "reason",
+        "placed_by",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Disposal": {
+      "title": "Disposal",
+      "description": "Approved disposal of documents or originals with disposal/destruction certificate (refused while a legal hold applies)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "disposal",
+        "zone": "records",
+        "domain": "DOC",
+        "kind": "event",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "records"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "record_series_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "record_series"
+        },
+        "proposal": {
+          "type": "object",
+          "description": "Documents or boxes proposed"
+        },
+        "approved_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "executed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "certificate_document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "physical_disposition": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "returned_to_site",
+                "transferred_to_archive",
+                "destroyed"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "proposed",
+            "approved",
+            "refused_legal_hold",
+            "executed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "record_series_id",
+        "proposal",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Redaction": {
+      "title": "Redaction",
+      "description": "Automatic redaction of third-party personal data before external release, with human review",
+      "type": "object",
+      "x-ceda": {
+        "entity": "redaction",
+        "zone": "records",
+        "domain": "DOC",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "records"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "document_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "document"
+        },
+        "regions": {
+          "type": "object",
+          "description": "Page regions redacted"
+        },
+        "redacted_object_key": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "reviewed_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "released_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "document_id",
+        "regions",
+        "redacted_object_key",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "RecordRequest": {
+      "title": "RecordRequest",
+      "description": "Public request for copies of a person's own records (identity verification and configured fee)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "record_request",
+        "zone": "records",
+        "domain": "DOC",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "records"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "requester_name": {
+          "type": "string",
+          "maxLength": 200,
+          "x-personal-data": true
+        },
+        "requester_phone": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\+[1-9][0-9]{6,14}$",
+              "x-personal-data": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "person_kind": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "learner",
+                "guardian",
+                "staff",
+                "provider_person",
+                "applicant",
+                "visitor"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "person_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "identity_verified_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fee_reference": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "paid_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fulfilled_document_ids": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "submitted",
+            "in_review",
+            "approved",
+            "rejected",
+            "cancelled",
+            "fulfilled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "requester_name",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "DigitisationSiteSurvey": {
+      "title": "DigitisationSiteSurvey",
+      "description": "Survey of paper holdings per site (boxes, volumes, page estimates, cost and duration)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "digitisation_site_survey",
+        "zone": "records",
+        "domain": "DOC",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "records"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "site_name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "institution_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "boxes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "volumes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "estimated_pages": {
+          "type": "integer"
+        },
+        "priority": {
+          "type": "integer"
+        },
+        "surveyed_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "site_name",
+        "boxes",
+        "volumes",
+        "estimated_pages",
+        "priority",
+        "surveyed_on",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "DigitisationBatch": {
+      "title": "DigitisationBatch",
+      "description": "Box/volume batch in the digitisation programme (barcode, priority, schedule, throughput, quality)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "digitisation_batch",
+        "zone": "records",
+        "domain": "DOC",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "records"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "barcode": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "survey_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "digitisation_site_survey"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "record_series_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "record_series"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "classification": {
+          "type": "string",
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "restricted",
+            "special"
+          ],
+          "description": "Special-category batches only to cleared operators"
+        },
+        "assigned_operator_ids": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "DIGO operators (batch-scoped access)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pages_expected": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pages_captured": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "hub": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 80
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "stage": {
+          "type": "string",
+          "enum": [
+            "surveyed",
+            "collected",
+            "prepared",
+            "captured",
+            "cleaned",
+            "recognised",
+            "extracted",
+            "qa",
+            "linked",
+            "ingested",
+            "disposed"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "barcode",
+        "classification",
+        "pages_captured",
+        "stage",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "CustodyEvent": {
+      "title": "CustodyEvent",
+      "description": "Chain-of-custody event of a box or volume (collected, transferred, received, scanned, returned, archived, destroyed) — append-only",
+      "type": "object",
+      "x-ceda": {
+        "entity": "custody_event",
+        "zone": "records",
+        "domain": "DOC",
+        "kind": "event",
+        "classification": "internal",
+        "history": "append",
+        "module": "records"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "batch_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "digitisation_batch"
+        },
+        "event_kind": {
+          "type": "string",
+          "enum": [
+            "collected",
+            "in_transit",
+            "received_at_hub",
+            "scanned_on_site",
+            "returned",
+            "archived",
+            "destroyed",
+            "exception"
+          ]
+        },
+        "from_location": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 120
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "to_location": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "handled_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "transfer_note_document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "batch_id",
+        "event_kind",
+        "to_location",
+        "handled_by",
+        "occurred_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "ScannedPage": {
+      "title": "ScannedPage",
+      "description": "Page image captured from a batch (master TIFF/JPEG 2000 hashed at capture; access copy derived)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "scanned_page",
+        "zone": "records",
+        "domain": "DOC",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "records"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "batch_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "digitisation_batch"
+        },
+        "document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "document"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sequence_no": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "master_object_key": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "access_object_key": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1024
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dpi": {
+          "type": "integer"
+        },
+        "sha256": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "ocr_confidence": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "document_type_guess": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "captured_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "qa_status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "auto_accepted",
+            "needs_review",
+            "verified",
+            "rejected"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "batch_id",
+        "sequence_no",
+        "master_object_key",
+        "dpi",
+        "sha256",
+        "captured_at",
+        "qa_status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ExtractedField": {
+      "title": "ExtractedField",
+      "description": "Field extracted from a page with confidence (names, DOB, admission numbers, grades, staff numbers) — double-keyed when key",
+      "type": "object",
+      "x-ceda": {
+        "entity": "extracted_field",
+        "zone": "records",
+        "domain": "DOC",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "records"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "page_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "scanned_page"
+        },
+        "row_no": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "description": "Register/broadsheet row"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "field_name": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "confidence": {
+          "type": "string",
+          "format": "decimal"
+        },
+        "is_key_field": {
+          "type": "boolean"
+        },
+        "verified_value": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "verified_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "second_key_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Double-keying"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "matched_record_kind": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "matched_record_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "auto_accepted",
+            "needs_review",
+            "verified",
+            "rejected"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "page_id",
+        "field_name",
+        "confidence",
+        "is_key_field",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "QaSample": {
+      "title": "QaSample",
+      "description": "Batch QA sample result against the accuracy target (≥ 99.5% key fields)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "qa_sample",
+        "zone": "records",
+        "domain": "DOC",
+        "kind": "event",
+        "classification": "internal",
+        "history": "append",
+        "module": "records"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "batch_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "digitisation_batch"
+        },
+        "sampled": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "errors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "accuracy": {
+          "type": "string",
+          "format": "decimal"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "checked_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "batch_id",
+        "sampled",
+        "errors",
+        "accuracy",
+        "passed",
+        "checked_by",
+        "created_at"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,318 @@
+domain: governance
+code: GOV
+title: Governance hierarchy, configuration, reference data, policy and workflow
+module: governance
+zone: registry
+retention: RS-CONFIG
+summary: >
+  The ten-level governance hierarchy (global → country → state → LGA → network → institution → campus →
+  unit → class/programme → learner) as effective-dated scope nodes with a closure table for subtree
+  tests (MFS §2.3, §16.2), the layered configuration model (global core → country → state → network →
+  institution → department, Book 3 §7), jurisdiction code lists, the Ministry policy and rule engine
+  with exceptions (Book 3 §14) and the universal workflow engine (Book 3 §11). Every module uses these
+  engines; none builds its own (MFS §4.2).
+
+entities:
+  scope_node:
+    title: Governance hierarchy node (country, state, LGA, network, institution, campus, unit, class/programme)
+    scope_note: "The node is itself a scope; visibility is a subtree test against it."
+    kind: master
+    class: internal
+    history: effective
+    origin: appj
+    reqs: [FR-CMD-02, FR-CMD-118, FR-INS-08]
+    pages: [CMD-07, AUT-03]
+    events: [GOV.SCOPE_CHANGED]
+    notes: >
+      Effective-dated so that LGA boundary changes keep history (MFS §4.4). The path column supports prefix
+      queries; scope_closure answers "is record R inside grant G's subtree" with one indexed lookup.
+    attrs:
+      - "parent_id: ref(scope_node)"
+      - "level: enum(scope_level)!"
+      - "code: code(40)! | Official code, e.g. NG, NG-AB, AB-ABS, AB/SS/0412"
+      - "name: title!"
+      - "path: path! ix | Materialised path of codes, e.g. NG.AB.ABS.0412"
+      - "depth: smallint!"
+      - "ref_kind: enum(scope_ref_kind) | Entity the node represents"
+      - "ref_id: uuid | Institution, campus, org unit, class group or course section id (soft)"
+      - "ownership: cl(ownership) | Denormalised for oversight filters (public/private)"
+    uq: [[code, valid_from]]
+
+  scope_closure:
+    title: Ancestor/descendant pairs of the governance hierarchy for fast subtree tests
+    kind: projection
+    class: internal
+    history: none
+    origin: appj
+    pk: [tenant_id, ancestor_id, descendant_id]
+    reqs: [FR-CMD-02]
+    pages: [CMD-07]
+    notes: Maintained by the governance module in the same transaction as scope_node changes (MFS §16.2).
+    attrs:
+      - "ancestor_id: ref(scope_node)!"
+      - "descendant_id: ref(scope_node)!"
+      - "depth: smallint! | 0 = self"
+    ix: [[descendant_id, ancestor_id]]
+
+  config_version:
+    title: Versioned configuration document for a layer (country, state, network, institution, department)
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: appj
+    reqs: [FR-ADM-02, FR-ACA-02, FR-ADM-09]
+    pages: [ADM-02, ADM-03, ADM-12, ADM-13]
+    events: [GOV.CONFIG_PUBLISHED]
+    attrs:
+      - "layer: enum(config_layer)!"
+      - "section: code(40)! | e.g. levels, identifiers, calendar, branding, languages, messaging, health_index"
+      - "version: int_u!"
+      - "document: json! | Validated against the section's JSON Schema"
+      - "locked_keys: json | Keys marked mandatory_below by a higher layer (shown locked with source)"
+      - "status: enum(version_status)!"
+      - "effective_from: date!"
+      - "published_by: ref(app_user)"
+    uq: [[scope_node_id, section, version]]
+
+  jurisdiction_pack:
+    title: Versioned jurisdiction pack (statutory references, categories, timescales — e.g. Nigerian safeguarding pack)
+    kind: config
+    class: public
+    history: versioned
+    origin: ceda
+    reqs: [FR-SAF-108, FR-SAF-105, FR-CUR-115]
+    pages: [ADM-02, SAF-102]
+    attrs:
+      - "code: code(40)! | e.g. ng-core, ng-safeguarding, uk-kcsie, ib-dp"
+      - "version: int_u!"
+      - "title: title!"
+      - "country: country"
+      - "content: json! | Statutory references, categories, timescales, forms"
+      - "status: enum(version_status)!"
+      - "effective_from: date!"
+    uq: [[code, version]]
+
+  code_list:
+    title: Jurisdiction code list (education levels, attendance codes, ownership, sex, concern categories …)
+    kind: reference
+    class: public
+    history: none
+    origin: ceda
+    reqs: [FR-ACA-01, FR-ADM-02, FR-LRN-05]
+    pages: [ADM-02]
+    attrs:
+      - "code: code(48)! uq"
+      - "title: title!"
+      - "pack: code(40)! | Jurisdiction pack that seeds the list"
+      - "is_extensible: bool! default=false | Lower layers may add values (never remove)"
+
+  code_value:
+    title: Value of a jurisdiction code list (effective-dated; never deleted)
+    kind: reference
+    class: public
+    history: effective
+    origin: ceda
+    reqs: [FR-ACA-01]
+    pages: [ADM-02, ACA-02]
+    attrs:
+      - "code_list_id: ref(code_list)!"
+      - "code: code(32)!"
+      - "label: title!"
+      - "labels_i18n: json | Translations keyed by BCP 47 tag"
+      - "parent_code: code(32) | Hierarchical lists (level → stage)"
+      - "sort_order: smallint!"
+      - "attributes: json | e.g. age band for a level, statutory flag for an attendance code"
+      - "owner_scope_id: ref(scope_node) | Layer that added the value (NULL = pack)"
+    uq: [[code_list_id, code, valid_from]]
+
+  translation:
+    title: Platform or tenant translation and terminology override (UI strings, RTL languages)
+    kind: config
+    class: public
+    history: none
+    origin: ceda
+    reqs: [FR-ADM-09, NFR-I18N-01]
+    pages: [ADM-12]
+    attrs:
+      - "override_scope_id: ref(scope_node) | NULL = platform-wide"
+      - "lang: lang!"
+      - "msg_key: code(200)!"
+      - "text: text!"
+      - "status: enum(version_status)!"
+    uq: [[override_scope_id, lang, msg_key]]
+
+  policy_rule:
+    title: Versioned rule at a governance level (Ministry policy engine)
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: appj
+    reqs: [FR-ADM-05, FR-CUR-06, FR-CUR-08, FR-BEH-105, FR-INSP-04]
+    pages: [ADM-06, CUR-05, CUR-08]
+    events: [GOV.POLICY_PUBLISHED]
+    notes: Rule source is the safe expression language of Book 3 §14.1; publication is blocked while any rule test fails.
+    attrs:
+      - "rule_key: code(40)! | e.g. ATT-INST-02, ID-NG-01, G2"
+      - "rule_domain: enum(rule_domain)!"
+      - "title: title!"
+      - "version: int_u!"
+      - "is_mandatory_below: bool! default=false | Lower levels may tighten, never relax"
+      - "expression: longtext! | Rule DSL source"
+      - "parameters: json | Thresholds and weights"
+      - "status: enum(version_status)!"
+      - "effective_from: date!"
+      - "effective_to: date"
+      - "authored_by: ref(app_user)"
+      - "approved_by: ref(app_user)"
+    uq: [[scope_node_id, rule_key, version]]
+    checks:
+      four_eyes: "approved_by IS NULL OR authored_by IS NULL OR approved_by <> authored_by"
+
+  policy_rule_test:
+    title: Unit test of a rule version (given context → expected outcome)
+    kind: config
+    class: internal
+    history: none
+    origin: ceda
+    reqs: [FR-ADM-05]
+    pages: [ADM-06]
+    attrs:
+      - "rule_id: ref(policy_rule)!"
+      - "name: title!"
+      - "given_context: json!"
+      - "expected: json!"
+      - "last_result: enum(test_result)"
+      - "last_run_at: ts"
+
+  policy_exception:
+    title: Approved, time-boxed exception to a rule (never modifies the rule; evaluated at run time)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-CUR-105, FR-ACA-112, FR-ACA-02, FR-TIM-03]
+    pages: [CUR-08]
+    events: [GOV.EXCEPTION_APPROVED]
+    attrs:
+      - "rule_id: ref(policy_rule)!"
+      - "subject_kind: code(40) | Record the exception applies to (teaching_assignment, institution …)"
+      - "subject_id: uuid"
+      - "reason: text!"
+      - "evidence_document_id: uuid | records zone (soft)"
+      - "requested_by: ref(app_user)!"
+      - "approved_by: ref(app_user)"
+      - "start_on: date!"
+      - "end_on: date! | ≤ 12 months after start"
+      - "review_on: date!"
+      - "status: enum(exception_status)!"
+    checks:
+      window: "end_on >= start_on AND end_on <= start_on + INTERVAL 12 MONTH"
+      four_eyes: "approved_by IS NULL OR approved_by <> requested_by"
+
+  policy_conflict:
+    title: Detected conflict between a lower-level configuration and a higher mandatory rule
+    kind: event
+    class: internal
+    history: append
+    scope: owned
+    origin: ceda
+    reqs: [FR-CUR-06, FR-PVT-111]
+    pages: [CUR-08, ADM-06]
+    attrs:
+      - "rule_id: ref(policy_rule)!"
+      - "attempted_by: ref(app_user)!"
+      - "config_section: code(40)"
+      - "attempted_value: json!"
+      - "resolution: enum(conflict_resolution)!"
+
+  workflow_definition:
+    title: Versioned workflow definition (state machine, human steps, SLAs, escalations)
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: appj
+    reqs: [FR-ADM-05, FR-FRM-103, FR-PVT-106]
+    pages: [ADM-07]
+    attrs:
+      - "workflow_key: code(60)! | admission, recruitment, safeguarding, procurement, curriculum_version, certificate_issue …"
+      - "version: int_u!"
+      - "title: title!"
+      - "definition: json! | States, transitions, guards, actions, human steps, timers"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, workflow_key, version]]
+
+  workflow_instance:
+    title: Running workflow on a subject record
+    kind: transaction
+    zone: [registry, ops]
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    retention: RS-OPS-7
+    reqs: [FR-ADM-05]
+    pages: [HOM-03, INS-03]
+    events: [WF.STARTED, WF.COMPLETED]
+    attrs:
+      - "definition_id: ref(workflow_definition) soft | Definition version the instance runs on (never changes)"
+      - "subject_kind: code(40)!"
+      - "subject_id: uuid!"
+      - "state: code(60)!"
+      - "status: enum(workflow_status)!"
+      - "started_by: uuid | Actor (user or service identity)"
+      - "completed_at: ts"
+      - "context: json | Workflow variables (no special-category content)"
+    ix: [[subject_kind, subject_id]]
+
+  workflow_task:
+    title: Human task in a workflow (assignee resolved from role-at-scope, SLA, escalation)
+    kind: queue
+    zone: [registry, ops]
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    retention: RS-OPS-7
+    reqs: [FR-COM-111]
+    pages: [HOM-03]
+    events: [WF.TASK_ASSIGNED, WF.TASK_COMPLETED, WF.TASK_ESCALATED]
+    attrs:
+      - "instance_id: ref(workflow_instance)!"
+      - "step_key: code(60)!"
+      - "title: title!"
+      - "assignee_role: code(16) | Role code when assigned by role-at-scope"
+      - "assignee_scope_id: uuid | Scope of the role assignment"
+      - "assignee_user_id: uuid | Resolved user"
+      - "approval_type: enum(approval_type)"
+      - "due_at: ts"
+      - "reminded_at: ts | 75% of SLA reminder"
+      - "escalated_at: ts"
+      - "status: enum(task_status)!"
+      - "decision: code(40)"
+      - "decided_by: uuid"
+      - "decided_at: ts"
+      - "external_task_ref: code(128) | Linked workspace-messaging task (Zenzap) for two-way sync"
+    ix: [[assignee_user_id, status]]
+
+  workflow_transition:
+    title: Transition of a workflow instance (append-only; mirrored in the audit trail)
+    scope_note: "Inherits the instance's scope."
+    kind: event
+    zone: [registry, ops]
+    class: internal
+    history: append
+    origin: ceda
+    retention: RS-OPS-7
+    reqs: [FR-ADM-05]
+    pages: [HOM-03]
+    attrs:
+      - "instance_id: ref(workflow_instance)!"
+      - "from_state: code(60)"
+      - "to_state: code(60)!"
+      - "actor: uuid"
+      - "reason: text"
+      - "occurred_at: ts!"

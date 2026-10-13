@@ -1,0 +1,1531 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/17_safeguarding.schema.json",
+  "title": "CEDA SAF — Safeguarding — concerns, cases, chronologies, referrals, secure sharing, allegations about adults and community reporting",
+  "$defs": {
+    "SafeguardingConcern": {
+      "title": "SafeguardingConcern",
+      "description": "Concern recorded by any adult (the reporter sees only a receipt afterwards)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "safeguarding_concern",
+        "zone": "vault",
+        "domain": "SAF",
+        "kind": "event",
+        "classification": "special",
+        "history": "append",
+        "module": "safeguarding"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "case_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "safeguarding_case",
+              "description": "Linked on triage"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "concern_category",
+          "description": "From the jurisdiction pack (Nigerian default)"
+        },
+        "reported_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "staff",
+            "learner",
+            "parent",
+            "community_report",
+            "wellbeing_keyword",
+            "agency"
+          ]
+        },
+        "body": {
+          "type": "string",
+          "x-classification": "special",
+          "writeOnly": true,
+          "description": "What was seen or heard (encrypted, per-record key)"
+        },
+        "body_map": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Body-map annotations (no free text)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "occurred_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "receipt_code": {
+          "type": "string",
+          "maxLength": 16,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "Shown to the reporter"
+        },
+        "community_report_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "community_report"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "wellbeing_concern_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "wellbeing_concern"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "learner_id",
+        "category",
+        "reported_by",
+        "source",
+        "body",
+        "receipt_code",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "SafeguardingCase": {
+      "title": "SafeguardingCase",
+      "description": "Safeguarding 360 case (risk assessment, actions, referrals, meetings, reviews, closure with sign-off)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "safeguarding_case",
+        "zone": "vault",
+        "domain": "SAF",
+        "kind": "master",
+        "classification": "special",
+        "history": "lifecycle",
+        "module": "safeguarding"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "case_reference": {
+          "type": "string",
+          "maxLength": 20,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "SG-YYYY-NNNN"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "dsl_user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "risk_level": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "x-code-list": "risk_level",
+              "description": "Set by the DSL only"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "opened_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "review_due_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "closure_reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "x-classification": "special",
+              "writeOnly": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "closed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "closed_signed_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "transferred_to_institution_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "DSL-to-DSL transfer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "transfer_acknowledged_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "in_progress",
+            "on_hold",
+            "closed",
+            "transferred"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "case_reference",
+        "learner_id",
+        "dsl_user_id",
+        "opened_at",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "SafeguardingEntry": {
+      "title": "SafeguardingEntry",
+      "description": "Chronology entry — concern, action, decision, agency contact, meeting, review (encrypted text, append-only)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "safeguarding_entry",
+        "zone": "vault",
+        "domain": "SAF",
+        "kind": "event",
+        "classification": "special",
+        "history": "append",
+        "module": "safeguarding"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "case_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "safeguarding_case"
+        },
+        "entry_kind": {
+          "type": "string",
+          "enum": [
+            "concern",
+            "action",
+            "decision",
+            "agency_contact",
+            "meeting",
+            "review",
+            "note",
+            "document"
+          ]
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "author_user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "body": {
+          "type": "string",
+          "x-classification": "special",
+          "writeOnly": true
+        },
+        "source_ref": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Linked concern, attendance or behaviour record the DSL may see"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "document_ids": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "case_id",
+        "entry_kind",
+        "occurred_at",
+        "author_user_id",
+        "body",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "SafeguardingReferral": {
+      "title": "SafeguardingReferral",
+      "description": "External referral (police, social welfare, health, NGO) with outcome",
+      "type": "object",
+      "x-ceda": {
+        "entity": "safeguarding_referral",
+        "zone": "vault",
+        "domain": "SAF",
+        "kind": "transaction",
+        "classification": "special",
+        "history": "lifecycle",
+        "module": "safeguarding"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "case_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "safeguarding_case"
+        },
+        "agency": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "agency_contact": {
+          "anyOf": [
+            {
+              "type": "string",
+              "x-classification": "special",
+              "writeOnly": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "referred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "legal_basis": {
+          "type": "string",
+          "enum": [
+            "consent",
+            "contract",
+            "legal_obligation",
+            "vital_interests",
+            "public_task",
+            "legitimate_interests"
+          ]
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "type": "string",
+              "x-classification": "special",
+              "writeOnly": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "drafted",
+            "sent",
+            "acknowledged",
+            "accepted",
+            "declined",
+            "closed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "case_id",
+        "agency",
+        "referred_at",
+        "legal_basis",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "CaseAccessGrant": {
+      "title": "CaseAccessGrant",
+      "description": "Named need-to-know access to a case (DSL deputies and explicitly granted users)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "case_access_grant",
+        "zone": "vault",
+        "domain": "SAF",
+        "kind": "link",
+        "classification": "special",
+        "history": "effective",
+        "module": "safeguarding"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "case_kind": {
+          "type": "string",
+          "enum": [
+            "safeguarding_case",
+            "staff_case",
+            "community_report",
+            "send_profile"
+          ]
+        },
+        "case_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "granted_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective from (inclusive) — history: effective",
+          "readOnly": true
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective to (inclusive); NULL = open-ended — history: effective",
+          "readOnly": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "case_kind",
+        "case_id",
+        "user_id",
+        "granted_by",
+        "reason",
+        "valid_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "CaseAccessLog": {
+      "title": "CaseAccessLog",
+      "description": "Every view, export and print of a vault record (shown as the access log on the case)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "case_access_log",
+        "zone": "vault",
+        "domain": "SAF",
+        "kind": "event",
+        "classification": "special",
+        "history": "append",
+        "module": "safeguarding"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "case_kind": {
+          "type": "string",
+          "enum": [
+            "safeguarding_case",
+            "staff_case",
+            "community_report",
+            "send_profile"
+          ]
+        },
+        "case_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "access": {
+          "type": "string",
+          "enum": [
+            "view",
+            "export",
+            "print",
+            "share"
+          ]
+        },
+        "purpose_code": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "accessed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "case_kind",
+        "case_id",
+        "user_id",
+        "access",
+        "purpose_code",
+        "accessed_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "CaseShare": {
+      "title": "CaseShare",
+      "description": "Time-limited, watermarked share of selected chronology entries or a case bundle with a named professional",
+      "type": "object",
+      "x-ceda": {
+        "entity": "case_share",
+        "zone": "vault",
+        "domain": "SAF",
+        "kind": "transaction",
+        "classification": "special",
+        "history": "lifecycle",
+        "module": "safeguarding"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "case_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "safeguarding_case"
+        },
+        "recipient_name": {
+          "type": "string",
+          "x-classification": "special",
+          "writeOnly": true
+        },
+        "recipient_email_hmac": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "purpose": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "legal_basis": {
+          "type": "string",
+          "enum": [
+            "consent",
+            "contract",
+            "legal_obligation",
+            "vital_interests",
+            "public_task",
+            "legitimate_interests"
+          ]
+        },
+        "entry_ids": {
+          "type": "object"
+        },
+        "bundle_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "token_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "revoked_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "case_id",
+        "recipient_name",
+        "recipient_email_hmac",
+        "purpose",
+        "legal_basis",
+        "entry_ids",
+        "bundle_hash",
+        "token_hash",
+        "expires_at",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "StaffCase": {
+      "title": "StaffCase",
+      "description": "Allegation, low-level concern or self-referral about an adult (restricted area; head, LGA designated officer, named HR)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "staff_case",
+        "zone": "vault",
+        "domain": "SAF",
+        "kind": "master",
+        "classification": "special",
+        "history": "lifecycle",
+        "module": "safeguarding"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "case_reference": {
+          "type": "string",
+          "maxLength": 20,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "SC-YYYY-NNNN"
+        },
+        "subject_staff_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Staff member concerned (registry)"
+        },
+        "case_kind": {
+          "type": "string",
+          "enum": [
+            "allegation",
+            "low_level_concern",
+            "self_referral"
+          ]
+        },
+        "is_about_head": {
+          "type": "boolean"
+        },
+        "designated_officer_user_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "substantiated",
+                "unsubstantiated",
+                "unfounded",
+                "false",
+                "malicious"
+              ],
+              "description": "substantiated, unsubstantiated, unfounded, false, malicious"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "trcn_referral_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "police_informed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "in_progress",
+            "on_hold",
+            "closed",
+            "transferred"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "case_reference",
+        "subject_staff_id",
+        "case_kind",
+        "is_about_head",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "StaffCaseEntry": {
+      "title": "StaffCaseEntry",
+      "description": "Chronology entry, decision or document on a staff case (hashed, tamper-evident, append-only)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "staff_case_entry",
+        "zone": "vault",
+        "domain": "SAF",
+        "kind": "event",
+        "classification": "special",
+        "history": "append",
+        "module": "safeguarding"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "staff_case_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff_case"
+        },
+        "entry_kind": {
+          "type": "string",
+          "enum": [
+            "concern",
+            "action",
+            "decision",
+            "agency_contact",
+            "meeting",
+            "review",
+            "note",
+            "document"
+          ]
+        },
+        "author_user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "body": {
+          "type": "string",
+          "x-classification": "special",
+          "writeOnly": true
+        },
+        "document_ids": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "staff_case_id",
+        "entry_kind",
+        "author_user_id",
+        "body",
+        "content_hash",
+        "occurred_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "ReportingForm": {
+      "title": "ReportingForm",
+      "description": "Community reporting form (branding, fields, languages; published by link, QR poster, website embed, WhatsApp keyword)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "reporting_form",
+        "zone": "ops",
+        "domain": "SAF",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "safeguarding"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "fields": {
+          "type": "object"
+        },
+        "languages": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "x-code-list": "language"
+        },
+        "branding": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "public_slug": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "whatsapp_keyword": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "title",
+        "fields",
+        "languages",
+        "public_slug",
+        "version",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "CommunityReport": {
+      "title": "CommunityReport",
+      "description": "Report received through a community form — anonymous by default; no IP or device data; reply by one-time code",
+      "type": "object",
+      "x-ceda": {
+        "entity": "community_report",
+        "zone": "vault",
+        "domain": "SAF",
+        "kind": "transaction",
+        "classification": "special",
+        "history": "lifecycle",
+        "module": "safeguarding"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "form_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "reporting_form"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "form_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "answers": {
+          "type": "string",
+          "x-classification": "special",
+          "writeOnly": true,
+          "description": "Field-level encrypted answers"
+        },
+        "reporter_identity": {
+          "anyOf": [
+            {
+              "type": "string",
+              "x-classification": "special",
+              "writeOnly": true,
+              "description": "Only when the reporter volunteers it"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reply_code_hash": {
+          "type": "string",
+          "contentEncoding": "base64",
+          "description": "One-time code for anonymous two-way replies"
+        },
+        "received_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "triaged_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "in_progress",
+            "resolved",
+            "dismissed",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "form_version",
+        "answers",
+        "reply_code_hash",
+        "received_at",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "CommunityReportReply": {
+      "title": "CommunityReportReply",
+      "description": "Two-way message on an anonymous community report",
+      "type": "object",
+      "x-ceda": {
+        "entity": "community_report_reply",
+        "zone": "vault",
+        "domain": "SAF",
+        "kind": "event",
+        "classification": "special",
+        "history": "append",
+        "module": "safeguarding"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "report_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "community_report"
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "outbound",
+            "inbound"
+          ]
+        },
+        "body": {
+          "type": "string",
+          "x-classification": "special",
+          "writeOnly": true
+        },
+        "author_user_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Staff author (NULL for the reporter)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sent_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "report_id",
+        "direction",
+        "body",
+        "sent_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

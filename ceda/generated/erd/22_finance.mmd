@@ -1,0 +1,321 @@
+erDiagram
+    account {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ account_kind
+        VARCHAR_32_ code
+        VARCHAR_300_ name
+        VARCHAR_32_ holder_kind
+        BINARY_16_ holder_id
+        CHAR_3_ currency
+        VARCHAR_32_ gl_type
+        VARCHAR_20_ virtual_account_number
+        VARCHAR_32_ status
+    }
+    charge_type {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ code
+        VARCHAR_300_ name
+        BINARY_16_ income_account_id FK
+        VARCHAR_16_ tax_code
+        BOOLEAN is_digital_services_line
+        VARCHAR_32_ status
+    }
+    billing_rule {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ rule_key
+        BINARY_16_ charge_type_id FK
+        VARCHAR_32_ billing_basis
+        JSON conditions
+        BIGINT amount_minor
+        CHAR_3_ currency
+        SMALLINT priority
+        JSON discount_policy
+        INT version
+        DATE effective_from
+        DATE effective_to
+        JSON test_results
+        VARCHAR_32_ status
+    }
+    billing_run {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_20_ period_label
+        VARCHAR_32_ billing_basis
+        INT learners_in_scope
+        JSON exceptions
+        BIGINT total_amount_minor
+        CHAR_3_ currency
+        BINARY_16_ approved_by
+        DATETIME_6_ issued_at
+        VARCHAR_32_ status
+    }
+    invoice {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ invoice_number
+        BINARY_16_ billing_run_id FK
+        BINARY_16_ account_id FK
+        BINARY_16_ learner_id FK
+        VARCHAR_32_ payer_kind
+        BINARY_16_ payer_id
+        VARCHAR_20_ period_label
+        DATE issued_on
+        DATE due_on
+        BIGINT total_minor
+        BIGINT balance_minor
+        CHAR_3_ currency
+        DECIMAL_18_8_ fx_rate_to_reporting
+        BINARY_32_ content_hash
+        VARCHAR_32_ status
+        VARCHAR_120_ dedupe_key
+    }
+    invoice_line {
+        BINARY_16_ id PK
+        BINARY_16_ invoice_id FK
+        SMALLINT line_no
+        BINARY_16_ charge_type_id FK
+        BINARY_16_ billing_rule_id FK
+        INT rule_version
+        VARCHAR_300_ description
+        BIGINT gross_minor
+        BIGINT discount_minor
+        BIGINT funded_minor
+        BIGINT net_minor
+        CHAR_3_ currency
+    }
+    credit_note {
+        BINARY_16_ id PK
+        BINARY_16_ invoice_id FK
+        VARCHAR_32_ credit_number
+        VARCHAR_500_ reason
+        BIGINT amount_minor
+        CHAR_3_ currency
+        BINARY_16_ approved_by
+    }
+    funding_source {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ name
+        VARCHAR_32_ funding_kind
+        BINARY_16_ funder_account_id FK
+        BIGINT budget_minor
+        BIGINT per_learner_cap_minor
+        CHAR_3_ currency
+        SMALLINT priority
+        JSON eligibility_rule
+        DATE valid_until
+        VARCHAR_32_ status
+    }
+    funding_award {
+        BINARY_16_ id PK
+        BINARY_16_ funding_source_id FK
+        BINARY_16_ learner_id FK
+        BIGINT amount_minor
+        CHAR_3_ currency
+        BINARY_16_ awarded_by
+        DATE valid_from
+        DATE valid_to
+    }
+    government_funding_receipt {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ funding_source_id FK
+        VARCHAR_40_ tranche_label
+        BIGINT amount_due_minor
+        BIGINT amount_received_minor
+        CHAR_3_ currency
+        DATE received_on
+        INT learners_funded
+        JSON reconciliation
+        VARCHAR_32_ status
+    }
+    payment_plan {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ account_id FK
+        JSON instalments
+        MEDIUMBLOB hardship_assessment
+        BINARY_16_ approved_by
+        VARCHAR_32_ status
+    }
+    recovery_policy {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        INT version
+        JSON steps
+        VARCHAR_32_ status
+    }
+    payment {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ method
+        VARCHAR_32_ gateway
+        VARCHAR_128_ gateway_ref
+        VARCHAR_200_ payer_name
+        BINARY_32_ payer_contact_hmac
+        BIGINT amount_minor
+        CHAR_3_ currency
+        DECIMAL_18_8_ fx_rate_to_reporting
+        DATETIME_6_ received_at
+        DATETIME_6_ confirmed_at
+        VARCHAR_32_ receipt_number
+        VARCHAR_32_ allocation_status
+        BINARY_16_ possible_duplicate_of_id FK
+        VARCHAR_32_ status
+    }
+    payment_allocation {
+        BINARY_16_ id PK
+        BINARY_16_ payment_id FK
+        BINARY_16_ invoice_id FK
+        BIGINT amount_minor
+        CHAR_3_ currency
+        VARCHAR_32_ method
+        DECIMAL_7_6_ confidence
+        BINARY_16_ allocated_by
+    }
+    ledger_entry {
+        BINARY_16_ id PK
+        BINARY_16_ journal_id FK
+        BINARY_16_ account_id FK
+        DATE posted_on PK
+        BIGINT debit_minor
+        BIGINT credit_minor
+        CHAR_3_ currency
+        VARCHAR_40_ source_kind
+        BINARY_16_ source_id
+        JSON rule_versions
+        BINARY_16_ reverses_id
+    }
+    journal {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ journal_number
+        BINARY_16_ fiscal_period_id FK
+        VARCHAR_500_ description
+        BINARY_16_ posted_by
+        DATETIME_6_ exported_at
+        VARCHAR_32_ status
+    }
+    fiscal_period {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_10_ code
+        DATE starts_on
+        DATE ends_on
+        DATETIME_6_ closed_at
+        BINARY_16_ closed_by
+    }
+    fx_rate {
+        BINARY_16_ id PK
+        DATE rate_date
+        CHAR_3_ base_currency
+        CHAR_3_ quote_currency
+        DECIMAL_18_8_ rate
+        VARCHAR_32_ source
+    }
+    tax_rule {
+        BINARY_16_ id PK
+        VARCHAR_16_ tax_code
+        DECIMAL_6_3_ rate
+        JSON applies_to
+        INT version
+        DATE effective_from
+    }
+    bank_statement_line {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ bank_account_ref
+        DATE statement_date
+        DATE value_date
+        BIGINT amount_minor
+        CHAR_3_ currency
+        VARCHAR_500_ narrative
+        VARCHAR_64_ bank_ref
+        VARCHAR_40_ matched_kind
+        BINARY_16_ matched_id
+        VARCHAR_32_ status
+    }
+    budget {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        SMALLINT fiscal_year
+        INT version
+        JSON line_items
+        JSON assumptions
+        CHAR_3_ currency
+        JSON variance_notes
+        VARCHAR_32_ status
+    }
+    supplier {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ name
+        VARCHAR_20_ cac_number
+        VARCHAR_20_ tin
+        JSON contacts
+        VARBINARY_1024_ bank_account_enc
+        CHAR_4_ bank_account_last4
+        BINARY_16_ bank_change_verified_by
+        BINARY_16_ bank_change_approved_by
+        VARCHAR_32_ status
+    }
+    requisition {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ requisition_number
+        BINARY_16_ requested_by
+        VARCHAR_32_ cost_centre
+        JSON line_items
+        BIGINT total_minor
+        CHAR_3_ currency
+        BOOLEAN split_purchase_flag
+        BINARY_16_ workflow_instance_id FK
+        VARCHAR_32_ status
+    }
+    purchase_order {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ po_number
+        BINARY_16_ requisition_id FK
+        BINARY_16_ supplier_id FK
+        BIGINT total_minor
+        CHAR_3_ currency
+        DATE received_on
+        VARCHAR_64_ supplier_invoice_ref
+        VARCHAR_32_ match_status
+        BINARY_16_ paid_journal_id FK
+        VARCHAR_32_ status
+    }
+    learner {
+        BINARY_16 id PK
+    }
+    workflow_instance {
+        BINARY_16 id PK
+    }
+    account ||--o{ charge_type : "income_account_id"
+    account ||--o{ funding_source : "funder_account_id"
+    account ||--o{ invoice : "account_id"
+    account ||--o{ ledger_entry : "account_id"
+    account ||--o{ payment_plan : "account_id"
+    billing_rule ||--o{ invoice_line : "billing_rule_id"
+    billing_run ||--o{ invoice : "billing_run_id"
+    charge_type ||--o{ billing_rule : "charge_type_id"
+    charge_type ||--o{ invoice_line : "charge_type_id"
+    fiscal_period ||--o{ journal : "fiscal_period_id"
+    funding_source ||--o{ funding_award : "funding_source_id"
+    funding_source ||--o{ government_funding_receipt : "funding_source_id"
+    invoice ||--o{ credit_note : "invoice_id"
+    invoice ||--o{ invoice_line : "invoice_id"
+    invoice ||--o{ payment_allocation : "invoice_id"
+    journal ||--o{ ledger_entry : "journal_id"
+    journal ||--o{ purchase_order : "paid_journal_id"
+    learner ||--o{ funding_award : "learner_id"
+    learner ||--o{ invoice : "learner_id"
+    payment ||--o{ payment : "possible_duplicate_of_id"
+    payment ||--o{ payment_allocation : "payment_id"
+    requisition ||--o{ purchase_order : "requisition_id"
+    supplier ||--o{ purchase_order : "supplier_id"
+    workflow_instance ||--o{ requisition : "workflow_instance_id"

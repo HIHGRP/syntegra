@@ -1,0 +1,245 @@
+domain: iam
+code: IAM
+title: Identity, access, permissions and service identities
+module: iam
+zone: registry
+retention: RS-IAM
+summary: >
+  Sign-in identities, sessions and MFA factors; roles as permission templates granted at a scope
+  (role × scope × clearance × purpose, Book 3 §10); access reviews, break-glass and the service
+  identities under which automation agents and integrations act ("Agent X acting for Owner Y", MFS §2.1,
+  §12.3). Accounts live in the state registry so one person signs in once per state and picks a
+  role-at-scope grant across public and private institutions (AUT-03, decision CD-03).
+
+entities:
+  app_user:
+    title: Sign-in identity (a person may also be a learner, guardian or staff member) — Administrator 360 root
+    kind: master
+    class: confidential
+    history: lifecycle
+    origin: appj
+    scope_note: Users are tenant-level; what they may see is decided by their role grants.
+    reqs: [FR-ADM-03, FR-STF-11, FR-CMD-119]
+    pages: [AUT-01, AUT-03, ADM-04, HOM-04, CMD-104]
+    events: [IAM.USER_CREATED, IAM.USER_DEACTIVATED]
+    attrs:
+      - "username: email! uq pii | Sign-in name (e-mail or issued username)"
+      - "display_name: name! pii"
+      - "phone: phone pii | E.164; used for OTP and magic links"
+      - "person_kind: enum(person_kind) | Linked master record type"
+      - "person_id: uuid | learner, guardian or staff id (registry)"
+      - "idp: enum(identity_provider)!"
+      - "idp_subject: str(255) | Subject at the federated IdP"
+      - "password_hash: str(255) | Argon2id (local accounts only)"
+      - "status: enum(account_status)!"
+      - "locked_until: ts | Lockout after 5 failures in 10 minutes"
+      - "failed_attempts: smallint! default=0"
+      - "last_sign_in_at: ts"
+      - "preferences: json | Language, text size, theme, density, digest, briefing horizons"
+      - "deactivated_at: ts | Automatic from the HR leaving date"
+    uq: [[idp, idp_subject]]
+    ix: [[person_kind, person_id]]
+
+  mfa_factor:
+    title: Multi-factor authentication factor (TOTP, FIDO2 passkey, SMS/e-mail OTP fallback)
+    scope_note: "Belongs to one user account."
+    kind: master
+    class: restricted
+    history: lifecycle
+    origin: ceda
+    reqs: [FR-ADM-03]
+    pages: [AUT-02, HOM-04]
+    attrs:
+      - "user_id: ref(app_user)!"
+      - "factor_type: enum(mfa_type)!"
+      - "label: str(80)"
+      - "secret: secret restricted | TOTP seed or WebAuthn credential (public key and id)"
+      - "credential_id: code(255) | WebAuthn credential id"
+      - "last_used_at: ts"
+      - "status: enum(record_status)!"
+
+  user_session:
+    title: Server-side session (idle timeout 30 min for restricted/special roles, 8 h otherwise)
+    scope_note: "Belongs to one user account."
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    origin: ceda
+    retention: RS-SESSION
+    reqs: [FR-ADM-03]
+    pages: [AUT-01, AUT-03, HOM-04]
+    events: [AUTH.SIGNED_IN, AUTH.FAILED, AUTH.LOCKED, AUTH.MFA_PASSED, AUTH.MFA_FAILED]
+    attrs:
+      - "user_id: ref(app_user)!"
+      - "session_hash: hash! uq | SHA-256 of the session token"
+      - "active_grant_id: ref(role_grant) | Role-at-scope chosen in AUT-03"
+      - "device_label: str(120)"
+      - "is_trusted_device: bool! default=false | Trusted for 30 days"
+      - "ip: ip"
+      - "user_agent: str(400)"
+      - "mfa_at: ts"
+      - "started_at: ts!"
+      - "last_seen_at: ts!"
+      - "expires_at: ts!"
+      - "revoked_at: ts"
+
+  credential_reset:
+    title: Password-reset or magic-link token (hashed, single use, short expiry; generic responses)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    origin: ceda
+    retention: RS-SESSION
+    scope_note: Belongs to one user account.
+    reqs: [FR-ADM-03]
+    pages: [AUT-04, AUT-01]
+    attrs:
+      - "user_id: ref(app_user)!"
+      - "purpose: enum(reset_purpose)!"
+      - "token_hash: hash! uq"
+      - "requested_ip: ip"
+      - "expires_at: ts!"
+      - "used_at: ts"
+
+  role:
+    title: Role template (41 built-in roles plus REV, ACG, OPF; built-ins cloneable, never editable)
+    kind: config
+    class: internal
+    history: lifecycle
+    origin: appj
+    reqs: [FR-ADM-04]
+    pages: [ADM-05]
+    attrs:
+      - "code: code(16)! uq | TCH, DSL, STA, PROP, REV …"
+      - "name: title!"
+      - "clearance: enum(classification)! | Highest classification the role normally receives"
+      - "is_builtin: bool! default=false"
+      - "cloned_from_id: ref(role)"
+      - "created_by_clearance: enum(classification) | Custom role may never exceed its creator's clearance"
+      - "status: enum(record_status)!"
+
+  role_permission:
+    title: Permission granted by a role (resource:action with optional ABAC condition)
+    kind: config
+    class: internal
+    history: none
+    origin: appj
+    reqs: [FR-ADM-04]
+    pages: [ADM-05]
+    attrs:
+      - "role_id: ref(role)!"
+      - "permission: code(80)! | resource:action, e.g. learner:view, learner.nin:reveal, certificate:issue"
+      - "abac_condition: json | own_classes, own_children, assigned_cases, assigned_inspections, own_placements"
+      - "field_scope: json | Restricted/special fields this permission reveals"
+    uq: [[role_id, permission]]
+
+  role_grant:
+    title: Role granted to a user at a scope (role-at-scope), with clearance cap and access review date
+    kind: link
+    class: internal
+    history: effective
+    origin: appj
+    scope_note: The grant's scope_id is the subtree it opens.
+    reqs: [FR-ADM-03, FR-CMD-119, FR-STF-106, FR-STF-03]
+    pages: [ADM-04, AUT-03, CMD-104]
+    events: [IAM.GRANT_CHANGED]
+    attrs:
+      - "user_id: ref(app_user)!"
+      - "role_id: ref(role)!"
+      - "scope_id: ref(scope_node)!"
+      - "clearance_cap: enum(classification) | Narrows the role clearance for this grant"
+      - "granted_by: ref(app_user)"
+      - "review_due_on: date | Access review"
+      - "delegation_of_id: ref(role_grant) | Delegated from another grant (Administrator 360 delegations)"
+      - "supervised_until: date | Time-limited supervised exception approved by the head while mandatory checks are pending (FR-STF-03)"
+      - "status: enum(record_status)!"
+    ix: [[user_id, status]]
+
+  access_review:
+    title: Periodic access review decision on a grant
+    scope_note: "Inherits the grant's scope."
+    kind: event
+    class: internal
+    history: append
+    origin: ceda
+    reqs: [FR-ADM-03]
+    pages: [ADM-04]
+    attrs:
+      - "grant_id: ref(role_grant)!"
+      - "reviewer_id: ref(app_user)!"
+      - "decision: enum(review_decision)!"
+      - "reason: str(500)"
+      - "reviewed_at: ts!"
+
+  break_glass_grant:
+    title: Time-boxed elevated emergency access (DPO and data owner notified; reviewed within 24 h)
+    scope_note: "scope_id is the elevated subtree."
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    origin: ceda
+    retention: RS-AUDIT
+    reqs: [FR-ADM-07]
+    pages: [ADM-11]
+    attrs:
+      - "user_id: ref(app_user)!"
+      - "scope_id: ref(scope_node)!"
+      - "reason: text!"
+      - "starts_at: ts!"
+      - "ends_at: ts!"
+      - "dpo_notified_at: ts"
+      - "reviewed_by: ref(app_user)"
+      - "reviewed_at: ts"
+      - "review_outcome: enum(review_decision)"
+    checks:
+      window: "ends_at > starts_at"
+
+  service_identity:
+    title: Non-human principal — automation agent, integration client or system job — bound to a human owner's grant
+    scope_note: "Acts within its owner's grant."
+    kind: master
+    class: internal
+    history: lifecycle
+    origin: ceda
+    reqs: [FR-AGT-101, NFR-SEC-101]
+    pages: [AGT-102, ADM-09]
+    notes: An agent can never exceed its owner's grant and is further narrowed to its declared tools (MFS §12.3).
+    attrs:
+      - "kind: enum(service_identity_kind)!"
+      - "name: title!"
+      - "owner_user_id: ref(app_user)!"
+      - "owner_grant_id: ref(role_grant)! | Grant the identity acts under"
+      - "allowed_tools: json | Declared typed commands (agents) or API scopes (clients)"
+      - "status: enum(record_status)!"
+      - "paused_at: ts | Kill switch"
+      - "paused_by: ref(app_user)"
+
+  purpose_code:
+    title: Purpose recorded when restricted fields are revealed or special-category records opened
+    kind: reference
+    class: public
+    history: none
+    origin: ceda
+    reqs: [FR-CMD-107, FR-LRN-13]
+    pages: [LRN-04, CMD-101]
+    attrs:
+      - "code: code(40)! uq | registration, safeguarding, investigation, transfer_query, exam_integrity, child_missing_education …"
+      - "label: title!"
+      - "requires_reason_text: bool! default=false"
+      - "allowed_roles: json | Role codes permitted to use the purpose"
+
+  user_pin:
+    title: Pinned page, record or saved view of a user (navigation v2)
+    kind: config
+    class: internal
+    history: none
+    origin: ceda
+    retention: RS-SESSION
+    reqs: [FR-CMD-115]
+    pages: [HOM-04, HOM-01]
+    attrs:
+      - "user_id: ref(app_user)!"
+      - "target_kind: enum(pin_kind)!"
+      - "target_ref: str(300)! | Page id, record reference or saved-view id"
+      - "label: str(120)"
+      - "sort_order: smallint!"

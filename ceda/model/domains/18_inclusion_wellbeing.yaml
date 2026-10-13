@@ -1,0 +1,318 @@
+domain: inclusion_wellbeing
+code: SEN
+title: SEND and inclusion, gifted and talented, wellbeing, interventions and personal learning plans
+module: success
+zone: vault
+retention: RS-SEND
+summary: >
+  Need detail, statutory plans, provision and therapy referrals are special category and live in the
+  vault; teachers see only authorised adjustments, which live in the ops zone and feed timetabling, exam
+  access arrangements, LMS assignments and class pages automatically (FR-SEN-01–07, 101–102). Wellbeing
+  check-ins and concerns are vault records; keyword screening alerts the DSL but never labels a learner
+  (FR-WEL-01–04, 101–103). Interventions record baseline, target and outcome for the closed loop.
+  Personal learning plans are available to every learner (FR-ILP-101–104).
+
+entities:
+  send_profile:
+    title: SEND 360 support profile (need areas, support level, plan type, strengths, communication, learner voice)
+    kind: master
+    class: special
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-SEN-01, FR-SEN-02, FR-SEN-03, FR-SEN-07]
+    pages: [SEN-01, SEN-02]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "support_level: cl(send_support_level)!"
+      - "plan_type: cl(send_plan_type)"
+      - "profile: sealed! special | Strengths, needs, preferences, communication, strategies, assistive technology, learner and parent voice"
+      - "senco_user_id: uuid"
+      - "review_due_on: date"
+      - "status: enum(record_status)!"
+    uq: [[learner_id]]
+
+  send_need:
+    title: Need area of a learner (coded; diagnosis detail encrypted)
+    kind: master
+    class: special
+    history: effective
+    origin: ceda
+    scope_note: Inherits the profile's scope.
+    reqs: [FR-SEN-01]
+    pages: [SEN-02]
+    attrs:
+      - "profile_id: ref(send_profile)!"
+      - "need_area: cl(send_need_area)!"
+      - "is_primary: bool! default=false"
+      - "detail: sealed special"
+
+  support_plan:
+    title: IEP/ISP or statutory plan (outcomes, provision, participants, review cycle; overdue reviews alerted)
+    kind: transaction
+    class: special
+    history: versioned
+    origin: ceda
+    scope_note: Inherits the profile's scope.
+    reqs: [FR-SEN-04]
+    pages: [SEN-03]
+    attrs:
+      - "profile_id: ref(send_profile)!"
+      - "plan_type: cl(send_plan_type)!"
+      - "version: int_u!"
+      - "outcomes: sealed! special"
+      - "participants: json"
+      - "review_cycle_months: smallint!"
+      - "next_review_on: date!"
+      - "linked_learning_plan_id: uuid | Personal learning plan (ops)"
+      - "status: enum(version_status)!"
+
+  support_plan_review:
+    title: Review of a support plan
+    kind: event
+    class: special
+    history: append
+    origin: ceda
+    scope_note: Inherits the plan's scope.
+    reqs: [FR-SEN-04]
+    pages: [SEN-03]
+    attrs:
+      - "plan_id: ref(support_plan)!"
+      - "reviewed_on: date!"
+      - "notes: sealed! special"
+      - "attendees: json"
+
+  provision:
+    title: Provision type offered (type, staff, hours, cost) for the provision map
+    kind: config
+    class: special
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-SEN-05, FR-SEN-101]
+    pages: [SEN-04]
+    attrs:
+      - "name: title!"
+      - "provision_kind: cl(provision_kind)!"
+      - "staff_ids: json"
+      - "hours_per_week: dec(5,2)"
+      - "cost_per_term: money"
+      - "currency: currency"
+      - "status: enum(record_status)!"
+
+  provision_allocation:
+    title: Learner allocated to a provision, with impact measured
+    kind: link
+    class: special
+    history: effective
+    origin: ceda
+    scope_note: Inherits the provision's scope.
+    reqs: [FR-SEN-05]
+    pages: [SEN-04]
+    attrs:
+      - "provision_id: ref(provision)!"
+      - "learner_id: ref(learner)!"
+      - "impact: sealed special"
+
+  external_referral:
+    title: Therapy or external-agency referral (speech, occupational, educational psychology, health) with consent and returned reports
+    kind: transaction
+    class: special
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-SEN-102]
+    pages: [SEN-02]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "agency_kind: cl(referral_agency)!"
+      - "agency_name: str(200)!"
+      - "consent_record_id: uuid! | Consent (ops)"
+      - "referred_on: date!"
+      - "report_document_id: uuid | Returned report stored in the support profile"
+      - "status: enum(referral_status)!"
+
+  adjustment:
+    title: Authorised reasonable adjustment — the teacher-visible layer (extra time, large print, read-aloud, seating, access arrangements)
+    kind: master
+    zone: ops
+    class: confidential
+    history: effective
+    scope: "derived: the learner's classes"
+    origin: appj
+    retention: RS-SEND
+    reqs: [FR-SEN-03, FR-SEN-06, FR-LMS-106, FR-BEH-102]
+    pages: [SEN-02, ACA-05, LMS-102]
+    events: [SEN.ADJUSTMENT_CHANGED]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "adjustment_kind: cl(adjustment_kind)!"
+      - "parameters: json | e.g. extra_time_pct 25, font_scale 1.5"
+      - "applies_to: json! | lessons, assessments, exams, lms, rooms"
+      - "authorised_by: uuid!"
+
+  gifted_register_entry:
+    title: Gifted and talented register entry with provision tracking
+    kind: master
+    zone: ops
+    class: confidential
+    history: effective
+    scope: "derived: the learner's institution"
+    origin: ceda
+    retention: RS-OPS-7
+    reqs: [FR-SEN-101]
+    pages: [SEN-01]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "domain_area: cl(gifted_domain)!"
+      - "evidence: str(1000)"
+      - "provision_note: str(1000)"
+
+  wellbeing_checkin:
+    title: Opt-in, age-appropriate wellbeing check-in or staff observation (five-point scale)
+    kind: event
+    class: special
+    history: append
+    scope: owned
+    origin: ceda
+    reqs: [FR-WEL-01, FR-WEL-102]
+    pages: [WEL-01, WEL-101]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "source: enum(wellbeing_source)!"
+      - "score: smallint!"
+      - "tracker_code: code(32)"
+      - "note: sealed special"
+      - "checked_in_at: ts!"
+    checks:
+      scale: "score BETWEEN 1 AND 5"
+
+  wellbeing_concern:
+    title: Wellbeing concern reported by a learner, parent or staff member (routed to a pastoral lead; DSL alert on keywords)
+    kind: transaction
+    class: special
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-WEL-101, FR-WEL-02, FR-WEL-103]
+    pages: [WEL-101, WEL-01]
+    events: [WEL.CONCERN_REPORTED]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "reported_by_kind: enum(wellbeing_source)!"
+      - "reported_by_id: uuid"
+      - "concern_type: cl(wellbeing_concern_type)! | exam pressure, anxiety, bullying, friendships, family, sleep, online safety, food, transport"
+      - "body: sealed! special"
+      - "keyword_alert: bool! default=false | Safeguarding keywords detected; DSL alerted"
+      - "assigned_to: uuid"
+      - "respond_by: ts!"
+      - "status: enum(queue_status)!"
+
+  intervention:
+    title: Intervention with baseline, target, learners, lead, review date and outcome (closed loop)
+    kind: transaction
+    zone: ops
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: appj
+    retention: RS-OPS-7
+    reqs: [FR-WEL-03, FR-INSP-05, FR-CMD-09, FR-WEL-103]
+    pages: [INT-01, INS-10, CMD-12]
+    events: [INT.INTERVENTION_CLOSED]
+    attrs:
+      - "title: title!"
+      - "intervention_kind: cl(intervention_kind)!"
+      - "lead_staff_id: ref(staff)!"
+      - "learner_ids: json! | Participants (≤ a class; larger groups use cohorts)"
+      - "baseline: json!"
+      - "target: json!"
+      - "review_on: date!"
+      - "outcome: json"
+      - "effect_estimate: json | Outcome against target and counterfactual trend"
+      - "recommendation_id: ref(recommendation)"
+      - "cost: money"
+      - "currency: currency"
+      - "status: enum(intervention_status)!"
+
+  learning_plan_template:
+    title: Reusable personal learning plan template (state or institution; catch-up, re-entry, gifted extension, exam readiness, TVET pathway)
+    kind: config
+    zone: ops
+    class: internal
+    history: versioned
+    scope: owned
+    origin: appj
+    retention: RS-CONFIG
+    reqs: [FR-ILP-102]
+    pages: [ILP-101]
+    attrs:
+      - "code: code(40)!"
+      - "title: title!"
+      - "content: json!"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, code, version]]
+
+  learning_plan:
+    title: Personal learning plan for a learner (any learner, not only SEND)
+    kind: transaction
+    zone: ops
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: appj
+    retention: RS-OPS-7
+    reqs: [FR-ILP-101, FR-ILP-104]
+    pages: [ILP-101, ILP-102]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "template_id: ref(learning_plan_template)"
+      - "template_version: int_u"
+      - "owner_staff_id: ref(staff)!"
+      - "next_review_on: date"
+      - "time_spent_minutes: minutes"
+      - "cost: money"
+      - "currency: currency"
+      - "status: enum(plan_status)!"
+
+  learning_plan_goal:
+    title: Goal in a learning plan linked to curriculum objectives and target grades
+    kind: config
+    zone: ops
+    class: confidential
+    history: lifecycle
+    origin: appj
+    retention: RS-OPS-7
+    scope_note: Inherits the plan's scope.
+    reqs: [FR-ILP-101]
+    pages: [ILP-102]
+    attrs:
+      - "plan_id: ref(learning_plan)!"
+      - "goal_text: str(1000)!"
+      - "node_ids: json | Curriculum objectives"
+      - "target_grade_id: ref(target_grade)"
+      - "status: enum(goal_status)!"
+
+  learning_plan_entry:
+    title: Action, learner reflection, parent comment, evidence or review on a learning plan (append-only)
+    kind: event
+    zone: ops
+    class: confidential
+    history: append
+    origin: appj
+    retention: RS-OPS-7
+    scope_note: Inherits the plan's scope.
+    reqs: [FR-ILP-101, FR-ILP-103, FR-ILP-104]
+    pages: [ILP-102]
+    attrs:
+      - "plan_id: ref(learning_plan)!"
+      - "goal_id: ref(learning_plan_goal)"
+      - "entry_kind: enum(plan_entry_kind)!"
+      - "author_kind: enum(comment_author)!"
+      - "author_id: uuid!"
+      - "body: text!"
+      - "evidence_ref: json | LMS submission or assessment result"
+      - "owner_staff_id: ref(staff) | Owner of an action"
+      - "due_on: date"
+      - "occurred_at: ts!"

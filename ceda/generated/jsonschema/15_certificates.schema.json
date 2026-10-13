@@ -1,0 +1,2395 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/15_certificates.schema.json",
+  "title": "CEDA CER — Certificate 360 and the state certificate registry — eligibility, issuance, signing, verification, reissue and anti-fraud",
+  "$defs": {
+    "Certificate": {
+      "title": "Certificate",
+      "description": "Certificate 360 — authoritative award record (status valid, suspended, revoked, superseded, corrected)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "certificate",
+        "zone": "registry",
+        "domain": "CER",
+        "kind": "master",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "certificates"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "certificate_number": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "<country>-<authority>-<year>-<seq><check>; never reused (decision CD-08)"
+        },
+        "verification_code": {
+          "type": "string",
+          "maxLength": 16,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "Separate short code printed with the QR"
+        },
+        "credential_kind": {
+          "type": "string",
+          "enum": [
+            "certificate",
+            "transcript",
+            "testimonial",
+            "approval_certificate",
+            "badge",
+            "micro_credential",
+            "certified_copy"
+          ]
+        },
+        "learner_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "learner",
+              "description": "Holder (NULL only for approval certificates)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "qualification_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "qualification"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "programme_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "programme"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "curriculum_version_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "curriculum_version"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "award_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "award_class": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Grade, division or classification"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "holder_name_on_award": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "As printed",
+          "x-personal-data": true
+        },
+        "eligibility_result_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "eligibility_result"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exception_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "policy_exception",
+              "description": "Authorised exception recorded on the certificate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "template_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "certificate_template"
+        },
+        "signatory_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "signatory"
+        },
+        "payload": {
+          "type": "object",
+          "description": "RFC 8785 canonical JSON payload that was signed"
+        },
+        "payload_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "signature": {
+          "type": "string",
+          "contentEncoding": "base64",
+          "description": "ES256 signature"
+        },
+        "signing_key_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "signing_key"
+        },
+        "vc_document": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "W3C Verifiable Credential 2.0 / Open Badges 3.0"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pdf_document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "PDF/A with embedded signature (WORM bucket)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "supersedes_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "certificate",
+              "description": "Original certificate superseded by this reissue/correction"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "superseded_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "certificate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "legacy_award_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "legacy_award",
+              "description": "Digital copy bound to a legacy award"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "valid",
+            "suspended",
+            "revoked",
+            "superseded",
+            "corrected"
+          ]
+        },
+        "status_changed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "award_key": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 120,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "One certificate per learner per qualification award while valid",
+              "readOnly": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "certificate_number",
+        "verification_code",
+        "credential_kind",
+        "institution_id",
+        "award_date",
+        "holder_name_on_award",
+        "template_id",
+        "signatory_id",
+        "payload",
+        "payload_hash",
+        "signature",
+        "signing_key_id",
+        "status",
+        "status_changed_at",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "CertificateEvent": {
+      "title": "CertificateEvent",
+      "description": "Certificate lifecycle event — issue, correct, suspend, reinstate, revoke, reissue, supersede (append-only)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "certificate_event",
+        "zone": "registry",
+        "domain": "CER",
+        "kind": "event",
+        "classification": "confidential",
+        "history": "append",
+        "module": "certificates"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "certificate_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "certificate"
+        },
+        "event_kind": {
+          "type": "string",
+          "enum": [
+            "issued",
+            "corrected",
+            "suspended",
+            "reinstated",
+            "revoked",
+            "reissued",
+            "superseded",
+            "certified_copy"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 65535
+        },
+        "evidence_document_ids": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actor_user_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "approver_user_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user",
+              "description": "Second approver for revocation and flagged cases"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "workflow_instance_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "workflow_instance"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "certificate_id",
+        "event_kind",
+        "reason",
+        "actor_user_id",
+        "occurred_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "CertificateTemplate": {
+      "title": "CertificateTemplate",
+      "description": "Certificate template (layout, fields, security-print profile) per credential kind and issuer",
+      "type": "object",
+      "x-ceda": {
+        "entity": "certificate_template",
+        "zone": "registry",
+        "domain": "CER",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "certificates"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "credential_kind": {
+          "type": "string",
+          "enum": [
+            "certificate",
+            "transcript",
+            "testimonial",
+            "approval_certificate",
+            "badge",
+            "micro_credential",
+            "certified_copy"
+          ]
+        },
+        "qualification_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "qualification"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "layout": {
+          "type": "object"
+        },
+        "print_profile": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Security paper features required"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "code",
+        "credential_kind",
+        "layout",
+        "version",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Signatory": {
+      "title": "Signatory",
+      "description": "Authorised signatory of an issuing authority (with specimen and authority period)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "signatory",
+        "zone": "registry",
+        "domain": "CER",
+        "kind": "master",
+        "classification": "internal",
+        "history": "effective",
+        "module": "certificates"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "title_on_award": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "signature_image_document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max_batch_without_second": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Four-eyes threshold for batches"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective from (inclusive) — history: effective",
+          "readOnly": true
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective to (inclusive); NULL = open-ended — history: effective",
+          "readOnly": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "user_id",
+        "title_on_award",
+        "valid_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "SigningKey": {
+      "title": "SigningKey",
+      "description": "Metadata of an HSM-held issuing key (the private key never leaves the HSM; public keys at the JWKS endpoint)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "signing_key",
+        "zone": "registry",
+        "domain": "CER",
+        "kind": "config",
+        "classification": "public",
+        "history": "lifecycle",
+        "module": "certificates"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "kid": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "e.g. abia-moe-2026-01"
+        },
+        "algorithm": {
+          "type": "string",
+          "maxLength": 16,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "public_jwk": {
+          "type": "object"
+        },
+        "hsm_key_ref": {
+          "type": "string",
+          "maxLength": 255,
+          "description": "Key handle in the HSM/KMS"
+        },
+        "ceremony_document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Key ceremony record with ministry witnesses"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "activated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "retired_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "description": "Retired keys still verify old signatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "active",
+            "retired",
+            "compromised"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "kid",
+        "algorithm",
+        "public_jwk",
+        "hsm_key_ref",
+        "activated_at",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "EligibilityRun": {
+      "title": "EligibilityRun",
+      "description": "Batch award-eligibility run for a cohort or series",
+      "type": "object",
+      "x-ceda": {
+        "entity": "eligibility_run",
+        "zone": "registry",
+        "domain": "CER",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "certificates"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "qualification_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "qualification"
+        },
+        "cohort_filter": {
+          "type": "object"
+        },
+        "learners_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "learners_eligible": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "learners_blocked": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requested_by": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "previewed",
+            "running",
+            "awaiting_approval",
+            "approved",
+            "issued",
+            "completed",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "qualification_id",
+        "cohort_filter",
+        "learners_total",
+        "learners_eligible",
+        "learners_blocked",
+        "requested_by",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "EligibilityResult": {
+      "title": "EligibilityResult",
+      "description": "Eligibility-chain result for one learner (identity → institution → … → accreditation at award date → award approval)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "eligibility_result",
+        "zone": "registry",
+        "domain": "CER",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "append",
+        "module": "certificates"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "eligibility_run"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "qualification_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "qualification"
+        },
+        "checks": {
+          "type": "object",
+          "description": "Ordered checks with pass/fail and evidence"
+        },
+        "is_eligible": {
+          "type": "boolean"
+        },
+        "evaluated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "learner_id",
+        "qualification_id",
+        "checks",
+        "is_eligible",
+        "evaluated_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "Verification": {
+      "title": "Verification",
+      "description": "Public or API certificate verification (minimum disclosure, rate-limited, visible to the holder)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "verification",
+        "zone": "registry",
+        "domain": "CER",
+        "kind": "event",
+        "classification": "internal",
+        "history": "append",
+        "module": "certificates"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "certificate_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "certificate",
+              "description": "NULL when no match"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "queried_number": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "channel": {
+          "type": "string",
+          "enum": [
+            "web_number",
+            "qr",
+            "secure_link",
+            "bulk_api",
+            "passport_share"
+          ]
+        },
+        "api_client_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "api_client",
+              "description": "Bulk verifiers"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "result": {
+          "type": "string",
+          "enum": [
+            "valid",
+            "superseded",
+            "revoked",
+            "corrected",
+            "suspended",
+            "not_found",
+            "rate_limited"
+          ]
+        },
+        "ip_hash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "contentEncoding": "base64",
+              "description": "Keyed hash of the client IP (abuse detection without storing the IP)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "verified_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "queried_number",
+        "channel",
+        "result",
+        "verified_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "RegistryPublication": {
+      "title": "RegistryPublication",
+      "description": "Publication of a certificate event to the state registry and linked platforms (≤ 60 s) and the Education Passport",
+      "type": "object",
+      "x-ceda": {
+        "entity": "registry_publication",
+        "zone": "registry",
+        "domain": "CER",
+        "kind": "queue",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "certificates"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "certificate_event_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "certificate_event"
+        },
+        "target": {
+          "type": "string",
+          "enum": [
+            "state_registry",
+            "state_portal",
+            "national_service",
+            "education_passport"
+          ]
+        },
+        "attempts": {
+          "type": "integer"
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_error": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "sent",
+            "delivered",
+            "read",
+            "failed",
+            "retrying",
+            "abandoned",
+            "processed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "certificate_event_id",
+        "target",
+        "attempts",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "SecurityStock": {
+      "title": "SecurityStock",
+      "description": "Security paper sheet by serial (received → issued to institution → printed / spoiled / destroyed)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "security_stock",
+        "zone": "registry",
+        "domain": "CER",
+        "kind": "master",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "certificates"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "serial": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "batch_ref": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "holder_institution_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "institution"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "certificate_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "certificate",
+              "description": "Certificate printed on this sheet"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "received",
+            "issued_to_institution",
+            "printed",
+            "spoiled",
+            "destroyed",
+            "lost"
+          ]
+        },
+        "state_changed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "destruction_witness": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "serial",
+        "batch_ref",
+        "state",
+        "state_changed_at",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "PrintJob": {
+      "title": "PrintJob",
+      "description": "Print of a signed, approved certificate on registered stock by an authorised printer",
+      "type": "object",
+      "x-ceda": {
+        "entity": "print_job",
+        "zone": "registry",
+        "domain": "CER",
+        "kind": "event",
+        "classification": "restricted",
+        "history": "append",
+        "module": "certificates"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "certificate_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "certificate"
+        },
+        "stock_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "security_stock"
+        },
+        "printer_ref": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "printed_by": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "printed",
+            "spoiled",
+            "refused"
+          ]
+        },
+        "printed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "certificate_id",
+        "stock_id",
+        "printer_ref",
+        "printed_by",
+        "outcome",
+        "printed_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "CertificateDelivery": {
+      "title": "CertificateDelivery",
+      "description": "Collection in person or tracked courier delivery of a printed certificate, with recipient identity",
+      "type": "object",
+      "x-ceda": {
+        "entity": "certificate_delivery",
+        "zone": "registry",
+        "domain": "CER",
+        "kind": "event",
+        "classification": "confidential",
+        "history": "append",
+        "module": "certificates"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "certificate_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "certificate"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "collection_in_person",
+            "tracked_courier",
+            "digital_only"
+          ]
+        },
+        "recipient_name": {
+          "type": "string",
+          "maxLength": 200,
+          "x-personal-data": true
+        },
+        "recipient_id_checked": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 120,
+              "description": "Document type checked (no number stored)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "courier_tracking": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "delivered_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "certificate_id",
+        "method",
+        "recipient_name",
+        "delivered_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "LegacyAward": {
+      "title": "LegacyAward",
+      "description": "Legacy award record created from the digitised archive (marked \"Verified from archive\" with source pages)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "legacy_award",
+        "zone": "registry",
+        "domain": "CER",
+        "kind": "master",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "certificates"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "qualification_label": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "award_year": {
+          "type": "integer"
+        },
+        "original_number": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_document_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Digitised register, broadsheet or counterfoil page"
+        },
+        "verified_by": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "learner_id",
+        "institution_id",
+        "qualification_label",
+        "award_year",
+        "source_document_id",
+        "verified_by",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "FeeSchedule": {
+      "title": "FeeSchedule",
+      "description": "State fee schedule for services (certificate reissue by type, reason and urgency; certified copies; record copies)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "fee_schedule",
+        "zone": "registry",
+        "domain": "CER",
+        "kind": "config",
+        "classification": "public",
+        "history": "versioned",
+        "module": "certificates"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "service": {
+          "type": "string",
+          "enum": [
+            "certificate_reissue",
+            "certified_copy",
+            "legacy_digital_copy",
+            "record_copy",
+            "transcript"
+          ]
+        },
+        "variant": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "Certificate type / reason / urgency key"
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "revenue_code": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "service",
+        "variant",
+        "amount_minor",
+        "currency",
+        "revenue_code",
+        "version",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ReissueCase": {
+      "title": "ReissueCase",
+      "description": "Certificate reissue, correction, certified copy or legacy digital copy request",
+      "type": "object",
+      "x-ceda": {
+        "entity": "reissue_case",
+        "zone": "registry",
+        "domain": "CER",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "certificates"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "case_number": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "certificate_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "certificate",
+              "description": "Located award (or legacy_award_id)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "legacy_award_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "legacy_award"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "applicant_user_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "applicant_name": {
+          "type": "string",
+          "maxLength": 200,
+          "x-personal-data": true
+        },
+        "applicant_phone": {
+          "type": "string",
+          "pattern": "^\\+[1-9][0-9]{6,14}$",
+          "x-personal-data": true
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "lost_or_stolen",
+            "damaged",
+            "change_of_name",
+            "issuer_error",
+            "certified_copy",
+            "legacy_digital_copy"
+          ]
+        },
+        "urgency": {
+          "type": "string",
+          "enum": [
+            "standard",
+            "express"
+          ]
+        },
+        "evidence_document_ids": {
+          "type": "object"
+        },
+        "fee_schedule_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "fee_schedule"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "amount_due_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "payment_reference": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Remita RRR"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "paid_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "description": "No payment, no processing"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "waiver_approved_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user",
+              "description": "Audited waiver (e.g. issuer error)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "integrity_flag": {
+          "type": "boolean"
+        },
+        "reviewer_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "second_approver_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "new_certificate_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "certificate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "submitted",
+            "identity_check",
+            "archive_search",
+            "awaiting_payment",
+            "in_review",
+            "approved",
+            "issued",
+            "delivered",
+            "rejected",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "case_number",
+        "applicant_name",
+        "applicant_phone",
+        "reason",
+        "urgency",
+        "evidence_document_ids",
+        "amount_due_minor",
+        "currency",
+        "integrity_flag",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "IdentityCheck": {
+      "title": "IdentityCheck",
+      "description": "Identity-verification step for a reissue or record-request case (NIN, OTP, facial match with liveness, manual review)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "identity_check",
+        "zone": "registry",
+        "domain": "CER",
+        "kind": "event",
+        "classification": "restricted",
+        "history": "append",
+        "module": "certificates"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "reissue_case_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "reissue_case"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "nin_check",
+            "otp",
+            "facial_match",
+            "document_review",
+            "manual_review"
+          ]
+        },
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "match",
+            "partial_match",
+            "no_match",
+            "manual_review",
+            "error"
+          ],
+          "description": "A mismatch routes to manual review, never auto-rejects"
+        },
+        "consent_captured": {
+          "type": "boolean",
+          "description": "Explicit consent for facial match; template discarded after the check"
+        },
+        "detail": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "checked_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "reissue_case_id",
+        "method",
+        "outcome",
+        "consent_captured",
+        "checked_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "ForgeryReport": {
+      "title": "ForgeryReport",
+      "description": "Suspected-forgery report from a verifier, with evidence image, routed to integrity investigators",
+      "type": "object",
+      "x-ceda": {
+        "entity": "forgery_report",
+        "zone": "registry",
+        "domain": "CER",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "certificates"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "queried_number": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "certificate_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "certificate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reporter_org": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 300
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reporter_contact": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200,
+              "x-personal-data": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence_document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "investigator_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "no_issue",
+                "explained",
+                "action_taken",
+                "referred",
+                "confirmed"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "in_progress",
+            "on_hold",
+            "closed",
+            "transferred"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "queried_number",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
