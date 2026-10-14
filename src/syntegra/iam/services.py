@@ -111,6 +111,7 @@ def sign_in(tenant: TenantInfo, username: str, password: str, *, ip: str | None 
     alias = _alias()
     now = utcnow()
     base = Context(tenant_id=tenant.id, state_tenant_id=tenant.state_tenant_id, actor_kind="public", ip=ip, user_agent=ua)
+    failed = False
     with transaction.atomic(using=alias):
         user = (
             AppUser.unscoped.using(alias).select_for_update()
@@ -132,24 +133,33 @@ def sign_in(tenant: TenantInfo, username: str, password: str, *, ip: str | None 
                 user.failed_attempts = 0
             user.save(using=alias)
             audit.write_event(alias, ctx, action="sign_in_failed", record_kind="app_user", record_id=user.id)
-            raise AuthFailed()
-        if _hasher.check_needs_rehash(user.password_hash or ""):
-            user.password_hash = _hasher.hash(password)
-        user.failed_attempts = 0
-        user.locked_until = None
-        user.last_sign_in_at = now
-        user.save(using=alias)
-        mfa = MfaFactor.unscoped.using(alias).filter(tenant_id=user.tenant_id, user_id=user.id, status="active").exists()
-        grants = user_grants(user)
-        token = secrets.token_urlsafe(32)
-        s = UserSession(
-            tenant_id=user.tenant_id, user_id=user.id, session_hash=_token_hash(token),
-            active_grant_id=uuid.UUID(str(grants[0]["grant_id"])) if len(grants) == 1 and not mfa else None,
-            ip=ip, user_agent=(ua or "")[:400] or None, started_at=now, last_seen_at=now, expires_at=now + SESSION_MAX,
-        )
-        s.save(using=alias)
-        audit.write_event(alias, ctx, action="sign_in", record_kind="user_session", record_id=s.id)
-    return SignIn(token=token, session_id=s.id, user_id=user.id, mfa_required=mfa, grants=grants)
+            failed = True  # commit the failure count and audit event, then refuse
+        else:
+            token, session_id, mfa, grants = _open_session(alias, user, ctx, password, ip, ua, now)
+    if failed:
+        raise AuthFailed()
+    return SignIn(token=token, session_id=session_id, user_id=user.id, mfa_required=mfa, grants=grants)
+
+
+def _open_session(alias: str, user: AppUser, ctx: Context, password: str, ip: str | None, ua: str | None,
+                  now: dt.datetime) -> tuple[str, uuid.UUID, bool, list[dict[str, object]]]:
+    if _hasher.check_needs_rehash(user.password_hash or ""):
+        user.password_hash = _hasher.hash(password)
+    user.failed_attempts = 0
+    user.locked_until = None
+    user.last_sign_in_at = now
+    user.save(using=alias)
+    mfa = MfaFactor.unscoped.using(alias).filter(tenant_id=user.tenant_id, user_id=user.id, status="active").exists()
+    grants = user_grants(user)
+    token = secrets.token_urlsafe(32)
+    s = UserSession(
+        tenant_id=user.tenant_id, user_id=user.id, session_hash=_token_hash(token),
+        active_grant_id=uuid.UUID(str(grants[0]["grant_id"])) if len(grants) == 1 and not mfa else None,
+        ip=ip, user_agent=(ua or "")[:400] or None, started_at=now, last_seen_at=now, expires_at=now + SESSION_MAX,
+    )
+    s.save(using=alias)
+    audit.write_event(alias, ctx, action="sign_in", record_kind="user_session", record_id=s.id)
+    return token, s.id, mfa, grants
 
 
 def verify_mfa(token: str, code: str) -> None:

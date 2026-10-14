@@ -3032,7 +3032,6 @@
    "trigger": "Register not taken by deadline (Register Agent)"
   },
   "ATT.REGISTER_SUBMITTED": {
-   "absence follow-up)": null,
    "aggregate": "attendance_register",
    "consumers": [
     "intelligence",
@@ -3045,7 +3044,7 @@
     "session_date": "date!"
    },
    "producer": "attendance",
-   "trigger": "Register submitted (live tiles"
+   "trigger": "Register submitted (live tiles, absence follow-up)"
   },
   "AUTH.FAILED": {
    "aggregate": "user_session",
@@ -3431,7 +3430,6 @@
    "trigger": "Lesson delivery logged (G6)"
   },
   "CUR.PUBLISHED": {
-   "G10)": null,
    "aggregate": "curriculum_version",
    "consumers": [
     "curriculum",
@@ -3445,8 +3443,7 @@
     "effective_from": "date"
    },
    "producer": "curriculum",
-   "schemes redrafted": null,
-   "trigger": "Version published (adoption resolved"
+   "trigger": "Version published (adoption resolved, schemes redrafted, G10)"
   },
   "CUR.WITHDRAWN": {
    "aggregate": "curriculum_version",
@@ -3550,8 +3547,7 @@
     "learner_id": "uuid!"
    },
    "producer": "families",
-   "refused or withdrawn (propagates immediately)": null,
-   "trigger": "Consent given"
+   "trigger": "Consent given, refused or withdrawn (propagates immediately)"
   },
   "FAM.GUARDIAN_CREATED": {
    "aggregate": "guardian",
@@ -3634,7 +3630,6 @@
     "analytics",
     "comms"
    ],
-   "moved or closed (closure table rebuilt)": null,
    "payload": {
     "level": "enum(scope_level)!",
     "parent_id": "uuid",
@@ -3642,11 +3637,10 @@
     "valid_from": "date!"
    },
    "producer": "governance",
-   "trigger": "Hierarchy node created"
+   "trigger": "Hierarchy node created, moved or closed (closure table rebuilt)"
   },
   "IAM.GRANT_CHANGED": {
    "aggregate": "role_grant",
-   "changed or ended": null,
    "consumers": [
     "search",
     "comms"
@@ -3658,7 +3652,7 @@
     "user_id": "uuid!"
    },
    "producer": "iam",
-   "trigger": "Role-at-scope granted"
+   "trigger": "Role-at-scope granted, changed or ended"
   },
   "IAM.USER_CREATED": {
    "aggregate": "app_user",
@@ -4076,15 +4070,13 @@
     "analytics",
     "comms"
    ],
-   "network) is provisioned": null,
    "payload": {
     "kind": "enum(tenant_kind)!",
     "parent_id": "uuid",
     "tenant_id": "uuid!"
    },
-   "private provider": null,
    "producer": "platform",
-   "trigger": "A tenant (state"
+   "trigger": "A tenant (state, private provider, network) is provisioned"
   },
   "PLT.TENANT_STATUS_CHANGED": {
    "aggregate": "tenant",
@@ -4098,8 +4090,7 @@
     "tenant_id": "uuid!"
    },
    "producer": "platform",
-   "suspended or closed": null,
-   "trigger": "Tenant activated"
+   "trigger": "Tenant activated, suspended or closed"
   },
   "PMT.ALLOCATED": {
    "aggregate": "payment_allocation",
@@ -4258,23 +4249,20 @@
   },
   "SEN.ADJUSTMENT_CHANGED": {
    "aggregate": "adjustment",
-   "assignments re-checked)": null,
    "consumers": [
     "timetable",
     "assessment",
     "lms",
     "academic"
    ],
-   "exams": null,
    "payload": {
     "adjustment_id": "uuid!",
     "learner_id": "uuid!"
    },
    "producer": "success",
-   "trigger": "Authorised adjustment changed (rooms"
+   "trigger": "Authorised adjustment changed (rooms, exams, assignments re-checked)"
   },
   "STF.ABSENCE_RECORDED": {
-   "G8)": null,
    "aggregate": "staff_absence",
    "consumers": [
     "timetable",
@@ -4288,7 +4276,7 @@
     "starts_at": "ts!"
    },
    "producer": "people",
-   "trigger": "Staff absence recorded (cover flow"
+   "trigger": "Staff absence recorded (cover flow, G8)"
   },
   "STF.AUTHORISATION_CHANGED": {
    "aggregate": "staff_qualification",
@@ -4301,8 +4289,7 @@
     "staff_qualification_id": "uuid!"
    },
    "producer": "people",
-   "trigger": "Authorisation added",
-   "verified or expired (G3 re-check)": null
+   "trigger": "Authorisation added, verified or expired (G3 re-check)"
   },
   "STF.CREATED": {
    "aggregate": "staff",

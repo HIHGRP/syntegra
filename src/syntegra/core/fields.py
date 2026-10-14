@@ -22,6 +22,7 @@ class UUID7Field(models.Field):  # type: ignore[type-arg]
     """
 
     description = "UUID stored as BINARY(16)"
+    empty_strings_allowed = False
 
     def db_type(self, connection: Any) -> str:
         return "binary(16)"
@@ -64,6 +65,8 @@ class UUID7Field(models.Field):  # type: ignore[type-arg]
 class PackedIPField(models.Field):  # type: ignore[type-arg]
     """``VARBINARY(16)`` holding an IPv4/IPv6 address (INET6_ATON format)."""
 
+    empty_strings_allowed = False
+
     def db_type(self, connection: Any) -> str:
         return "varbinary(16)"
 
@@ -89,6 +92,8 @@ class PointField(models.Field):  # type: ignore[type-arg]
     Writes ``ST_GeomFromText('POINT(lon lat)', 4326, 'axis-order=long-lat')``; reads with
     ``ST_AsText(col, 'axis-order=long-lat')``.
     """
+
+    empty_strings_allowed = False
 
     def db_type(self, connection: Any) -> str:
         return "point srid 4326"

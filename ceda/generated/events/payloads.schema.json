@@ -5,7 +5,7 @@
   "$defs": {
     "PLT.TENANT_PROVISIONED": {
       "type": "object",
-      "description": "A tenant (state",
+      "description": "A tenant (state, private provider, network) is provisioned",
       "properties": {
         "tenant_id": {
           "type": "string",
@@ -36,7 +36,7 @@
     },
     "PLT.TENANT_STATUS_CHANGED": {
       "type": "object",
-      "description": "Tenant activated",
+      "description": "Tenant activated, suspended or closed",
       "properties": {
         "tenant_id": {
           "type": "string",
@@ -61,7 +61,7 @@
     },
     "GOV.SCOPE_CHANGED": {
       "type": "object",
-      "description": "Hierarchy node created",
+      "description": "Hierarchy node created, moved or closed (closure table rebuilt)",
       "properties": {
         "scope_node_id": {
           "type": "string",
@@ -329,7 +329,7 @@
     },
     "IAM.GRANT_CHANGED": {
       "type": "object",
-      "description": "Role-at-scope granted",
+      "description": "Role-at-scope granted, changed or ended",
       "properties": {
         "role_grant_id": {
           "type": "string",
@@ -1127,7 +1127,7 @@
     },
     "FAM.CONSENT_CHANGED": {
       "type": "object",
-      "description": "Consent given",
+      "description": "Consent given, refused or withdrawn (propagates immediately)",
       "properties": {
         "consent_record_id": {
           "type": "string",
@@ -1231,7 +1231,7 @@
     },
     "STF.AUTHORISATION_CHANGED": {
       "type": "object",
-      "description": "Authorisation added",
+      "description": "Authorisation added, verified or expired (G3 re-check)",
       "properties": {
         "staff_qualification_id": {
           "type": "string",
@@ -1250,7 +1250,7 @@
     },
     "STF.ABSENCE_RECORDED": {
       "type": "object",
-      "description": "Staff absence recorded (cover flow",
+      "description": "Staff absence recorded (cover flow, G8)",
       "properties": {
         "staff_absence_id": {
           "type": "string",
@@ -1392,7 +1392,7 @@
     },
     "CUR.PUBLISHED": {
       "type": "object",
-      "description": "Version published (adoption resolved",
+      "description": "Version published (adoption resolved, schemes redrafted, G10)",
       "properties": {
         "curriculum_version_id": {
           "type": "string",
@@ -1612,7 +1612,7 @@
     },
     "ATT.REGISTER_SUBMITTED": {
       "type": "object",
-      "description": "Register submitted (live tiles",
+      "description": "Register submitted (live tiles, absence follow-up)",
       "properties": {
         "attendance_register_id": {
           "type": "string",
@@ -2082,7 +2082,7 @@
     },
     "SEN.ADJUSTMENT_CHANGED": {
       "type": "object",
-      "description": "Authorised adjustment changed (rooms",
+      "description": "Authorised adjustment changed (rooms, exams, assignments re-checked)",
       "properties": {
         "adjustment_id": {
           "type": "string",

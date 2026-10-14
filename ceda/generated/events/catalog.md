@@ -4,9 +4,9 @@ Generated from `ceda/model/events.yaml`. Events are named `<DOMAIN>.<PAST_TENSE_
 
 | Event | Producer | Aggregate | Topic | Payload | Consumers | Trigger |
 |---|---|---|---|---|---|---|
-| `PLT.TENANT_PROVISIONED` | `platform` | `tenant` | `syn.{region}.plt.v1` | `tenant_id`, `kind`, `parent_id` | governance, iam, analytics, comms | A tenant (state |
-| `PLT.TENANT_STATUS_CHANGED` | `platform` | `tenant` | `syn.{region}.plt.v1` | `tenant_id`, `status` | iam, integration, analytics | Tenant activated |
-| `GOV.SCOPE_CHANGED` | `governance` | `scope_node` | `syn.{region}.gov.v1` | `scope_node_id`, `parent_id`, `level`, `valid_from` | iam, search, analytics, comms | Hierarchy node created |
+| `PLT.TENANT_PROVISIONED` | `platform` | `tenant` | `syn.{region}.plt.v1` | `tenant_id`, `kind`, `parent_id` | governance, iam, analytics, comms | A tenant (state, private provider, network) is provisioned |
+| `PLT.TENANT_STATUS_CHANGED` | `platform` | `tenant` | `syn.{region}.plt.v1` | `tenant_id`, `status` | iam, integration, analytics | Tenant activated, suspended or closed |
+| `GOV.SCOPE_CHANGED` | `governance` | `scope_node` | `syn.{region}.gov.v1` | `scope_node_id`, `parent_id`, `level`, `valid_from` | iam, search, analytics, comms | Hierarchy node created, moved or closed (closure table rebuilt) |
 | `GOV.CONFIG_PUBLISHED` | `governance` | `config_version` | `syn.{region}.gov.v1` | `config_version_id`, `scope_node_id`, `section`, `version` | all_modules | A configuration layer section is published |
 | `GOV.POLICY_PUBLISHED` | `governance` | `policy_rule` | `syn.{region}.gov.v1` | `policy_rule_id`, `rule_key`, `version`, `effective_from` | curriculum, attendance, intelligence, financing | A rule version is published after its tests pass |
 | `GOV.EXCEPTION_APPROVED` | `governance` | `policy_exception` | `syn.{region}.gov.v1` | `policy_exception_id`, `rule_id`, `scope_node_id`, `end_on` | curriculum, institutions, intelligence | A time-boxed exception is approved |
@@ -17,7 +17,7 @@ Generated from `ceda/model/events.yaml`. Events are named `<DOMAIN>.<PAST_TENSE_
 | `WF.TASK_ESCALATED` | `governance` | `workflow_task` | `syn.{region}.wf.v1` | `workflow_task_id`, `escalated_to_scope_id` | comms, intelligence | SLA breached |
 | `IAM.USER_CREATED` | `iam` | `app_user` | `syn.{region}.iam.v1` | `user_id`, `person_kind` | comms, analytics | Account created or invited |
 | `IAM.USER_DEACTIVATED` | `iam` | `app_user` | `syn.{region}.iam.v1` | `user_id` | comms, integration | Account deactivated (e.g. HR leaving date) — workspace channels removed |
-| `IAM.GRANT_CHANGED` | `iam` | `role_grant` | `syn.{region}.iam.v1` | `role_grant_id`, `user_id`, `scope_id`, `status` | search, comms | Role-at-scope granted |
+| `IAM.GRANT_CHANGED` | `iam` | `role_grant` | `syn.{region}.iam.v1` | `role_grant_id`, `user_id`, `scope_id`, `status` | search, comms | Role-at-scope granted, changed or ended |
 | `AUTH.SIGNED_IN` | `iam` | `user_session` | `syn.{region}.auth.v1` | `user_id`, `session_id` | analytics | Successful sign-in |
 | `AUTH.FAILED` | `iam` | `user_session` | `syn.{region}.auth.v1` | `user_id` | security_monitoring | Failed sign-in |
 | `AUTH.LOCKED` | `iam` | `app_user` | `syn.{region}.auth.v1` | `user_id`, `locked_until` | comms, security_monitoring | Account locked after repeated failures |
@@ -52,20 +52,20 @@ Generated from `ceda/model/events.yaml`. Events are named `<DOMAIN>.<PAST_TENSE_
 | `ENR.STARTED` | `learners` | `enrolment` | `syn.{region}.enr.v1` | `enrolment_id`, `learner_id`, `institution_id` | academic, timetable, finance, curriculum, lms, financing, analytics | Enrolment became active |
 | `ENR.ENDED` | `learners` | `enrolment` | `syn.{region}.enr.v1` | `enrolment_id`, `status` | academic, finance, lms, financing, analytics | Enrolment ended |
 | `FAM.GUARDIAN_CREATED` | `families` | `guardian` | `syn.{region}.fam.v1` | `guardian_id` | comms, search | Guardian master created |
-| `FAM.CONSENT_CHANGED` | `families` | `consent_record` | `syn.{region}.fam.v1` | `consent_record_id`, `learner_id`, `consent_type`, `decision` | comms, operations, lms, records | Consent given |
+| `FAM.CONSENT_CHANGED` | `families` | `consent_record` | `syn.{region}.fam.v1` | `consent_record_id`, `learner_id`, `consent_type`, `decision` | comms, operations, lms, records | Consent given, refused or withdrawn (propagates immediately) |
 | `STF.CREATED` | `people` | `staff` | `syn.{region}.stf.v1` | `staff_id` | search, analytics | Staff 360 created |
 | `STF.LEFT` | `people` | `staff` | `syn.{region}.stf.v1` | `staff_id` | iam, curriculum, comms | Staff member left all posts |
 | `STF.POST_STARTED` | `people` | `staff_post` | `syn.{region}.stf.v1` | `staff_post_id`, `staff_id`, `institution_id` | iam, comms, analytics | Post started |
 | `STF.POST_ENDED` | `people` | `staff_post` | `syn.{region}.stf.v1` | `staff_post_id`, `staff_id` | iam, curriculum, comms | Post ended (G9 handover check) |
-| `STF.AUTHORISATION_CHANGED` | `people` | `staff_qualification` | `syn.{region}.stf.v1` | `staff_qualification_id`, `staff_id` | curriculum, timetable | Authorisation added |
-| `STF.ABSENCE_RECORDED` | `people` | `staff_absence` | `syn.{region}.stf.v1` | `staff_absence_id`, `staff_id`, `starts_at`, `ends_at` | timetable, curriculum, intelligence | Staff absence recorded (cover flow |
+| `STF.AUTHORISATION_CHANGED` | `people` | `staff_qualification` | `syn.{region}.stf.v1` | `staff_qualification_id`, `staff_id` | curriculum, timetable | Authorisation added, verified or expired (G3 re-check) |
+| `STF.ABSENCE_RECORDED` | `people` | `staff_absence` | `syn.{region}.stf.v1` | `staff_absence_id`, `staff_id`, `starts_at`, `ends_at` | timetable, curriculum, intelligence | Staff absence recorded (cover flow, G8) |
 | `STF.TRAINING_COMPLETED` | `people` | `training_completion` | `syn.{region}.stf.v1` | `training_completion_id`, `staff_id`, `passed` | learners, analytics | Statutory training completed |
 | `PAY.RUN_APPROVED` | `people` | `payroll_run` | `syn.{region}.pay.v1` | `payroll_run_id` | finance | Pay run approved by two people |
 | `ACA.CLASS_ACTIVATED` | `academic` | `class_group` | `syn.{region}.aca.v1` | `class_group_id`, `institution_id` | curriculum, lms, timetable, governance | Class activated for the session |
 | `ACA.SUBJECT_PLAN_PUBLISHED` | `academic` | `class_subject_plan` | `syn.{region}.aca.v1` | `class_subject_plan_id`, `class_group_id` | lms, curriculum, timetable | Class subject plan published (course spaces created) |
 | `ACA.COURSE_REGISTERED` | `academic` | `course_registration` | `syn.{region}.aca.v1` | `course_registration_id`, `learner_id`, `course_section_id` | lms, finance | Course registration approved |
 | `CUR.APPROVED` | `curriculum` | `curriculum_version` | `syn.{region}.cur.v1` | `curriculum_version_id` | comms | Curriculum version approved |
-| `CUR.PUBLISHED` | `curriculum` | `curriculum_version` | `syn.{region}.cur.v1` | `curriculum_version_id`, `curriculum_id`, `effective_from` | curriculum, lms, institutions, analytics | Version published (adoption resolved |
+| `CUR.PUBLISHED` | `curriculum` | `curriculum_version` | `syn.{region}.cur.v1` | `curriculum_version_id`, `curriculum_id`, `effective_from` | curriculum, lms, institutions, analytics | Version published (adoption resolved, schemes redrafted, G10) |
 | `CUR.WITHDRAWN` | `curriculum` | `curriculum_version` | `syn.{region}.cur.v1` | `curriculum_version_id` | curriculum, analytics | Version withdrawn |
 | `CUR.ADOPTION_RESOLVED` | `curriculum` | `curriculum_adoption` | `syn.{region}.cur.v1` | `curriculum_adoption_id`, `institution_id`, `version_id` | academic, analytics | Applicable version stamped for an institution and level |
 | `CUR.ASSIGNMENT_CHANGED` | `academic` | `teaching_assignment` | `syn.{region}.cur.v1` | `teaching_assignment_id`, `staff_id` | curriculum, lms, timetable, comms | Teacher of record or co-teacher changed (G2/G3) |
@@ -75,7 +75,7 @@ Generated from `ceda/model/events.yaml`. Events are named `<DOMAIN>.<PAST_TENSE_
 | `CUR.GAP_CLOSED` | `curriculum` | `coverage_gap` | `syn.{region}.cur.v1` | `coverage_gap_id` | analytics, intelligence | Gap closed by a person |
 | `TT.PUBLISHED` | `timetable` | `timetable` | `syn.{region}.tt.v1` | `timetable_id`, `institution_id` | attendance, curriculum, lms, comms | Timetable version published |
 | `TT.COVER_ASSIGNED` | `timetable` | `cover_assignment` | `syn.{region}.tt.v1` | `cover_assignment_id`, `lesson_occurrence_id`, `is_qualified` | comms, curriculum | Cover confirmed |
-| `ATT.REGISTER_SUBMITTED` | `attendance` | `attendance_register` | `syn.{region}.att.v1` | `attendance_register_id`, `class_group_id`, `session_date` | intelligence, comms, analytics | Register submitted (live tiles |
+| `ATT.REGISTER_SUBMITTED` | `attendance` | `attendance_register` | `syn.{region}.att.v1` | `attendance_register_id`, `class_group_id`, `session_date` | intelligence, comms, analytics | Register submitted (live tiles, absence follow-up) |
 | `ATT.REGISTER_MISSING` | `attendance` | `attendance_register` | `syn.{region}.att.v1` | `attendance_register_id`, `class_group_id` | intelligence, comms | Register not taken by deadline (Register Agent) |
 | `ATT.ABSENCE_REPORTED` | `attendance` | `absence_report` | `syn.{region}.att.v1` | `absence_report_id`, `learner_id`, `from_date` | attendance, comms | Parent reported an absence |
 | `ATT.EVACUATION_STARTED` | `attendance` | `evacuation_event` | `syn.{region}.att.v1` | `evacuation_event_id`, `campus_id` | comms | Evacuation or drill started |
@@ -99,7 +99,7 @@ Generated from `ceda/model/events.yaml`. Events are named `<DOMAIN>.<PAST_TENSE_
 | `SAF.CASE_UPDATED` | `safeguarding` | `safeguarding_case` | `syn.{region}.saf.v1` | `safeguarding_case_id` | comms | Case updated — no detail |
 | `SAF.CASE_VIEWED` | `safeguarding` | `safeguarding_case` | `syn.{region}.saf.v1` | `safeguarding_case_id`, `viewer_user_id` | audit_monitoring | Case viewed |
 | `SAF.STAFF_CASE_OPENED` | `safeguarding` | `staff_case` | `syn.{region}.saf.v1` | `staff_case_id` | comms | Staff case opened — designated officer notified without detail |
-| `SEN.ADJUSTMENT_CHANGED` | `success` | `adjustment` | `syn.{region}.sen.v1` | `adjustment_id`, `learner_id` | timetable, assessment, lms, academic | Authorised adjustment changed (rooms |
+| `SEN.ADJUSTMENT_CHANGED` | `success` | `adjustment` | `syn.{region}.sen.v1` | `adjustment_id`, `learner_id` | timetable, assessment, lms, academic | Authorised adjustment changed (rooms, exams, assignments re-checked) |
 | `WEL.CONCERN_REPORTED` | `success` | `wellbeing_concern` | `syn.{region}.wel.v1` | `wellbeing_concern_id`, `keyword_alert` | comms | Wellbeing concern reported |
 | `INT.INTERVENTION_CLOSED` | `intelligence` | `intervention` | `syn.{region}.int.v1` | `intervention_id`, `status` | analytics, intelligence | Intervention closed with outcome |
 | `LMS.SPACE_CREATED` | `lms` | `course_space` | `syn.{region}.lms.v1` | `course_space_id` | comms | Course space auto-created |

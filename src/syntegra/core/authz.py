@@ -82,8 +82,17 @@ def require_scope(scope_node_id: uuid.UUID | None, ctx: Context | None = None) -
     ctx = ctx or context.require()
     if ctx.is_system or ctx.scope_ids is None:
         return
-    if scope_node_id is None or scope_node_id not in ctx.scope_ids:
-        raise Forbidden("The record is outside your scope.", code="AUTH-SCOPE")
+    if scope_node_id is not None and scope_node_id in ctx.scope_ids:
+        return
+    if scope_node_id is not None and ctx.scope_node_id is not None:
+        # nodes created after the context was resolved (e.g. inside this command) are checked on the closure
+        from syntegra.governance.models import ScopeClosure
+
+        if ScopeClosure.unscoped.using(_registry()).filter(
+            tenant_id=ctx.state_tenant_id, ancestor_id=ctx.scope_node_id, descendant_id=scope_node_id
+        ).exists():
+            return
+    raise Forbidden("The record is outside your scope.", code="AUTH-SCOPE")
 
 
 def require_purpose(classification: str, ctx: Context | None = None) -> None:

@@ -11,9 +11,9 @@
 
 events:
   # ---------------------------------------------------------------- platform, governance, identity
-  PLT.TENANT_PROVISIONED: {producer: platform, aggregate: tenant, payload: {tenant_id: uuid!, kind: enum(tenant_kind)!, parent_id: uuid}, consumers: [governance, iam, analytics, comms], trigger: A tenant (state, private provider, network) is provisioned}
-  PLT.TENANT_STATUS_CHANGED: {producer: platform, aggregate: tenant, payload: {tenant_id: uuid!, status: enum(tenant_status)!}, consumers: [iam, integration, analytics], trigger: Tenant activated, suspended or closed}
-  GOV.SCOPE_CHANGED: {producer: governance, aggregate: scope_node, payload: {scope_node_id: uuid!, parent_id: uuid, level: enum(scope_level)!, valid_from: date!}, consumers: [iam, search, analytics, comms], trigger: Hierarchy node created, moved or closed (closure table rebuilt)}
+  PLT.TENANT_PROVISIONED: {producer: platform, aggregate: tenant, payload: {tenant_id: uuid!, kind: enum(tenant_kind)!, parent_id: uuid}, consumers: [governance, iam, analytics, comms], trigger: "A tenant (state, private provider, network) is provisioned"}
+  PLT.TENANT_STATUS_CHANGED: {producer: platform, aggregate: tenant, payload: {tenant_id: uuid!, status: enum(tenant_status)!}, consumers: [iam, integration, analytics], trigger: "Tenant activated, suspended or closed"}
+  GOV.SCOPE_CHANGED: {producer: governance, aggregate: scope_node, payload: {scope_node_id: uuid!, parent_id: uuid, level: enum(scope_level)!, valid_from: date!}, consumers: [iam, search, analytics, comms], trigger: "Hierarchy node created, moved or closed (closure table rebuilt)"}
   GOV.CONFIG_PUBLISHED: {producer: governance, aggregate: config_version, payload: {config_version_id: uuid!, scope_node_id: uuid!, section: code(40)!, version: int_u!}, consumers: [all_modules], trigger: A configuration layer section is published}
   GOV.POLICY_PUBLISHED: {producer: governance, aggregate: policy_rule, payload: {policy_rule_id: uuid!, rule_key: code(40)!, version: int_u!, effective_from: date!}, consumers: [curriculum, attendance, intelligence, financing], trigger: A rule version is published after its tests pass}
   GOV.EXCEPTION_APPROVED: {producer: governance, aggregate: policy_exception, payload: {policy_exception_id: uuid!, rule_id: uuid!, scope_node_id: uuid!, end_on: date!}, consumers: [curriculum, institutions, intelligence], trigger: A time-boxed exception is approved}
@@ -24,7 +24,7 @@ events:
   WF.TASK_ESCALATED: {producer: governance, aggregate: workflow_task, payload: {workflow_task_id: uuid!, escalated_to_scope_id: uuid}, consumers: [comms, intelligence], trigger: SLA breached}
   IAM.USER_CREATED: {producer: iam, aggregate: app_user, payload: {user_id: uuid!, person_kind: enum(person_kind)}, consumers: [comms, analytics], trigger: Account created or invited}
   IAM.USER_DEACTIVATED: {producer: iam, aggregate: app_user, payload: {user_id: uuid!}, consumers: [comms, integration], trigger: Account deactivated (e.g. HR leaving date) — workspace channels removed}
-  IAM.GRANT_CHANGED: {producer: iam, aggregate: role_grant, payload: {role_grant_id: uuid!, user_id: uuid!, scope_id: uuid!, status: enum(record_status)!}, consumers: [search, comms], trigger: Role-at-scope granted, changed or ended}
+  IAM.GRANT_CHANGED: {producer: iam, aggregate: role_grant, payload: {role_grant_id: uuid!, user_id: uuid!, scope_id: uuid!, status: enum(record_status)!}, consumers: [search, comms], trigger: "Role-at-scope granted, changed or ended"}
   AUTH.SIGNED_IN: {producer: iam, aggregate: user_session, payload: {user_id: uuid!, session_id: uuid!}, consumers: [analytics], trigger: Successful sign-in}
   AUTH.FAILED: {producer: iam, aggregate: user_session, payload: {user_id: uuid}, consumers: [security_monitoring], trigger: Failed sign-in}
   AUTH.LOCKED: {producer: iam, aggregate: app_user, payload: {user_id: uuid!, locked_until: ts!}, consumers: [comms, security_monitoring], trigger: Account locked after repeated failures}
@@ -65,15 +65,15 @@ events:
   ENR.STARTED: {producer: learners, aggregate: enrolment, payload: {enrolment_id: uuid!, learner_id: uuid!, institution_id: uuid!}, consumers: [academic, timetable, finance, curriculum, lms, financing, analytics], trigger: Enrolment became active}
   ENR.ENDED: {producer: learners, aggregate: enrolment, payload: {enrolment_id: uuid!, status: enum(enrolment_status)!}, consumers: [academic, finance, lms, financing, analytics], trigger: Enrolment ended}
   FAM.GUARDIAN_CREATED: {producer: families, aggregate: guardian, payload: {guardian_id: uuid!}, consumers: [comms, search], trigger: Guardian master created}
-  FAM.CONSENT_CHANGED: {producer: families, aggregate: consent_record, payload: {consent_record_id: uuid!, learner_id: uuid!, consent_type: code(32)!, decision: enum(consent_decision)!}, consumers: [comms, operations, lms, records], trigger: Consent given, refused or withdrawn (propagates immediately)}
+  FAM.CONSENT_CHANGED: {producer: families, aggregate: consent_record, payload: {consent_record_id: uuid!, learner_id: uuid!, consent_type: code(32)!, decision: enum(consent_decision)!}, consumers: [comms, operations, lms, records], trigger: "Consent given, refused or withdrawn (propagates immediately)"}
 
   # ---------------------------------------------------------------- staff
   STF.CREATED: {producer: people, aggregate: staff, payload: {staff_id: uuid!}, consumers: [search, analytics], trigger: Staff 360 created}
   STF.LEFT: {producer: people, aggregate: staff, payload: {staff_id: uuid!}, consumers: [iam, curriculum, comms], trigger: Staff member left all posts}
   STF.POST_STARTED: {producer: people, aggregate: staff_post, payload: {staff_post_id: uuid!, staff_id: uuid!, institution_id: uuid!}, consumers: [iam, comms, analytics], trigger: Post started}
   STF.POST_ENDED: {producer: people, aggregate: staff_post, payload: {staff_post_id: uuid!, staff_id: uuid!}, consumers: [iam, curriculum, comms], trigger: Post ended (G9 handover check)}
-  STF.AUTHORISATION_CHANGED: {producer: people, aggregate: staff_qualification, payload: {staff_qualification_id: uuid!, staff_id: uuid!}, consumers: [curriculum, timetable], trigger: Authorisation added, verified or expired (G3 re-check)}
-  STF.ABSENCE_RECORDED: {producer: people, aggregate: staff_absence, payload: {staff_absence_id: uuid!, staff_id: uuid!, starts_at: ts!, ends_at: ts!}, consumers: [timetable, curriculum, intelligence], trigger: Staff absence recorded (cover flow, G8)}
+  STF.AUTHORISATION_CHANGED: {producer: people, aggregate: staff_qualification, payload: {staff_qualification_id: uuid!, staff_id: uuid!}, consumers: [curriculum, timetable], trigger: "Authorisation added, verified or expired (G3 re-check)"}
+  STF.ABSENCE_RECORDED: {producer: people, aggregate: staff_absence, payload: {staff_absence_id: uuid!, staff_id: uuid!, starts_at: ts!, ends_at: ts!}, consumers: [timetable, curriculum, intelligence], trigger: "Staff absence recorded (cover flow, G8)"}
   STF.TRAINING_COMPLETED: {producer: people, aggregate: training_completion, payload: {training_completion_id: uuid!, staff_id: uuid!, passed: bool!}, consumers: [learners, analytics], trigger: Statutory training completed}
   PAY.RUN_APPROVED: {producer: people, aggregate: payroll_run, payload: {payroll_run_id: uuid!}, consumers: [finance], trigger: Pay run approved by two people}
 
@@ -82,7 +82,7 @@ events:
   ACA.SUBJECT_PLAN_PUBLISHED: {producer: academic, aggregate: class_subject_plan, payload: {class_subject_plan_id: uuid!, class_group_id: uuid!}, consumers: [lms, curriculum, timetable], trigger: Class subject plan published (course spaces created)}
   ACA.COURSE_REGISTERED: {producer: academic, aggregate: course_registration, payload: {course_registration_id: uuid!, learner_id: uuid!, course_section_id: uuid!}, consumers: [lms, finance], trigger: Course registration approved}
   CUR.APPROVED: {producer: curriculum, aggregate: curriculum_version, payload: {curriculum_version_id: uuid!}, consumers: [comms], trigger: Curriculum version approved}
-  CUR.PUBLISHED: {producer: curriculum, aggregate: curriculum_version, payload: {curriculum_version_id: uuid!, curriculum_id: uuid!, effective_from: date}, consumers: [curriculum, lms, institutions, analytics], trigger: Version published (adoption resolved, schemes redrafted, G10)}
+  CUR.PUBLISHED: {producer: curriculum, aggregate: curriculum_version, payload: {curriculum_version_id: uuid!, curriculum_id: uuid!, effective_from: date}, consumers: [curriculum, lms, institutions, analytics], trigger: "Version published (adoption resolved, schemes redrafted, G10)"}
   CUR.WITHDRAWN: {producer: curriculum, aggregate: curriculum_version, payload: {curriculum_version_id: uuid!}, consumers: [curriculum, analytics], trigger: Version withdrawn}
   CUR.ADOPTION_RESOLVED: {producer: curriculum, aggregate: curriculum_adoption, payload: {curriculum_adoption_id: uuid!, institution_id: uuid!, version_id: uuid!}, consumers: [academic, analytics], trigger: Applicable version stamped for an institution and level}
   CUR.ASSIGNMENT_CHANGED: {producer: academic, aggregate: teaching_assignment, payload: {teaching_assignment_id: uuid!, staff_id: uuid!}, consumers: [curriculum, lms, timetable, comms], trigger: Teacher of record or co-teacher changed (G2/G3)}
@@ -94,7 +94,7 @@ events:
   TT.COVER_ASSIGNED: {producer: timetable, aggregate: cover_assignment, payload: {cover_assignment_id: uuid!, lesson_occurrence_id: uuid!, is_qualified: bool!}, consumers: [comms, curriculum], trigger: Cover confirmed}
 
   # ---------------------------------------------------------------- attendance
-  ATT.REGISTER_SUBMITTED: {producer: attendance, aggregate: attendance_register, payload: {attendance_register_id: uuid!, class_group_id: uuid!, session_date: date!}, consumers: [intelligence, comms, analytics], trigger: Register submitted (live tiles, absence follow-up)}
+  ATT.REGISTER_SUBMITTED: {producer: attendance, aggregate: attendance_register, payload: {attendance_register_id: uuid!, class_group_id: uuid!, session_date: date!}, consumers: [intelligence, comms, analytics], trigger: "Register submitted (live tiles, absence follow-up)"}
   ATT.REGISTER_MISSING: {producer: attendance, aggregate: attendance_register, payload: {attendance_register_id: uuid!, class_group_id: uuid!}, consumers: [intelligence, comms], trigger: Register not taken by deadline (Register Agent)}
   ATT.ABSENCE_REPORTED: {producer: attendance, aggregate: absence_report, payload: {absence_report_id: uuid!, learner_id: uuid!, from_date: date!}, consumers: [attendance, comms], trigger: Parent reported an absence}
   ATT.EVACUATION_STARTED: {producer: attendance, aggregate: evacuation_event, payload: {evacuation_event_id: uuid!, campus_id: uuid!}, consumers: [comms], trigger: Evacuation or drill started}
@@ -122,7 +122,7 @@ events:
   SAF.CASE_UPDATED: {producer: safeguarding, aggregate: safeguarding_case, payload: {safeguarding_case_id: uuid!}, consumers: [comms], trigger: Case updated — no detail}
   SAF.CASE_VIEWED: {producer: safeguarding, aggregate: safeguarding_case, payload: {safeguarding_case_id: uuid!, viewer_user_id: uuid!}, consumers: [audit_monitoring], trigger: Case viewed}
   SAF.STAFF_CASE_OPENED: {producer: safeguarding, aggregate: staff_case, payload: {staff_case_id: uuid!}, consumers: [comms], trigger: Staff case opened — designated officer notified without detail}
-  SEN.ADJUSTMENT_CHANGED: {producer: success, aggregate: adjustment, payload: {adjustment_id: uuid!, learner_id: uuid!}, consumers: [timetable, assessment, lms, academic], trigger: Authorised adjustment changed (rooms, exams, assignments re-checked)}
+  SEN.ADJUSTMENT_CHANGED: {producer: success, aggregate: adjustment, payload: {adjustment_id: uuid!, learner_id: uuid!}, consumers: [timetable, assessment, lms, academic], trigger: "Authorised adjustment changed (rooms, exams, assignments re-checked)"}
   WEL.CONCERN_REPORTED: {producer: success, aggregate: wellbeing_concern, payload: {wellbeing_concern_id: uuid!, keyword_alert: bool!}, consumers: [comms], trigger: Wellbeing concern reported}
   INT.INTERVENTION_CLOSED: {producer: intelligence, aggregate: intervention, payload: {intervention_id: uuid!, status: enum(intervention_status)!}, consumers: [analytics, intelligence], trigger: Intervention closed with outcome}
 
