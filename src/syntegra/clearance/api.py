@@ -43,6 +43,41 @@ class DisputeSerializer(serializers.Serializer):  # type: ignore[type-arg]
     statement = serializers.CharField(min_length=10)
 
 
+class ResolutionSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    resolution = serializers.ChoiceField(["upheld", "partly_upheld", "rejected", "withdrawn"])
+    reason = serializers.CharField(min_length=10)
+    resolved_amount_minor = serializers.IntegerField(min_value=1, required=False, allow_null=True)
+
+
+class ObligationSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    learner_id = serializers.UUIDField()
+    creditor_institution_id = serializers.UUIDField()
+    kind = serializers.ChoiceField(
+        [
+            "tuition_fees",
+            "boarding",
+            "examination_fees",
+            "transport",
+            "meals",
+            "books_and_materials",
+            "uniform",
+            "development_levy",
+            "damaged_property",
+            "library",
+            "other_dues",
+        ]
+    )
+    amount_minor = serializers.IntegerField(min_value=0)
+    oldest_due_on = serializers.DateField()
+    evidence = serializers.ListField(child=serializers.DictField(), min_length=1)
+    periods = serializers.ListField(child=serializers.CharField(max_length=20), required=False)
+    payer_kind = serializers.ChoiceField(
+        ["learner", "family", "guardian", "sponsor", "funder", "government", "employer", "institution"],
+        default="guardian",
+    )
+    source = serializers.ChoiceField(["ledger", "manual_with_evidence"], default="manual_with_evidence")  # type: ignore[assignment]  # DRF field named "source"
+
+
 def decision_from_headers(request: Request) -> services.DecisionInput | None:
     """``X-Syntegra-Clearance-Decision`` (+ ``-Reason``, ``-Check``, ``-Protected``, ``-Plan``) on admission calls."""
     h = request.headers
@@ -93,6 +128,13 @@ class Obligations(APIView):
             qs = qs.filter(status=st)
         return Response({"data": [v.row(o) for o in qs[:500]]})
 
+    def post(self, request: Request) -> Response:
+        """Publish (or settle, with amount 0) an obligation — manual claims need an evidence document."""
+        s = ObligationSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        ob = services.publish(**s.validated_data)
+        return Response(v.row(ob) if ob else {"settled": True}, status=201)
+
 
 class Disputes(APIView):
     required_permission = "clearance:dispute"
@@ -107,15 +149,13 @@ class DisputeResolution(APIView):
     required_permission = "clearance:resolve"
 
     def post(self, request: Request, pk: uuid.UUID) -> Response:
-        d = request.data
-        amt = d.get("resolved_amount_minor")
+        s = ResolutionSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
         return Response(
             v.row(
                 services.resolve_dispute(
-                    pk,
-                    str(d["resolution"]),
-                    reason=str(d.get("reason", "")),
-                    resolved_amount_minor=int(amt) if amt else None,
+                    pk, d["resolution"], reason=d["reason"], resolved_amount_minor=d.get("resolved_amount_minor")
                 )
             )
         )

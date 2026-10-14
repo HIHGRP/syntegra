@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
 from typing import Any
 
 from django.conf import settings
@@ -66,12 +65,18 @@ class MfaView(APIView):
         return Response({"ok": True})
 
 
+class SelectRoleSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    grant_id = serializers.UUIDField()
+
+
 class SelectRoleView(APIView):
     permission_classes = [Authenticated]
 
     def post(self, request: Request) -> Response:
         token, _ = session_token(request._request)
-        services.select_grant(token or "", uuid.UUID(str(request.data.get("grant_id"))))
+        s = SelectRoleSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        services.select_grant(token or "", s.validated_data["grant_id"])
         return Response({"ok": True})
 
 

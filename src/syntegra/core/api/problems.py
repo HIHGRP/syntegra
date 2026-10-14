@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, OperationalError
 from rest_framework import exceptions
 from rest_framework.response import Response
@@ -27,6 +28,9 @@ def exception_handler(exc: Exception, ctx: dict[str, Any]) -> Response | None:
     corr = {"correlation_id": c.correlation_id} if c else {}
     if isinstance(exc, DomainError):
         return _resp({**exc.problem(), **corr}, exc.status)
+    if isinstance(exc, DjangoValidationError):  # e.g. a malformed id reaching a model filter: the client's input
+        return _resp({"type": PROBLEM_BASE + "VALIDATION", "title": "Invalid input", "status": 422,
+                      "detail": "; ".join(exc.messages), **corr}, 422)  # fmt: skip
     if isinstance(exc, ObjectDoesNotExist):
         return _resp({"type": PROBLEM_BASE + "NOT-FOUND", "title": "Not found", "status": 404, **corr}, 404)
     if isinstance(exc, IntegrityError):

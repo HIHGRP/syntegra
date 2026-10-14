@@ -35,6 +35,10 @@ class ClassList(APIView):
         return Response(v.row(services.create_class(**s.validated_data)), status=201)
 
 
+class MemberSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    learner_id = serializers.UUIDField()
+
+
 class ClassMembers(APIView):
     required_permission = {"GET": "class:view", "POST": "class:manage"}
 
@@ -44,5 +48,6 @@ class ClassMembers(APIView):
         return Response({"data": [v.row(m) for m in services.members(pk)]})
 
     def post(self, request: Request, pk: uuid.UUID) -> Response:
-        lid = uuid.UUID(str(request.data.get("learner_id")))
-        return Response(v.row(services.add_member(pk, lid)), status=201)
+        s = MemberSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        return Response(v.row(services.add_member(pk, s.validated_data["learner_id"])), status=201)

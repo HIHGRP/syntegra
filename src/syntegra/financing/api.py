@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 
+from rest_framework import serializers
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -10,11 +11,17 @@ from syntegra.core.api import views as v
 from syntegra.financing import services
 
 
+class CensusSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    billing_period_id = serializers.UUIDField()
+
+
 class TakeCensus(APIView):
     required_permission = "census:take"
 
     def post(self, request: Request, institution_id: uuid.UUID) -> Response:
-        snap = services.take_census(institution_id, uuid.UUID(str(request.data.get("billing_period_id"))))
+        s = CensusSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        snap = services.take_census(institution_id, s.validated_data["billing_period_id"])
         return Response(v.row(snap), status=201)
 
 

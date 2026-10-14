@@ -25,12 +25,19 @@ class SubmitSerializer(serializers.Serializer):  # type: ignore[type-arg]
     device_captured_at = serializers.DateTimeField(required=False, allow_null=True)
 
 
+class OpenRegisterSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    session_date = serializers.DateField(required=False, allow_null=True)
+    kind = serializers.ChoiceField(["am", "pm", "daily", "lesson", "activity", "trip"], default="daily")
+
+
 class OpenRegister(APIView):
     required_permission = "attendance:mark"
 
     def post(self, request: Request, class_id: uuid.UUID) -> Response:
-        date = dt.date.fromisoformat(str(request.data.get("session_date") or dt.date.today()))
-        reg = services.open_register(class_id, date, str(request.data.get("kind", "daily")))
+        s = OpenRegisterSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
+        reg = services.open_register(class_id, d.get("session_date") or dt.date.today(), d["kind"])
         return v.with_etag(Response(v.row(reg), status=201), reg)
 
 

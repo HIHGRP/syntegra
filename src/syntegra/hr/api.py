@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import datetime as dt
 import uuid
 
 from rest_framework import serializers
@@ -52,6 +51,62 @@ class LeaveSerializer(serializers.Serializer):  # type: ignore[type-arg]
     note = serializers.CharField(max_length=500, required=False, allow_null=True)
 
 
+class PostingDecisionSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    action = serializers.ChoiceField(["approve", "reject", "effective"], default="approve")
+    note = serializers.CharField(max_length=500, required=False, allow_null=True, allow_blank=True)
+
+
+class SeparationSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    staff_post_id = serializers.UUIDField()
+    separation_kind = serializers.ChoiceField(
+        [
+            "resignation",
+            "retirement_statutory",
+            "retirement_voluntary",
+            "death",
+            "dismissal",
+            "termination",
+            "end_of_contract",
+            "transfer_of_service",
+            "abandonment",
+        ]
+    )
+    effective_on = serializers.DateField()
+
+
+class LeaveDecisionSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    approve = serializers.BooleanField()
+    relief_staff_id = serializers.UUIDField(required=False, allow_null=True)
+
+
+class PromotionSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    staff_id = serializers.UUIDField()
+    exercise_label = serializers.CharField(max_length=60)
+
+
+class PromotionDecisionSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    decision = serializers.ChoiceField(["approved", "deferred", "not_approved"])
+    reason = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    effective_on = serializers.DateField(required=False, allow_null=True)
+
+
+class RelationsSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    staff_id = serializers.UUIDField()
+    case_kind = serializers.ChoiceField(["query", "disciplinary", "grievance", "appeal", "petition"])
+    summary = serializers.CharField(min_length=10)
+
+
+class HoldSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    hold = serializers.BooleanField()
+    reason = serializers.CharField(min_length=10)
+
+
+class PayrollRunSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    employer_scope_id = serializers.UUIDField()
+    period_label = serializers.CharField(max_length=40)
+    pay_date = serializers.DateField()
+
+
 class Positions(APIView):
     required_permission = "hr:establishment"
 
@@ -90,22 +145,24 @@ class PostingDecision(APIView):
     required_permission = "hr:posting_approve"
 
     def post(self, request: Request, pk: uuid.UUID) -> Response:
-        action = str(request.data.get("action", "approve"))
+        s = PostingDecisionSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        action = s.validated_data["action"]
         if action == "effective":
             return Response(v.row(postings.make_effective(pk)))
-        return Response(v.row(postings.approve_posting(pk, approve=action == "approve", note=request.data.get("note"))))
+        return Response(
+            v.row(postings.approve_posting(pk, approve=action == "approve", note=s.validated_data.get("note") or None))
+        )
 
 
 class Separations(APIView):
     required_permission = "hr:separate"
 
     def post(self, request: Request) -> Response:
-        d = request.data
-        sep = postings.record_separation(
-            uuid.UUID(str(d["staff_post_id"])),
-            str(d["separation_kind"]),
-            effective_on=dt.date.fromisoformat(str(d["effective_on"])),
-        )
+        s = SeparationSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
+        sep = postings.record_separation(d["staff_post_id"], d["separation_kind"], effective_on=d["effective_on"])
         return Response(v.row(sep), status=201)
 
 
@@ -122,25 +179,35 @@ class LeaveDecision(APIView):
     required_permission = "hr:leave_approve"
 
     def post(self, request: Request, pk: uuid.UUID) -> Response:
-        return Response(v.row(leave.decide_leave(pk, bool(request.data.get("approve")))))
+        s = LeaveDecisionSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
+        return Response(v.row(leave.decide_leave(pk, d["approve"], relief_staff_id=d.get("relief_staff_id"))))
 
 
 class Promotions(APIView):
     required_permission = "hr:promote"
 
     def post(self, request: Request) -> Response:
-        d = request.data
-        return Response(
-            v.row(establishment.open_promotion(uuid.UUID(str(d["staff_id"])), str(d["exercise_label"]))), status=201
-        )
+        s = PromotionSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
+        return Response(v.row(establishment.open_promotion(d["staff_id"], d["exercise_label"])), status=201)
 
 
 class PromotionDecision(APIView):
     required_permission = "hr:promote"
 
     def post(self, request: Request, pk: uuid.UUID) -> Response:
+        s = PromotionDecisionSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
         return Response(
-            v.row(establishment.decide_promotion(pk, str(request.data["decision"]), reason=request.data.get("reason")))
+            v.row(
+                establishment.decide_promotion(
+                    pk, d["decision"], reason=d.get("reason") or None, effective_on=d.get("effective_on")
+                )
+            )
         )
 
 
@@ -148,11 +215,10 @@ class RelationsCases(APIView):
     required_permission = "hr:relations"
 
     def post(self, request: Request) -> Response:
-        d = request.data
-        return Response(
-            v.row(relations.open_case(uuid.UUID(str(d["staff_id"])), str(d["case_kind"]), str(d["summary"]))),
-            status=201,
-        )
+        s = RelationsSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
+        return Response(v.row(relations.open_case(d["staff_id"], d["case_kind"], d["summary"])), status=201)
 
 
 class IntegrityScan(APIView):
@@ -166,19 +232,19 @@ class IntegrityHold(APIView):
     required_permission = "hr:integrity"
 
     def post(self, request: Request, pk: uuid.UUID) -> Response:
-        return Response(
-            v.row(payroll.decide_hold(pk, bool(request.data.get("hold")), str(request.data.get("reason", ""))))
-        )
+        s = HoldSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        return Response(v.row(payroll.decide_hold(pk, s.validated_data["hold"], s.validated_data["reason"])))
 
 
 class PayrollRuns(APIView):
     required_permission = "hr:payroll_prepare"
 
     def post(self, request: Request) -> Response:
-        d = request.data
-        run = payroll.compute_payroll(
-            uuid.UUID(str(d["employer_scope_id"])), str(d["period_label"]), dt.date.fromisoformat(str(d["pay_date"]))
-        )
+        s = PayrollRunSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
+        run = payroll.compute_payroll(d["employer_scope_id"], d["period_label"], d["pay_date"])
         return Response(v.row(run), status=201)
 
 

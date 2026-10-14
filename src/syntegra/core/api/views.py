@@ -29,6 +29,17 @@ class CommandMeta:
     idempotency_key: str | None
 
 
+def uuid_param(request: Request, name: str) -> uuid.UUID | None:
+    """A UUID query parameter, or None when absent; a malformed value is a 422, never a 500."""
+    raw = request.query_params.get(name)
+    if not raw:
+        return None
+    try:
+        return uuid.UUID(raw)
+    except ValueError as exc:
+        raise HardValidation("API-PARAM", "Invalid parameter", f"{name} must be a UUID") from exc
+
+
 def meta(request: Request) -> CommandMeta:
     reason = request.headers.get("X-Syntegra-Override-Reason")
     if reason is not None and len(reason.strip()) < 10:

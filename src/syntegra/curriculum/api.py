@@ -22,8 +22,7 @@ class GapList(APIView):
     required_permission = "coverage:view"
 
     def get(self, request: Request) -> Response:
-        inst = request.query_params.get("institution_id")
-        gaps = services.open_gaps(uuid.UUID(inst) if inst else None)
+        gaps = services.open_gaps(v.uuid_param(request, "institution_id"))
         return Response({"data": [v.row(g) for g in gaps]})
 
 

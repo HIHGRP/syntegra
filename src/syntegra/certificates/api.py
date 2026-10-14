@@ -40,12 +40,17 @@ def cert_row(c: Certificate) -> dict[str, object]:
     return out
 
 
+class ReissueDecisionSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    approve = serializers.BooleanField()
+    note = serializers.CharField(max_length=500, required=False, allow_null=True, allow_blank=True)
+
+
 class CertificateList(APIView):
     required_permission = {"GET": "certificate:view", "POST": "certificate:issue"}
 
     def get(self, request: Request) -> Response:
         qs = Certificate.objects.in_scope()
-        if lid := request.query_params.get("learner_id"):
+        if lid := v.uuid_param(request, "learner_id"):
             qs = qs.filter(learner_id=lid)
         return Response({"data": [cert_row(c) for c in qs.order_by("-award_date")[:200]]})
 
@@ -80,8 +85,10 @@ class DecideReissue(APIView):
     required_permission = "certificate:approve"
 
     def post(self, request: Request, pk: uuid.UUID) -> Response:
-        approve = bool(request.data.get("approve"))
-        return Response(v.row(services.decide_reissue(pk, approve, note=request.data.get("note"))))
+        s = ReissueDecisionSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
+        return Response(v.row(services.decide_reissue(pk, d["approve"], note=d.get("note") or None)))
 
 
 class PublicVerify(APIView):
