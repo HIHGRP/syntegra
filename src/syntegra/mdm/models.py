@@ -156,7 +156,7 @@ class ExternalIdentifier(CedaModel):
     ceda_append_only = False
     ceda_partition = None
     ceda_retention = 'RS-LRN-PERM'
-    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'person_kind': {'type': 'enum', 'enum': 'person_kind'}, 'person_id': {'type': 'uuid'}, 'scheme': {'type': 'cl', 'code_list': 'identifier_scheme'}, 'value_hmac': {'type': 'hmac', 'class': 'restricted', 'secret_of': 'value'}, 'value_enc': {'type': 'secret', 'class': 'restricted', 'secret_of': 'value'}, 'value_last4': {'type': 'code', 'class': 'restricted', 'secret_of': 'value'}, 'issuer': {'type': 'str'}, 'verified_at': {'type': 'ts'}, 'verified_via': {'type': 'enum', 'enum': 'verification_channel'}, 'status': {'type': 'enum', 'enum': 'identifier_status'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'person_kind': {'type': 'enum', 'enum': 'person_kind'}, 'person_id': {'type': 'uuid'}, 'scheme': {'type': 'cl', 'code_list': 'identifier_scheme'}, 'value_hmac': {'type': 'hmac', 'class': 'restricted', 'secret_of': 'value'}, 'value_enc': {'type': 'secret', 'class': 'restricted', 'secret_of': 'value'}, 'value_last4': {'type': 'code', 'class': 'restricted', 'secret_of': 'value'}, 'value_national_hmac': {'type': 'hmac'}, 'issuer': {'type': 'str'}, 'verified_at': {'type': 'ts'}, 'verified_via': {'type': 'enum', 'enum': 'verification_channel'}, 'status': {'type': 'enum', 'enum': 'identifier_status'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
 
     id = cf.UUID7Field(primary_key=True, default=uuid7)
     tenant_id = cf.UUID7Field()
@@ -166,6 +166,7 @@ class ExternalIdentifier(CedaModel):
     value_hmac = models.BinaryField(help_text='HMAC-SHA-256 lookup of value')
     value_enc = models.BinaryField(help_text='Envelope-encrypted value. Identifier value — envelope-encrypted per tenant and scheme')
     value_last4 = models.CharField(max_length=4, null=True, blank=True, help_text='Last four characters of value for masked display')
+    value_national_hmac = models.BinaryField(null=True, blank=True, help_text='National lookup token (federation key) — NIN only, for cross-state matching without exchanging the NIN (CR-002)')
     issuer = models.CharField(max_length=120, null=True, blank=True, help_text='Issuing body where not implied by the scheme')
     verified_at = models.DateTimeField(null=True, blank=True)
     verified_via = models.CharField(max_length=32, choices=[('nimc', 'Nimc'), ('registrar', 'Registrar'), ('exam_body', 'Exam body'), ('trcn', 'Trcn'), ('cac', 'Cac'), ('manual', 'Manual')], null=True, blank=True)

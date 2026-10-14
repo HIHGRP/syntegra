@@ -107,6 +107,15 @@ def lookup_hmac(value: str, *, scheme: str, tenant_id: uuid.UUID | None) -> byte
     return hmac.new(provider().hmac_key(f"lookup:{scheme}", tenant_id), norm.encode(), hashlib.sha256).digest()
 
 
+def national_lookup_hmac(value: str, *, scheme: str) -> bytes:
+    """National lookup token (federation key shared by every state registry) — cross-state matching (CR-002).
+
+    In production the federation key lives in the national HSM and is the same for all states; it never leaves it.
+    """
+    norm = "".join(value.split()).upper()
+    return hmac.new(provider().hmac_key(f"lookup:{scheme}:national", None), norm.encode(), hashlib.sha256).digest()
+
+
 def last4(value: str) -> str:
     v = "".join(value.split())
     return v[-4:]

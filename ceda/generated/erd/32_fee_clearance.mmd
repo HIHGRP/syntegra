@@ -56,6 +56,7 @@ erDiagram
         BIGINT total_outstanding_minor
         CHAR_3_ currency
         JSON pattern_flags
+        JSON federation
     }
     clearance_decision {
         BINARY_16_ id PK
@@ -66,6 +67,25 @@ erDiagram
         VARCHAR_64_ payment_plan_ref
         BINARY_16_ decided_by
         DATETIME_6_ decided_at
+    }
+    clearance_exchange_query {
+        BINARY_16_ id PK
+        VARCHAR_32_ direction
+        BINARY_16_ query_ref
+        VARCHAR_6_ counterpart_state_code
+        BINARY_16_ clearance_check_id FK
+        BINARY_16_ learner_id FK
+        VARCHAR_32_ purpose
+        JSON identifiers_used
+        VARCHAR_32_ match_outcome
+        JSON obligations
+        BIGINT total_minor
+        CHAR_3_ currency
+        VARCHAR_300_ requesting_institution
+        VARCHAR_64_ kid
+        INT latency_ms
+        VARCHAR_64_ error
+        DATETIME_6_ occurred_at
     }
     app_user {
         BINARY_16 id PK
@@ -83,10 +103,12 @@ erDiagram
         BINARY_16 id PK
     }
     app_user ||--o{ obligation_dispute : "resolved_by"
+    clearance_check ||--o{ clearance_exchange_query : "clearance_check_id"
     clearance_check ||--o| clearance_decision : "check_id"
     institution ||--o{ clearance_check : "requesting_institution_id"
     institution ||--o{ learner_obligation : "creditor_institution_id"
     learner ||--o{ clearance_check : "learner_id"
+    learner ||--o{ clearance_exchange_query : "learner_id"
     learner ||--o{ learner_obligation : "learner_id"
     learner_obligation ||--o{ obligation_dispute : "obligation_id"
     learner_transfer ||--o{ clearance_check : "learner_transfer_id"

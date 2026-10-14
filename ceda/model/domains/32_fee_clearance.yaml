@@ -93,7 +93,7 @@ entities:
     origin: ceda
     retention: RS-AUDIT
     scope_note: Visible to the requesting institution, the creditors named in it, the family and the LGA/state.
-    reqs: [FR-FCL-02, FR-FCL-03, FR-FCL-08]
+    reqs: [FR-FCL-02, FR-FCL-03, FR-FCL-08, FR-FCL-13]
     pages: [FCL-01, FCL-02]
     events: [FCL.CHECK_PERFORMED]
     attrs:
@@ -111,6 +111,7 @@ entities:
       - "total_outstanding: money!"
       - "currency: currency!"
       - "pattern_flags: json | e.g. repeat_unsettled_transfers (count, window)"
+      - "federation: json | National coverage: per state answered / not_on_network / unavailable, with match outcome"
     ix: [[learner_id, checked_at], [requesting_institution_id, checked_at]]
 
   clearance_decision:
@@ -134,3 +135,35 @@ entities:
       - "decided_at: ts!"
     checks:
       protection_reason: "decision <> 'admit_protected' OR protected_reason IS NOT NULL"
+
+  clearance_exchange_query:
+    title: Cross-state clearance exchange message — outbound query or inbound query answered (logged in both states)
+    kind: event
+    class: restricted
+    history: append
+    origin: ceda
+    retention: RS-INTG
+    scope_note: State clearance administrators and the DPO; the family sees inbound queries about their child.
+    reqs: [FR-FCL-09, FR-FCL-11, FR-FCL-12, FR-FCL-13]
+    pages: [FCL-04, FCL-01]
+    events: [FCL.EXCHANGE_QUERY_RECEIVED]
+    attrs:
+      - "direction: enum(message_direction)!"
+      - "query_ref: uuid! | JWS jti shared by both states (replay protection)"
+      - "counterpart_state_code: subdivision!"
+      - "clearance_check_id: ref(clearance_check) | Outbound: the check the query belongs to"
+      - "learner_id: ref(learner) | Outbound: the subject; inbound: the matched local learner"
+      - "purpose: enum(clearance_purpose)!"
+      - "identifiers_used: json! | Which keys were sent: glid, nin_token, demographics"
+      - "match_outcome: enum(exchange_match)!"
+      - "obligations: json | Summary sent (inbound) or received (outbound)"
+      - "total: money!"
+      - "currency: currency!"
+      - "requesting_institution: str(300) | Inbound: who asked"
+      - "kid: code(64) | Key that signed the counterpart's message"
+      - "latency_ms: int"
+      - "error: code(64)"
+      - "occurred_at: ts!"
+    uq: [[direction, query_ref, counterpart_state_code]]
+    ix: [[learner_id, occurred_at], [counterpart_state_code, occurred_at]]
+

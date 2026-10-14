@@ -2,7 +2,8 @@
 {% block title %}Fee clearance check{% endblock %}
 {% block content %}
 <h1>Fee clearance check</h1>
-<p class="muted">Before admitting a learner who was enrolled elsewhere, check for unpaid fees or dues at any institution in the state.
+<p class="muted">Before admitting a learner who was enrolled elsewhere, check for unpaid fees or dues at any institution in the state
+and, through the national clearance network, in every other state on the network.
 The check informs your decision — it never refuses admission and never holds back the learner's records (principle P9).
 Learners entering public basic education are always admitted.</p>
 {% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
@@ -19,13 +20,19 @@ Learners entering public basic education are always admitted.</p>
 {% if chk %}
 <section class="card">
   <h2>{{ learner.legal_given_name }} {{ learner.legal_family_name }} <code>{{ learner.global_learner_id }}</code></h2>
-  {% if chk.result == "clear" %}<div class="verdict ok"><strong>Clear</strong> — no open obligations anywhere in the state.</div>
+  {% if chk.result == "clear" %}<div class="verdict ok"><strong>Clear</strong> — no open obligations {{ "in the states checked" if chk.federation else "anywhere in the state" }}.</div>
   {% elif chk.result == "protected" %}<div class="verdict ok"><strong>Admit</strong> — protected learner ({{ (decision.protected_reason or "").replace("_", " ") }}). The creditor keeps its claim.</div>
   {% elif chk.result == "disputed_only" %}<div class="verdict warn"><strong>Disputed claims only</strong> — shown for information; no decision needed.</div>
   {% else %}<div class="verdict warn"><strong>Outstanding: ₦{{ "{:,.2f}".format(chk.total_outstanding_minor / 100) }}</strong></div>{% endif %}
   {% if chk.obligations %}
-  <table class="compact"><thead><tr><th scope="col">Creditor</th><th scope="col">Kind</th><th scope="col" class="num">Amount</th><th scope="col">Oldest due</th><th scope="col">Status</th></tr></thead>
-  <tbody>{% for o in chk.obligations %}<tr><td>{{ o.creditor }}</td><td>{{ o.kind.replace("_", " ") }}</td><td class="num">₦{{ "{:,.2f}".format(o.amount_minor / 100) }}</td><td>{{ o.oldest_due_on }}</td><td>{{ o.status }}</td></tr>{% endfor %}</tbody></table>
+  <table class="compact"><thead><tr><th scope="col">Creditor</th><th scope="col">State</th><th scope="col">Kind</th><th scope="col" class="num">Amount</th><th scope="col">Oldest due</th><th scope="col">Status</th></tr></thead>
+  <tbody>{% for o in chk.obligations %}<tr><td>{{ o.creditor }}</td><td>{{ o.state or "—" }}</td><td>{{ o.kind.replace("_", " ") }}</td><td class="num">₦{{ "{:,.2f}".format(o.amount_minor / 100) }}</td><td>{{ o.oldest_due_on }}</td><td>{{ o.status }}</td></tr>{% endfor %}</tbody></table>
+  {% endif %}
+  {% if chk.federation %}{% set f = chk.federation %}
+  <p class="muted">Coverage: {{ f.covered }} of {{ f.states_total }} states answered{% if not f.complete %} —
+    {% if f.not_on_network %}{{ f.not_on_network|length }} not on the network{% endif %}{% if f.unavailable %}; did not answer: {{ f.unavailable|join(", ") }}{% endif %}{% if f.refused %}; refused: {{ f.refused|join(", ") }}{% endif %}{% endif %}.
+    {% if f.possible_match %}A possible match in {{ f.possible_match|join(", ") }} could not be confirmed, so no details were shared; ask the family about schooling there.{% endif %}
+    Gaps never hold up the admission.</p>
   {% endif %}
   {% for f in (chk.pattern_flags or []) %}<div class="alert">Pattern: {{ f.flag.replace("_", " ") }} — referred for state review.</div>{% endfor %}
   {% if chk.result == "outstanding" and not decision %}

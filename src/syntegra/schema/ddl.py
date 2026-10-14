@@ -66,6 +66,17 @@ def split_sql(script: str) -> list[str]:
     return out
 
 
+def _registry_tenant(alias: str) -> str | None:
+    """State tenant owning a schema-per-state registry alias ``registry__syn_reg_ng-la``; None in single mode."""
+    from syntegra.core.tenancy import state_tenant_id
+
+    if "__" not in alias:
+        return None
+    schema = alias.split("__", 1)[1]
+    code = schema.rsplit("_", 1)[-1]  # syn_reg_ng-la → ng-la
+    return str(state_tenant_id(code.upper())) if code.lower().startswith("ng-") else None
+
+
 def release_dir(version: str) -> Path:
     return Path(settings.SYNTEGRA_CEDA_RELEASES_DIR) / version
 
@@ -85,9 +96,13 @@ def apply_release(version: str):  # type: ignore[no-untyped-def]
     """RunPython operation applying CEDA release ``version`` to whichever zone alias is being migrated."""
 
     def apply(apps, schema_editor) -> None:  # type: ignore[no-untyped-def]
-        zone = zone_of_alias(schema_editor.connection.alias)
+        alias = schema_editor.connection.alias
+        zone = zone_of_alias(alias)
+        seed_tenant = _registry_tenant(alias) if zone == "registry" else None
         with schema_editor.connection.cursor() as cur:
             for stmt in statements_for_zone(zone, version):
+                if seed_tenant is not None and stmt.startswith("SET @tenant = UUID_TO_BIN("):
+                    stmt = f"SET @tenant = UUID_TO_BIN('{seed_tenant}')"  # the state that owns this registry
                 cur.execute(stmt)
 
     return apply

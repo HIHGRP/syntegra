@@ -22,6 +22,7 @@ Module (system of record): `platform` · default zone: **platform** · default r
 | [`service_credit`](#platform-service_credit) | platform | transaction | internal | append | Service credit under the BOO service-level agreement |
 | [`operator_receivable`](#platform-operator_receivable) | platform | transaction | internal | append | Operator receivables ledger line by channel (SDAF remittance, private subscription, other services) |
 | [`backup_run`](#platform-backup_run) | platform | event | internal | append | Database backup or restore test (DR readiness evidence for provider staff) |
+| [`exchange_peer`](#platform-exchange_peer) | platform | config | internal | lifecycle | National clearance network directory — one row per state registry (36 states and the FCT) |
 
 <a id="platform-residency_region"></a>
 ## `residency_region`
@@ -619,4 +620,44 @@ Database backup or restore test (DR readiness evidence for provider staff)
 | `report_ref` | `BINARY(16)` | yes |  | Published test report document |
 | `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
 | `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+
+<a id="platform-exchange_peer"></a>
+## `exchange_peer`
+
+National clearance network directory — one row per state registry (36 states and the FCT)
+
+| | |
+|---|---|
+| Zone | platform |
+| Kind | config |
+| Classification | internal |
+| History | lifecycle |
+| Scope | none |
+| Module | `platform` |
+| Origin | ceda |
+| Retention | `RS-PLATFORM` |
+| Requirements | FR-FCL-10, FR-FCL-11 |
+| Pages | FCL-04 |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `id` **PK** | `BINARY(16)` | no |  | Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap |
+| `state_code` | `VARCHAR(6)` | no |  | ISO 3166-2:NG, e.g. NG-LA |
+| `state_name` | `VARCHAR(300)` | no |  |  |
+| `tenant_id` → `tenant` | `BINARY(16)` | yes |  | State tenant once provisioned on this platform |
+| `hosting` | `VARCHAR(32)` | no |  | values: co_hosted, remote |
+| `endpoint_url` | `VARCHAR(2048)` | yes |  | Remote peers: base URL of the state's exchange API |
+| `kid` | `VARCHAR(64)` | yes |  | Key id of the state's exchange signing key |
+| `public_jwk` | `JSON` | yes |  | Verification key (EC P-256) |
+| `agreement_ref` | `VARCHAR(64)` | yes |  | National clearance data-sharing agreement reference |
+| `status` | `VARCHAR(32)` | no |  | values: not_on_network, onboarding, active, suspended |
+| `onboarded_at` | `DATETIME(6)` | yes |  |  |
+| `last_seen_at` | `DATETIME(6)` | yes |  |  |
+| `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
+| `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+| `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
+| `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
+| `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
+
+- Unique: (state_code)
 

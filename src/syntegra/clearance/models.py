@@ -29,7 +29,7 @@ class ClearanceCheck(CedaModel):
     ceda_append_only = True
     ceda_partition = None
     ceda_retention = 'RS-AUDIT'
-    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'learner_id': {'type': 'ref', 'ref': 'learner'}, 'requesting_institution_id': {'type': 'ref', 'ref': 'institution'}, 'purpose': {'type': 'enum', 'enum': 'clearance_purpose'}, 'basis': {'type': 'enum', 'enum': 'clearance_basis'}, 'admission_application_id': {'type': 'uuid'}, 'learner_transfer_id': {'type': 'ref', 'ref': 'learner_transfer'}, 'requested_by': {'type': 'uuid'}, 'checked_at': {'type': 'ts'}, 'coverage': {'type': 'enum', 'enum': 'clearance_coverage'}, 'result': {'type': 'enum', 'enum': 'clearance_result'}, 'obligations': {'type': 'json'}, 'total_outstanding_minor': {'type': 'money'}, 'currency': {'type': 'currency'}, 'pattern_flags': {'type': 'json'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}}
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'learner_id': {'type': 'ref', 'ref': 'learner'}, 'requesting_institution_id': {'type': 'ref', 'ref': 'institution'}, 'purpose': {'type': 'enum', 'enum': 'clearance_purpose'}, 'basis': {'type': 'enum', 'enum': 'clearance_basis'}, 'admission_application_id': {'type': 'uuid'}, 'learner_transfer_id': {'type': 'ref', 'ref': 'learner_transfer'}, 'requested_by': {'type': 'uuid'}, 'checked_at': {'type': 'ts'}, 'coverage': {'type': 'enum', 'enum': 'clearance_coverage'}, 'result': {'type': 'enum', 'enum': 'clearance_result'}, 'obligations': {'type': 'json'}, 'total_outstanding_minor': {'type': 'money'}, 'currency': {'type': 'currency'}, 'pattern_flags': {'type': 'json'}, 'federation': {'type': 'json'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}}
 
     id = cf.UUID7Field(primary_key=True, default=uuid7)
     tenant_id = cf.UUID7Field()
@@ -47,6 +47,7 @@ class ClearanceCheck(CedaModel):
     total_outstanding_minor = models.BigIntegerField(help_text='(minor units)')
     currency = models.CharField(max_length=3)
     pattern_flags = models.JSONField(null=True, blank=True, help_text='e.g. repeat_unsettled_transfers (count, window)')
+    federation = models.JSONField(null=True, blank=True, help_text='National coverage: per state answered / not_on_network / unavailable, with match outcome')
     created_at = models.DateTimeField(default=cf.utcnow)
     created_by = cf.UUID7Field(null=True, blank=True)
 
@@ -97,6 +98,53 @@ class ClearanceDecision(CedaModel):
         app_label = 'clearance'
         base_manager_name = 'unscoped'
         verbose_name = 'Human admission decision recorded on a clearance check (or the automatic protect'
+
+
+class ClearanceExchangeQuery(CedaModel):
+    """Cross-state clearance exchange message — outbound query or inbound query answered (logged in both states)"""
+
+    ceda_entity = 'clearance_exchange_query'
+    ceda_zones = ('registry',)
+    ceda_domain = 'FCL'
+    ceda_kind = 'event'
+    ceda_class = 'restricted'
+    ceda_history = 'append'
+    ceda_scope = 'none'
+    ceda_append_only = True
+    ceda_partition = None
+    ceda_retention = 'RS-INTG'
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'direction': {'type': 'enum', 'enum': 'message_direction'}, 'query_ref': {'type': 'uuid'}, 'counterpart_state_code': {'type': 'subdivision'}, 'clearance_check_id': {'type': 'ref', 'ref': 'clearance_check'}, 'learner_id': {'type': 'ref', 'ref': 'learner'}, 'purpose': {'type': 'enum', 'enum': 'clearance_purpose'}, 'identifiers_used': {'type': 'json'}, 'match_outcome': {'type': 'enum', 'enum': 'exchange_match'}, 'obligations': {'type': 'json'}, 'total_minor': {'type': 'money'}, 'currency': {'type': 'currency'}, 'requesting_institution': {'type': 'str'}, 'kid': {'type': 'code'}, 'latency_ms': {'type': 'int'}, 'error': {'type': 'code'}, 'occurred_at': {'type': 'ts'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}}
+
+    id = cf.UUID7Field(primary_key=True, default=uuid7)
+    tenant_id = cf.UUID7Field()
+    direction = models.CharField(max_length=32, choices=[('outbound', 'Outbound'), ('inbound', 'Inbound')])
+    query_ref = cf.UUID7Field(help_text='JWS jti shared by both states (replay protection)')
+    counterpart_state_code = models.CharField(max_length=6)
+    clearance_check = models.ForeignKey("clearance.ClearanceCheck", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='clearance_check_id', null=True, blank=True)
+    learner = models.ForeignKey("learners.Learner", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='learner_id', null=True, blank=True)
+    purpose = models.CharField(max_length=32, choices=[('admission', 'Admission'), ('transfer', 'Transfer'), ('re_enrolment', 'Re enrolment'), ('enquiry_with_consent', 'Enquiry with consent')])
+    identifiers_used = models.JSONField(help_text='Which keys were sent: glid, nin_token, demographics')
+    match_outcome = models.CharField(max_length=32, choices=[('matched', 'Matched'), ('possible_match', 'Possible match'), ('not_found', 'Not found'), ('refused', 'Refused'), ('unavailable', 'Unavailable'), ('not_on_network', 'Not on network')])
+    obligations = models.JSONField(null=True, blank=True, help_text='Summary sent (inbound) or received (outbound)')
+    total_minor = models.BigIntegerField(help_text='(minor units)')
+    currency = models.CharField(max_length=3)
+    requesting_institution = models.CharField(max_length=300, null=True, blank=True, help_text='Inbound: who asked')
+    kid = models.CharField(max_length=64, null=True, blank=True, help_text="Key that signed the counterpart's message")
+    latency_ms = models.IntegerField(null=True, blank=True)
+    error = models.CharField(max_length=64, null=True, blank=True)
+    occurred_at = models.DateTimeField()
+    created_at = models.DateTimeField(default=cf.utcnow)
+    created_by = cf.UUID7Field(null=True, blank=True)
+
+    objects = TenantScopedManager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'clearance_exchange_query'
+        app_label = 'clearance'
+        base_manager_name = 'unscoped'
+        verbose_name = 'Cross-state clearance exchange message — outbound query or inbound query answere'
 
 
 class LearnerObligation(CedaModel):

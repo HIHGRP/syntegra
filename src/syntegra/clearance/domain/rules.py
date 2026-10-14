@@ -75,6 +75,7 @@ class Obligation:
     currency: str
     oldest_due_on: dt.date
     status: str
+    state: str = ""  # state registry holding the obligation; empty = this state
 
 
 @dataclass(frozen=True)

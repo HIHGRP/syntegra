@@ -7,7 +7,7 @@
   "id": "SYN-CEDA-001",
   "platform": "Red Hat Enterprise Linux 10 / OpenShift",
   "status": "Baseline for build",
-  "version": "1.2.0"
+  "version": "1.3.0"
  },
  "code_lists": {
   "absence_reason": [
@@ -1579,6 +1579,14 @@
    "attendance",
    "outcomes"
   ],
+  "exchange_match": [
+   "matched",
+   "possible_match",
+   "not_found",
+   "refused",
+   "unavailable",
+   "not_on_network"
+  ],
   "exemption_funding": [
    "borne_by_state",
    "waived"
@@ -2154,6 +2162,16 @@
    "exported",
    "posted",
    "cancelled"
+  ],
+  "peer_hosting": [
+   "co_hosted",
+   "remote"
+  ],
+  "peer_status": [
+   "not_on_network",
+   "onboarding",
+   "active",
+   "suspended"
   ],
   "period_kind": [
    "session",
@@ -3839,6 +3857,19 @@
    },
    "producer": "clearance",
    "trigger": "LGA or state resolved a dispute"
+  },
+  "FCL.EXCHANGE_QUERY_RECEIVED": {
+   "aggregate": "clearance_exchange_query",
+   "consumers": [
+    "comms",
+    "analytics"
+   ],
+   "payload": {
+    "clearance_exchange_query_id": "uuid!",
+    "match_outcome": "enum(exchange_match)!"
+   },
+   "producer": "clearance",
+   "trigger": "Another state queried this registry; creditor institutions of a matched learner are notified"
   },
   "FCL.OBLIGATION_PUBLISHED": {
    "aggregate": "learner_obligation",
@@ -6270,6 +6301,26 @@
    ],
    "sources": [
     "obligation_dispute"
+   ]
+  },
+  {
+   "direction": "higher_is_better",
+   "formula": "states that answered ÷ 37 (36 states and the FCT) per clearance check; states on the network ÷ 37",
+   "grain": "day × requesting state",
+   "group": "Finance",
+   "id": "FCL-NATIONAL-COVERAGE",
+   "name": "National clearance coverage",
+   "pages": [
+    "FCL-04"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-FCL-10",
+    "FR-FCL-13"
+   ],
+   "sources": [
+    "clearance_exchange_query",
+    "exchange_peer"
    ]
   }
  ],
@@ -10854,6 +10905,22 @@
    ],
    "route": "/clearance/disputes",
    "title": "Clearance disputes"
+  },
+  {
+   "change_request": "CR-002",
+   "classification": "internal",
+   "id": "FCL-04",
+   "module": "Fee clearance",
+   "pattern": "Dashboard / command centre",
+   "phase": "P3",
+   "purpose": "Directory of the 36 state registries and the FCT: onboarding status, hosting, last contact, queries sent and answered, and national coverage of recent checks.",
+   "roles": [
+    "PLAT",
+    "FED",
+    "STA"
+   ],
+   "route": "/clearance/network",
+   "title": "National clearance network"
   }
  ],
  "retention": {

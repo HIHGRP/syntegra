@@ -18,6 +18,17 @@ from syntegra.core.errors import NotFound
 
 # Fixed id of the first state tenant: the CEDA registry seed (15_registry_seed_code_lists.sql) is keyed to it.
 SEED_STATE_TENANT = uuid.UUID("00000000-0000-7000-8000-000000000001")
+_STATE_NS = uuid.UUID("6d1f3c2e-9b0a-5c1e-8f00-5e0a1c0de001")
+
+
+def state_tenant_id(state_code: str) -> uuid.UUID:
+    """Deterministic tenant id of a state (ISO 3166-2:NG code), identical on every deployment of the platform.
+
+    Abia keeps the seed id the CEDA code-list seed is keyed to; every other state is derived from its code, so
+    schema-per-state registries can be seeded without a lookup (``schema.ddl``).
+    """
+    code = state_code.upper()
+    return SEED_STATE_TENANT if code == "NG-AB" else uuid.uuid5(_STATE_NS, code)
 
 
 @dataclass(frozen=True)

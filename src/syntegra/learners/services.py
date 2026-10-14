@@ -17,7 +17,7 @@ from typing import Any
 from django.db import IntegrityError, connections, transaction
 from django.db.models import Q, QuerySet
 
-from syntegra.clearance.services import DecisionInput, gate
+from syntegra.clearance.services import DecisionInput, gate, national_network_active
 from syntegra.core import authz, context, crypto, uow
 from syntegra.core.errors import ConflictError, HardValidation, NotFound, SoftWarning
 from syntegra.core.ids import format_glid
@@ -190,9 +190,14 @@ def register(
             for lr, r in found[:3]
         ]
         raise err
-    if top and top[1].band == "auto_link" and _left_elsewhere(top[0].id, inst.id):
-        # re-admission of a known learner who was enrolled elsewhere: fee-clearance due diligence (CR-001)
+    linked = bool(top and top[1].band == "auto_link")
+    if top and linked and (_left_elsewhere(top[0].id, inst.id) or top[0].status == "registered"):
+        # re-admission of a known learner who was enrolled elsewhere (or whose admission is awaiting a clearance
+        # decision): fee-clearance due diligence (CR-001), including every other state on the network (CR-002)
         gate(top[0].id, inst.id, purpose="admission", education_level=data.education_level, decision=clearance)
+    # New to this state while other states are on the national clearance network: the learner record is created
+    # first, the other states are asked, then the enrolment follows the clearance outcome (CR-002, FR-FCL-13).
+    cross_state = not linked and national_network_active()
     with uow.command("registry", None, action="register", record_kind="learner", reason=override_reason) as cmd:
         if top and top[1].band == "auto_link":
             learner = top[0]
@@ -238,6 +243,7 @@ def register(
                     person_id=learner.id,
                     scheme="NG-NIN",
                     value_hmac=crypto.lookup_hmac(data.nin, scheme="NG-NIN", tenant_id=ctx.state_tenant_id),
+                    value_national_hmac=crypto.national_lookup_hmac(data.nin, scheme="NG-NIN"),
                     value_enc=crypto.encrypt(data.nin, purpose="id:NG-NIN", tenant_id=ctx.state_tenant_id),
                     value_last4=crypto.last4(data.nin),
                     status="unverified",
@@ -262,8 +268,14 @@ def register(
             scope_node_id=inst.scope_node_id,
             payload={"learner_id": learner.id, "global_learner_id": learner.global_learner_id},
         )
-        enr = _enrol(cmd, learner, inst, data.education_level, data.start_on, data.basis)
-        return Registration(learner, enr, "created", review_id, {"score": top[1].score} if top else None)
+        reg = Registration(learner, None, "created", review_id, {"score": top[1].score} if top else None)
+        if not cross_state:
+            reg.enrolment = _enrol(cmd, learner, inst, data.education_level, data.start_on, data.basis)
+            return reg
+    gate(learner.id, inst.id, purpose="admission", education_level=data.education_level, decision=clearance)
+    with uow.command("registry", None, action="enrol", record_kind="enrolment") as cmd:
+        reg.enrolment = _enrol(cmd, learner, inst, data.education_level, data.start_on, data.basis)
+    return reg
 
 
 # --------------------------------------------------------------------------- enrolment

@@ -33,7 +33,7 @@ Never displayed unmasked; NIN never used as a primary key or sole matching key (
 | Module | `mdm` |
 | Origin | appj |
 | Retention | `RS-LRN-PERM` |
-| Requirements | FR-LRN-04, FR-FAM-01, FR-STF-02, FR-PVT-101 |
+| Requirements | FR-LRN-04, FR-FAM-01, FR-STF-02, FR-PVT-101, FR-FCL-14 |
 | Pages | LRN-02, LRN-04, STF-03 |
 
 | Column | MySQL type | Null | Class | Description |
@@ -46,6 +46,7 @@ Never displayed unmasked; NIN never used as a primary key or sole matching key (
 | `value_hmac` | `BINARY(32)` | no | restricted | HMAC-SHA-256 lookup of value |
 | `value_enc` | `VARBINARY(1024)` | no | restricted | Envelope-encrypted value. Identifier value — envelope-encrypted per tenant and scheme |
 | `value_last4` | `CHAR(4)` | yes | restricted | Last four characters of value for masked display |
+| `value_national_hmac` | `BINARY(32)` | yes |  | National lookup token (federation key) — NIN only, for cross-state matching without exchanging the NIN (CR-002) |
 | `issuer` | `VARCHAR(120)` | yes |  | Issuing body where not implied by the scheme |
 | `verified_at` | `DATETIME(6)` | yes |  |  |
 | `verified_via` | `VARCHAR(32)` | yes |  | values: nimc, registrar, exam_body, trcn, cac, manual |
@@ -58,6 +59,7 @@ Never displayed unmasked; NIN never used as a primary key or sole matching key (
 
 - Index: (tenant_id, person_kind, person_id)
 - Index: (tenant_id, scheme, value_hmac)
+- Index: (tenant_id, scheme, value_national_hmac)
 
 <a id="registry-identity_verification"></a>
 ## `identity_verification`

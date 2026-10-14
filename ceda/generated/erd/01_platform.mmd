@@ -197,6 +197,20 @@ erDiagram
         INT rto_seconds
         BINARY_16_ report_ref
     }
+    exchange_peer {
+        BINARY_16_ id PK
+        VARCHAR_6_ state_code
+        VARCHAR_300_ state_name
+        BINARY_16_ tenant_id FK
+        VARCHAR_32_ hosting
+        VARCHAR_2048_ endpoint_url
+        VARCHAR_64_ kid
+        JSON public_jwk
+        VARCHAR_64_ agreement_ref
+        VARCHAR_32_ status
+        DATETIME_6_ onboarded_at
+        DATETIME_6_ last_seen_at
+    }
     platform_user ||--o{ subscription_credit_note : "approved_by"
     platform_user ||--o{ subscription_plan : "approved_by"
     residency_region ||--o{ backup_run : "residency_region_id"
@@ -207,6 +221,7 @@ erDiagram
     subscription_invoice ||--o{ subscription_payment : "invoice_id"
     subscription_plan ||--o{ subscription : "plan_id"
     subscription_plan ||--o{ subscription_quote : "plan_id"
+    tenant ||--o{ exchange_peer : "tenant_id"
     tenant ||--o{ feature_flag : "tenant_id"
     tenant ||--o{ glid_block : "tenant_id"
     tenant ||--o{ operator_receivable : "tenant_id"

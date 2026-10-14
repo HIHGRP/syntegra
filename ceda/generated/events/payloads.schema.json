@@ -3262,6 +3262,32 @@
         "resolution"
       ],
       "additionalProperties": false
+    },
+    "FCL.EXCHANGE_QUERY_RECEIVED": {
+      "type": "object",
+      "description": "Another state queried this registry; creditor institutions of a matched learner are notified",
+      "properties": {
+        "clearance_exchange_query_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "match_outcome": {
+          "type": "string",
+          "enum": [
+            "matched",
+            "possible_match",
+            "not_found",
+            "refused",
+            "unavailable",
+            "not_on_network"
+          ]
+        }
+      },
+      "required": [
+        "clearance_exchange_query_id",
+        "match_outcome"
+      ],
+      "additionalProperties": false
     }
   }
 }

@@ -76,6 +76,7 @@ Generated from `ceda/model/metrics.yaml`. Every indicator shown on a dashboard, 
 | `SDAF-COLLECTION` | SDAF billed | collection rate = collected ÷ (billed − exempted); outstanding = billed − exempted − collected; remittance variance = collected − remitted (aged) | billing period × institution/LGA/institution type | daily | higher_is_better | `fact_sdaf` | SUB-105, SUB-103, SUB-104 |
 | `FCL-OUTSTANDING-RATE` | Incoming learners with outstanding obligations | clearance checks with result outstanding ÷ clearance checks | month × LGA × institution type | daily | lower_is_better | `clearance_check` | FCL-01, FCL-02, FCL-03 |
 | `FCL-DISPUTE-UPHELD` | Obligation disputes upheld | disputes upheld or partly upheld ÷ disputes resolved, by creditor institution (unsupported claims) | term × creditor institution | daily | lower_is_better | `obligation_dispute` | FCL-03 |
+| `FCL-NATIONAL-COVERAGE` | National clearance coverage | states that answered ÷ 37 (36 states and the FCT) per clearance check; states on the network ÷ 37 | day × requesting state | daily | higher_is_better | `clearance_exchange_query`, `exchange_peer` | FCL-04 |
 
 ## Integrity and data
 

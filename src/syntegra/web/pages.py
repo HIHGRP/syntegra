@@ -16,6 +16,7 @@ IMPLEMENTED: dict[str, str] = {
     "LRN-04": "learner",
     "CUR-101": "coverage",
     "FCL-01": "clearance",
+    "FCL-04": "clearance_network",
     "HRM-01": "establishment",
 }
 # Pages served for any signed-in user, independent of role lists

@@ -341,3 +341,27 @@ entities:
       - "rpo_seconds: int | Measured recovery point for failover tests"
       - "rto_seconds: int | Measured recovery time for failover tests"
       - "report_ref: uuid | Published test report document"
+
+  exchange_peer:
+    title: National clearance network directory — one row per state registry (36 states and the FCT)
+    kind: config
+    class: internal
+    history: lifecycle
+    origin: ceda
+    retention: RS-PLATFORM
+    scope_note: National control plane; holds no learner data.
+    reqs: [FR-FCL-10, FR-FCL-11]
+    pages: [FCL-04]
+    attrs:
+      - "state_code: subdivision! uq | ISO 3166-2:NG, e.g. NG-LA"
+      - "state_name: title!"
+      - "tenant_id: ref(tenant) | State tenant once provisioned on this platform"
+      - "hosting: enum(peer_hosting)!"
+      - "endpoint_url: url | Remote peers: base URL of the state's exchange API"
+      - "kid: code(64) | Key id of the state's exchange signing key"
+      - "public_jwk: json | Verification key (EC P-256)"
+      - "agreement_ref: code(64) | National clearance data-sharing agreement reference"
+      - "status: enum(peer_status)!"
+      - "onboarded_at: ts"
+      - "last_seen_at: ts"
+

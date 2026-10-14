@@ -157,7 +157,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "syntegra.core.api.pagination.UUID7CursorPagination",
     "PAGE_SIZE": 50,
     "UNAUTHENTICATED_USER": None,
-    "DEFAULT_THROTTLE_RATES": {"public_verify": "20/hour", "anon": "60/minute", "user": "600/minute"},
+    "DEFAULT_THROTTLE_RATES": {"public_verify": "20/hour", "exchange": "1200/minute", "anon": "60/minute", "user": "600/minute"},
 }
 
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}

@@ -21,8 +21,15 @@ from typing import Any
 
 from django.db import IntegrityError, transaction
 
+from syntegra.clearance import federation
 from syntegra.clearance.domain import rules
-from syntegra.clearance.models import ClearanceCheck, ClearanceDecision, LearnerObligation, ObligationDispute
+from syntegra.clearance.models import (
+    ClearanceCheck,
+    ClearanceDecision,
+    ClearanceExchangeQuery,
+    LearnerObligation,
+    ObligationDispute,
+)
 from syntegra.core import authz, context, uow
 from syntegra.core.canonical_json import canonicalize
 from syntegra.core.errors import ConflictError, DomainError, Forbidden, HardValidation, NotFound
@@ -50,6 +57,7 @@ class ClearanceDecisionRequired(DomainError):
                 "currency": check.currency,
                 "obligations": check.obligations,
                 "pattern_flags": check.pattern_flags or [],
+                "federation": check.federation,
                 "allowed_decisions": list(rules.DECISIONS),
             },
         )
@@ -226,6 +234,11 @@ def expire_stale(on: dt.date | None = None) -> int:
 
 
 # --------------------------------------------------------------------------- the check (admitting side)
+def national_network_active() -> bool:
+    """Whether any other state answers clearance queries (then new arrivals are checked nationally first)."""
+    return federation.network_active()
+
+
 def _snapshot(ob: LearnerObligation, names: dict[uuid.UUID, str]) -> rules.Obligation:
     return rules.Obligation(
         ob.id,
@@ -249,13 +262,26 @@ def check(
     admission_application_id: uuid.UUID | None = None,
     basis: str = "admission_due_diligence",
 ) -> ClearanceCheck:
-    """Run and record a state-wide clearance check (purpose-bound: only for an admission or transfer here)."""
+    """Run and record a clearance check (purpose-bound: only for an admission or transfer here).
+
+    The check covers this state's register and — through the national clearance network (CR-002) — every other
+    state: co-hosted and remote registries are asked in turn, and states that are not on the network or do not
+    answer are recorded as coverage gaps in ``federation`` (they never block or delay the admission).
+    """
     ctx = context.require()
     authz.require("clearance:check", ctx)
     inst = Institution.objects.filter(pk=requesting_institution_id).first()
-    if inst is None or not Learner.objects.filter(pk=learner_id).exists():
+    learner = Learner.objects.filter(pk=learner_id).first()
+    if inst is None or learner is None:
         raise NotFound("institution or learner")
     authz.require_scope(inst.scope_node_id, ctx)
+    # Cross-state first, outside any transaction: peers answer over the network or in their own registries.
+    peers: list[federation.PeerResult] = []
+    fed: dict[str, Any] | None = None
+    if purpose in federation.ALLOWED_PURPOSES and federation.network_active():
+        peers = federation.query_all(learner, inst, purpose)
+        fed = federation.coverage(federation.my_state_code(), peers)
+    remote = federation.remote_obligations(peers)
     # The register is state-wide by design: every creditor institution, public or private.
     obs = list(
         LearnerObligation.objects.filter(learner_id=learner_id, status__in=rules.OPEN).exclude(
@@ -272,12 +298,14 @@ def check(
         .count()
     )
     protected = "public_basic_education" if rules.is_public_basic_education(inst.is_public, education_level) else None
+    snapshots = [_snapshot(o, names) for o in obs] + remote
     a = rules.assess(
-        [_snapshot(o, names) for o in obs],
+        snapshots,
         protected_reason=protected,
         prior_outstanding_checks=prior,
-        creditors_with_open=len({o.creditor_institution_id for o in obs if o.status != "disputed"}),
+        creditors_with_open=len({o.creditor_institution_id for o in snapshots if o.status != "disputed"}),
     )
+    here = fed["requesting_state"] if fed else None
     with uow.command("registry", None, action="clearance_check", record_kind="clearance_check") as cmd:
         chk = cmd.add(
             ClearanceCheck(
@@ -289,7 +317,7 @@ def check(
                 learner_transfer_id=learner_transfer_id,
                 requested_by=ctx.actor_id or uuid.UUID(int=0),
                 checked_at=utcnow(),
-                coverage="state",
+                coverage="national" if fed else "state",
                 result=a.result,
                 obligations=[
                     {
@@ -301,14 +329,17 @@ def check(
                         "currency": o.currency,
                         "oldest_due_on": o.oldest_due_on.isoformat(),
                         "status": o.status,
+                        "state": o.state or here,
                     }
                     for o in a.obligations
                 ],
                 total_outstanding_minor=a.total_outstanding_minor,
                 currency="NGN",
                 pattern_flags=a.pattern_flags or None,
+                federation=fed,
             )
         )
+        federation.log_outbound(cmd, chk.id, learner_id, purpose, peers)
         LearnerObligation.unscoped.using(cmd.alias).filter(id__in=[o.id for o in obs]).update(
             last_checked_at=chk.checked_at
         )
@@ -554,6 +585,22 @@ def checks_about(learner_id: uuid.UUID) -> list[dict[str, Any]]:
                 "purpose": c.purpose,
                 "result": c.result,
                 "decision": dec.decision if dec else None,
+                "coverage": c.coverage,
+                "states_covered": (c.federation or {}).get("covered"),
             }
         )
+    # Checks run in other states that reached this state's register about the child (CR-002, FR-FCL-12).
+    for q in ClearanceExchangeQuery.objects.filter(learner_id=learner_id, direction="inbound").order_by("-occurred_at"):
+        out.append(
+            {
+                "checked_at": q.occurred_at,
+                "by_institution": q.requesting_institution,
+                "purpose": q.purpose,
+                "result": q.match_outcome,
+                "decision": None,
+                "coverage": "cross_state",
+                "from_state": q.counterpart_state_code,
+            }
+        )
+    out.sort(key=lambda r: r["checked_at"], reverse=True)
     return out

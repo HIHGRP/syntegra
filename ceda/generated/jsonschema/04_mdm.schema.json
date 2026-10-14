@@ -57,6 +57,18 @@
           "writeOnly": true,
           "description": "Identifier value — envelope-encrypted per tenant and scheme"
         },
+        "value_national_hmac": {
+          "anyOf": [
+            {
+              "type": "string",
+              "contentEncoding": "base64",
+              "description": "National lookup token (federation key) — NIN only, for cross-state matching without exchanging the NIN (CR-002)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "issuer": {
           "anyOf": [
             {

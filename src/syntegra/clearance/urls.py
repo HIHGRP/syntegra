@@ -9,4 +9,6 @@ urlpatterns = [
     path("clearance/obligations/<uuid:pk>/disputes", api.Disputes.as_view()),
     path("clearance/disputes/<uuid:pk>/resolution", api.DisputeResolution.as_view()),
     path("learners/<uuid:learner_id>/clearance-checks", api.LearnerChecks.as_view()),
+    path("exchange/clearance", api.ExchangeClearance.as_view()),
+    path("exchange/keys", api.ExchangeKeys.as_view()),
 ]

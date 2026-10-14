@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}National clearance network{% endblock %}
+{% block content %}
+<h1>National clearance network</h1>
+<p class="muted">Fee-clearance checks in {{ data.state }} ask every other state registry on the network. States that are not yet on the
+network, or that do not answer, are shown on each check as coverage gaps — they never block or delay an admission (principle P9).</p>
+<section class="tiles">
+  <article class="tile"><h2>States on the network</h2><p class="big">{{ data.active }} / {{ data.states_total }}</p><p class="muted">{{ data.not_on_network }} not yet connected</p></article>
+  <article class="tile"><h2>Checks ({{ data.days }} days)</h2><p class="big">{{ data.checks }}</p><p class="muted">{{ data.national_checks }} with national coverage</p></article>
+  <article class="tile"><h2>Complete coverage</h2><p class="big">{{ data.complete_checks }}</p><p class="muted">all {{ data.states_total }} states answered</p></article>
+  <article class="tile"><h2>Average states covered</h2><p class="big">{{ "—" if data.average_covered is none else data.average_covered }}</p></article>
+</section>
+<table class="compact"><caption class="sr">State registries</caption>
+<thead><tr><th scope="col">State</th><th scope="col">Status</th><th scope="col">Hosting</th><th scope="col">Key</th><th scope="col">Last answered</th><th scope="col" class="num">Sent</th><th scope="col" class="num">Received</th><th scope="col" class="num">Matched</th></tr></thead>
+<tbody>{% for p in data.peers %}<tr{% if p.is_self %} aria-current="true"{% endif %}>
+  <td><code>{{ p.state_code }}</code> {{ p.state_name }}{% if p.is_self %} <span class="muted">(this state)</span>{% endif %}</td>
+  <td>{{ p.status.replace("_", " ") }}</td><td>{{ (p.hosting or "—").replace("_", "-") }}</td>
+  <td>{% if p.kid and p.status == "active" %}<code>{{ p.kid }}</code>{% else %}—{% endif %}</td>
+  <td>{{ p.last_seen_at.strftime("%Y-%m-%d %H:%M") if p.last_seen_at else "—" }}</td>
+  <td class="num">{{ p.sent }}</td><td class="num">{{ p.received }}</td><td class="num">{{ p.matched }}</td></tr>{% endfor %}</tbody></table>
+{% endblock %}

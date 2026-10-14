@@ -186,3 +186,5 @@ events:
   FCL.DECISION_RECORDED: {producer: clearance, aggregate: clearance_decision, payload: {clearance_decision_id: uuid!, decision: enum(clearance_decision_kind)!}, consumers: [comms, analytics], trigger: "Admission decision recorded on a clearance check"}
   FCL.DISPUTE_RAISED: {producer: clearance, aggregate: obligation_dispute, payload: {obligation_dispute_id: uuid!, learner_obligation_id: uuid!}, consumers: [comms], trigger: "Obligation disputed (shown as disputed until resolved)"}
   FCL.DISPUTE_RESOLVED: {producer: clearance, aggregate: obligation_dispute, payload: {obligation_dispute_id: uuid!, resolution: enum(dispute_resolution)!}, consumers: [comms, analytics], trigger: "LGA or state resolved a dispute"}
+  FCL.EXCHANGE_QUERY_RECEIVED: {producer: clearance, aggregate: clearance_exchange_query, payload: {clearance_exchange_query_id: uuid!, match_outcome: enum(exchange_match)!}, consumers: [comms, analytics], trigger: "Another state queried this registry; creditor institutions of a matched learner are notified"}
+

@@ -145,7 +145,10 @@ def cmd_delta(version: str) -> int:
     d = RELEASES / version
     d.mkdir(parents=True, exist_ok=True)
     problems = []
-    covered = manual_tables(version)
+    covered: set[str] = manual_tables(version)  # this release may not be listed yet (no release.json)
+    for v in versions():  # tables altered by hand-written expand scripts of this and every earlier release
+        if _key(v) <= _key(version):
+            covered |= manual_tables(v)
     for f in FILES:
         cur = split_sql((CURRENT / f).read_text(encoding="utf-8"))
         old = prev[f]
@@ -253,7 +256,9 @@ def cmd_check_mysql() -> int:
                     _mysql(p.read_text(encoding="utf-8"), a)
         for f in files:
             _mysql((CURRENT / f).read_text(encoding="utf-8"), b)
-        sa, sb = _mysql(SHAPE, a), _mysql(SHAPE, b)
+        # MySQL re-prints CHECK literals with the column charset introducer after an ALTER TABLE
+        # (_ascii'x' instead of _utf8mb4'x'); the constraint is identical, so introducers are normalised.
+        sa, sb = (re.sub(r"_[a-z0-9]+(\\\\')", r"\1", _mysql(SHAPE, db)) for db in (a, b))
         rows_a = _mysql("SELECT code_list_id IS NOT NULL, COUNT(*) FROM code_value GROUP BY 1", a) if zone == "registry" else ""
         rows_b = _mysql("SELECT code_list_id IS NOT NULL, COUNT(*) FROM code_value GROUP BY 1", b) if zone == "registry" else ""
         same = sa == sb and rows_a == rows_b

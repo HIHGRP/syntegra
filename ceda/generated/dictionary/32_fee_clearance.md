@@ -10,6 +10,7 @@ Module (system of record): `clearance` · default zone: **registry** · default 
 | [`obligation_dispute`](#registry-obligation_dispute) | registry | transaction | restricted | lifecycle | Dispute of a published obligation by the family, the admitting institution or the creditor (resolved by LGA or state) |
 | [`clearance_check`](#registry-clearance_check) | registry | event | restricted | append | Clearance check run for an incoming learner (purpose-bound, logged, visible to the family) |
 | [`clearance_decision`](#registry-clearance_decision) | registry | event | restricted | append | Human admission decision recorded on a clearance check (or the automatic protection of a learner) |
+| [`clearance_exchange_query`](#registry-clearance_exchange_query) | registry | event | restricted | append | Cross-state clearance exchange message — outbound query or inbound query answered (logged in both states) |
 
 <a id="registry-learner_obligation"></a>
 ## `learner_obligation`
@@ -131,7 +132,7 @@ Clearance check run for an incoming learner (purpose-bound, logged, visible to t
 | Module | `clearance` |
 | Origin | ceda |
 | Retention | `RS-AUDIT` |
-| Requirements | FR-FCL-02, FR-FCL-03, FR-FCL-08 |
+| Requirements | FR-FCL-02, FR-FCL-03, FR-FCL-08, FR-FCL-13 |
 | Pages | FCL-01, FCL-02 |
 | Events | FCL.CHECK_PERFORMED |
 
@@ -153,6 +154,7 @@ Clearance check run for an incoming learner (purpose-bound, logged, visible to t
 | `total_outstanding_minor` | `BIGINT` | no |  | (minor units) |
 | `currency` | `CHAR(3)` | no |  |  |
 | `pattern_flags` | `JSON` | yes |  | e.g. repeat_unsettled_transfers (count, window) |
+| `federation` | `JSON` | yes |  | National coverage: per state answered / not_on_network / unavailable, with match outcome |
 | `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
 | `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
 
@@ -195,4 +197,50 @@ Human admission decision recorded on a clearance check (or the automatic protect
 - Unique: (tenant_id, check_id)
 
 - Check `protection_reason`: `decision <> 'admit_protected' OR protected_reason IS NOT NULL`
+
+<a id="registry-clearance_exchange_query"></a>
+## `clearance_exchange_query`
+
+Cross-state clearance exchange message — outbound query or inbound query answered (logged in both states)
+
+| | |
+|---|---|
+| Zone | registry |
+| Kind | event |
+| Classification | restricted |
+| History | append |
+| Scope | none |
+| Module | `clearance` |
+| Origin | ceda |
+| Retention | `RS-INTG` |
+| Requirements | FR-FCL-09, FR-FCL-11, FR-FCL-12, FR-FCL-13 |
+| Pages | FCL-04, FCL-01 |
+| Events | FCL.EXCHANGE_QUERY_RECEIVED |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `id` **PK** | `BINARY(16)` | no |  | Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap |
+| `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `direction` | `VARCHAR(32)` | no |  | values: outbound, inbound |
+| `query_ref` | `BINARY(16)` | no |  | JWS jti shared by both states (replay protection) |
+| `counterpart_state_code` | `VARCHAR(6)` | no |  |  |
+| `clearance_check_id` → `clearance_check` | `BINARY(16)` | yes |  | Outbound: the check the query belongs to |
+| `learner_id` → `learner` | `BINARY(16)` | yes |  | Outbound: the subject; inbound: the matched local learner |
+| `purpose` | `VARCHAR(32)` | no |  | values: admission, transfer, re_enrolment, enquiry_with_consent |
+| `identifiers_used` | `JSON` | no |  | Which keys were sent: glid, nin_token, demographics |
+| `match_outcome` | `VARCHAR(32)` | no |  | values: matched, possible_match, not_found, refused, unavailable, not_on_network |
+| `obligations` | `JSON` | yes |  | Summary sent (inbound) or received (outbound) |
+| `total_minor` | `BIGINT` | no |  | (minor units) |
+| `currency` | `CHAR(3)` | no |  |  |
+| `requesting_institution` | `VARCHAR(300)` | yes |  | Inbound: who asked |
+| `kid` | `VARCHAR(64)` | yes |  | Key that signed the counterpart's message |
+| `latency_ms` | `INT` | yes |  |  |
+| `error` | `VARCHAR(64)` | yes |  |  |
+| `occurred_at` | `DATETIME(6)` | no |  |  |
+| `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
+| `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+
+- Unique: (tenant_id, direction, query_ref, counterpart_state_code)
+- Index: (tenant_id, learner_id, occurred_at)
+- Index: (tenant_id, counterpart_state_code, occurred_at)
 

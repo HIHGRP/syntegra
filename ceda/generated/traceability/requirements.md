@@ -1,6 +1,6 @@
 # Requirement → data traceability
 
-540 functional requirements (SYN-MFS-002 v2.4 and change requests CR-001): 533 are realised by CEDA entities or metrics; 7 are behavioural (UI, workflow or engine behaviour over data already modelled) and name the entity they operate on. Generated; do not edit.
+546 functional requirements (SYN-MFS-002 v2.4 and change requests CR-001, CR-002): 539 are realised by CEDA entities or metrics; 7 are behavioural (UI, workflow or engine behaviour over data already modelled) and name the entity they operate on. Generated; do not edit.
 
 | Requirement | Source | Priority | Phase | Realised by | Text |
 |---|---|---|---|---|---|
@@ -270,6 +270,12 @@
 | FR-FCL-06 | CR-001 | SHALL | P2 | `metric:FCL-DISPUTE-UPHELD`, `obligation_dispute` | Let families and the admitting institution dispute an obligation; a disputed obligation is shown as disputed and resolved by the LGA or state within a set time. |
 | FR-FCL-07 | CR-001 | SHALL | P2 | `learner_obligation` | Expire obligations not reconfirmed by the creditor within 90 days and refuse claims older than the limitation period; never include SDAF arrears. |
 | FR-FCL-08 | CR-001 | SHALL | P2 | `clearance_check`, `metric:FCL-OUTSTANDING-RATE` | Log every check with purpose and requester; let the family see who checked; flag repeated transfers that leave unsettled obligations for state review. |
+| FR-FCL-09 | CR-002 | SHALL | P3 | `clearance_exchange_query` | Query every other state registry on the national clearance network for open obligations of an incoming learner, matching by Global Learner ID, national NIN token or a demographic match of at least 0.98; a lower match ret |
+| FR-FCL-10 | CR-002 | SHALL | P3 | `exchange_peer`, `metric:FCL-NATIONAL-COVERAGE` | Maintain a national directory of the 36 state registries and the FCT with hosting (co-hosted or remote), endpoint, verification key and onboarding status, and report on every check which states answered, which are not ye |
+| FR-FCL-11 | CR-002 | SHALL | P3 | `clearance_exchange_query`, `exchange_peer` | Sign every exchange query and answer (ES256 compact JWS) with the state's exchange key; verify against the directory; refuse unknown, suspended, expired or replayed messages. |
+| FR-FCL-12 | CR-002 | SHALL | P3 | `clearance_exchange_query` | Log every outbound and inbound exchange query in both states with purpose, identifiers used, outcome and latency; notify creditor institutions in the answering state that their debtor is seeking admission elsewhere. |
+| FR-FCL-13 | CR-002 | SHALL | P3 | `clearance_check`, `clearance_exchange_query`, `metric:FCL-NATIONAL-COVERAGE` | Never let an unavailable or not-onboarded state block or delay an admission; record the coverage gap on the clearance check. |
+| FR-FCL-14 | CR-002 | SHALL | P3 | `external_identifier` | Hold a national lookup token for the NIN (federation key shared by all state registries) so states match without exchanging NINs; backfill tokens for existing identifiers. |
 | FR-FIN-01 | MFS | SHALL | P4 | `budget` | Prepare budgets by cost centre and account linked to enrolment and staffing forecasts; approve via workflow. |
 | FR-FIN-02 | MFS | SHALL | P4 | `budget`, `metric:BUDGET-EXECUTION` | Monitor budget vs actual with variance explanations and forecast outturn. |
 | FR-FIN-03 | MFS | SHALL | P4 | `purchase_order`, `requisition` | Run procurement: requisition → approval (delegated limits) → PO → receipt → three-way match → payment; detect split purchases. |

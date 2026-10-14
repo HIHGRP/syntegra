@@ -393,3 +393,9 @@ enums:
   clearance_result: {title: Clearance result, values: [clear, outstanding, disputed_only, protected]}
   clearance_decision_kind: {title: Admission decision on a clearance check, values: [admit, admit_with_payment_plan, defer_pending_settlement, admit_protected]}
   protected_reason: {title: Reason a learner is admitted regardless of obligations, values: [public_basic_education, send, safeguarding, child_in_care, displaced, other_vulnerability]}
+
+  # ---------------------------------------------------------------- national clearance exchange (CR-002)
+  peer_hosting: {title: Where a state registry is hosted, values: [co_hosted, remote]}
+  peer_status: {title: National clearance network status of a state registry, values: [not_on_network, onboarding, active, suspended]}
+  exchange_match: {title: Outcome of a cross-state clearance query, values: [matched, possible_match, not_found, refused, unavailable, not_on_network]}
+

@@ -16,7 +16,8 @@ from django.db import transaction
 
 from syntegra.core import context, tenancy
 from syntegra.core.fields import utcnow
-from syntegra.core.tenancy import SEED_STATE_TENANT
+from syntegra.core.tenancy import SEED_STATE_TENANT, state_tenant_id
+from syntegra.platform.states import BY_CODE, STATES
 
 COUNTRY_TENANT = uuid.UUID("00000000-0000-7000-8000-0000000000a0")
 
@@ -262,8 +263,9 @@ class Seeded:
     role_ids: dict[str, uuid.UUID] = field(default_factory=dict)
 
 
-def _platform(hosts: list[str]) -> None:
-    from syntegra.platform.models import GlidBlock, ResidencyRegion, Tenant, TenantDomain
+def _platform_base() -> uuid.UUID:
+    """Residency region and the country tenant (national control plane). Returns the region id."""
+    from syntegra.platform.models import ResidencyRegion, Tenant
 
     alias = "platform"
     with transaction.atomic(using=alias):
@@ -290,29 +292,112 @@ def _platform(hosts: list[str]) -> None:
                 status="active",
                 activated_at=utcnow(),
             ).save(using=alias, force_insert=True)
-        if not Tenant.objects.using(alias).filter(pk=SEED_STATE_TENANT).exists():
+        return region.id
+
+
+def _state_tenant(state_code: str, hosts: list[str]) -> uuid.UUID:
+    from syntegra.platform.models import GlidBlock, Tenant, TenantDomain
+
+    alias = "platform"
+    region_id = _platform_base()
+    tid = state_tenant_id(state_code)
+    name, _ = BY_CODE[state_code]
+    with transaction.atomic(using=alias):
+        if not Tenant.objects.using(alias).filter(pk=tid).exists():
+            code = state_code.lower()
             Tenant(
-                id=SEED_STATE_TENANT,
+                id=tid,
                 parent_id=COUNTRY_TENANT,
                 kind="state",
-                code="ng-ab",
-                name="Abia State",
-                residency_region_id=region.id,
-                state_code="NG-AB",
+                code=code,
+                name=name,
+                residency_region_id=region_id,
+                state_code=state_code,
                 isolation="dedicated_schema",
-                ops_schema="syn_ops_ng-ab",
+                ops_schema=f"syn_ops_{code}",
                 status="active",
                 activated_at=utcnow(),
             ).save(using=alias, force_insert=True)
         for i, h in enumerate(hosts):
             if not TenantDomain.objects.using(alias).filter(hostname=h).exists():
-                TenantDomain(
-                    tenant_id=SEED_STATE_TENANT, hostname=h, is_primary=i == 0, verified_at=utcnow(), status="active"
-                ).save(using=alias)
-        if not GlidBlock.objects.using(alias).filter(tenant_id=SEED_STATE_TENANT).exists():
-            GlidBlock(tenant_id=SEED_STATE_TENANT, first_serial=1, last_serial=10_000, leased_at=utcnow()).save(
+                TenantDomain(tenant_id=tid, hostname=h, is_primary=i == 0, verified_at=utcnow(), status="active").save(
+                    using=alias
+                )
+        if not GlidBlock.objects.using(alias).filter(tenant_id=tid).exists():
+            # national GLID allocator: the next free block of 10,000 serials (unique across every state)
+            last = GlidBlock.objects.using(alias).order_by("-last_serial").values_list("last_serial", flat=True).first()
+            first = (last or 0) + 1
+            GlidBlock(tenant_id=tid, first_serial=first, last_serial=first + 9_999, leased_at=utcnow()).save(
                 using=alias
             )
+    return tid
+
+
+def seed_national_directory() -> int:
+    """National clearance network directory: one row per state registry (36 states and the FCT), idempotent."""
+    from syntegra.platform.models import ExchangePeer
+
+    n = 0
+    with transaction.atomic(using="platform"):
+        for code, name, _ in STATES:
+            if not ExchangePeer.objects.using("platform").filter(state_code=code).exists():
+                ExchangePeer(
+                    state_code=code,
+                    state_name=name,
+                    hosting="remote",
+                    kid=f"exchange-{code.lower()}",
+                    status="not_on_network",
+                ).save(using="platform")
+                n += 1
+    return n
+
+
+def join_network(state_code: str) -> None:
+    """Mark a state provisioned on this platform as an active, co-hosted peer with its exchange verification key."""
+    from syntegra.core import crypto
+    from syntegra.platform.models import ExchangePeer
+
+    seed_national_directory()
+    kid = f"exchange-{state_code.lower()}"
+    with transaction.atomic(using="platform"):
+        peer = ExchangePeer.objects.using("platform").select_for_update().get(state_code=state_code)
+        if peer.status != "active" or peer.hosting != "co_hosted":
+            peer.hosting, peer.status, peer.kid = "co_hosted", "active", kid
+            peer.tenant_id = state_tenant_id(state_code)
+            peer.public_jwk = crypto.provider().public_jwk(kid)
+            peer.agreement_ref = "NG-NCX-2026-001"
+            peer.onboarded_at = utcnow()
+            peer.save(using="platform")
+
+
+def _copy_code_lists(tid: uuid.UUID) -> None:
+    """Single-tenancy deployments share one registry schema: give a new state the jurisdiction code lists."""
+    from django.db import connections
+
+    from syntegra.core.zones import current_alias
+
+    if tid == SEED_STATE_TENANT:
+        return
+    alias = current_alias("registry")
+    with connections[alias].cursor() as cur:
+        cur.execute("SELECT COUNT(*) FROM code_list WHERE tenant_id = %s", [tid.bytes])
+        if cur.fetchone()[0]:
+            return
+        cur.execute("SELECT COUNT(*) FROM code_list WHERE tenant_id = %s", [SEED_STATE_TENANT.bytes])
+        if not cur.fetchone()[0]:
+            return  # schema-per-state: the registry was seeded for this state by the migration
+        cur.execute(
+            "INSERT INTO code_list (id, tenant_id, code, title, pack, is_extensible) "
+            "SELECT UUID_TO_BIN(UUID()), %s, code, title, pack, is_extensible FROM code_list WHERE tenant_id = %s",
+            [tid.bytes, SEED_STATE_TENANT.bytes],
+        )
+        cur.execute(
+            "INSERT INTO code_value (id, tenant_id, code_list_id, code, label, sort_order, valid_from) "
+            "SELECT UUID_TO_BIN(UUID()), %s, nl.id, v.code, v.label, v.sort_order, v.valid_from FROM code_value v "
+            "JOIN code_list ol ON ol.id = v.code_list_id JOIN code_list nl ON nl.tenant_id = %s AND nl.code = ol.code "
+            "WHERE v.tenant_id = %s",
+            [tid.bytes, tid.bytes, SEED_STATE_TENANT.bytes],
+        )
 
 
 def bootstrap(
@@ -321,41 +406,62 @@ def bootstrap(
     admin_password: str | None = None,
     hosts: list[str] | None = None,
 ) -> Seeded:
+    """Provision the seed state (Abia) — kept for compatibility; see ``provision_state``."""
+    return provision_state(
+        "NG-AB",
+        admin_username=admin_username,
+        admin_password=admin_password,
+        hosts=hosts or ["abia.syntegra.ng", "localhost", "127.0.0.1", "testserver"],
+        lgas=LGAS,
+    )
+
+
+def provision_state(
+    state_code: str,
+    *,
+    admin_username: str | None = None,
+    admin_password: str | None = None,
+    hosts: list[str] | None = None,
+    lgas: list[tuple[str, str]] | None = None,
+) -> Seeded:
+    """Provision any of the 36 states or the FCT on this platform (idempotent) and join the clearance network."""
     from syntegra.core import uow
     from syntegra.governance import services as gov
     from syntegra.governance.models import PolicyRule, ScopeNode, WorkflowDefinition
     from syntegra.iam import services as iam
     from syntegra.iam.models import AppUser, PurposeCode, Role, RolePermission
 
-    _platform(hosts or ["abia.syntegra.ng", "localhost", "127.0.0.1", "testserver"])
+    state_code = state_code.upper()
+    if state_code not in BY_CODE:
+        raise ValueError(f"{state_code} is not a Nigerian state or the FCT")
+    name, capital = BY_CODE[state_code]
+    short = state_code.split("-")[1].lower()
+    tid = _state_tenant(state_code, hosts or [f"{short}.syntegra.ng"])
     tenancy.clear_caches()
-    ctx = context.system(SEED_STATE_TENANT, SEED_STATE_TENANT, correlation_id="bootstrap")
+    ctx = context.system(tid, tid, correlation_id=f"provision-{state_code}")
     with context.use(ctx):
-        out = Seeded(SEED_STATE_TENANT, uuid.UUID(int=0), uuid.UUID(int=0))
+        _copy_code_lists(tid)
+        out = Seeded(tid, uuid.UUID(int=0), uuid.UUID(int=0))
         with uow.command("registry", None, action="bootstrap", record_kind="tenant") as cmd:
-            cmd.record_id = SEED_STATE_TENANT
+            cmd.record_id = tid
             ng = ScopeNode.objects.filter(code="NG").first() or gov.add_node(
                 cmd, parent=None, level="country", code="NG", name="Nigeria", ref_kind="tenant", ref_id=COUNTRY_TENANT
             )
-            ab = ScopeNode.objects.filter(code="NG-AB").first() or gov.add_node(
-                cmd,
-                parent=ng,
-                level="state",
-                code="NG-AB",
-                name="Abia State",
-                ref_kind="tenant",
-                ref_id=SEED_STATE_TENANT,
+            st = ScopeNode.objects.filter(code=state_code).first() or gov.add_node(
+                cmd, parent=ng, level="state", code=state_code, name=name, ref_kind="tenant", ref_id=tid
             )
-            out.country_scope_id, out.state_scope_id = ng.id, ab.id
-            for code, name in LGAS:
+            out.country_scope_id, out.state_scope_id = ng.id, st.id
+            for code, lga_name in lgas or [capital]:
                 lga = ScopeNode.objects.filter(code=code).first() or gov.add_node(
-                    cmd, parent=ab, level="lga", code=code, name=name
+                    cmd, parent=st, level="lga", code=code, name=lga_name
                 )
                 out.lga_scope_ids[code] = lga.id
-            for code, (name, clearance, perms) in ROLES.items():
+            for code, (role_name, clearance, perms) in ROLES.items():
                 role = Role.objects.filter(code=code).first()
                 if role is None:
-                    role = cmd.add(Role(code=code, name=name, clearance=clearance, is_builtin=True, status="active"))
+                    role = cmd.add(
+                        Role(code=code, name=role_name, clearance=clearance, is_builtin=True, status="active")
+                    )
                 have = set(RolePermission.objects.filter(role_id=role.id).values_list("permission", flat=True))
                 for p in perms:  # built-in roles gain permissions added by later releases
                     if p not in have:
@@ -365,10 +471,10 @@ def bootstrap(
                 if not PurposeCode.objects.filter(code=code).exists():
                     cmd.add(PurposeCode(code=code, label=label, requires_reason_text=reason, allowed_roles=roles))
             for key, domain, title, expr, params, mandatory in POLICIES:
-                if not PolicyRule.objects.filter(rule_key=key, scope_node_id=ab.id).exists():
+                if not PolicyRule.objects.filter(rule_key=key, scope_node_id=st.id).exists():
                     cmd.add(
                         PolicyRule(
-                            scope_node_id=ab.id,
+                            scope_node_id=st.id,
                             rule_key=key,
                             rule_domain=domain,
                             title=title,
@@ -384,7 +490,7 @@ def bootstrap(
                 if not WorkflowDefinition.objects.filter(workflow_key=key).exists():
                     cmd.add(
                         WorkflowDefinition(
-                            scope_node_id=ab.id,
+                            scope_node_id=st.id,
                             workflow_key=key,
                             version=1,
                             title=spec["title"],
@@ -395,11 +501,13 @@ def bootstrap(
         from syntegra.hr import defaults as hr_defaults
 
         hr_defaults.seed(out.state_scope_id)
-        admin = AppUser.objects.filter(username=admin_username).first()
-        if admin is None:
-            admin = iam.create_user(
-                ctx, username=admin_username, display_name="State Administrator", password=admin_password
-            )
-            iam.grant_role(ctx, user=admin, role_code="STA", scope_id=ab.id)
-        out.admin_user_id = admin.id
+        if admin_username:
+            admin = AppUser.objects.filter(username=admin_username).first()
+            if admin is None:
+                admin = iam.create_user(
+                    ctx, username=admin_username, display_name=f"{name} Administrator", password=admin_password
+                )
+                iam.grant_role(ctx, user=admin, role_code="STA", scope_id=st.id)
+            out.admin_user_id = admin.id
+    join_network(state_code)
     return out

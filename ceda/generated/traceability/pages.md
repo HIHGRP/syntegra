@@ -1,6 +1,6 @@
 # Page → data traceability
 
-Every one of the 260 pages in SYN-MFS-002 v2.4 and the 13 pages added by change requests is served by at least one CEDA entity or metric. Generated; do not edit.
+Every one of the 260 pages in SYN-MFS-002 v2.4 and the 14 pages added by change requests is served by at least one CEDA entity or metric. Generated; do not edit.
 
 | Page | Source | Title | Module | Phase | CEDA entities and metrics | MFS master objects |
 |---|---|---|---|---|---|---|
@@ -135,9 +135,10 @@ Every one of the 260 pages in SYN-MFS-002 v2.4 and the 13 pages added by change 
 | FAM-02 | MFS | Link a guardian | Families | P1 | `guardian`, `learner_guardian`, `match_review` | Parent/Guardian 360 |
 | FAM-03 | MFS | Parent home | Families | P1 | `absence_report`, `guardian`, `report_card` | Family 360, Learner 360 |
 | FAM-04 | MFS | Consents | Families | P1 | `consent_record` | Consent |
-| FCL-01 | CR-001 | Fee clearance check | Fee clearance | P2 | `clearance_check`, `clearance_decision`, `learner_obligation`, `metric:FCL-OUTSTANDING-RATE` |  |
+| FCL-01 | CR-001 | Fee clearance check | Fee clearance | P2 | `clearance_check`, `clearance_decision`, `clearance_exchange_query`, `learner_obligation`, `metric:FCL-OUTSTANDING-RATE` |  |
 | FCL-02 | CR-001 | Obligations register | Fee clearance | P2 | `clearance_check`, `learner_obligation`, `metric:FCL-OUTSTANDING-RATE`, `obligation_dispute` |  |
 | FCL-03 | CR-001 | Clearance disputes | Fee clearance | P2 | `metric:FCL-DISPUTE-UPHELD`, `metric:FCL-OUTSTANDING-RATE`, `obligation_dispute` |  |
+| FCL-04 | CR-002 | National clearance network | Fee clearance | P3 | `clearance_exchange_query`, `exchange_peer`, `metric:FCL-NATIONAL-COVERAGE` |  |
 | FIN-01 | MFS | Budget planning | Finance | P4 | `budget` | Budget |
 | FIN-02 | MFS | Budget vs actual | Finance | P4 | `budget`, `metric:BUDGET-EXECUTION` | Budget, Ledger |
 | FIN-03 | MFS | Procurement | Finance | P4 | `purchase_order`, `requisition`, `supplier` | Requisition, PurchaseOrder, Supplier 360 |

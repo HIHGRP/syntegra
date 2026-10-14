@@ -560,6 +560,17 @@
             }
           ]
         },
+        "federation": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "National coverage: per state answered / not_on_network / unavailable, with match outcome"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "created_at": {
           "type": "string",
           "format": "date-time",
@@ -695,6 +706,197 @@
         "reason",
         "decided_by",
         "decided_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "ClearanceExchangeQuery": {
+      "title": "ClearanceExchangeQuery",
+      "description": "Cross-state clearance exchange message — outbound query or inbound query answered (logged in both states)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "clearance_exchange_query",
+        "zone": "registry",
+        "domain": "FCL",
+        "kind": "event",
+        "classification": "restricted",
+        "history": "append",
+        "module": "clearance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "outbound",
+            "inbound"
+          ]
+        },
+        "query_ref": {
+          "type": "string",
+          "format": "uuid",
+          "description": "JWS jti shared by both states (replay protection)"
+        },
+        "counterpart_state_code": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}-[A-Z0-9]{1,3}$"
+        },
+        "clearance_check_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "clearance_check",
+              "description": "Outbound: the check the query belongs to"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "learner_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "learner",
+              "description": "Outbound: the subject; inbound: the matched local learner"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "purpose": {
+          "type": "string",
+          "enum": [
+            "admission",
+            "transfer",
+            "re_enrolment",
+            "enquiry_with_consent"
+          ]
+        },
+        "identifiers_used": {
+          "type": "object",
+          "description": "Which keys were sent: glid, nin_token, demographics"
+        },
+        "match_outcome": {
+          "type": "string",
+          "enum": [
+            "matched",
+            "possible_match",
+            "not_found",
+            "refused",
+            "unavailable",
+            "not_on_network"
+          ]
+        },
+        "obligations": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Summary sent (inbound) or received (outbound)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "total_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "requesting_institution": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 300,
+              "description": "Inbound: who asked"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "kid": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Key that signed the counterpart's message"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "latency_ms": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "direction",
+        "query_ref",
+        "counterpart_state_code",
+        "purpose",
+        "identifiers_used",
+        "match_outcome",
+        "total_minor",
+        "currency",
+        "occurred_at",
         "created_at"
       ],
       "additionalProperties": false

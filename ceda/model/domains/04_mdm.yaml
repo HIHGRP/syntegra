@@ -21,7 +21,7 @@ entities:
     origin: appj
     retention: RS-LRN-PERM
     scope_note: Visibility follows the person record it belongs to; reveal requires purpose and is audited.
-    reqs: [FR-LRN-04, FR-FAM-01, FR-STF-02, FR-PVT-101]
+    reqs: [FR-LRN-04, FR-FAM-01, FR-STF-02, FR-PVT-101, FR-FCL-14]
     pages: [LRN-02, LRN-04, STF-03]
     notes: >
       Never displayed unmasked; NIN never used as a primary key or sole matching key (Book 3 §8.3, §12.1).
@@ -31,11 +31,12 @@ entities:
       - "person_id: uuid! | learner, guardian, staff or provider_person id (polymorphic)"
       - "scheme: cl(identifier_scheme)! | NG-NIN, WAEC-CAND, NECO-CAND, JAMB-REG, TRCN, UPN, INST-ID …"
       - "value: secret! lookup mask4 restricted | Identifier value — envelope-encrypted per tenant and scheme"
+      - "value_national_hmac: hmac | National lookup token (federation key) — NIN only, for cross-state matching without exchanging the NIN (CR-002)"
       - "issuer: str(120) | Issuing body where not implied by the scheme"
       - "verified_at: ts"
       - "verified_via: enum(verification_channel)"
       - "status: enum(identifier_status)!"
-    ix: [[person_kind, person_id], [scheme, value_hmac]]
+    ix: [[person_kind, person_id], [scheme, value_hmac], [scheme, value_national_hmac]]
 
   identity_verification:
     title: Identity verification attempt against a national source (NIMC NIN, TRCN, CAC) — result only, not the source data

@@ -5,13 +5,17 @@ from __future__ import annotations
 import uuid
 
 from rest_framework import serializers
+from rest_framework.authentication import BaseAuthentication
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from syntegra.clearance import services
+from syntegra.clearance import federation, services
 from syntegra.clearance.models import LearnerObligation
 from syntegra.core.api import views as v
+from syntegra.core.api.permissions import Public
+from syntegra.platform.models import ExchangePeer
 
 
 class CheckSerializer(serializers.Serializer):  # type: ignore[type-arg]
@@ -122,3 +126,36 @@ class LearnerChecks(APIView):
 
     def get(self, request: Request, learner_id: uuid.UUID) -> Response:
         return Response({"data": v.jsonable(services.checks_about(learner_id))})
+
+
+class ExchangeClearance(APIView):
+    """National clearance network (CR-002): a signed query from another state's registry, answered and signed.
+
+    Not user-authenticated: the message itself is authenticated (ES256 against the national directory), expiring
+    and single-use. Refusals are signed answers too, so the caller can always tell why.
+    """
+
+    authentication_classes: list[type[BaseAuthentication]] = []
+    permission_classes = [Public]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "exchange"
+
+    def post(self, request: Request) -> Response:
+        token = request.data.get("jws") if isinstance(request.data, dict) else None
+        if not isinstance(token, str) or token.count(".") != 2 or len(token) > 16384:
+            raise federation.ExchangeRefused("body must be {\"jws\": <compact JWS>}")
+        return Response({"jws": federation.answer(token)}, headers={"Cache-Control": "no-store"})
+
+
+class ExchangeKeys(APIView):
+    """Verification keys of the state registries answered by this platform (for remote peers' directories)."""
+
+    authentication_classes: list[type[BaseAuthentication]] = []
+    permission_classes = [Public]
+
+    def get(self, request: Request) -> Response:
+        keys = []
+        for p in ExchangePeer.objects.using("platform").filter(hosting="co_hosted", status="active"):
+            if p.public_jwk:
+                keys.append({**p.public_jwk, "kid": p.kid, "use": "sig", "state_code": p.state_code})
+        return Response({"keys": keys}, headers={"Cache-Control": "public, max-age=3600"})

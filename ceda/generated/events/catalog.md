@@ -153,3 +153,4 @@ Generated from `ceda/model/events.yaml`. Events are named `<DOMAIN>.<PAST_TENSE_
 | `FCL.DECISION_RECORDED` | `clearance` | `clearance_decision` | `syn.{region}.fcl.v1` | `clearance_decision_id`, `decision` | comms, analytics | Admission decision recorded on a clearance check |
 | `FCL.DISPUTE_RAISED` | `clearance` | `obligation_dispute` | `syn.{region}.fcl.v1` | `obligation_dispute_id`, `learner_obligation_id` | comms | Obligation disputed (shown as disputed until resolved) |
 | `FCL.DISPUTE_RESOLVED` | `clearance` | `obligation_dispute` | `syn.{region}.fcl.v1` | `obligation_dispute_id`, `resolution` | comms, analytics | LGA or state resolved a dispute |
+| `FCL.EXCHANGE_QUERY_RECEIVED` | `clearance` | `clearance_exchange_query` | `syn.{region}.fcl.v1` | `clearance_exchange_query_id`, `match_outcome` | comms, analytics | Another state queried this registry; creditor institutions of a matched learner are notified |

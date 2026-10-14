@@ -1,10 +1,10 @@
 # CEDA data dictionary
 
-Generated from the CEDA model (SYN-CEDA-001 v1.2.0). Do not edit by hand.
+Generated from the CEDA model (SYN-CEDA-001 v1.3.0). Do not edit by hand.
 
 | Domain | Code | Module (Django app) | Default zone | Entities |
 |---|---|---|---|---|
-| [Platform, tenancy and operator commercial records](01_platform.md) | PLT | `platform` | platform | 16 |
+| [Platform, tenancy and operator commercial records](01_platform.md) | PLT | `platform` | platform | 17 |
 | [Governance hierarchy, configuration, reference data, policy and workflow](02_governance.md) | GOV | `governance` | registry | 18 |
 | [Identity, access, permissions and service identities](03_iam.md) | IAM | `iam` | registry | 12 |
 | [Master data management, identity matching and data quality](04_mdm.md) | MDM | `mdm` | registry | 9 |
@@ -35,5 +35,5 @@ Generated from the CEDA model (SYN-CEDA-001 v1.2.0). Do not edit by hand.
 | [Integration, data exchange, imports, webhooks, idempotency and data-subject requests](29_integration.md) | INTG | `integration` | registry | 16 |
 | [Audit trail, chain anchors and the transactional outbox](30_audit.md) | AUD | `core` | ops | 20 |
 | [Enterprise Human Resource Management Suite — establishment, employment, postings, leave, promotion, employee relations, separation, payroll elements and payroll integrity](31_hrms.md) | HRM | `hr` | registry | 18 |
-| [Fee-clearance due diligence — learner obligations register, clearance checks, admission decisions and disputes](32_fee_clearance.md) | FCL | `clearance` | registry | 4 |
+| [Fee-clearance due diligence — learner obligations register, clearance checks, admission decisions and disputes](32_fee_clearance.md) | FCL | `clearance` | registry | 5 |
 | [Analytics warehouse — conformed dimensions, facts, aggregates, live KPI read model and feature store](90_warehouse.md) | DW | `analytics` | dw | 38 |

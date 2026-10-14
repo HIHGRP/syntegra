@@ -1970,6 +1970,179 @@
         "created_at"
       ],
       "additionalProperties": false
+    },
+    "ExchangePeer": {
+      "title": "ExchangePeer",
+      "description": "National clearance network directory — one row per state registry (36 states and the FCT)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "exchange_peer",
+        "zone": "platform",
+        "domain": "PLT",
+        "kind": "config",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "platform"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "state_code": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}-[A-Z0-9]{1,3}$",
+          "description": "ISO 3166-2:NG, e.g. NG-LA"
+        },
+        "state_name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "tenant_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "tenant",
+              "description": "State tenant once provisioned on this platform"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hosting": {
+          "type": "string",
+          "enum": [
+            "co_hosted",
+            "remote"
+          ]
+        },
+        "endpoint_url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uri",
+              "maxLength": 2048,
+              "description": "Remote peers: base URL of the state's exchange API"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "kid": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Key id of the state's exchange signing key"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "public_jwk": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Verification key (EC P-256)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "agreement_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "National clearance data-sharing agreement reference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "not_on_network",
+            "onboarding",
+            "active",
+            "suspended"
+          ]
+        },
+        "onboarded_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_seen_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "state_code",
+        "state_name",
+        "hosting",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
     }
   }
 }

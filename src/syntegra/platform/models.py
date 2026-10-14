@@ -56,6 +56,50 @@ class BackupRun(CedaModel):
         verbose_name = 'Database backup or restore test (DR readiness evidence for provider staff)'
 
 
+class ExchangePeer(CedaModel):
+    """National clearance network directory — one row per state registry (36 states and the FCT)"""
+
+    ceda_entity = 'exchange_peer'
+    ceda_zones = ('platform',)
+    ceda_domain = 'PLT'
+    ceda_kind = 'config'
+    ceda_class = 'internal'
+    ceda_history = 'lifecycle'
+    ceda_scope = 'none'
+    ceda_append_only = False
+    ceda_partition = None
+    ceda_retention = 'RS-PLATFORM'
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'state_code': {'type': 'subdivision'}, 'state_name': {'type': 'title'}, 'tenant_id': {'type': 'ref', 'ref': 'tenant'}, 'hosting': {'type': 'enum', 'enum': 'peer_hosting'}, 'endpoint_url': {'type': 'url'}, 'kid': {'type': 'code'}, 'public_jwk': {'type': 'json'}, 'agreement_ref': {'type': 'code'}, 'status': {'type': 'enum', 'enum': 'peer_status'}, 'onboarded_at': {'type': 'ts'}, 'last_seen_at': {'type': 'ts'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
+
+    id = cf.UUID7Field(primary_key=True, default=uuid7)
+    state_code = models.CharField(max_length=6, help_text='ISO 3166-2:NG, e.g. NG-LA')
+    state_name = models.CharField(max_length=300)
+    tenant = models.ForeignKey("platform.Tenant", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='tenant_id', null=True, blank=True)
+    hosting = models.CharField(max_length=32, choices=[('co_hosted', 'Co hosted'), ('remote', 'Remote')])
+    endpoint_url = models.CharField(max_length=2048, null=True, blank=True, help_text="Remote peers: base URL of the state's exchange API")
+    kid = models.CharField(max_length=64, null=True, blank=True, help_text="Key id of the state's exchange signing key")
+    public_jwk = models.JSONField(null=True, blank=True, help_text='Verification key (EC P-256)')
+    agreement_ref = models.CharField(max_length=64, null=True, blank=True, help_text='National clearance data-sharing agreement reference')
+    status = models.CharField(max_length=32, choices=[('not_on_network', 'Not on network'), ('onboarding', 'Onboarding'), ('active', 'Active'), ('suspended', 'Suspended')])
+    onboarded_at = models.DateTimeField(null=True, blank=True)
+    last_seen_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=cf.utcnow)
+    created_by = cf.UUID7Field(null=True, blank=True)
+    updated_at = models.DateTimeField(default=cf.utcnow)
+    updated_by = cf.UUID7Field(null=True, blank=True)
+    row_version = models.PositiveIntegerField(default=1)
+
+    objects = models.Manager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'exchange_peer'
+        app_label = 'platform'
+        base_manager_name = 'unscoped'
+        verbose_name = 'National clearance network directory — one row per state registry (36 states and'
+
+
 class FeatureFlag(CedaModel):
     """Feature flag per tenant and phase (continuous delivery, freeze windows)"""
 

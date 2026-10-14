@@ -95,3 +95,5 @@ metrics:
   # ---------------------------------------------------------------- Fee clearance (CR-001)
   - {id: FCL-OUTSTANDING-RATE, group: Finance, name: Incoming learners with outstanding obligations, formula: "clearance checks with result outstanding ÷ clearance checks", grain: month × LGA × institution type, refresh: daily, direction: lower_is_better, sources: [clearance_check], pages: [FCL-01, FCL-02, FCL-03], reqs: [FR-FCL-02, FR-FCL-08]}
   - {id: FCL-DISPUTE-UPHELD, group: Finance, name: Obligation disputes upheld, formula: "disputes upheld or partly upheld ÷ disputes resolved, by creditor institution (unsupported claims)", grain: term × creditor institution, refresh: daily, direction: lower_is_better, sources: [obligation_dispute], pages: [FCL-03], reqs: [FR-FCL-06]}
+  - {id: FCL-NATIONAL-COVERAGE, group: Finance, name: National clearance coverage, formula: "states that answered ÷ 37 (36 states and the FCT) per clearance check; states on the network ÷ 37", grain: day × requesting state, refresh: daily, direction: higher_is_better, sources: [clearance_exchange_query, exchange_peer], pages: [FCL-04], reqs: [FR-FCL-10, FR-FCL-13]}
+

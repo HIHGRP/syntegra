@@ -332,6 +332,15 @@ def clearance(request: HttpRequest) -> HttpResponse:
     )
 
 
+@page("FCL-04")
+def clearance_network(request: HttpRequest) -> HttpResponse:
+    """National clearance network: every state registry, its status and this state's traffic with it (CR-002)."""
+    from syntegra.clearance import federation
+
+    data = federation.network_status()
+    return render(request, "clearance_network.html", _ctx(request, data=data, page=pages.page("FCL-04")))
+
+
 @page("HRM-01")
 def establishment(request: HttpRequest) -> HttpResponse:
     from syntegra.hr import establishment as est
