@@ -64,7 +64,8 @@ ignore = ["S101", "RUF012", "DJ001", "S608", "RUF001", "RUF002", "RUF003"]  # en
 "src/syntegra/security_training/reference.py" = ["E501"]
 "src/syntegra/regulation/reference.py" = ["E501"]
 "src/syntegra/federal_institutions/reference.py" = ["E501"]
-"src/syntegra/security_training/curricula.py" = ["E501"]  # reference tables read best one record per line
+"src/syntegra/security_training/curricula.py" = ["E501"]
+"src/syntegra/platform/demo/*.py" = ["E501", "B023", "S105", "S311", "RUF005"]  # synthetic demonstration data generator (development only)  # reference tables read best one record per line
 
 # --------------------------------------------------------------------- typing (strict on the kernel and domain packages)
 [tool.mypy]

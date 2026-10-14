@@ -342,3 +342,172 @@ def trainees_in_training(_p: Mapping[str, Any]) -> Options:
 
 def _second(o: tuple[str, str]) -> str:
     return o[1]
+
+
+# --------------------------------------------------------------------------- budgets, funding and facilities (CR-006)
+def _inst_names(ids: set[Any]) -> dict[Any, str]:
+    from syntegra.institutions.models import Institution
+
+    return dict(Institution.objects.filter(id__in=ids).values_list("id", "name"))
+
+
+def _node_names(nodes: set[Any]) -> dict[Any, str]:
+    from syntegra.institutions.models import Institution
+
+    return dict(Institution.objects.filter(scope_node_id__in=nodes).values_list("scope_node_id", "name"))
+
+
+def cost_centres(p: Mapping[str, Any]) -> Options:
+    from syntegra.finance.models import CostCentre
+
+    qs = CostCentre.objects.in_scope().filter(status="active").order_by("institution_id", "code")
+    if (iid := as_uuid(p.get("institution_id"))) is not None:
+        qs = qs.filter(institution_id=iid)
+    rows = list(qs[:LIMIT])
+    names = _inst_names({c.institution_id for c in rows})
+    return [(str(c.id), f"{c.code} {c.name} — {names.get(c.institution_id, '')}") for c in rows]
+
+
+def draft_budgets(_p: Mapping[str, Any]) -> Options:
+    from syntegra.finance.models import Budget
+
+    rows = list(Budget.objects.in_scope().filter(status="draft").order_by("-fiscal_year", "-version")[:500])
+    names = _node_names({b.scope_node_id for b in rows})
+    return [(str(b.id), f"{names.get(b.scope_node_id, '?')} — {b.fiscal_year} version {b.version}") for b in rows]
+
+
+def budget_lines(_p: Mapping[str, Any]) -> Options:
+    from syntegra.finance.budgets import available
+    from syntegra.finance.models import Budget, BudgetLine, CostCentre
+
+    budgets = list(Budget.objects.in_scope().filter(status="approved").values_list("id", flat=True)[:500])
+    lines = list(BudgetLine.objects.filter(budget_id__in=budgets).order_by("economic_code")[:LIMIT])
+    centres = {c.id: c for c in CostCentre.objects.filter(id__in={ln.cost_centre_id for ln in lines})}
+    names = _inst_names({c.institution_id for c in centres.values()})
+    out = []
+    for ln in lines:
+        cc = centres[ln.cost_centre_id]
+        label = f"{names.get(cc.institution_id, '')} · {cc.code} · {ln.economic_code} {ln.description or ''}".strip()
+        out.append((str(ln.id), f"{label} (available {naira(available(ln))})"))
+    return sorted(out, key=lambda o: o[1])
+
+
+def open_commitments(_p: Mapping[str, Any]) -> Options:
+    from syntegra.finance.models import BudgetCommitment
+
+    rows = BudgetCommitment.objects.in_scope().filter(status__in=("open", "partly_spent")).order_by("-created_at")
+    return [(str(c.id), f"{c.description} — {naira(c.amount_minor - c.spent_minor)} open") for c in rows[:LIMIT]]
+
+
+def submitted_virements(_p: Mapping[str, Any]) -> Options:
+    from syntegra.finance.models import BudgetVirement
+
+    rows = BudgetVirement.objects.in_scope().filter(status="submitted").order_by("-created_at")
+    return [(str(v.id), f"{v.virement_number} — {naira(v.amount_minor)}: {v.reason[:60]}") for v in rows[:500]]
+
+
+def _imprest(*statuses: str) -> Provider:
+    def provider(_p: Mapping[str, Any]) -> Options:
+        from syntegra.finance.models import Imprest
+
+        rows = Imprest.objects.in_scope().filter(status__in=statuses).order_by("-created_at")
+        return [(str(i.id), f"{i.imprest_number} — {naira(i.amount_minor)}: {i.purpose[:60]}") for i in rows[:500]]
+
+    return provider
+
+
+requested_imprest = _imprest("requested")
+issued_imprest = _imprest("issued", "partly_retired", "overdue")
+
+
+def funding_programmes(_p: Mapping[str, Any]) -> Options:
+    from syntegra.funding.models import FundingProgramme
+
+    rows = FundingProgramme.objects.filter(status="published").order_by("beneficiary_kind", "name")
+    return [(str(p.id), f"{p.name} — for {p.beneficiary_kind}s ({p.instrument.replace('_', ' ')})") for p in rows]
+
+
+def _applications(*statuses: str) -> Provider:
+    def provider(_p: Mapping[str, Any]) -> Options:
+        from syntegra.funding.models import FundingApplication
+
+        rows = FundingApplication.objects.in_scope().filter(status__in=statuses).order_by("-created_at")[:500]
+        return [
+            (str(a.id), f"{a.application_number} — {a.applicant_kind} — {naira(a.amount_requested_minor)}")
+            for a in rows
+        ]
+
+    return provider
+
+
+applications_to_review = _applications("submitted", "under_review")
+applications_to_decide = _applications("recommended", "submitted", "under_review")
+applications_approved = _applications("approved")
+
+
+def funding_agreements(_p: Mapping[str, Any]) -> Options:
+    from syntegra.funding.models import FundingAgreement
+
+    rows = FundingAgreement.objects.in_scope().exclude(status__in=("settled", "completed", "written_off", "cancelled"))
+    return [
+        (str(a.id), f"{a.agreement_number} — {a.instrument.replace('_', ' ')} — {naira(a.outstanding_minor)} owed")
+        for a in rows.order_by("-signed_on")[:LIMIT]
+    ]
+
+
+def buildings(p: Mapping[str, Any]) -> Options:
+    from syntegra.operations.models import Building
+
+    rows = list(Building.objects.in_scope().filter(status="active").order_by("name")[:LIMIT])
+    names = _node_names({b.scope_node_id for b in rows})
+    return sorted(((str(b.id), f"{names.get(b.scope_node_id, '?')} — {b.name}") for b in rows), key=lambda o: o[1])
+
+
+def rooms(_p: Mapping[str, Any]) -> Options:
+    from syntegra.operations.models import Room
+
+    rows = list(Room.objects.in_scope().filter(status="active").order_by("code")[:LIMIT])
+    names = _node_names({r.scope_node_id for r in rows})
+    return sorted(
+        ((str(r.id), f"{names.get(r.scope_node_id, '?')} — {r.code} {r.name or human(r.room_type)}") for r in rows),
+        key=lambda o: o[1],
+    )
+
+
+def facilities(_p: Mapping[str, Any]) -> Options:
+    """Every site, building, room and item of equipment in scope, as ``kind:id``."""
+    from syntegra.estate.models import PropertySite
+    from syntegra.operations.models import Asset, Building, Room
+
+    def label(kind: str, x: Any) -> str:
+        if kind == "site":
+            return f"Site {x.site_code} {x.name}"
+        if kind == "building":
+            return f"Building: {x.name}"
+        if kind == "room":
+            return f"Room {x.code} {x.name or human(x.room_type)}"
+        return f"Equipment {x.asset_tag} {x.name}"
+
+    out: Options = []
+    for kind, model in (("site", PropertySite), ("building", Building), ("room", Room), ("asset", Asset)):
+        rows = list(model.objects.in_scope()[:LIMIT])
+        names = _node_names({x.scope_node_id for x in rows})
+        out.extend((f"{kind}:{x.id}", f"{names.get(x.scope_node_id, '?')} — {label(kind, x)}") for x in rows)
+    return sorted(out, key=lambda o: o[1])
+
+
+def maintenance_schedules(_p: Mapping[str, Any]) -> Options:
+    from syntegra.estate.models import MaintenanceSchedule
+
+    rows = list(MaintenanceSchedule.objects.in_scope().filter(status="active").order_by("next_due_on")[:LIMIT])
+    names = _node_names({s.scope_node_id for s in rows})
+    return [(str(s.id), f"{names.get(s.scope_node_id, '?')} — {s.task} (due {s.next_due_on:%d %b %Y})") for s in rows]
+
+
+def open_facility_actions(_p: Mapping[str, Any]) -> Options:
+    from syntegra.estate.models import FacilityAction
+
+    rows = FacilityAction.objects.in_scope().filter(status__in=("open", "acknowledged", "in_progress"))
+    rows = list(rows.order_by("due_on")[:LIMIT])
+    names = _inst_names({a.institution_id for a in rows})
+    return [(str(a.id), f"[{a.priority}] {names.get(a.institution_id, '?')} — {a.title}") for a in rows]

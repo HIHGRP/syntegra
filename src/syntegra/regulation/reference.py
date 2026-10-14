@@ -411,6 +411,79 @@ DEPENDENCIES = [
 ]
 
 
+# --------------------------------------------------------------------------- state bodies (each state's own ministries and boards)
+# A state's own bodies replace the generic "each state" entries for that state's institutions. Names and functions
+# are as published by the state; confirm before live use.
+STATE_BODIES: dict[str, list[Body]] = {
+    "NG-AB": [
+        Body(
+            "ABMOE",
+            "Abia State Ministry of Education",
+            "ministry",
+            "state",
+            "Abia State education laws",
+            "Policy, approval and supervision of basic and secondary education in Abia State; supervises ASUBEB",
+            BASIC + SENIOR,
+            status=C,
+        ),
+        Body(
+            "ASUBEB",
+            "Abia State Universal Basic and Secondary Education Board (ASUBEB)",
+            "regulator_accreditor",
+            "state",
+            "Abia State UBE law",
+            "Manages public primary and secondary schools in Abia State under the Ministry of Education",
+            BASIC + SENIOR,
+            status=C,
+        ),
+        Body(
+            "ABMTE",
+            "Abia State Ministry of Tertiary Education",
+            "ministry",
+            "state",
+            "Abia State tertiary education laws",
+            "Owns and supervises the state's tertiary institutions (ABSU, ASCETA and others)",
+            ("NCE", "ND", "HND", "UG100", "UG200", "UG300", "UG400", "UG500", "UG600", "UG700", "PG"),
+            status=C,
+        ),
+    ],
+}
+STATE_DEPENDENCIES: list[tuple[str, str, str, str, str]] = [
+    ("ASUBEB", "ABMOE", "supervised_by", "State board under the Abia State Ministry of Education", C),
+    ("ASUBEB", "UBEC", "funded_by", "UBE matching grants to Abia State", C),
+    ("ABMOE", "FME", "member_of", "National Council on Education", C),
+    ("ABMTE", "FME", "member_of", "National Council on Education", C),
+]
+# generic code → the state's own body
+STATE_EQUIVALENTS: dict[str, dict[str, str]] = {"NG-AB": {"STATE_MOE": "ABMOE", "SUBEB": "ASUBEB"}}
+STATE_TERTIARY_MINISTRY: dict[str, str] = {"NG-AB": "ABMTE"}
+STATE_SECONDARY_BOARD: dict[str, str] = {"NG-AB": "ASUBEB"}
+TERTIARY_CATEGORIES = (
+    "university",
+    "polytechnic",
+    "monotechnic",
+    "college_of_education",
+    "school_of_nursing",
+    "school_of_health_technology",
+)
+
+
+def localise(links: list[Link], state_code: str | None, category: str, ownership: str) -> list[Link]:
+    """Replace the generic state bodies by the state's own (FR-REG-03): the state ministry, its basic (and, where
+    the state's board covers it, secondary) education board, and its ministry of tertiary education."""
+    if not state_code:
+        return links
+    eq = dict(STATE_EQUIVALENTS.get(state_code, {}))
+    if category in TERTIARY_CATEGORIES and state_code in STATE_TERTIARY_MINISTRY:
+        eq["STATE_MOE"] = STATE_TERTIARY_MINISTRY[state_code]
+    out = [Link(eq.get(x.body, x.body), x.relationship, x.covers, x.levels, x.mandatory) for x in links]
+    board = STATE_SECONDARY_BOARD.get(state_code)
+    covered = any(x.body == board and x.relationship == "supervision" for x in out)
+    if board and ownership in PUBLIC and category in SECONDARY_CATEGORIES and not covered:
+        out.append(Link(board, "supervision", "Public secondary education in the state", JUNIOR + SENIOR))
+    return out
+
+
 # --------------------------------------------------------------------------- rules: an institution's regulatory profile
 def normalise_level(level: str) -> str:
     """``jss_1`` / ``primary_4`` / ``sss 3`` → the national codes ``JSS1`` / ``PRY4`` / ``SSS3``."""

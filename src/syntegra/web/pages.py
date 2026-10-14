@@ -27,6 +27,17 @@ IMPLEMENTED: dict[str, str] = {
     "STI-03": "security_course",
     "STI-04": "security_intake",
     "AUT-03": "workspace",
+    "CMD-101": "control_room",
+    "CMD-102": "league",
+    "FIN-02": "budget_execution",
+    "ACC-01": "imprest",
+    "FND-01": "funding",
+    "FND-02": "funding_agreement",
+    "EST-01": "property_register",
+    "EST-02": "facility_actions",
+    "EST-03": "infrastructure",
+    "OPS-01": "facilities",
+    "STI-05": "security_careers",
 }
 # Pages served for any signed-in user, independent of role lists
 UNIVERSAL = {"home", "catalogue", "forms_hub", "form_page"}

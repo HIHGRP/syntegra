@@ -23,7 +23,7 @@
   "partitioned_tables": 21,
   "enums": 388,
   "code_lists": 51,
-  "events": 165,
+  "events": 166,
   "metrics": 74,
   "retention_series": 33,
   "pages_covered": 288,

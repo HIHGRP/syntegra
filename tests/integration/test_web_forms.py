@@ -50,7 +50,7 @@ def test_every_form_renders_only_for_roles_that_may_use_it(world: Any, client: A
     sign_in(client, t)
     with context.use(user_ctx(t.id, tg)):
         allowed = {f.key for f in forms.FORMS if f.allowed(context.current())}
-    assert allowed == {"hr-leave"}  # a teacher may only request their own leave
+    assert allowed == {"hr-leave", "funding-apply"}  # a teacher may only request their own leave or loan
     hub = client.get("/forms").content.decode()
     assert "/forms/hr-leave" in hub and "/forms/institution-register" not in hub
     assert client.get("/forms/institution-register").status_code == 403

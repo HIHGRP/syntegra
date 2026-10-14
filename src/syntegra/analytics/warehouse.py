@@ -332,6 +332,8 @@ def _rollup(
         t["institutions_assessed"] += int(s["assessed"])
         t["institutions_with_water"] += int(s["water"])
         t["institutions_with_power"] += int(s["power"])
+        # crowding is measured only where classrooms are recorded (learners elsewhere have no rooms to divide by)
+        t["learners_roomed"] += s["learners"] if s["classrooms"] else 0
         for k in (
             "sites",
             "sites_fenced",
@@ -378,7 +380,9 @@ def _rollup(
                 classrooms_usable=t["classrooms_usable"],
                 learners=t["learners"],
                 learners_per_usable_classroom=(
-                    Decimal(str(round(t["learners"] / t["classrooms_usable"], 2))) if t["classrooms_usable"] else None
+                    Decimal(str(round(t["learners_roomed"] / t["classrooms_usable"], 2)))
+                    if t["classrooms_usable"]
+                    else None
                 ),
                 toilets_usable=t["toilets_usable"],
                 institutions_with_water=t["institutions_with_water"],

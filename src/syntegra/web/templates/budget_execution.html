@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "_charts.html" import meter %}
+{% block title %}Budget against actual {{ d.fiscal_year }}{% endblock %}
+{% block content %}
+<h1>Budget against actual — {{ d.fiscal_year }}</h1>
+<p class="actions">{% if ctx.has("budget:prepare") %}<a href="/forms/budget-cost-centre">Add a cost centre</a><a href="/forms/budget-prepare">Prepare a budget</a>{% endif %}{% if ctx.has("budget:approve") %}<a href="/forms/budget-approve">Approve a budget</a>{% endif %}{% if ctx.has("budget:commit") %}<a href="/forms/budget-commit">Commit funds</a><a href="/forms/budget-spend">Record spending</a>{% endif %}{% if ctx.has("budget:virement") %}<a href="/forms/budget-virement">Move funds (virement)</a>{% endif %}<a href="/finance/imprest">Imprest</a></p>
+<form method="get" class="inline">
+  <label class="sr" for="inst">Institution</label>
+  <select id="inst" name="institution_id"><option value="">All institutions in my scope</option>{% for i in institutions %}<option value="{{ i.id }}" {% if chosen == i.id|string %}selected{% endif %}>{{ i.name }}</option>{% endfor %}</select>
+  <label class="sr" for="fy">Year</label><input id="fy" name="fiscal_year" inputmode="numeric" size="5" value="{{ d.fiscal_year }}">
+  <button>Show</button></form>
+<section class="kpis" aria-label="Totals">
+  <div class="kpi"><span class="k">Revised budget</span><span class="v">{{ d.totals.revised|naira_short }}</span></div>
+  <div class="kpi"><span class="k">Committed</span><span class="v">{{ d.totals.committed|naira_short }}</span></div>
+  <div class="kpi"><span class="k">Spent</span><span class="v">{{ d.totals.actual|naira_short }}</span></div>
+  <div class="kpi"><span class="k">Available</span><span class="v">{{ d.totals.available|naira_short }}</span></div>
+  <div class="kpi"><span class="k">Execution</span><span class="v">{{ "—" if d.totals.execution is none else "{:.1%}".format(d.totals.execution) }}</span></div>
+  <div class="kpi"><span class="k">Overdue imprest</span><span class="v">{{ d.overdue_imprest_minor|naira_short }}</span></div>
+</section>
+{% if d.lines %}
+<table class="compact">
+  <thead><tr><th scope="col">Institution</th><th scope="col">Cost centre</th><th scope="col">Code</th><th scope="col">Source</th><th scope="col" class="num">Original</th><th scope="col" class="num">Revised</th><th scope="col" class="num">Committed</th><th scope="col" class="num">Spent</th><th scope="col" class="num">Available</th><th scope="col">Execution</th></tr></thead>
+  <tbody>{% for r in d.lines %}<tr><td>{{ r.institution }}</td><td>{{ r.cost_centre }}{% if r.description %}<span class="line muted">{{ r.description }}</span>{% endif %}</td><td><code>{{ r.economic_code }}</code></td><td>{{ r.source|human }}</td>
+    <td class="num">{{ r.original|naira }}</td><td class="num">{{ r.revised|naira }}</td><td class="num">{{ r.committed|naira }}</td><td class="num">{{ r.actual|naira }}</td><td class="num">{{ r.available|naira }}</td>
+    <td>{% if r.execution is not none %}{{ meter(r.execution * 100) }}{{ "{:.0%}".format(r.execution) }}{% else %}—{% endif %}</td></tr>{% endfor %}</tbody>
+</table>
+{% else %}<p class="muted">No approved budget for {{ d.fiscal_year }} in this view yet.</p>{% endif %}
+{% endblock %}

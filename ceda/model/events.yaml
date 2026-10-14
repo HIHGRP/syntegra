@@ -57,6 +57,7 @@ events:
 
   # ---------------------------------------------------------------- learners & families
   LRN.CREATED: {producer: learners, aggregate: learner, payload: {learner_id: uuid!, global_learner_id: glid!}, consumers: [mdm, search, analytics, financing], trigger: Learner 360 created after matching}
+  LRN.ROLL_IMPORTED: {producer: learners, aggregate: institution, payload: {institution_id: uuid!, learners: int!, first_glid: glid!, last_glid: glid!}, consumers: [mdm, search, analytics, financing], trigger: An onboarding institution's existing roll is imported (one event for the whole roll)}
   LRN.UPDATED: {producer: learners, aggregate: learner, payload: {learner_id: uuid!, changed_fields: json}, consumers: [search, analytics], trigger: Identity attributes changed (field names only)}
   LRN.MERGED: {producer: learners, aggregate: learner, payload: {learner_id: uuid!, merged_into: uuid!}, consumers: [all_modules], trigger: Learner record became an alias}
   LRN.VIEWED_SPECIAL: {producer: learners, aggregate: learner, payload: {learner_id: uuid!, viewer_user_id: uuid!, purpose_code: code(40)!}, consumers: [audit_monitoring], trigger: Special-category tab opened with purpose}

@@ -103,6 +103,7 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "funding:*",
             "estate:*",
             "warehouse:*",
+            "assessment:view",
         ],
     ),
     "LGA": (
@@ -126,6 +127,7 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "warehouse:view",
             "budget:view",
             "funding:view",
+            "assessment:view",
         ],
     ),
     "HEAD": (
@@ -160,12 +162,23 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "funding:review",
             "estate:*",
             "warehouse:view",
+            "assessment:*",
         ],
     ),
     "TCH": (
         "Teacher",
         "confidential",
-        ["attendance:mark", "attendance:view", "learner:view", "class:view", "hr:leave_request", "funding:apply_own"],
+        [
+            "attendance:mark",
+            "attendance:view",
+            "learner:view",
+            "class:view",
+            "hr:leave_request",
+            "funding:apply_own",
+            "assessment:enter",
+            "assessment:manage",
+            "assessment:view",
+        ],
     ),
     "REG": (
         "Registrar / admissions officer",
@@ -177,6 +190,7 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "clearance:check",
             "clearance:dispute",
             "institution:view",
+            "assessment:view",
         ],
     ),
     "HR": (
@@ -269,6 +283,9 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "coverage:view",
             "hr:view",
             "ceda:view",
+            "assessment:view",
+            "attendance:view",
+            "learner:view",
         ],
     ),
 }
@@ -452,12 +469,9 @@ def registry_tenant(code_upper: str, name: str, kind: str, hosts: list[str], *, 
                     using=alias
                 )
         if not GlidBlock.objects.using(alias).filter(tenant_id=tid).exists():
-            # national GLID allocator: the next free block of 10,000 serials (unique across every state)
-            last = GlidBlock.objects.using(alias).order_by("-last_serial").values_list("last_serial", flat=True).first()
-            first = (last or 0) + 1
-            GlidBlock(tenant_id=tid, first_serial=first, last_serial=first + 9_999, leased_at=utcnow()).save(
-                using=alias
-            )
+            from syntegra.platform.glid import lease_block
+
+            lease_block(tid)  # national GLID allocator: the next free block of 10,000 serials
     return tid
 
 

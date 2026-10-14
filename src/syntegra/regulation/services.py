@@ -42,7 +42,7 @@ def seed_directory() -> tuple[int, int]:
     nb = nd = 0
     with transaction.atomic(using=PLATFORM):
         have = {b.code: b for b in RegulatoryBody.objects.using(PLATFORM).all()}
-        for b in ref.BODIES:
+        for b in [*ref.BODIES, *(x for bodies_ in ref.STATE_BODIES.values() for x in bodies_)]:
             if b.code not in have:
                 have[b.code] = RegulatoryBody(
                     code=b.code,
@@ -58,7 +58,7 @@ def seed_directory() -> tuple[int, int]:
                 have[b.code].save(using=PLATFORM)
                 nb += 1
         deps = set(BodyDependency.objects.using(PLATFORM).values_list("from_body_id", "to_body_id", "dependency_type"))
-        for frm, to, kind, note, status in ref.DEPENDENCIES:
+        for frm, to, kind, note, status in [*ref.DEPENDENCIES, *ref.STATE_DEPENDENCIES]:
             key = (have[frm].id, have[to].id, kind)
             if key not in deps:
                 BodyDependency(
@@ -142,15 +142,23 @@ def apply_rules(
     directory_ = bodies()
     if not directory_:
         return 0  # directory not loaded on this platform yet
+    from syntegra.core.tenancy import tenant_code_for
+
+    code = tenant_code_for(cmd.ctx.state_tenant_id)
     links = _merge(
-        ref.profile(
-            category=inst.category,
-            ownership=inst.ownership,
-            levels=list(inst.levels or []),
-            owner_ministry=owner_ministry,
-            accreditation=accreditation,
-            unity_college=unity_college,
-            technical=technical or inst.category == "technical_college",
+        ref.localise(
+            ref.profile(
+                category=inst.category,
+                ownership=inst.ownership,
+                levels=list(inst.levels or []),
+                owner_ministry=owner_ministry,
+                accreditation=accreditation,
+                unity_college=unity_college,
+                technical=technical or inst.category == "technical_college",
+            ),
+            code.upper() if code else None,
+            inst.category,
+            inst.ownership,
         )
     )
     have = set(
@@ -357,3 +365,27 @@ def apply_all() -> dict[str, int]:
         with context.use(context.system(t.id, t.id, correlation_id="regulation-apply")):
             out[t.code] = apply_registry()
     return out
+
+
+def localise_registry() -> dict[str, int]:
+    """Move the current registry's rule-derived links from the generic state bodies to the state's own bodies
+    (after a state's bodies are added to the directory). Ends the generic links; adds the state's."""
+    from syntegra.core.tenancy import tenant_code_for
+
+    ctx = context.require()
+    code = (tenant_code_for(ctx.state_tenant_id) or "").upper()
+    generic = set(ref.STATE_EQUIVALENTS.get(code, {})) | (
+        {"STATE_MOE"} if code in ref.STATE_TERTIARY_MINISTRY else set()
+    )
+    n = {"ended": 0, "added": 0}
+    if not generic:
+        return n
+    with uow.command("registry", None, action="localise", record_kind="institution_regulation") as cmd:
+        for row in InstitutionRegulation.objects.filter(source="rule", valid_to__isnull=True, body_code__in=generic):
+            cmd.update(row, valid_to=dt.date.today())
+            n["ended"] += 1
+        for inst in Institution.objects.exclude(status__in=("closed", "merged")):
+            n["added"] += apply_rules(cmd, inst, **_extras(inst))
+        if not (n["ended"] or n["added"]):
+            cmd.audited = False
+    return n

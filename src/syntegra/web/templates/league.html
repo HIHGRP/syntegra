@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_charts.html" import meter, pct, num %}
+{% block title %}Institution league with context{% endblock %}
+{% block content %}
+<h1>Institution league with context</h1>
+<p class="muted">Ranked only within the same kind of institution. Performance index = 60 % mean score + 25 % pass rate (subject totals of 50+)
++ 15 % attendance. “5+ passes” is the share of learners passing five or more subjects.</p>
+<nav class="tabs" aria-label="Comparison group">{% for g, label in groups.items() %}<a href="?group={{ g }}{% if lga %}&amp;lga={{ lga|urlencode }}{% endif %}"{% if g == group %} aria-current="page"{% endif %}>{{ label }} ({{ d.league[g]|length }})</a>{% endfor %}</nav>
+<form method="get" class="inline"><input type="hidden" name="group" value="{{ group }}">
+  <label class="sr" for="lga">LGA</label><select id="lga" name="lga"><option value="">All LGAs</option>{% for x in lgas %}<option{% if x == lga %} selected{% endif %}>{{ x }}</option>{% endfor %}</select>
+  <button>Filter</button></form>
+{% if best %}
+<section class="card award"><h2>Best students — {{ groups[group]|lower }}</h2>
+  <table class="compact"><thead><tr><th scope="col" class="num">#</th><th scope="col">Student</th><th scope="col">Global Learner ID</th><th scope="col">Institution</th><th scope="col" class="num">Average</th><th scope="col" class="num">Attendance</th></tr></thead>
+  <tbody>{% for b in best %}<tr><td class="num">{{ loop.index }}</td><td>{{ b.name }}</td><td><code>{{ b.global_learner_id }}</code></td><td>{{ b.institution }}</td><td class="num">{{ num(b.average) }}</td><td class="num">{{ pct(b.attendance_rate) }}</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endif %}
+<section class="card">
+  <table class="compact">
+    <thead><tr><th scope="col" class="num">Rank</th><th scope="col">Institution</th><th scope="col">LGA</th><th scope="col" class="num">Learners</th><th scope="col" class="num">Mean score</th>
+      <th scope="col" class="num">Pass rate</th><th scope="col" class="num">5+ passes</th><th scope="col" class="num">Attendance</th><th scope="col">Performance index</th></tr></thead>
+    <tbody>{% for r in rows %}<tr><td class="num">{{ r.rank }} / {{ r.of }}</td><td>{{ r.name }}</td><td>{{ r.lga }}</td><td class="num">{{ "{:,}".format(r.learners) }}</td><td class="num">{{ num(r.mean_score) }}</td>
+      <td class="num">{{ pct(r.pass_rate) }}</td><td class="num">{{ pct(r.five_passes_rate) }}</td><td class="num">{{ pct(r.attendance_rate) }}</td><td>{{ meter(r.index) }}{{ num(r.index) }}</td></tr>
+    {% else %}<tr><td colspan="9" class="muted">No institutions with results in this group.</td></tr>{% endfor %}</tbody>
+  </table>
+</section>
+{% endblock %}

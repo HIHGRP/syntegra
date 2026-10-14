@@ -519,6 +519,153 @@ def _record_outcome(d: Data) -> Any:
     )
 
 
+# --------------------------------------------------------------------------- budgets and imprest (CR-006)
+def _budgets() -> Any:
+    from syntegra.finance import budgets
+
+    return budgets
+
+
+def _budget_prepare(d: Data) -> Data:
+    """One line per row: ``cost centre code | economic code | amount in naira | source | description``."""
+    from syntegra.finance.models import CostCentre
+
+    iid = ch.as_uuid(d.get("institution_id"))
+    centres = {c.code: c.id for c in CostCentre.objects.in_scope().filter(institution_id=iid, status="active")}
+    lines, bad = [], []
+    for n, row in enumerate(str(d.pop("lines_text", "")).splitlines(), start=1):
+        if not row.strip():
+            continue
+        parts = [p.strip() for p in row.split("|")]
+        if len(parts) < 3 or parts[0].upper() not in centres:
+            bad.append(
+                f"row {n}: start with one of your cost-centre codes ({', '.join(sorted(centres)) or 'none yet'})"
+            )
+            continue
+        try:
+            amount = _money(parts[2])
+        except ValueError as exc:
+            bad.append(f"row {n}: {exc}")
+            continue
+        line: Data = {
+            "cost_centre_id": str(centres[parts[0].upper()]),
+            "economic_code": parts[1],
+            "amount_minor": amount,
+        }
+        if len(parts) > 3 and parts[3]:
+            line["funding_source_kind"] = parts[3].lower().replace(" ", "_")
+        if len(parts) > 4 and parts[4]:
+            line["description"] = parts[4]
+        lines.append(line)
+    if bad or not lines:
+        raise Invalid({"lines_text": "; ".join(bad) or "Enter at least one line."})
+    d["lines"] = lines
+    return d
+
+
+def _budget_lines_out(d: Data) -> Any:
+    b = _budgets()
+    lines = [b.LineInput(**{k: x for k, x in ln.items() if x not in (None, "")}) for ln in d["lines"]]
+    return b.prepare_budget(_u(d["institution_id"]), int(d["fiscal_year"]), lines)
+
+
+def _imprest_retire_prepare(d: Data) -> Data:
+    """One receipt per row: ``reference | amount in naira | payee``."""
+    receipts, bad = [], []
+    for n, row in enumerate(str(d.pop("receipts_text", "")).splitlines(), start=1):
+        if not row.strip():
+            continue
+        parts = [p.strip() for p in row.split("|")]
+        try:
+            receipts.append({"reference": parts[0], "amount_minor": _money(parts[1] if len(parts) > 1 else ""),
+                             **({"payee": parts[2]} if len(parts) > 2 and parts[2] else {})})  # fmt: skip
+        except ValueError as exc:
+            bad.append(f"row {n}: {exc}")
+    if bad or not receipts:
+        raise Invalid({"receipts_text": "; ".join(bad) or "List at least one receipt."})
+    d["receipts"] = receipts
+    return d
+
+
+# --------------------------------------------------------------------------- funding and loans (CR-006)
+def _funding() -> Any:
+    from syntegra.funding import services
+
+    return services
+
+
+def _funding_apply_prepare(d: Data) -> Data:
+    kind = d.get("applicant_kind")
+    if kind == "institution":
+        d["applicant_id"] = d.get("institution_id")
+    elif kind == "staff":
+        if not d.get("staff_id"):
+            raise Invalid({"staff_id": "Choose the member of staff."})
+        d["applicant_id"] = d["staff_id"]
+    elif kind == "learner":
+        if not d.get("learner"):
+            raise Invalid({"learner": "Enter the learner's Global Learner ID."})
+        d["applicant_id"] = d["learner"]
+    return d
+
+
+def _funding_apply(d: Data) -> Any:
+    return _funding().apply(
+        _u(d["programme_id"]),
+        applicant_kind=d["applicant_kind"],
+        applicant_id=_u(d["applicant_id"]),
+        institution_id=_u(d["institution_id"]),
+        amount_minor=d["amount_minor"],
+        purpose_detail=d["purpose_detail"],
+    )
+
+
+def _clean(d: Data, *names: str) -> Data:
+    return {k: d[k] for k in names if d.get(k) not in (None, "")}
+
+
+# --------------------------------------------------------------------------- facilities (CR-006)
+def _estate() -> Any:
+    from syntegra.estate import services
+
+    return services
+
+
+def _facility_prepare(d: Data) -> Data:
+    kind, _, sid = str(d.pop("facility", "")).partition(":")
+    d["subject_kind"], d["subject_id"] = kind, sid
+    return d
+
+
+def _site_prepare(d: Data) -> Data:
+    lat, lng = d.get("latitude"), d.get("longitude")
+    if (lat is None) != (lng is None):
+        raise Invalid({"longitude": "Give both latitude and longitude, or neither."})
+    return d
+
+
+def _register_site(d: Data) -> Any:
+    names = ("site_code", "name", "owner", "title_document", "title_reference", "area_sqm", "fenced", "encroachment")
+    kw = _clean(d, *names, "acquired_on", "valuation_minor")
+    if d.get("latitude") is not None:
+        kw["location"] = (d["latitude"], d["longitude"])
+    return _estate().register_site(_u(d["institution_id"]), **kw)
+
+
+def _assess(d: Data) -> Any:
+    kw = _clean(d, "learners_affected", "repair_estimate_minor", "next_due_on", "assessed_on")
+    return _estate().assess(
+        d["subject_kind"],
+        _u(d["subject_id"]),
+        condition_grade=d["condition_grade"],
+        usability=d["usability"],
+        structural_risk=d["structural_risk"],
+        in_use=bool(d.get("in_use")),
+        assessor_kind=d.get("assessor_kind") or "head_of_institution",
+        **kw,
+    )
+
+
 # --------------------------------------------------------------------------- serializers reused from the API
 def _api(module: str, name: str) -> Any:
     import importlib
@@ -1247,6 +1394,509 @@ FORMS: tuple[Form, ...] = (
         ),
         api("security_training", "OutcomeSerializer"),
         submit="Record outcome",
+    ),
+    # ------------------------------------------------------------------ budgets and imprest (CR-006)
+    Form(
+        "budget-cost-centre",
+        "Add a cost centre",
+        "Budgets",
+        "budget:prepare",
+        "A cost centre is a part of the institution that holds a budget — administration, a department, boarding, "
+        "the estate, ICT. Budget lines, commitments and imprest are all recorded against a cost centre.",
+        (
+            Field("institution_id", "Institution", "select", choices=ch.institutions),
+            Field("code", "Code", hint="Short code, e.g. ADM, SCI, ESTATE."),
+            Field("name", "Name", hint="e.g. Science department"),
+            Field("kind", "Kind", "select", choices=ch.enum("cost_centre_kind")),
+        ),
+        lambda d: _budgets().create_cost_centre(_u(d["institution_id"]), d["code"], d["name"], d["kind"]),
+        lambda r, _d: (f"Cost centre {r.code} added.", "/finance/performance"),
+        api("finance", "CostCentreSerializer"),
+        submit="Add cost centre",
+    ),
+    Form(
+        "budget-prepare",
+        "Prepare a budget",
+        "Budgets",
+        "budget:prepare",
+        "Creates a draft budget for the year. Enter one line per row as: cost-centre code | economic code | amount "
+        "in naira | source | description. For example: ADM | 22020101 | 1,250,000 | overhead | Stationery. Source "
+        "is one of subvention, overhead, capital allocation, internally generated revenue, grant, intervention. A "
+        "second officer approves it.",
+        (
+            Field("institution_id", "Institution", "select", choices=ch.institutions),
+            Field("fiscal_year", "Year", "number", default=str(dt.date.today().year)),
+            Field("lines_text", "Budget lines", "textarea", hint="One line per row, fields separated by |"),
+        ),
+        _budget_lines_out,
+        lambda r, _d: (f"Draft budget {r.fiscal_year} version {r.version} saved; it now needs approval.", None),
+        api("finance", "BudgetSerializer"),
+        _budget_prepare,
+        "Save draft",
+    ),
+    Form(
+        "budget-approve",
+        "Approve a budget",
+        "Budgets",
+        "budget:approve",
+        "Approves a draft budget; the previous approved version of the year is superseded. The person who prepared "
+        "it cannot approve it.",
+        (_target("Draft budget", ch.draft_budgets),),
+        lambda d: _budgets().approve_budget(_u(d["target"])),
+        lambda r, _d: (f"Budget {r.fiscal_year} version {r.version} approved.", "/finance/performance"),
+        submit="Approve",
+        caution="Approval makes the budget the one spending is checked against.",
+    ),
+    Form(
+        "budget-commit",
+        "Commit funds",
+        "Budgets",
+        "budget:commit",
+        "Reserves money on a budget line for an order, contract or requisition, so it cannot be spent twice. Refused "
+        "if the line does not have enough available.",
+        (
+            Field("budget_line_id", "Budget line", "select", choices=ch.budget_lines),
+            Field("amount_minor", "Amount (₦)", "money"),
+            Field("source_kind", "For", "select", choices=ch.enum("commitment_source"), default="purchase_order"),
+            Field("description", "Description", hint="e.g. LPO 0042 — laboratory reagents"),
+        ),
+        lambda d: _budgets().commit(
+            _u(d["budget_line_id"]),
+            d["amount_minor"],
+            source_kind=d["source_kind"],
+            source_id=uuid.uuid4(),
+            description=d["description"],
+        ),
+        lambda r, _d: (f"{ch.naira(r.amount_minor)} committed.", "/finance/performance"),
+        api("finance", "CommitmentSerializer"),
+        submit="Commit",
+    ),
+    Form(
+        "budget-spend",
+        "Record spending against a commitment",
+        "Budgets",
+        "budget:commit",
+        "Records what was actually paid. Tick 'final payment' to release whatever is left of the commitment back to "
+        "the budget line.",
+        (
+            _target("Commitment", ch.open_commitments),
+            Field("amount_minor", "Amount paid (₦)", "money"),
+            Field("final", "Final payment — release the balance", "checkbox", required=False),
+        ),
+        lambda d: _budgets().spend(_u(d["target"]), d["amount_minor"], final=bool(d.get("final"))),
+        lambda r, _d: (
+            f"Spending recorded; commitment is now {ch.human(r.status).lower()}.",
+            "/finance/performance",
+        ),
+        api("finance", "SpendSerializer"),
+        submit="Record",
+    ),
+    Form(
+        "budget-virement",
+        "Move funds between lines (virement)",
+        "Budgets",
+        "budget:virement",
+        "Asks to move budget from one approved line to another. Someone other than you approves it.",
+        (
+            Field("from_line_id", "From line", "select", choices=ch.budget_lines),
+            Field("to_line_id", "To line", "select", choices=ch.budget_lines),
+            Field("amount_minor", "Amount (₦)", "money"),
+            REASON,
+        ),
+        lambda d: _budgets().request_virement(
+            _u(d["from_line_id"]), _u(d["to_line_id"]), d["amount_minor"], d["reason"]
+        ),
+        lambda r, _d: (f"Virement {r.virement_number} submitted for approval.", None),
+        api("finance", "VirementSerializer"),
+        submit="Submit",
+    ),
+    Form(
+        "budget-virement-decision",
+        "Decide a virement",
+        "Budgets",
+        "budget:approve",
+        "Approve or reject a request to move funds. You cannot decide your own request.",
+        (_target("Virement", ch.submitted_virements), Field("approve", "Decision", "select", choices=YES_NO)),
+        lambda d: _budgets().decide_virement(_u(d["target"]), d["approve"]),
+        lambda r, _d: (f"Virement {r.virement_number} {r.status}.", "/finance/performance"),
+        api("finance", "DecisionSerializer"),
+        submit="Record decision",
+    ),
+    Form(
+        "imprest-request",
+        "Request imprest",
+        "Budgets",
+        "imprest:request",
+        "Cash advanced to a member of staff for a stated purpose, to be accounted for with receipts by the retirement "
+        "date. Someone other than you approves and issues it.",
+        (
+            Field("holder_staff_id", "Member of staff", "select", choices=ch.staff),
+            Field("budget_line_id", "Budget line", "select", choices=ch.budget_lines),
+            Field("purpose", "Purpose", hint="e.g. Inter-house sports — first aid and refreshments"),
+            Field("amount_minor", "Amount (₦)", "money"),
+            Field("retire_by", "Account for it by", "date"),
+        ),
+        lambda d: _budgets().request_imprest(
+            _u(d["holder_staff_id"]), _u(d["budget_line_id"]), d["purpose"], d["amount_minor"], d["retire_by"]
+        ),
+        lambda r, _d: (f"Imprest {r.imprest_number} requested.", "/finance/imprest"),
+        api("finance", "ImprestSerializer"),
+        submit="Request",
+    ),
+    Form(
+        "imprest-approve",
+        "Approve and issue imprest",
+        "Budgets",
+        "imprest:approve",
+        "Approving issues the imprest and commits its budget line. You cannot approve imprest you requested.",
+        (_target("Imprest", ch.requested_imprest), Field("approve", "Decision", "select", choices=YES_NO)),
+        lambda d: _budgets().approve_imprest(_u(d["target"]), d["approve"]),
+        lambda r, _d: (f"Imprest {r.imprest_number} {ch.human(r.status).lower()}.", "/finance/imprest"),
+        api("finance", "DecisionSerializer"),
+        submit="Record decision",
+    ),
+    Form(
+        "imprest-retire",
+        "Retire imprest",
+        "Budgets",
+        "imprest:retire",
+        "Account for an imprest. List the receipts one per row as: reference | amount in naira | payee. Enter the "
+        "total spent and any cash refunded; the spent amount becomes actual expenditure on the budget line.",
+        (
+            _target("Imprest", ch.issued_imprest),
+            Field("receipts_text", "Receipts", "textarea", hint="e.g. RCT-118 | 45,000 | Mercy Pharmacy"),
+            Field("amount_minor", "Total spent (₦)", "money"),
+            Field("refund_minor", "Cash refunded (₦)", "money", required=False),
+        ),
+        lambda d: _budgets().retire_imprest(
+            _u(d["target"]), d["receipts"], d["amount_minor"], d.get("refund_minor") or 0
+        ),
+        lambda r, _d: (f"Imprest {r.imprest_number} is now {ch.human(r.status).lower()}.", "/finance/imprest"),
+        api("finance", "RetireSerializer"),
+        _imprest_retire_prepare,
+        "Retire",
+    ),
+    # ------------------------------------------------------------------ funding and loans (CR-006)
+    Form(
+        "funding-apply",
+        "Apply for funding or a loan",
+        "Funding and loans",
+        ("funding:apply", "funding:apply_own"),
+        "Apply for an institution (capital, intervention), a member of staff (welfare loan, salary advance) or a "
+        "learner (scholarship, bursary). Fill only the applicant field that matches. Eligibility is checked "
+        "automatically; a reviewer and a different decision-maker then consider it.",
+        (
+            Field("programme_id", "Programme", "select", choices=ch.funding_programmes),
+            Field("applicant_kind", "Applying for", "select", choices=ch.enum("funding_beneficiary")),
+            Field("institution_id", "Institution", "select", choices=ch.institutions),
+            Field("staff_id", "Member of staff (staff applications)", "select", required=False, choices=ch.staff),
+            Field("learner", "Global Learner ID (learner applications)", "glid", required=False),
+            Field("amount_minor", "Amount requested (₦)", "money"),
+            Field("purpose_detail", "What the money is for", "textarea", hint="At least 10 characters."),
+        ),
+        _funding_apply,
+        lambda r, _d: (
+            f"Application {r.application_number} submitted"
+            + ("." if r.eligible else " — the eligibility check found a problem; the reviewer will see it."),
+            "/funding",
+        ),
+        api("funding", "ApplicationSerializer"),
+        _funding_apply_prepare,
+        "Submit application",
+    ),
+    Form(
+        "funding-recommend",
+        "Review a funding application",
+        "Funding and loans",
+        "funding:review",
+        "Record your recommendation. You cannot review an application you submitted.",
+        (_target("Application", ch.applications_to_review), Field("recommendation", "Recommendation", "textarea")),
+        lambda d: _funding().recommend(_u(d["target"]), d["recommendation"]),
+        lambda r, _d: (f"Application {r.application_number} recommended for decision.", "/funding"),
+        api("funding", "RecommendSerializer"),
+        submit="Save recommendation",
+    ),
+    Form(
+        "funding-decide",
+        "Decide a funding application",
+        "Funding and loans",
+        "funding:decide",
+        "A person decides — never the system. You cannot decide an application you submitted or reviewed.",
+        (
+            _target("Application", ch.applications_to_decide),
+            Field("approve", "Decision", "select", choices=YES_NO),
+            REASON,
+            Field(
+                "amount_approved_minor", "Amount approved (₦)", "money", required=False, hint="Blank = as requested."
+            ),
+        ),
+        lambda d: _funding().decide(
+            _u(d["target"]), d["approve"], d["reason"], amount_approved_minor=d.get("amount_approved_minor")
+        ),
+        lambda r, _d: (f"Application {r.application_number} {r.status}.", "/funding"),
+        api("funding", "DecideSerializer"),
+        submit="Record decision",
+    ),
+    Form(
+        "funding-sign",
+        "Sign a funding agreement",
+        "Funding and loans",
+        "funding:decide",
+        "Turns an approved application into an agreement and, for loans, a repayment schedule. For staff loans "
+        "repaid from pay, give the gross monthly pay: the agreement is refused if the instalment would take net pay "
+        "below the policy floor.",
+        (
+            _target("Approved application", ch.applications_approved),
+            Field("first_repayment_on", "First repayment on", "date", required=False),
+            Field("gross_pay_minor", "Gross monthly pay (₦)", "money", required=False),
+            Field("other_deductions_minor", "Other monthly deductions (₦)", "money", required=False),
+        ),
+        lambda d: _funding().sign_agreement(
+            _u(d["target"]), **_clean(d, "first_repayment_on", "gross_pay_minor", "other_deductions_minor")
+        ),
+        lambda r, _d: (f"Agreement {r.agreement_number} signed.", f"/funding/agreements/{r.id}"),
+        api("funding", "AgreementSerializer"),
+        submit="Sign agreement",
+    ),
+    Form(
+        "funding-disburse",
+        "Disburse funds",
+        "Funding and loans",
+        "funding:disburse",
+        "Records money paid out under an agreement. If you choose a budget line, the institution's budget rises by "
+        "the amount received.",
+        (
+            _target("Agreement", ch.funding_agreements),
+            Field("amount_minor", "Amount (₦)", "money"),
+            Field("payee_kind", "Paid to", "select", choices=ch.enum("disbursement_payee")),
+            Field("purpose", "Purpose"),
+            Field("reference", "Payment reference"),
+            Field("budget_line_id", "Budget line receiving it", "select", required=False, choices=ch.budget_lines),
+        ),
+        lambda d: _funding().disburse(
+            _u(d["target"]),
+            d["amount_minor"],
+            payee_kind=d["payee_kind"],
+            purpose=d["purpose"],
+            reference=d["reference"],
+            **_clean(d, "budget_line_id"),
+        ),
+        lambda r, _d: (f"{ch.naira(r.amount_minor)} disbursed.", f"/funding/agreements/{r.agreement_id}"),
+        api("funding", "DisbursementSerializer"),
+        submit="Disburse",
+    ),
+    Form(
+        "funding-repay",
+        "Record a repayment",
+        "Funding and loans",
+        "funding:collect",
+        "Records a repayment; it is allocated to the oldest instalment first. The same reference is never counted "
+        "twice.",
+        (
+            _target("Agreement", ch.funding_agreements),
+            Field("amount_minor", "Amount (₦)", "money"),
+            Field("method", "Method", "select", choices=ch.enum("repayment_method")),
+            Field("reference", "Reference"),
+            Field("received_on", "Received on", "date", required=False),
+        ),
+        lambda d: _funding().record_repayment(
+            _u(d["target"]), d["amount_minor"], method=d["method"], reference=d["reference"], **_clean(d, "received_on")
+        ),
+        lambda r, _d: (f"Repayment of {ch.naira(r.amount_minor)} recorded.", f"/funding/agreements/{r.agreement_id}"),
+        api("funding", "RepaymentSerializer"),
+        submit="Record repayment",
+    ),
+    # ------------------------------------------------------------------ facilities (CR-006)
+    Form(
+        "estate-site",
+        "Register a government property site",
+        "Facilities",
+        "estate:manage",
+        "Records the land an institution uses: who owns it, the title document, area, fencing and any encroachment. "
+        "New entries are marked 'to confirm' until checked against the land registry.",
+        (
+            Field("institution_id", "Institution", "select", choices=ch.institutions),
+            Field("site_code", "Site code", hint="e.g. MAIN, ANNEX"),
+            Field("name", "Name", hint="e.g. Main campus"),
+            Field("owner", "Owner", "select", choices=ch.enum("property_owner"), default="state_government"),
+            Field("title_document", "Title held", "select", choices=ch.enum("land_title")),
+            Field("title_reference", "Title reference", required=False),
+            Field("area_sqm", "Area (square metres)", "number", required=False),
+            Field("fenced", "Fencing", "select", choices=ch.enum("fence_status"), default="unknown"),
+            Field("encroachment", "Encroachment", "select", choices=ch.enum("encroachment_status"), default="unknown"),
+            Field("latitude", "Latitude", "number", required=False),
+            Field("longitude", "Longitude", "number", required=False),
+        ),
+        _register_site,
+        lambda r, _d: (f"Site {r.site_code} registered.", "/estate/property"),
+        api("estate", "SiteSerializer"),
+        _site_prepare,
+        "Register site",
+    ),
+    Form(
+        "estate-building",
+        "Add a building",
+        "Facilities",
+        "estate:manage",
+        "Adds a building to the institution's main campus. Add its rooms next.",
+        (
+            Field("institution_id", "Institution", "select", choices=ch.institutions),
+            Field("name", "Name", hint="e.g. Classroom block A"),
+            Field("built_year", "Year built", "number", required=False),
+        ),
+        lambda d: _estate().add_building(_u(d["institution_id"]), d["name"], built_year=d.get("built_year")),
+        lambda r, _d: (f"Building {r.name} added.", None),
+        api("estate", "BuildingSerializer"),
+        submit="Add building",
+    ),
+    Form(
+        "estate-room",
+        "Add a room",
+        "Facilities",
+        "estate:manage",
+        "Adds a classroom, laboratory, toilet block or other room to a building.",
+        (
+            Field("building_id", "Building", "select", choices=ch.buildings),
+            Field("code", "Room code", hint="e.g. A1"),
+            Field("room_type", "Type", "select", choices=ch.code_list("room_type")),
+            Field("capacity", "Capacity (people)", "number"),
+            Field("name", "Name", required=False),
+        ),
+        lambda d: _estate().add_room(
+            _u(d["building_id"]), d["code"], d["room_type"], d["capacity"], name=d.get("name") or None
+        ),
+        lambda r, _d: (f"Room {r.code} added.", None),
+        api("estate", "RoomSerializer"),
+        submit="Add room",
+    ),
+    Form(
+        "estate-asset",
+        "Add equipment",
+        "Facilities",
+        "estate:manage",
+        "Records equipment that needs servicing or safety checks — generators, boreholes, solar systems, fire "
+        "extinguishers, laboratory equipment. Service dates drive the proactive reminders.",
+        (
+            Field("institution_id", "Institution", "select", choices=ch.institutions),
+            Field("asset_tag", "Asset tag", hint="e.g. GEN-001"),
+            Field("name", "Name", hint="e.g. 20 kVA generator"),
+            Field("category", "Category", "select", choices=ch.code_list("asset_category")),
+            Field("next_service_on", "Next service due", "date", required=False),
+            Field("safety_check_due_on", "Next safety check due", "date", required=False),
+            Field("value_minor", "Value (₦)", "money", required=False),
+        ),
+        lambda d: _estate().add_asset(
+            _u(d["institution_id"]),
+            d["asset_tag"],
+            d["name"],
+            d["category"],
+            **_clean(d, "next_service_on", "safety_check_due_on", "value_minor"),
+        ),
+        lambda r, _d: (f"Equipment {r.asset_tag} added.", None),
+        api("estate", "AssetSerializer"),
+        submit="Add equipment",
+    ),
+    Form(
+        "estate-assess",
+        "Record a condition assessment",
+        "Facilities",
+        "estate:assess",
+        "Records how usable a site, building, room or item of equipment is today. An unsafe facility still in use, "
+        "or a major repair, raises an action for the head straight away.",
+        (
+            Field("facility", "Facility", "select", choices=ch.facilities),
+            Field("condition_grade", "Condition", "select", choices=ch.code_list("condition_grade")),
+            Field("usability", "Usability", "select", choices=ch.enum("usability_status")),
+            Field("structural_risk", "Structural risk", "select", choices=ch.enum("severity"), default="info"),
+            Field("in_use", "Still in use", "checkbox", required=False),
+            Field("assessor_kind", "Assessed by", "select", choices=ch.enum("facility_assessor"), required=False),
+            Field("learners_affected", "Learners affected", "number", required=False),
+            Field("repair_estimate_minor", "Repair estimate (₦)", "money", required=False),
+            Field("next_due_on", "Re-assess by", "date", required=False),
+        ),
+        _assess,
+        lambda r, _d: ("Assessment recorded; the rules have been re-run.", "/estate"),
+        api("estate", "AssessmentSerializer"),
+        _facility_prepare,
+        "Record assessment",
+    ),
+    Form(
+        "estate-schedule",
+        "Plan preventive maintenance",
+        "Facilities",
+        "estate:manage",
+        "A repeating task — servicing a generator every 90 days, a fire-safety check every year. The task appears as "
+        "an action when it falls due.",
+        (
+            Field("facility", "Facility", "select", choices=ch.facilities),
+            Field("task", "Task", hint="e.g. Service 20 kVA generator"),
+            Field("task_kind", "Kind", "select", choices=ch.enum("maintenance_task_kind")),
+            Field("frequency_days", "Every (days)", "number"),
+            Field("next_due_on", "Next due", "date"),
+            Field("estimated_cost_minor", "Estimated cost (₦)", "money", required=False),
+        ),
+        lambda d: _estate().schedule_maintenance(
+            d["subject_kind"],
+            _u(d["subject_id"]),
+            task=d["task"],
+            task_kind=d["task_kind"],
+            frequency_days=d["frequency_days"],
+            next_due_on=d["next_due_on"],
+            **_clean(d, "estimated_cost_minor"),
+        ),
+        lambda r, _d: (f"Planned: {r.task}, next due {r.next_due_on:%d %b %Y}.", "/estate"),
+        api("estate", "ScheduleSerializer"),
+        _facility_prepare,
+        "Save plan",
+    ),
+    Form(
+        "estate-done",
+        "Mark planned maintenance done",
+        "Facilities",
+        "estate:act",
+        "Records the task as done; a completed work order is kept and the next due date moves on.",
+        (
+            _target("Planned task", ch.maintenance_schedules),
+            Field("done_on", "Done on", "date", required=False),
+            Field("cost_minor", "Cost (₦)", "money", required=False),
+            Field("note", "Note", "textarea", required=False),
+        ),
+        lambda d: _estate().complete_maintenance(_u(d["target"]), **_clean(d, "done_on", "cost_minor", "note")),
+        lambda r, _d: (f"Done. Next due {r.next_due_on:%d %b %Y}.", "/estate"),
+        api("estate", "CompleteSerializer"),
+        submit="Mark done",
+    ),
+    Form(
+        "estate-action",
+        "Update a facility action",
+        "Facilities",
+        "estate:act",
+        "Acknowledge an action, mark work started or done, or dismiss it with a reason.",
+        (
+            _target("Action", ch.open_facility_actions),
+            Field(
+                "status",
+                "New status",
+                "select",
+                choices=ch.fixed(["acknowledged", "in_progress", "done", "dismissed"]),
+            ),
+            Field("note", "Note", "textarea", required=False, hint="Required (10+ characters) to dismiss."),
+        ),
+        lambda d: _estate().act(_u(d["target"]), d["status"], d.get("note") or None),
+        lambda r, _d: (f"Action is now {ch.human(r.status).lower()}.", "/estate/actions"),
+        api("estate", "ActSerializer"),
+        submit="Update",
+    ),
+    Form(
+        "estate-work-order",
+        "Raise a work order",
+        "Facilities",
+        "estate:act",
+        "Turns an action into a maintenance request (work order) with the action's priority and due date.",
+        (_target("Action", ch.open_facility_actions),),
+        lambda d: _estate().raise_work_order(_u(d["target"])),
+        _ok("Work order raised.", "/estate/actions"),
+        submit="Raise work order",
     ),
 )
 

@@ -39,7 +39,8 @@ def add_node(
     ownership: str | None = None,
 ) -> ScopeNode:
     """Create a scope node and its closure rows inside an open command (registry zone)."""
-    nests = level in ("network", "formation")  # networks and agency formations nest within their own level
+    # networks, agency formations and authorities (a board under its ministry) nest within their own level
+    nests = parent is not None and parent.level == level and level in ("network", "formation", "authority")
     if parent is not None and LEVEL_ORDER.index(level) <= LEVEL_ORDER.index(parent.level) and not nests:
         raise HardValidation("GOV-SCOPE-LEVEL", "Invalid hierarchy", f"A {level} cannot sit under a {parent.level}.")
     node = ScopeNode(

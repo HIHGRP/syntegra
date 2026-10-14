@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "_charts.html" import hbar, meter, pct %}
+{% block title %}State infrastructure overview{% endblock %}
+{% block content %}
+<h1>State infrastructure overview</h1>
+{% if not d.loaded %}
+<p class="muted">The data warehouse has not been loaded for your scope yet. It loads every night; an administrator can run <code>syntegra_jobs warehouse</code>.</p>
+{% else %}
+{% set s = d.scope %}
+<p class="muted">{{ s.name }} · from the warehouse load of {{ d.date|date }}. Usable classrooms are those assessed fully usable or usable with minor repairs (or not yet assessed). The infrastructure index (0–100) combines usable classrooms, safety, water, power, toilets and overdue actions.</p>
+<section class="kpis" aria-label="Headline figures">
+  <div class="kpi"><span class="k">Institutions</span><span class="v">{{ "{:,}".format(s.institutions) }}</span><span class="muted">{{ s.institutions_assessed }} assessed</span></div>
+  <div class="kpi"><span class="k">Usable classrooms</span><span class="v">{{ pct(s.usable_share) }}</span><span class="muted">{{ "{:,}".format(s.classrooms_usable) }} of {{ "{:,}".format(s.classrooms) }}</span></div>
+  <div class="kpi"><span class="k">Learners per usable classroom</span><span class="v">{{ s.learners_per_usable_classroom or "—" }}</span></div>
+  <div class="kpi"><span class="k">Unsafe facilities still in use</span><span class="v">{{ s.facilities_unsafe_in_use }}</span></div>
+  <div class="kpi"><span class="k">Open actions</span><span class="v">{{ s.actions_open }}</span><span class="muted">{{ s.actions_critical_open }} critical · {{ s.actions_overdue }} overdue</span></div>
+  <div class="kpi"><span class="k">Repair backlog</span><span class="v">{{ s.repair_backlog_minor|naira_short }}</span></div>
+</section>
+<section class="kpis" aria-label="Sites and utilities">
+  <div class="kpi"><span class="k">Sites fenced</span><span class="v">{{ s.sites_fenced }} / {{ s.sites }}</span></div>
+  <div class="kpi"><span class="k">Sites encroached</span><span class="v">{{ s.sites_encroached }}</span></div>
+  <div class="kpi"><span class="k">With water</span><span class="v">{{ s.institutions_with_water }}</span></div>
+  <div class="kpi"><span class="k">With power</span><span class="v">{{ s.institutions_with_power }}</span></div>
+  <div class="kpi"><span class="k">Buildings unsafe</span><span class="v">{{ s.buildings_unsafe }} / {{ s.buildings }}</span></div>
+</section>
+{% if d.children %}
+<article class="card"><h2>Infrastructure index by area</h2>
+  {{ hbar(d.children|selectattr("infrastructure_index")|sort(attribute="infrastructure_index", reverse=true)|list, "name", "infrastructure_index", "Infrastructure index by area") }}
+  <table class="compact"><thead><tr><th scope="col">Area</th><th scope="col" class="num">Institutions</th><th scope="col">Usable classrooms</th><th scope="col" class="num">Unsafe in use</th><th scope="col" class="num">Open actions</th><th scope="col" class="num">Backlog</th></tr></thead>
+  <tbody>{% for c in d.children %}<tr><td><a href="/estate/state?scope_id={{ c.scope_node_id }}">{{ c.name }}</a></td><td class="num">{{ c.institutions }}</td><td>{{ meter((c.usable_share or 0) * 100) }}{{ pct(c.usable_share) }}</td><td class="num">{{ c.facilities_unsafe_in_use }}</td><td class="num">{{ c.actions_open }}</td><td class="num">{{ c.repair_backlog_minor|naira }}</td></tr>{% endfor %}</tbody></table>
+</article>
+{% endif %}
+<article class="card"><h2>Institutions needing attention first</h2>
+{% if d.institutions %}<table class="compact"><thead><tr><th scope="col">Institution</th><th scope="col">Index</th><th scope="col">Usable classrooms</th><th scope="col" class="num">Learners per usable room</th><th scope="col" class="num">Critical actions</th><th scope="col" class="num">Backlog</th></tr></thead>
+<tbody>{% for i in d.institutions[:50] %}<tr><td>{{ i.name }}</td><td>{{ meter(i.infrastructure_index or 0) }}{{ i.infrastructure_index if i.infrastructure_index is not none else "—" }}</td><td>{{ pct(i.usable_share) }}</td><td class="num">{{ i.learners_per_usable_classroom or "—" }}</td><td class="num">{{ i.actions_critical_open }}</td><td class="num">{{ i.repair_backlog_minor|naira }}</td></tr>{% endfor %}</tbody></table>
+{% else %}<p class="muted">No institution in this area has facility records yet.</p>{% endif %}
+</article>
+{% endif %}
+<p><a href="/estate/property">Property register</a> · <a href="/estate/actions">Facility actions</a></p>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% from "_charts.html" import hbar, meter, pct, num %}
+{% block title %}State education control room{% endblock %}
+{% block content %}
+<h1>State education control room</h1>
+<p class="muted">Every school and institution in your scope, from the first-term continuous assessment and examination marks and the
+attendance registers. Schools are compared only with schools of the same kind (P7). Performance index = 60 % mean score + 25 % pass rate
++ 15 % attendance. Figures as of {{ d.computed_at.strftime("%d %b %Y %H:%M") }} UTC.</p>
+<section class="kpis" aria-label="Headline figures">
+  <div class="kpi"><span class="k">Schools and institutions</span><span class="v">{{ "{:,}".format(d.kpis.institutions) }}</span></div>
+  <div class="kpi"><span class="k">Learners on roll</span><span class="v">{{ "{:,}".format(d.kpis.learners) }}</span></div>
+  <div class="kpi"><span class="k">Mean score (out of 100)</span><span class="v">{{ num(d.kpis.mean_score) }}</span></div>
+  <div class="kpi"><span class="k">Pass rate (50+)</span><span class="v">{{ pct(d.kpis.pass_rate) }}</span></div>
+  <div class="kpi"><span class="k">Attendance</span><span class="v">{{ pct(d.kpis.attendance_rate) }}</span></div>
+</section>
+<section class="grid2c">
+  {% set bs = d.best_school %}
+  <article class="card award" aria-labelledby="best-school">
+    <h2 id="best-school">Best overall school</h2>
+    {% if bs %}<span class="who">{{ bs.name }}</span>
+    <p class="muted">{{ bs.lga }} LGA · {{ bs.group }} · performance index <strong>{{ num(bs.index) }}</strong> · mean score {{ num(bs.mean_score) }} ·
+      pass rate {{ pct(bs.pass_rate) }} · attendance {{ pct(bs.attendance_rate) }} · {{ "{:,}".format(bs.learners) }} learners</p>{% else %}<p class="muted">No results yet.</p>{% endif %}
+    <h3 class="sub">Best in each group</h3>
+    <ul class="people">{% for g, s in d.best_school_by_group.items() if s %}<li><strong>{{ s.name }}</strong><span class="line muted">{{ g|capitalize }} · {{ s.lga }} · index {{ num(s.index) }}</span></li>{% endfor %}</ul>
+  </article>
+  {% set bl = d.best_learner %}
+  <article class="card award" aria-labelledby="best-learner">
+    <h2 id="best-learner">Best overall student</h2>
+    {% if bl %}<span class="who">{{ bl.name }}</span>
+    <p class="muted"><code>{{ bl.global_learner_id }}</code> · {{ bl.institution }} · average <strong>{{ num(bl.average) }}</strong> across {{ bl.subjects }} subjects ·
+      attendance {{ pct(bl.attendance_rate) }}</p>{% elif not ctx.has("learner:view") %}<p class="muted">Learner names need the learner view permission.</p>{% else %}<p class="muted">No results yet.</p>{% endif %}
+    <h3 class="sub">Top student in each group</h3>
+    <ul class="people">{% for g, rows in d.best_learners.items() if rows %}{% set r = rows[0] %}<li><strong>{{ r.name }}</strong> <code>{{ r.global_learner_id }}</code><span class="line muted">{{ g|capitalize }} · {{ r.institution }} · average {{ num(r.average) }}</span></li>{% endfor %}</ul>
+  </article>
+</section>
+<section class="grid2c">
+  {% for g in ("primary", "secondary") if d.by_lga.get(g) %}
+  <article class="card">
+    <h2>{{ g|capitalize }} schools — performance index by LGA</h2>
+    {{ hbar(d.by_lga[g], "lga", "index", g|capitalize ~ " schools: mean performance index by LGA") }}
+    <p class="muted">Average of the schools' indices in each LGA. <a href="/command/compare?group={{ g }}">Full league table</a></p>
+  </article>
+  {% endfor %}
+</section>
+{% for g in ("primary", "secondary", "tertiary") if d.league.get(g) %}
+<section class="card">
+  <h2>{{ g|capitalize }} — top {{ [d.league[g]|length, 10]|min }} of {{ d.league[g]|length }}</h2>
+  <table class="compact">
+    <thead><tr><th scope="col" class="num">Rank</th><th scope="col">Institution</th><th scope="col">LGA</th><th scope="col" class="num">Learners</th>
+      <th scope="col" class="num">Mean</th><th scope="col" class="num">Pass rate</th><th scope="col" class="num">Attendance</th><th scope="col">Index</th></tr></thead>
+    <tbody>{% for r in d.league[g][:10] %}<tr><td class="num">{{ r.rank }}</td><td>{{ r.name }}</td><td>{{ r.lga }}</td><td class="num">{{ "{:,}".format(r.learners) }}</td>
+      <td class="num">{{ num(r.mean_score) }}</td><td class="num">{{ pct(r.pass_rate) }}</td><td class="num">{{ pct(r.attendance_rate) }}</td><td>{{ meter(r.index) }}{{ num(r.index) }}</td></tr>{% endfor %}</tbody>
+  </table>
+  <p><a href="/command/compare?group={{ g }}">See all {{ d.league[g]|length }}</a></p>
+</section>
+{% endfor %}
+{% endblock %}

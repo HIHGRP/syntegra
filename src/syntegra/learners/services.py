@@ -110,7 +110,10 @@ def allocate_glid(alias: str) -> str:
             nxt = b.first_serial if r is None else int(r[0][4:8] + r[0][9:13]) + 1
             if nxt <= b.last_serial:
                 return format_glid(nxt)
-    raise ConflictError("GLID-EXHAUSTED", "GLID block exhausted", "Lease a new block from the national allocator.")
+    from syntegra.platform.glid import lease_block
+
+    block = lease_block(ctx.state_tenant_id)  # type: ignore[arg-type]  # the state's blocks are used up
+    return format_glid(block.first_serial)
 
 
 # --------------------------------------------------------------------------- matching

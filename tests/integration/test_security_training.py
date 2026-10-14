@@ -224,4 +224,8 @@ def test_security_training_pages(fse: Any, client: Any, settings: Any) -> None:
     ).group(1)
     page = client.get(f"/security-training/agencies/{agency.decode()}", HTTP_HOST=HOST).content
     assert b"Training and Doctrine Command" in page and b"Lieutenant General" in page
+    assert f"/security-training/agencies/{agency.decode()}/careers".encode() in page
+    page = client.get(f"/security-training/agencies/{agency.decode()}/careers", HTTP_HOST=HOST)
+    assert page.status_code == 200 and b"careers and course requirements" in page.content
+    assert b"Lieutenant General" in page.content and b"Courses and the units involved" in page.content
     assert client.get("/api/v1/security-training/agencies", HTTP_HOST=HOST).status_code == 200

@@ -715,3 +715,154 @@ def workspace(request: HttpRequest) -> HttpResponse:
         ),
         status=422 if error else 200,
     )
+
+
+# ---------------------------------------------------------------------------------- command centre (CMD-101, CMD-102)
+@page("CMD-101")
+def control_room(request: HttpRequest) -> HttpResponse:
+    """The state education control room: headline figures, the best school and learner, LGAs and schools compared."""
+    from syntegra.analytics import performance
+
+    data = performance.performance()
+    return render(request, "control_room.html", _ctx(request, d=data, page=pages.page("CMD-101")))
+
+
+@page("CMD-102")
+def league(request: HttpRequest) -> HttpResponse:
+    """Institution league with context: ranked only within comparison groups, filterable by LGA."""
+    from syntegra.analytics import performance
+
+    data = performance.performance()
+    group = request.GET.get("group") if request.GET.get("group") in performance.GROUPS else "secondary"
+    lga = request.GET.get("lga", "")
+    rows = [r for r in data["league"][group] if not lga or r["lga"] == lga]
+    lgas = sorted({r["lga"] for g in data["league"].values() for r in g if r["lga"]})
+    return render(
+        request,
+        "league.html",
+        _ctx(
+            request,
+            d=data,
+            rows=rows,
+            group=group,
+            groups=performance.GROUP_LABEL,
+            lga=lga,
+            lgas=lgas,
+            best=data["best_learners"].get(group, []),
+            page=pages.page("CMD-102"),
+        ),
+    )
+
+
+# ---------------------------------------------------------------- budgets, funding and facilities (CR-006)
+def _institution_choice(request: HttpRequest) -> tuple[list[Any], str | None]:
+    from syntegra.institutions.models import Institution
+
+    institutions = list(Institution.objects.in_scope().filter(status="active").order_by("name")[:500])
+    chosen = request.GET.get("institution_id") or (str(institutions[0].id) if len(institutions) == 1 else None)
+    return institutions, chosen
+
+
+@page("FIN-02")
+def budget_execution(request: HttpRequest) -> HttpResponse:
+    """Budget against actual: original, revised, committed, spent and available per line, with execution."""
+    from syntegra.finance import budgets
+
+    institutions, chosen = _institution_choice(request)
+    year = request.GET.get("fiscal_year", "")
+    data = budgets.execution(
+        institution_id=_uuid_or_fail(chosen, "institution") if chosen else None,
+        fiscal_year=int(year) if year.isdigit() else None,
+    )
+    return render(
+        request,
+        "budget_execution.html",
+        _ctx(request, d=data, institutions=institutions, chosen=chosen, page=pages.page("FIN-02")),
+    )
+
+
+@page("ACC-01")
+def imprest(request: HttpRequest) -> HttpResponse:
+    from syntegra.core import catalog
+    from syntegra.finance import budgets
+
+    status = request.GET.get("status") or None
+    if status not in (None, *catalog.enum_values("imprest_status")):
+        status = None
+    rows = budgets.imprest_register(status=status)
+    statuses = catalog.enum_values("imprest_status")
+    return render(
+        request,
+        "imprest.html",
+        _ctx(request, rows=rows, status=status or "", statuses=statuses, page=pages.page("ACC-01")),
+    )
+
+
+@page("FND-01")
+def funding(request: HttpRequest) -> HttpResponse:
+    from syntegra.funding import services as fnd
+
+    kind = request.GET.get("for", "")
+    data = fnd.overview()
+    shown = [p for p in data["programmes"] if not kind or p["beneficiary_kind"] == kind]
+    return render(
+        request, "funding.html", _ctx(request, d=data, programmes=shown, kind=kind, page=pages.page("FND-01"))
+    )
+
+
+@page("FND-02")
+def funding_agreement(request: HttpRequest, agreement_id: uuid.UUID) -> HttpResponse:
+    from syntegra.funding import services as fnd
+
+    return render(
+        request, "funding_agreement.html", _ctx(request, a=fnd.agreement(agreement_id), page=pages.page("FND-02"))
+    )
+
+
+@page("EST-01")
+def property_register(request: HttpRequest) -> HttpResponse:
+    from syntegra.estate import services as est
+
+    rows = est.property_register()
+    return render(request, "property_register.html", _ctx(request, rows=rows, page=pages.page("EST-01")))
+
+
+@page("EST-02")
+def facility_actions(request: HttpRequest) -> HttpResponse:
+    from syntegra.estate import services as est
+
+    status = request.GET.get("status", "open")
+    status = status if status in ("open", "done", "dismissed") else "open"
+    rows = est.actions_in_scope(status=status)
+    return render(request, "facility_actions.html", _ctx(request, rows=rows, status=status, page=pages.page("EST-02")))
+
+
+@page("EST-03")
+def infrastructure(request: HttpRequest) -> HttpResponse:
+    """The Commissioner's holistic view of school infrastructure, from the data warehouse (drill down by scope)."""
+    from syntegra.analytics import warehouse
+
+    scope = request.GET.get("scope_id")
+    data = warehouse.state_overview(_uuid_or_fail(scope, "area") if scope else None)
+    return render(request, "infrastructure.html", _ctx(request, d=data, page=pages.page("EST-03")))
+
+
+@page("OPS-01")
+def facilities(request: HttpRequest) -> HttpResponse:
+    """The head's facilities workspace: sites, buildings, rooms, equipment, the maintenance plan and open actions."""
+    from syntegra.estate import services as est
+
+    institutions, chosen = _institution_choice(request)
+    data = est.workspace(_uuid_or_fail(chosen, "institution")) if chosen else None
+    return render(
+        request,
+        "facilities.html",
+        _ctx(request, w=data, institutions=institutions, chosen=chosen, page=pages.page("OPS-01")),
+    )
+
+
+@page("STI-05")
+def security_careers(request: HttpRequest, agency_id: uuid.UUID) -> HttpResponse:
+    from syntegra.security_training import services as sti
+
+    return render(request, "security_careers.html", _ctx(request, c=sti.careers(agency_id), page=pages.page("STI-05")))

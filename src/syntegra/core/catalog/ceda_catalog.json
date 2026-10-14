@@ -5121,6 +5121,23 @@
    "producer": "learners",
    "trigger": "Learner record became an alias"
   },
+  "LRN.ROLL_IMPORTED": {
+   "aggregate": "institution",
+   "consumers": [
+    "mdm",
+    "search",
+    "analytics",
+    "financing"
+   ],
+   "payload": {
+    "first_glid": "glid!",
+    "institution_id": "uuid!",
+    "last_glid": "glid!",
+    "learners": "int!"
+   },
+   "producer": "learners",
+   "trigger": "An onboarding institution's existing roll is imported (one event for the whole roll)"
+  },
   "LRN.TRANSFERRED": {
    "aggregate": "learner_transfer",
    "consumers": [

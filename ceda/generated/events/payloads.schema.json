@@ -958,6 +958,32 @@
       ],
       "additionalProperties": false
     },
+    "LRN.ROLL_IMPORTED": {
+      "type": "object",
+      "description": "An onboarding institution's existing roll is imported (one event for the whole roll)",
+      "properties": {
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "learners": {
+          "type": "integer"
+        },
+        "first_glid": {
+          "type": "string"
+        },
+        "last_glid": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "institution_id",
+        "learners",
+        "first_glid",
+        "last_glid"
+      ],
+      "additionalProperties": false
+    },
     "LRN.UPDATED": {
       "type": "object",
       "description": "Identity attributes changed (field names only)",

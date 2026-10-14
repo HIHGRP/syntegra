@@ -72,7 +72,8 @@ def test_every_registered_state_institution_gets_its_profile(world: Any, as_user
         p = reg.profile(world.institution.id)  # a state secondary school registered by the fixture
     got = {(link["body_code"], link["relationship"]) for link in p["links"]}
     assert got >= {
-        ("STATE_MOE", "supervision"),
+        ("ABMOE", "supervision"),  # Abia's own ministry and board replace the generic state bodies (CR-007)
+        ("ASUBEB", "supervision"),
         ("NERDC", "curriculum"),
         ("TRCN", "teacher_registration"),
         ("STATE_EXAM_BOARD", "examination"),

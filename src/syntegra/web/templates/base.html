@@ -13,6 +13,7 @@
   {% if signed_in %}
   <nav aria-label="Primary">
     <a href="/">Home</a>
+    {% if ctx.has("metric:view") %}<a href="/command/control-room">Control room</a>{% endif %}
     {% if ctx.has("learner:register") %}<a href="/learners/new">Register learner</a>{% endif %}
     {% if ctx.has("coverage:view") %}<a href="/coverage">Coverage</a>{% endif %}
     {% if ctx.has("clearance:check") %}<a href="/admissions/clearance">Fee clearance</a>{% endif %}
@@ -20,6 +21,9 @@
     {% if ctx.has("federal_institutions:view") %}<a href="/federal-institutions">Federal institutions</a>{% endif %}
     <a href="/regulators">Regulators</a>
     {% if ctx.has("hr:view") %}<a href="/hr/establishment">HR</a>{% endif %}
+    {% if ctx.has("budget:view") %}<a href="/finance/performance">Budgets</a>{% endif %}
+    {% if ctx.has("funding:view") %}<a href="/funding">Funding</a>{% endif %}
+    {% if ctx.has("warehouse:view") %}<a href="/estate/state">Infrastructure</a>{% elif ctx.has("estate:view") %}<a href="/estate">Facilities</a>{% endif %}
     <a href="/forms">Forms</a>
     <a href="/pages">Pages</a>
     <a href="/verify">Verify</a>

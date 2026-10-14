@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Facility actions{% endblock %}
+{% block content %}
+<h1>Facility actions</h1>
+<p class="muted">Proactive actions raised by the rules from assessments and maintenance plans — an unsafe classroom still in use, a generator overdue for service, a fire-safety check due. Each has an owner and a due date; overdue actions move up to the LGA and then the ministry.</p>
+<nav class="tabs" aria-label="Status">{% for k in ("open", "done", "dismissed") %}<a href="/estate/actions?status={{ k }}" {% if k == status %}aria-current="page"{% endif %}>{{ k|human }}</a>{% endfor %}</nav>
+<p class="actions">{% if ctx.has("estate:act") %}<a href="/forms/estate-action">Update an action</a><a href="/forms/estate-work-order">Raise a work order</a>{% endif %}</p>
+{% if rows %}
+<table class="compact"><thead><tr><th scope="col">Priority</th><th scope="col">Action</th><th scope="col">Institution</th><th scope="col">Owner</th><th scope="col">Due</th><th scope="col">Escalated</th><th scope="col">Status</th></tr></thead>
+<tbody>{% for a in rows %}<tr><td><span class="sev sev-{{ a.priority }}">{{ a.priority|human }}</span></td><td><strong>{{ a.title }}</strong><span class="line muted">{{ a.detail }}</span></td><td><a href="/estate?institution_id={{ a.institution_id }}">{{ a.institution }}</a></td><td>{{ a.owner_role }}</td><td>{{ a.due_on|date }}</td>
+<td>{{ ("—", "To the LGA", "To the ministry")[a.escalation_level] if a.escalation_level < 3 else "Level " ~ a.escalation_level }}</td><td>{{ a.status|human }}{% if a.work_order %}<span class="line muted">work order raised</span>{% endif %}</td></tr>{% endfor %}</tbody></table>
+{% else %}<p class="muted">No {{ status }} actions in your scope.</p>{% endif %}
+{% endblock %}

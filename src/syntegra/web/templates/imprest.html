@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Imprest and retirement{% endblock %}
+{% block content %}
+<h1>Imprest and retirement</h1>
+<p class="muted">Cash advanced to a member of staff for a purpose, committed against a budget line and accounted for with receipts (and any refund) by the retirement date. Overdue imprest is flagged every day.</p>
+<p class="actions">{% if ctx.has("imprest:request") %}<a href="/forms/imprest-request">Request imprest</a>{% endif %}{% if ctx.has("imprest:approve") %}<a href="/forms/imprest-approve">Approve and issue</a>{% endif %}{% if ctx.has("imprest:retire") %}<a href="/forms/imprest-retire">Retire imprest</a>{% endif %}<a href="/finance/performance">Budget against actual</a></p>
+<form method="get" class="inline"><label class="sr" for="st">Status</label>
+  <select id="st" name="status"><option value="">All</option>{% for s in statuses %}<option value="{{ s }}" {% if s == status %}selected{% endif %}>{{ s|human }}</option>{% endfor %}</select><button>Show</button></form>
+{% if rows %}
+<table class="compact"><thead><tr><th scope="col">Number</th><th scope="col">Holder</th><th scope="col">Purpose</th><th scope="col" class="num">Amount</th><th scope="col" class="num">To account for</th><th scope="col">Retire by</th><th scope="col">Status</th></tr></thead>
+<tbody>{% for r in rows %}<tr><td><code>{{ r.number }}</code></td><td>{{ r.holder }}</td><td>{{ r.purpose }}</td><td class="num">{{ r.amount|naira }}</td><td class="num">{{ r.outstanding|naira }}</td><td>{{ r.retire_by|date }}</td><td><span class="sev {{ 'sev-critical' if r.status == 'overdue' else '' }}">{{ r.status|human }}</span></td></tr>{% endfor %}</tbody></table>
+{% else %}<p class="muted">No imprest in this view.</p>{% endif %}
+{% endblock %}

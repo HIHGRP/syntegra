@@ -44,6 +44,7 @@ Generated from `ceda/model/events.yaml`. Events are named `<DOMAIN>.<PAST_TENSE_
 | `PVT.APPROVAL_RENEWED` | `providers` | `approval` | `syn.{region}.pvt.v1` | `approval_id`, `expires_on` | institutions, certificates | Approval renewed |
 | `PVT.SANCTION_APPLIED` | `providers` | `sanction` | `syn.{region}.pvt.v1` | `sanction_id`, `institution_id`, `step` | learners, assessment, intelligence, comms | Sanction step takes effect (admissions/exam entries blocked) |
 | `LRN.CREATED` | `learners` | `learner` | `syn.{region}.lrn.v1` | `learner_id`, `global_learner_id` | mdm, search, analytics, financing | Learner 360 created after matching |
+| `LRN.ROLL_IMPORTED` | `learners` | `institution` | `syn.{region}.lrn.v1` | `institution_id`, `learners`, `first_glid`, `last_glid` | mdm, search, analytics, financing | An onboarding institution's existing roll is imported (one event for the whole roll) |
 | `LRN.UPDATED` | `learners` | `learner` | `syn.{region}.lrn.v1` | `learner_id`, `changed_fields` | search, analytics | Identity attributes changed (field names only) |
 | `LRN.MERGED` | `learners` | `learner` | `syn.{region}.lrn.v1` | `learner_id`, `merged_into` | all_modules | Learner record became an alias |
 | `LRN.VIEWED_SPECIAL` | `learners` | `learner` | `syn.{region}.lrn.v1` | `learner_id`, `viewer_user_id`, `purpose_code` | audit_monitoring | Special-category tab opened with purpose |

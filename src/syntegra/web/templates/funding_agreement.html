@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Agreement {{ a.agreement_number }}{% endblock %}
+{% block content %}
+<p><a href="/funding">← Funding and loans</a></p>
+<h1>Agreement <code>{{ a.agreement_number }}</code></h1>
+<p class="muted">{{ a.programme.name }} ({{ a.programme.provider }}) · {{ a.beneficiary }} · {{ a.instrument|human }} · signed {{ a.signed_on|date }} · <strong>{{ a.status|human }}</strong></p>
+<section class="kpis" aria-label="Balances">
+  <div class="kpi"><span class="k">Principal</span><span class="v">{{ a.principal_minor|naira_short }}</span></div>
+  <div class="kpi"><span class="k">Disbursed</span><span class="v">{{ a.disbursed_minor|naira_short }}</span></div>
+  <div class="kpi"><span class="k">Repaid</span><span class="v">{{ a.repaid_minor|naira_short }}</span></div>
+  <div class="kpi"><span class="k">Outstanding</span><span class="v">{{ a.outstanding_minor|naira_short }}</span></div>
+  <div class="kpi"><span class="k">Arrears</span><span class="v">{{ a.arrears_minor|naira_short }}</span></div>
+</section>
+<p class="muted">Interest {{ "{:g}".format(a.interest_rate or 0) }}% a year · {{ a.tenor_months or "—" }} months · moratorium {{ a.moratorium_months or 0 }} months · {{ a.repayment_basis|human }} · first repayment {{ a.first_repayment_on|date }} · purpose: {{ a.application.purpose }}</p>
+<section class="grid2c">
+<article class="card"><h2>Repayment schedule</h2>
+{% if a.schedule %}<table class="compact"><thead><tr><th scope="col" class="num">#</th><th scope="col">Due</th><th scope="col" class="num">Principal</th><th scope="col" class="num">Interest</th><th scope="col" class="num">Paid</th><th scope="col">Status</th></tr></thead>
+<tbody>{% for i in a.schedule %}<tr><td class="num">{{ i.sequence }}</td><td>{{ i.due_on|date }}</td><td class="num">{{ i.principal|naira }}</td><td class="num">{{ i.interest|naira }}</td><td class="num">{{ i.paid|naira }}</td><td>{{ i.status|human }}</td></tr>{% endfor %}</tbody></table>
+{% else %}<p class="muted">Not repayable (grant, scholarship or bursary).</p>{% endif %}</article>
+<article class="card"><h2>Disbursements</h2>
+{% if a.disbursements %}<ul class="people">{% for x in a.disbursements %}<li><strong>{{ x.amount|naira }}</strong> on {{ x.on|date }}<span class="line muted">to {{ x.payee }} · {{ x.purpose }} · ref {{ x.reference }}</span></li>{% endfor %}</ul>{% else %}<p class="muted">None yet.</p>{% endif %}
+<h2>Repayments</h2>
+{% if a.repayments %}<ul class="people">{% for x in a.repayments %}<li><strong>{{ x.amount|naira }}</strong> on {{ x.on|date }}<span class="line muted">{{ x.method|human }} · ref {{ x.reference }}</span></li>{% endfor %}</ul>{% else %}<p class="muted">None yet.</p>{% endif %}</article>
+</section>
+{% endblock %}

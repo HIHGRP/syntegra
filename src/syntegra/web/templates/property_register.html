@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Government property register{% endblock %}
+{% block content %}
+<h1>Government property register</h1>
+<p class="muted">Every site (land) used by a public institution in your scope: who owns it, the title held, its area, fencing and encroachment, valuation and the latest usability assessment. Entries marked "to confirm" have not yet been checked against the land registry.</p>
+<p class="actions">{% if ctx.has("estate:manage") %}<a href="/forms/estate-site">Register a site</a>{% endif %}{% if ctx.has("estate:assess") %}<a href="/forms/estate-assess">Record an assessment</a>{% endif %}<a href="/estate/actions">Facility actions</a></p>
+{% if rows %}
+<table class="compact"><thead><tr><th scope="col">Site</th><th scope="col">Institution</th><th scope="col">Owner</th><th scope="col">Title</th><th scope="col" class="num">Area (m²)</th><th scope="col">Fenced</th><th scope="col">Encroachment</th><th scope="col" class="num">Buildings</th><th scope="col">Latest usability</th></tr></thead>
+<tbody>{% for r in rows %}<tr><td><code>{{ r.site_code }}</code> {{ r.name }}{% if r.data_status != "verified" %}<span class="line muted">{{ r.data_status|human }}</span>{% endif %}</td><td><a href="/estate?institution_id={{ r.institution_id }}">{{ r.institution }}</a></td><td>{{ r.owner|human }}</td><td>{{ r.title_document|human }}{% if r.title_reference %}<span class="line muted">{{ r.title_reference }}</span>{% endif %}</td>
+<td class="num">{{ "—" if r.area_sqm is none else "{:,.0f}".format(r.area_sqm) }}</td><td>{{ r.fenced|human }}</td><td><span class="sev {{ 'sev-high' if r.encroachment in ('confirmed', 'in_dispute') else '' }}">{{ r.encroachment|human }}</span></td><td class="num">{{ r.buildings }}</td>
+<td>{% if r.latest %}{{ r.latest.usability|human }}<span class="line muted">{{ r.latest.assessed_on|date }}</span>{% else %}<span class="muted">Not assessed</span>{% endif %}</td></tr>{% endfor %}</tbody></table>
+{% else %}<p class="muted">No sites registered in your scope yet.</p>{% endif %}
+{% endblock %}
