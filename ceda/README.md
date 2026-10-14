@@ -7,7 +7,7 @@ layer and hosting infrastructure are built from it.
 - **Read first:** [`CEDA.md`](CEDA.md) — principles, decisions, zones, conventions, security, data flows,
   API/UI contracts, warehouse and semantic layer, dashboards, intelligence data, hosting and capacity,
   governance, and the corrections to MFS Appendix J.
-- **The model (source of truth):** [`model/`](model/) — 458 entities in 31 domain files, types, enums,
+- **The model (source of truth):** [`model/`](model/) — 459 entities in 31 domain files, types, enums,
   the Nigerian jurisdiction pack, events, metrics, retention.
 - **Generated artefacts (never edit by hand):** [`generated/`](generated/)
   - [`mysql/`](generated/mysql/) — MySQL 9.7 LTS DDL per data zone, plus the code-list seed
@@ -22,8 +22,8 @@ layer and hosting infrastructure are built from it.
 
 | | |
 |---|---|
-| Entities / tables | 458 / 484 across 6 zones (platform, registry, ops, vault, records, warehouse) |
-| Enforced foreign keys / append-only tables / partitioned tables | 504 / 93 / 21 |
+| Entities / tables | 459 / 489 across 6 zones (platform, registry, ops, vault, records, warehouse) |
+| Enforced foreign keys / append-only tables / partitioned tables | 601 / 91 / 21 |
 | Enums / code lists / events / metrics / retention series | 305 / 51 / 133 / 51 / 32 |
 | Coverage of SYN-MFS-002 v2.4 | 260/260 pages · 517/517 functional requirements · 174/174 Appendix J tables |
 

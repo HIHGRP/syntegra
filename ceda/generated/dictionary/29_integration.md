@@ -15,8 +15,8 @@ Module (system of record): `integration` · default zone: **registry** · defaul
 | [`webhook_delivery`](#ops-webhook_delivery) | ops | queue | internal | lifecycle | Delivery attempt of an outbound webhook |
 | [`inbound_webhook`](#registry-inbound_webhook) | registry | queue | confidential | lifecycle | Inbound webhook received (payment gateway, exam body, WhatsApp, state revenue) — signature verified, processed once |
 | [`inbound_webhook`](#ops-inbound_webhook) | ops | queue | confidential | lifecycle | Inbound webhook received (payment gateway, exam body, WhatsApp, state revenue) — signature verified, processed once |
-| [`idempotency_key`](#registry-idempotency_key) | registry | queue | internal | append | Client Idempotency-Key and the stored response (retained 24 hours; offline sync operations use the same table) |
-| [`idempotency_key`](#ops-idempotency_key) | ops | queue | internal | append | Client Idempotency-Key and the stored response (retained 24 hours; offline sync operations use the same table) |
+| [`idempotency_key`](#registry-idempotency_key) | registry | queue | internal | none | Client Idempotency-Key and the stored response (retained 24 hours; offline sync operations use the same table) |
+| [`idempotency_key`](#ops-idempotency_key) | ops | queue | internal | none | Client Idempotency-Key and the stored response (retained 24 hours; offline sync operations use the same table) |
 | [`import_job`](#registry-import_job) | registry | transaction | confidential | lifecycle | Legacy data import or migration batch (mapping, validation, matching, staged commit, 30-day rollback) |
 | [`import_job`](#ops-import_job) | ops | transaction | confidential | lifecycle | Legacy data import or migration batch (mapping, validation, matching, staged commit, 30-day rollback) |
 | [`import_row_issue`](#registry-import_row_issue) | registry | queue | confidential | lifecycle | Validation or matching issue on an import row |
@@ -372,7 +372,7 @@ Client Idempotency-Key and the stored response (retained 24 hours; offline sync 
 | Zone | registry |
 | Kind | queue |
 | Classification | internal |
-| History | append |
+| History | none |
 | Scope | none |
 | Module | `integration` |
 | Origin | ceda |
@@ -392,6 +392,9 @@ Client Idempotency-Key and the stored response (retained 24 hours; offline sync 
 | `expires_at` | `DATETIME(6)` | no |  |  |
 | `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
 | `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+| `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
+| `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
+| `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
 
 - Unique: (tenant_id, principal_id, idem_key)
 
@@ -405,7 +408,7 @@ Client Idempotency-Key and the stored response (retained 24 hours; offline sync 
 | Zone | ops |
 | Kind | queue |
 | Classification | internal |
-| History | append |
+| History | none |
 | Scope | none |
 | Module | `integration` |
 | Origin | ceda |
@@ -425,6 +428,9 @@ Client Idempotency-Key and the stored response (retained 24 hours; offline sync 
 | `expires_at` | `DATETIME(6)` | no |  |  |
 | `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
 | `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+| `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
+| `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
+| `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
 
 - Unique: (tenant_id, principal_id, idem_key)
 

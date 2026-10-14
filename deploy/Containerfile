@@ -1,0 +1,30 @@
+# Syntegra application image — RHEL 10 UBI, Python 3.12 (MFS §16 binding stack).
+# Build:  podman build -f deploy/Containerfile -t syntegra:$(git rev-parse --short HEAD) .
+FROM registry.access.redhat.com/ubi10/python-312-minimal AS build
+USER 0
+RUN microdnf install -y gcc mariadb-connector-c-devel pkgconf-pkg-config && microdnf clean all
+WORKDIR /opt/app-root/src
+COPY pyproject.toml README.md ./
+COPY src ./src
+RUN python -m venv /opt/venv && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
+ && /opt/venv/bin/pip install --no-cache-dir . && /opt/venv/bin/pip uninstall -y syntegra  # dependencies only
+
+FROM registry.access.redhat.com/ubi10/python-312-minimal
+USER 0
+RUN microdnf install -y mariadb-connector-c && microdnf clean all
+COPY --from=build /opt/venv /opt/venv
+WORKDIR /opt/app-root/src
+# The CEDA DDL is the physical schema authority applied by `manage.py migrate --database=<zone>`.
+COPY ceda/generated/mysql ./ceda/generated/mysql
+COPY manage.py ./
+COPY src ./src
+ENV PATH=/opt/venv/bin:$PATH PYTHONPATH=/opt/app-root/src/src \
+    PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
+    DJANGO_SETTINGS_MODULE=syntegra.settings.prod \
+    SYNTEGRA_CEDA_DDL_DIR=/opt/app-root/src/ceda/generated/mysql
+RUN python manage.py collectstatic --noinput --settings=syntegra.settings.dev >/dev/null
+USER 1001
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=3s CMD python -c "import urllib.request,sys; urllib.request.urlopen('http://127.0.0.1:8000/healthz'); sys.exit(0)"
+CMD ["gunicorn", "syntegra.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4", "--threads", "4", \
+     "--worker-class", "gthread", "--access-logfile", "-", "--max-requests", "5000", "--max-requests-jitter", "500"]

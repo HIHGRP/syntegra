@@ -56,6 +56,7 @@ CEDA_APPS = [
 
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
+    "django.contrib.staticfiles",
     "rest_framework",
     "syntegra.schema",
     "syntegra.web",
@@ -133,7 +134,7 @@ SYNTEGRA_SCHEMA_PATTERNS = {
     "records": "syn_rec_{tenant}",
     "dw": "syn_dw_{state}",
 }
-SYNTEGRA_CEDA_DDL_DIR = REPO_DIR / "ceda" / "generated" / "mysql"
+SYNTEGRA_CEDA_DDL_DIR = Path(env("SYNTEGRA_CEDA_DDL_DIR", str(REPO_DIR / "ceda" / "generated" / "mysql")))
 SYNTEGRA_DEFAULT_TENANT_CODE = env("SYNTEGRA_DEFAULT_TENANT_CODE", "ng-ab")
 
 # --------------------------------------------------------------------------- keys (CEDA §8.1)

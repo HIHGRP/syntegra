@@ -5,6 +5,9 @@ import os
 from .base import *  # noqa: F403
 
 DEBUG = False
+SECRET_KEY = os.environ["SYNTEGRA_SECRET_KEY"]
+SYNTEGRA_MASTER_KEY = ""  # never used in production: keys come from the HSM-backed provider
+SYNTEGRA_TRUST_PROXY = True  # behind the API gateway / load balancer
 SYNTEGRA_TENANCY = os.environ.get("SYNTEGRA_TENANCY", "schema")
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True

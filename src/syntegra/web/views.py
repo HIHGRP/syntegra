@@ -139,12 +139,39 @@ def catalogue(request: HttpRequest) -> HttpResponse:
     return render(request, "catalogue.html", _ctx(request, rows=rows, q=q, live=live, total=len(pages.all_pages())))
 
 
+def _allow_verify(ip: str | None) -> bool:
+    """Same budget as the API's ``public_verify`` throttle (per client address, per hour)."""
+    from django.core.cache import cache
+
+    rates: Any = settings.REST_FRAMEWORK.get("DEFAULT_THROTTLE_RATES") or {}
+    rate = str(rates.get("public_verify", "20/hour"))
+    limit = int(rate.split("/")[0])
+    key = f"syn:verify-page:{ip or '-'}:{dt.datetime.now(dt.UTC):%Y%m%d%H}"
+    cache.add(key, 0, 3600)
+    return int(cache.incr(key)) <= limit
+
+
 @require_http_methods(["GET"])
 @page("PUB-01", public=True)
 def verify(request: HttpRequest) -> HttpResponse:
     from syntegra.certificates import services as certs
 
     q = (request.GET.get("number") or request.GET.get("code") or "").strip()
+    if q and not _allow_verify(context.require().ip):
+        return render(
+            request,
+            "error.html",
+            _ctx(
+                request,
+                problem={
+                    "title": "Too many checks",
+                    "detail": "Please wait before verifying more certificates.",
+                    "code": "RATE-LIMIT",
+                },
+                page=pages.page("PUB-01"),
+            ),
+            status=429,
+        )
     result = certs.verify(q, channel="qr" if request.GET.get("via") == "qr" else "web_number") if q else None
     resp = render(request, "verify.html", _ctx(request, q=q, result=result, page=pages.page("PUB-01")))
     resp["Cache-Control"] = "no-store"

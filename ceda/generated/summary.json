@@ -16,10 +16,10 @@
     "appj": 174,
     "ceda": 285
   },
-  "columns": 7343,
+  "columns": 7349,
   "foreign_keys": 601,
   "soft_references": 330,
-  "append_only_tables": 93,
+  "append_only_tables": 91,
   "partitioned_tables": 21,
   "enums": 305,
   "code_lists": 51,

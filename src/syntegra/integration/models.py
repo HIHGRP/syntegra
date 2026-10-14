@@ -154,12 +154,12 @@ class IdempotencyKey(CedaModel):
     ceda_domain = 'INTG'
     ceda_kind = 'queue'
     ceda_class = 'internal'
-    ceda_history = 'append'
+    ceda_history = 'none'
     ceda_scope = 'none'
-    ceda_append_only = True
+    ceda_append_only = False
     ceda_partition = None
     ceda_retention = 'RS-TRANSIENT'
-    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'principal_id': {'type': 'uuid'}, 'idem_key': {'type': 'code'}, 'request_hash': {'type': 'hash'}, 'response_status': {'type': 'smallint'}, 'response_body': {'type': 'json'}, 'expires_at': {'type': 'ts'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}}
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'principal_id': {'type': 'uuid'}, 'idem_key': {'type': 'code'}, 'request_hash': {'type': 'hash'}, 'response_status': {'type': 'smallint'}, 'response_body': {'type': 'json'}, 'expires_at': {'type': 'ts'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
 
     id = cf.UUID7Field(primary_key=True, default=uuid7)
     tenant_id = cf.UUID7Field()
@@ -171,6 +171,9 @@ class IdempotencyKey(CedaModel):
     expires_at = models.DateTimeField()
     created_at = models.DateTimeField(default=cf.utcnow)
     created_by = cf.UUID7Field(null=True, blank=True)
+    updated_at = models.DateTimeField(default=cf.utcnow)
+    updated_by = cf.UUID7Field(null=True, blank=True)
+    row_version = models.PositiveIntegerField(default=1)
 
     objects = TenantScopedManager()
     unscoped = models.Manager()

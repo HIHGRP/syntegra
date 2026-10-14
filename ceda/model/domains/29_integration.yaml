@@ -160,7 +160,7 @@ entities:
     kind: queue
     zone: [registry, ops]
     class: internal
-    history: append
+    history: none  # transient: rows are purged after expires_at (RS-TRANSIENT), so not append-only
     origin: ceda
     retention: RS-TRANSIENT
     scope_note: Per calling principal.

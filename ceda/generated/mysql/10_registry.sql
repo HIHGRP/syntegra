@@ -3915,6 +3915,9 @@ CREATE TABLE `idempotency_key` (
   `expires_at` DATETIME(6) NOT NULL,
   `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT 'UTC time the row was written',
   `created_by` BINARY(16) COMMENT 'Actor: app_user.id or service_identity.id (agents, integrations)',
+  `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT 'UTC time of last change (mutable entities only)',
+  `updated_by` BINARY(16) COMMENT 'Actor of last change (mutable entities only)',
+  `row_version` INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Optimistic-lock counter; exposed as the API ETag (mutable entities only)',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_idempotency_key_principal_id_idem_key` (`tenant_id`, `principal_id`, `idem_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='[INTG/queue/internal] Client Idempotency-Key and the stored response (retained 24 hours; offline sync operations use the same table)';
@@ -4618,8 +4621,6 @@ CREATE TRIGGER `tr_alert_event__no_update` BEFORE UPDATE ON `alert_event` FOR EA
 CREATE TRIGGER `tr_alert_event__no_delete` BEFORE DELETE ON `alert_event` FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'alert_event is append-only (DELETE refused)';
 CREATE TRIGGER `tr_exchange_transfer__no_update` BEFORE UPDATE ON `exchange_transfer` FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'exchange_transfer is append-only (UPDATE refused)';
 CREATE TRIGGER `tr_exchange_transfer__no_delete` BEFORE DELETE ON `exchange_transfer` FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'exchange_transfer is append-only (DELETE refused)';
-CREATE TRIGGER `tr_idempotency_key__no_update` BEFORE UPDATE ON `idempotency_key` FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'idempotency_key is append-only (UPDATE refused)';
-CREATE TRIGGER `tr_idempotency_key__no_delete` BEFORE DELETE ON `idempotency_key` FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'idempotency_key is append-only (DELETE refused)';
 CREATE TRIGGER `tr_audit_anchor__no_update` BEFORE UPDATE ON `audit_anchor` FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'audit_anchor is append-only (UPDATE refused)';
 CREATE TRIGGER `tr_audit_anchor__no_delete` BEFORE DELETE ON `audit_anchor` FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'audit_anchor is append-only (DELETE refused)';
 CREATE TRIGGER `tr_audit_event__no_update` BEFORE UPDATE ON `audit_event` FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'audit_event is append-only (UPDATE refused)';

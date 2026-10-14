@@ -1151,7 +1151,7 @@
         "domain": "INTG",
         "kind": "queue",
         "classification": "internal",
-        "history": "append",
+        "history": "none",
         "module": "integration"
       },
       "properties": {
@@ -1208,6 +1208,24 @@
           "format": "uuid",
           "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
           "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
         }
       },
       "required": [
@@ -1218,7 +1236,9 @@
         "request_hash",
         "response_status",
         "expires_at",
-        "created_at"
+        "created_at",
+        "updated_at",
+        "row_version"
       ],
       "additionalProperties": false
     },
@@ -1232,7 +1252,7 @@
         "domain": "INTG",
         "kind": "queue",
         "classification": "internal",
-        "history": "append",
+        "history": "none",
         "module": "integration"
       },
       "properties": {
@@ -1289,6 +1309,24 @@
           "format": "uuid",
           "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
           "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
         }
       },
       "required": [
@@ -1299,7 +1337,9 @@
         "request_hash",
         "response_status",
         "expires_at",
-        "created_at"
+        "created_at",
+        "updated_at",
+        "row_version"
       ],
       "additionalProperties": false
     },

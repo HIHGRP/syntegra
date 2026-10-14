@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Document** | SYN-CEDA-001 — Canonical Enterprise Data Architecture |
-| **Version** | 1.0.0 — baseline for build |
-| **Date** | 13 October 2026 |
+| **Version** | 1.1.0 — baseline for build, amended by the first application build (see §22) |
+| **Date** | 14 October 2026 (1.0.0: 13 October 2026) |
 | **Derived from** | SYN-MFS-002 v2.4, Master Functional Specification (consolidated single volume: Books 1–3, 517 functional requirements, 260 pages, Appendix J MySQL schema of 174 tables) |
 | **Platform** | Python 3.12 · Django 5.2 LTS (+ FastAPI for high-throughput services) · MySQL 9.7 LTS · Red Hat Enterprise Linux 10 / OpenShift |
 | **Machine-readable model** | `ceda/model/` (single source of truth) → `ceda/generated/` (DDL, dictionary, ERDs, JSON Schema, OpenAPI components, event schemas, metric catalogue, traceability) |
@@ -46,10 +46,10 @@ CEDA is the **authoritative data blueprint** for Syntegra. The MFS says *what* t
 | Measure | Value |
 |---|---|
 | Domains (subject areas) | 30 operational + 1 warehouse |
-| Canonical entities | 458 (174 re-specified from Appendix J, 284 added to give MFS requirements a home) |
-| Physical tables | 484 across 6 data zones (platform 22, registry 165, ops 216, vault 25, records 18, warehouse 38) — 17 cross-cutting entities are replicated per zone |
-| Columns · enforced foreign keys · soft references | 7,294 · 504 · 202 |
-| Append-only tables · partitioned tables | 93 · 21 |
+| Canonical entities | 459 (174 re-specified from Appendix J, 285 added to give MFS requirements a home) |
+| Physical tables | 489 across 6 data zones (platform 23, registry 166, ops 217, vault 26, records 19, warehouse 38) — 18 cross-cutting entities are replicated per zone |
+| Columns · enforced foreign keys · soft references | 7,349 · 601 · 330 |
+| Append-only tables · partitioned tables | 91 · 21 |
 | Fixed enumerations · jurisdiction code lists | 305 · 51 (Nigerian pack) |
 | Domain events · semantic-layer metrics · retention series | 133 · 51 · 32 |
 | Coverage | 260/260 pages; 517/517 functional requirements accounted for (510 realised in data, 7 behavioural); 174/174 Appendix J tables mapped |
@@ -113,7 +113,7 @@ Decisions CEDA had to take to make the MFS buildable. Status **Adopted** means t
 | CD-09 | **Append-only is structural.** Append-only and snapshot tables have no `updated_*`/`row_version` columns, the application account lacks UPDATE/DELETE on them, and BEFORE UPDATE/DELETE triggers refuse changes. | Appendix J gives 24 append-only tables `updated_at` and `row_version`, contradicting MFS §16.2. | Adopted |
 | CD-10 | **Partial uniqueness via stored generated columns** — e.g. one active primary enrolment per learner, one open gap per target per rule, one valid certificate per learner per award, one invoice per learner per period, one teacher of record per class-subject. | MySQL has no partial unique indexes; MFS §16.2 prescribes this technique but Appendix J does not apply it. | Adopted |
 | CD-11 | **Lesson occurrences are materialised on demand** (when a register, cover, delivery log or rating needs a dated lesson). | Registers, cover (G8) and delivery evidence (G6) need one dated lesson record; pre-generating every lesson for a state (~190 million a year) is waste. | Adopted |
-| CD-12 | **Audit and outbox per zone.** Each zone has its own `audit_event`, `audit_anchor` and `outbox_event`, so the audit row and the event are written in the same transaction and database as the change. | Satisfies "audit in the same transaction" (Book 3 §15) with per-zone accounts. Chains are per tenant and zone. | Adopted |
+| CD-12 | **Audit and outbox per zone.** Each zone has its own `audit_event`, `audit_anchor`, `audit_chain_head` and `outbox_event`, so the audit row and the event are written in the same transaction and database as the change. Each tenant's chain in a zone is split into lanes (16 by default, chosen by a hash of the record id); a writer locks only its lane's `audit_chain_head` row. | Satisfies "audit in the same transaction" (Book 3 §15) with per-zone accounts. Lanes remove the single-row hot spot at the 07:30–09:00 register peak while every lane stays a verifiable hash chain. | Adopted |
 | CD-13 | **Warehouse is pseudonymised; the vault never replicates.** CDC excludes the vault and encrypted columns; vault indicators reach the warehouse only as counts produced inside the vault. | MFS §28.1 and §2.2. | Adopted |
 | CD-14 | **Enumerations versus code lists.** Values fixed by the global core are enums enforced by CHECK; values a country, state or institution may vary are jurisdiction code lists (`code_list`/`code_value`) validated by the application. | Book 3 §7: configuration is data; "do not hard-code 16 or 18". | Adopted |
 | CD-15 | **Renames from Appendix J**: `consent_response` → `consent_record` (one consent record for every source); `lesson_plan` → `scheme_of_work` (+ `scheme_week`); reserved-word columns renamed (`condition`, `schema`, `lines`, `key` → `abac_condition`, `field_schema`, `line_items`, `workflow_key`, …). | Clarity and MySQL 9.7 compatibility (§19). | Adopted |
@@ -336,7 +336,7 @@ Digitised documents inherit the classification of their document category; messa
 | records | `syn_rec_{tenant}` | `svc_records_{tenant}` | yes | Document metadata, file plan, retention, legal holds, digitisation |
 | dw | `syn_dw_{state}` (separate cluster) | `svc_dw_{state}` | yes | Warehouse |
 
-Cross-cutting entities replicated per zone (same definition, zone-local data): `audit_event`, `audit_anchor`, `outbox_event` (all writable zones); `workflow_instance/task/transition`, `alert`, `alert_event`, `investigation`, `agent`, `agent_action`, `data_quality_issue`, `integration_connection`, `inbound_webhook`, `idempotency_key`, `import_job`, `import_row_issue` (registry and ops).
+Cross-cutting entities replicated per zone (same definition, zone-local data): `audit_event`, `audit_anchor`, `audit_chain_head`, `outbox_event` (all writable zones); `workflow_instance/task/transition`, `alert`, `alert_event`, `investigation`, `agent`, `agent_action`, `data_quality_issue`, `integration_connection`, `inbound_webhook`, `idempotency_key`, `import_job`, `import_row_issue` (registry and ops).
 
 ### 6.2 Isolation layers
 
@@ -681,7 +681,7 @@ Fixed enums change only through a CEDA release. Jurisdiction code lists change t
 | `.github/workflows/ceda.yml` | Runs all of the above on every change under `ceda/`, with a `mysql:9.7` service |
 | `ceda/tools/extract_mfs.py` | Re-extracts the page catalogue and requirement register from the MFS when it is revised |
 
-Verified on MySQL 9.7.2 (13 October 2026): all 7 DDL files load (484 tables); the following hold in the database itself — one active primary enrolment per learner; tenant-consistent keys refuse cross-tenant references; UBE Act payer rule; enum CHECKs; append-only UPDATE and DELETE refused (registry and vault); four-eyes on policy exceptions; 12-month exception window; one-sided ledger entries; one open coverage gap per target per rule; partitioned attendance accepts marks.
+Verified on MySQL 9.7.2 (13 October 2026): all 7 DDL files load (489 tables); the following hold in the database itself — one active primary enrolment per learner; tenant-consistent keys refuse cross-tenant references; UBE Act payer rule; enum CHECKs; append-only UPDATE and DELETE refused (registry and vault); four-eyes on policy exceptions; 12-month exception window; one-sided ledger entries; one open coverage gap per target per rule; partitioned attendance accepts marks.
 
 ---
 
@@ -730,7 +730,7 @@ The Appendix J DDL (174 tables) was extracted from the MFS and loaded into MySQL
 | `ceda/model/types.yaml` | Canonical types → MySQL, Django, JSON Schema |
 | `ceda/model/enums.yaml` | 305 fixed enumerations |
 | `ceda/model/reference/ng_core.yaml` | Nigerian jurisdiction pack: 51 code lists |
-| `ceda/model/domains/*.yaml` | 31 domain models (458 entities) |
+| `ceda/model/domains/*.yaml` | 31 domain models (459 entities) |
 | `ceda/model/events.yaml` | 133 domain events |
 | `ceda/model/metrics.yaml` | 51 semantic-layer metrics |
 | `ceda/model/retention.yaml` | 32 retention series |
@@ -744,3 +744,17 @@ The Appendix J DDL (174 tables) was extracted from the MFS and loaded into MySQL
 | `ceda/generated/metrics/catalog.md` | Metric catalogue |
 | `ceda/generated/traceability/` | Page, requirement and Appendix J traceability |
 | `ceda/generated/summary.json` | Counts |
+| `ceda/tools/gen_django.py` → `src/syntegra/*/models.py`, `src/syntegra/core/catalog/ceda_catalog.json` | Django models (`managed = False`) and the runtime catalogue (events, metrics, enums, code lists, pages) for the application |
+
+## 22. Change log
+
+### 1.1.0 — 14 October 2026 (first application build)
+
+Building the Django application on the model (`src/syntegra`, generated by `ceda/tools/gen_django.py`) surfaced three changes, made in the model and regenerated:
+
+| Change | Reason |
+|---|---|
+| New replicated entity `audit_chain_head` (platform, registry, ops, vault, records): `chain_id`, `lane`, `last_seq`, `last_hash`; CD-12 amended with chain lanes | Appending to a hash chain needs the previous hash under a lock. One chain per tenant and zone would serialise every register submission in a state at peak; lanes keep the lock short and local. |
+| `idempotency_key` changed from `history: append` to `history: none` | It is a 24-hour transient queue (retention RS-TRANSIENT). As an append-only table its rows could never be purged, so retention could not be enforced and an expired key could never be reused. |
+| Event triggers that contain commas are quoted in `events.yaml` | Ten events (e.g. `ATT.REGISTER_SUBMITTED`) were parsed with a spurious extra key because a comma in an unquoted flow-mapping value split the trigger text. Payload contracts were unaffected; the catalogue and event schemas are now exact. |
+
