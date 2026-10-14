@@ -30,7 +30,13 @@ jobs:
         run: python ceda/tools/cedagen.py validate --warnings
       - name: Generated artefacts are up to date
         run: python ceda/tools/cedagen.py check
+      - name: Releases replay to the current DDL (static)
+        run: python ceda/tools/release.py check
       - name: Conformance tests (incl. DDL load and database guarantees on MySQL 9.7)
         env:
           MYSQL_CMD: mysql -h127.0.0.1 -P3306 -uroot -pceda
         run: python -m pytest ceda/tests -q
+      - name: Releases replay to the current DDL (structural, in MySQL 9.7)
+        env:
+          MYSQL_CMD: mysql -h127.0.0.1 -P3306 -uroot -pceda
+        run: python ceda/tools/release.py check --mysql

@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **Document** | SYN-CEDA-001 — Canonical Enterprise Data Architecture |
-| **Version** | 1.1.0 — baseline for build, amended by the first application build (see §22) |
-| **Date** | 14 October 2026 (1.0.0: 13 October 2026) |
-| **Derived from** | SYN-MFS-002 v2.4, Master Functional Specification (consolidated single volume: Books 1–3, 517 functional requirements, 260 pages, Appendix J MySQL schema of 174 tables) |
+| **Version** | 1.2.0 — adds the enterprise HRMS and ecosystem-wide fee-clearance due diligence (change request CR-001; §23, §24); change log in §22 |
+| **Date** | 14 October 2026 (1.0.0 and 1.1.0: 13–14 October 2026) |
+| **Derived from** | SYN-MFS-002 v2.4, Master Functional Specification (consolidated single volume: Books 1–3, 517 functional requirements, 260 pages, Appendix J MySQL schema of 174 tables), extended by change request CR-001 (23 requirements, 13 pages) |
 | **Platform** | Python 3.12 · Django 5.2 LTS (+ FastAPI for high-throughput services) · MySQL 9.7 LTS · Red Hat Enterprise Linux 10 / OpenShift |
 | **Machine-readable model** | `ceda/model/` (single source of truth) → `ceda/generated/` (DDL, dictionary, ERDs, JSON Schema, OpenAPI components, event schemas, metric catalogue, traceability) |
 | **Status of artefacts** | Model validates with 0 errors, 0 warnings; every zone's DDL loads into MySQL 9.7.2; 12 database-level guarantees verified on MySQL 9.7 (§18) |
@@ -45,14 +45,14 @@ CEDA is the **authoritative data blueprint** for Syntegra. The MFS says *what* t
 
 | Measure | Value |
 |---|---|
-| Domains (subject areas) | 30 operational + 1 warehouse |
-| Canonical entities | 459 (174 re-specified from Appendix J, 285 added to give MFS requirements a home) |
-| Physical tables | 489 across 6 data zones (platform 23, registry 166, ops 217, vault 26, records 19, warehouse 38) — 18 cross-cutting entities are replicated per zone |
-| Columns · enforced foreign keys · soft references | 7,349 · 601 · 330 |
-| Append-only tables · partitioned tables | 91 · 21 |
-| Fixed enumerations · jurisdiction code lists | 305 · 51 (Nigerian pack) |
-| Domain events · semantic-layer metrics · retention series | 133 · 51 · 32 |
-| Coverage | 260/260 pages; 517/517 functional requirements accounted for (510 realised in data, 7 behavioural); 174/174 Appendix J tables mapped |
+| Domains (subject areas) | 32 operational + 1 warehouse |
+| Canonical entities | 481 (174 re-specified from Appendix J, 307 added to give MFS and change-request requirements a home) |
+| Physical tables | 511 across 6 data zones (platform 23, registry 182, ops 223, vault 26, records 19, warehouse 38) — 18 cross-cutting entities are replicated per zone |
+| Columns · enforced foreign keys · soft references | 7,755 · 660 · 340 |
+| Append-only tables · partitioned tables | 95 · 21 |
+| Fixed enumerations · jurisdiction code lists | 335 · 51 (Nigerian pack) |
+| Domain events · semantic-layer metrics · retention series | 149 · 59 · 32 |
+| Coverage | 273/273 pages (260 MFS + 13 CR-001); 540/540 functional requirements accounted for (517 MFS + 23 CR-001; 533 realised in data, 7 behavioural); 174/174 Appendix J tables mapped |
 
 ---
 
@@ -119,6 +119,10 @@ Decisions CEDA had to take to make the MFS buildable. Status **Adopted** means t
 | CD-15 | **Renames from Appendix J**: `consent_response` → `consent_record` (one consent record for every source); `lesson_plan` → `scheme_of_work` (+ `scheme_week`); reserved-word columns renamed (`condition`, `schema`, `lines`, `key` → `abac_condition`, `field_schema`, `line_items`, `workflow_key`, …). | Clarity and MySQL 9.7 compatibility (§19). | Adopted |
 | CD-16 | **Audit granularity is the command**, not the row: a register submission is one audit event summarising its marks. | Per-row audit of ~26 million marks a day would add ~5 TB a year per state with no accountability gain. | Adopted |
 | CD-17 | **Retention values not stated in the MFS are proposals** (series marked `basis: proposed` in `retention.yaml`). | Open decision D10 (state archives). | **Confirm** (D10) |
+| CD-18 | **Change requests extend the requirement and page registers.** Requirements and pages that do not come from the MFS are held in `model/change_requests/CR-*.yaml` and merged by the validator, so they are traced exactly like MFS content (every CR requirement must be realised by an entity or metric). | The MFS extracts are regenerated from the specification and must not be edited by hand. | Adopted (CR-001) |
+| CD-19 | **HRMS is split between a state HR hub and employer operations.** Establishment, cadres, salary structures, employment records, postings, promotions, separations, bank-account tokens and payroll-integrity flags are in the registry; leave, employee relations and pay elements are in the employer's ops zone; payroll runs and payslips remain in STF. | Deployment across public and private employers, ghost-worker and double-employment detection must see every employer at once; day-to-day HR belongs to the employer. | Adopted (CR-001, §23) |
+| CD-20 | **Fee clearance informs a human admission decision; it never refuses.** The check is mandatory before re-admission or transfer, is purpose-bound, logged and visible to the family; outstanding obligations require a recorded decision (admit, admit with payment plan, defer pending settlement, admit as protected); learners entering public basic education are always admitted; SDAF is never an obligation; ledgers never reach the admission decision (import contract). | MFS P9 (education is never withheld for money), admission refusal is human-only (A1), UBE Act 2004, MFS §20.9 (SDAF via state revenue only), NDPA 2023. | Adopted (CR-001, §24) — **confirm** with the State Ministry's legal adviser |
+| CD-21 | **Releases are frozen; upgrades are expand-only deltas.** `ceda/releases/<version>/` holds the full baseline DDL (1.1.0) and, for each later release, the derived delta plus any hand-written expand script; one Django migration per release; `release.py check --mysql` proves the replayed releases are structurally identical to the current DDL. | A live state database is upgraded, never rebuilt (§17.4). | Adopted |
 
 ---
 
@@ -659,12 +663,13 @@ Fixed enums change only through a CEDA release. Jurisdiction code lists change t
 
 ### 17.4 Changing the model
 
-1. Edit YAML in `ceda/model/` (never `generated/`).
-2. `python3 ceda/tools/cedagen.py generate` and review the DDL and dictionary diff.
-3. Write the Django migration (expand/contract) that realises the DDL diff.
-4. `python3 -m pytest ceda/tests` (with `MYSQL_CMD` set to run against MySQL 9.7).
-5. Bump `ceda.version` in `_meta.yaml`: patch = docs only; minor = additive (new entity, column, enum value, event); major = breaking (rename, removal, type change) — needs an ADR and the expand/contract plan.
-6. Pull request; CI must be green (§18).
+1. New requirements or pages that are not in the MFS: add or extend a change request in `ceda/model/change_requests/` (CD-18).
+2. Edit YAML in `ceda/model/` (never `generated/`); bump `ceda.version` in `_meta.yaml`: patch = docs only; minor = additive (new entity, column, enum value, event); major = breaking (rename, removal, type change) — needs an ADR and the expand/contract plan.
+3. `python3 ceda/tools/cedagen.py generate` and `python3 ceda/tools/gen_django.py generate`; review the DDL, dictionary and model diff.
+4. `python3 ceda/tools/release.py delta <version>` derives the expand-only delta. If it reports a changed existing table, write the expand script in `ceda/releases/<version>/manual/<zone file>` (it runs before the delta), then derive again.
+5. Add the migration `src/syntegra/schema/migrations/NNNN_ceda_<version>.py` (`apply_release("<version>")`).
+6. `python3 ceda/tools/release.py check --mysql` and `python3 -m pytest ceda/tests tests` (with MySQL 9.7).
+7. Pull request; CI must be green (§18).
 
 **Definition of done for a data change**: model valid with no warnings; generated artefacts current; DDL loads in MySQL 9.7 and conformance tests pass; every new entity has owner module, zone, classification, scope rule, retention series and traceability; events and metrics updated; migration reviewed.
 
@@ -674,14 +679,16 @@ Fixed enums change only through a CEDA release. Jurisdiction code lists change t
 
 | Tool | What it does |
 |---|---|
-| `ceda/tools/cedagen.py validate` | Parses the model; checks names (≤ 64 chars, no MySQL 9.7 reserved words), types, enums, code lists, references, zone rules (special only in vault; sealed fields elsewhere), append-only rules, partition rules (keys include the partition column; no FKs), index sizes (≤ 3,072 bytes), row size (≤ 65,535 bytes), money/currency pairing, events, metrics, retention, and full traceability (260 pages, 517 FRs, 174 Appendix J tables) |
+| `ceda/tools/cedagen.py validate` | Parses the model; checks names (≤ 64 chars, no MySQL 9.7 reserved words), types, enums, code lists, references, zone rules (special only in vault; sealed fields elsewhere), append-only rules, partition rules (keys include the partition column; no FKs), index sizes (≤ 3,072 bytes), row size (≤ 65,535 bytes), money/currency pairing, events, metrics, retention, and full traceability (260 MFS pages + change-request pages, 517 MFS FRs + change-request FRs, 174 Appendix J tables) |
 | `ceda/tools/cedagen.py generate` / `check` | Writes / verifies `ceda/generated/` |
-| `ceda/tools/mysql_check.py` | Loads every zone's DDL into MySQL 9.7 and proves the database guarantees |
-| `ceda/tests/test_ceda.py` | 13 conformance tests (model, coverage, zone rules, append-only, partitions, money, event payloads, MySQL) |
+| `ceda/tools/mysql_check.py` | Loads every zone's DDL into MySQL 9.7 and proves the database guarantees (18) |
+| `ceda/tools/release.py` | Freezes releases, derives expand-only deltas, and proves (`check --mysql`) that replaying the releases reproduces the current DDL structurally |
+| `ceda/tools/gen_django.py` | Generates the Django models and the runtime catalogue from the model; `check` fails when stale |
+| `ceda/tests/test_ceda.py` | 15 conformance tests (model, coverage incl. change requests, zone rules, append-only, partitions, money, event payloads, release replay, MySQL) |
 | `.github/workflows/ceda.yml` | Runs all of the above on every change under `ceda/`, with a `mysql:9.7` service |
 | `ceda/tools/extract_mfs.py` | Re-extracts the page catalogue and requirement register from the MFS when it is revised |
 
-Verified on MySQL 9.7.2 (13 October 2026): all 7 DDL files load (489 tables); the following hold in the database itself — one active primary enrolment per learner; tenant-consistent keys refuse cross-tenant references; UBE Act payer rule; enum CHECKs; append-only UPDATE and DELETE refused (registry and vault); four-eyes on policy exceptions; 12-month exception window; one-sided ledger entries; one open coverage gap per target per rule; partitioned attendance accepts marks.
+Verified on MySQL 9.7.2 (14 October 2026): all 7 DDL files load (511 tables); the 1.1.0 baseline plus the 1.2.0 delta replays to a structurally identical schema in every zone, and upgrades a seeded 1.1.0 database in place; the following hold in the database itself — one active primary enrolment per learner; tenant-consistent keys refuse cross-tenant references; UBE Act payer rule; enum CHECKs; append-only UPDATE and DELETE refused (registry and vault); four-eyes on policy exceptions; 12-month exception window; one-sided ledger entries; one open coverage gap per target per rule; partitioned attendance accepts marks; one open fee obligation per learner × creditor × kind; SDAF can never be a school obligation; a protected admission must state its reason; one active holder per establishment position; posting approver ≠ requester; leave balances refuse over-booking.
 
 ---
 
@@ -719,6 +726,10 @@ The Appendix J DDL (174 tables) was extracted from the MFS and loaded into MySQL
 | D27 | Tax treatment of SDAF and subscriptions; e-invoicing | SDIN + state revenue | `tax_rule`, `subscription_invoice.e_invoice_ref` |
 | CD-07 / CD-08 | Global Learner ID and certificate number check-digit formats | Product owner; certification registrar | As in §5.3 |
 | — | Lesson-register adoption per level (drives the attendance volume in §16.3) | State Ministry | Daily registers for all; lesson registers where institutions choose |
+| D28 | Fee-clearance policy: lawful basis and DPIA, limitation period, reconfirmation period, dispute service level, protected categories | State Ministry legal adviser + DPO | CD-20 as built: legitimate interest (admission due diligence), 6-year limitation, 90-day reconfirmation, 10 school days for disputes, protections as listed in §24 |
+| D29 | Cross-state clearance through the national exchange | Federal Ministry + states | Modelled (`clearance_check.coverage = national`); in-state checks only until the exchange agreement exists |
+| D30 | Statutory payroll tables and the state's approved salary scales | State Head of Service, payroll and tax advisers | Versioned tables seeded with the 2026 values (Nigeria Tax Act 2025 PAYE bands; pension 8%/10%; NHF 2.5%); salary scale `AB-TSS-ILLUSTRATIVE` is a placeholder that must be replaced before a live pay run |
+| D31 | Retirement rules per cadre (teachers 65 years / 40 years of service; others 60 / 35) | Head of Service | Cadre attributes (`retirement_age`, `max_years_service`), not code |
 
 ---
 
@@ -744,9 +755,21 @@ The Appendix J DDL (174 tables) was extracted from the MFS and loaded into MySQL
 | `ceda/generated/metrics/catalog.md` | Metric catalogue |
 | `ceda/generated/traceability/` | Page, requirement and Appendix J traceability |
 | `ceda/generated/summary.json` | Counts |
+| `ceda/model/change_requests/CR-*.yaml` | Change requests: requirements and pages beyond the MFS (CD-18) |
+| `ceda/releases/<version>/` | Frozen release DDL: 1.1.0 baseline; 1.2.0 delta and expand script (CD-21) |
 | `ceda/tools/gen_django.py` → `src/syntegra/*/models.py`, `src/syntegra/core/catalog/ceda_catalog.json` | Django models (`managed = False`) and the runtime catalogue (events, metrics, enums, code lists, pages) for the application |
 
 ## 22. Change log
+
+### 1.2.0 — 14 October 2026 (change request CR-001)
+
+| Change | Reason |
+|---|---|
+| Domain **HRM** (module `hr`, 18 entities, §23) and domain **FCL** (module `clearance`, 4 entities, §24) | CR-001: enterprise HRMS for every employer in the ecosystem; fee-clearance due diligence before admission and transfer |
+| Change-request register `model/change_requests/` merged by the validator (CD-18) | New requirements (FR-HRM-01..15, FR-FCL-01..08) and pages (HRM-01..10, FCL-01..03) are traced like MFS content |
+| 30 enums, 16 events, 8 metrics; identifier schemes NG-BVN, PENCOM-RSA, NHF, IPPIS; leave types casual, examination, sabbatical, leave of absence | Needed by the new domains; code-list values appended so existing sort orders do not move |
+| `staff_post` and `learner_transfer` gain the unique key `(tenant_id, id)` | Targets of new tenant-consistent foreign keys; added online by the hand-written expand script of release 1.2.0 |
+| Release management (CD-21): `ceda/releases/`, `tools/release.py`, one migration per release | Upgrading a live 1.1.0 database in place, proven structurally in MySQL 9.7 |
 
 ### 1.1.0 — 14 October 2026 (first application build)
 
@@ -757,4 +780,162 @@ Building the Django application on the model (`src/syntegra`, generated by `ceda
 | New replicated entity `audit_chain_head` (platform, registry, ops, vault, records): `chain_id`, `lane`, `last_seq`, `last_hash`; CD-12 amended with chain lanes | Appending to a hash chain needs the previous hash under a lock. One chain per tenant and zone would serialise every register submission in a state at peak; lanes keep the lock short and local. |
 | `idempotency_key` changed from `history: append` to `history: none` | It is a 24-hour transient queue (retention RS-TRANSIENT). As an append-only table its rows could never be purged, so retention could not be enforced and an expired key could never be reused. |
 | Event triggers that contain commas are quoted in `events.yaml` | Ten events (e.g. `ATT.REGISTER_SUBMITTED`) were parsed with a spurious extra key because a comma in an unquoted flow-mapping value split the trigger text. Payload contracts were unaffected; the catalogue and event schemas are now exact. |
+
+---
+
+## 23. Enterprise Human Resource Management Suite (HRMS)
+
+Change request CR-001 asks for an enterprise HRMS that serves every employer in the education ecosystem and is
+integrated across the CEDA. The employers are the State Ministry, SUBEB (primary teachers), TESCOM/PPSMB (secondary
+teachers), tertiary institutions and private providers.
+
+### 23.1 Shape
+
+The HRMS **extends** domain STF; it does not duplicate it.
+
+- **Unchanged in STF.** One person remains one `staff` master. Each post remains a `staff_post`. Teaching
+  authorisations, absence, cover, vacancies, appraisal, CPD, training, payroll runs and payslips stay where they were.
+- **Added by domain HRM (module `hr`).** HRM adds the employment layer that STF lacked:
+
+| Area | Entities (zone) | What it holds |
+|---|---|---|
+| Pay structure | `salary_structure`, `salary_scale_point` (registry) | Versioned scales (CONPSS, CONTISS, CONUASS, state teacher scales, private scales): grade level × step → annual basic + standard allowances |
+| Careers | `cadre` (registry) | Staff category, entry and ceiling grade, years per promotion, statutory retirement age and maximum years of service |
+| Establishment | `position` (registry) | One approved seat per row at an institution, unit or office, with employer, cadre, grade band, subject specialism and funding |
+| Employment | `employment_record` (registry) | One per post: appointment type and letter, first and present appointment, confirmation, grade and step, position held, projected retirement |
+| Movement | `staff_posting`, `promotion_case`, `separation` (registry) | Posting orders between institutions and employers; promotion cases with eligibility and board decision; exits with a clearance checklist |
+| Pay integrity | `staff_bank_account`, `hr_integrity_flag`, `headcount_exercise`, `headcount_result` (registry) | Encrypted salary accounts with lookup tokens; flags raised by the state-wide scan; staff verification exercises |
+| Employer operations | `leave_policy`, `leave_balance`, `leave_request`, `employee_relations_case`, `pay_element`, `staff_pay_element` (ops) | Entitlements and balances; leave with approval; queries, discipline and grievances; payroll elements and recurring elements per post |
+
+### 23.2 Rules the database enforces
+
+| Rule | How it is enforced |
+|---|---|
+| One active holder per position | Generated `seat_key` with a unique key |
+| A posting order is approved by someone other than the requester | CHECK constraint |
+| A bank-detail change is approved by someone other than the requester | CHECK constraint |
+| A leave balance can never be over-booked, even by concurrent requests | CHECK: `taken + pending ≤ entitled + carried over` |
+| One open integrity flag per kind per staff member | Generated `open_key` with a unique key |
+| A promotion only moves upward | CHECK constraint |
+| Scale points stay within GL 1–17 and step 1–15 | CHECK constraint |
+
+### 23.3 Integration across the CEDA
+
+| HR event | Effect elsewhere |
+|---|---|
+| Posting order raised | The G9 impact is computed: class-subjects for which the post is teacher of record. Approval requires a handover note when classes would lose their teacher. |
+| Posting effective | The old `staff_post` ends and a new post fills the receiving position, carrying the employment history. Role grants held at the old institution end and the same roles are granted at the new one (IAM). Teaching assignments of the old post end (academic). The coverage engine runs for the sending institution **as of the first day without the teacher**, so the G2 gap is open and owned before the teacher leaves. |
+| Separation | The post and employment record end. If no other post remains, the staff member becomes a leaver, the `app_user` is deactivated, every role grant ends and every session is revoked. `STF.LEFT` is published. Classes are re-evaluated as for a posting. |
+| Leave approved | A planned `staff_absence` is created, which starts the cover process (G8). `HR.LEAVE_APPROVED` and `STF.ABSENCE_RECORDED` are published. |
+| Promotion approved | The employment record and post move to the new grade and step; payroll computes arrears. |
+| Payroll run | Payslips are computed from the scale point, standard allowances, recurring elements and the versioned statutory tables (`payroll_tax_table`). Posts with a human pay hold are excluded; other open flags appear on the payslip as exceptions. Approval needs two people, neither the preparer. |
+| Integrity scan | Runs across all employers in the state. It looks for: a shared bank-account or BVN token, concurrent posts with different employers, a post past its statutory retirement date, pay after separation, a teacher with no staff attendance in 30 days (excluding approved absence), a failed headcount, and a post without a position. |
+| Analytics | Metrics HR-ESTAB-FILL, HR-VACANCIES, HR-ATTRITION, HR-RETIRE-12M, HR-LEAVE-LIABILITY and HR-INTEGRITY-OPEN. Vacancies by subject also feed TCH-DEMAND-SUPPLY. |
+
+### 23.4 Statutory parameters are data
+
+Statutory parameters live in versioned tables and are never written into code. The seeded values are those in force
+in 2026, and the state's payroll and tax advisers confirm them (D30):
+
+- **PAYE (Nigeria Tax Act 2025).** First ₦800,000 at 0%, the next ₦2.2m at 15%, the next ₦9m at 18%, the next ₦13m
+  at 21%, the next ₦25m at 23%, and above ₦50m at 25%. Pension, NHF and NHIS contributions are deductible, and rent
+  relief is 20% of rent up to ₦500,000.
+- **Pension (Pension Reform Act 2014).** 8% from the employee and 10% from the employer, on basic + housing +
+  transport.
+- **NHF.** 2.5% of basic salary.
+- **Leave entitlements.** Annual leave is 21 working days for GL 01–06 and 30 for GL 07+. Sick leave is 30 working
+  days, maternity 16 weeks, paternity 14 working days, and casual leave 7 days.
+- **Retirement (cadre attributes, D31).** Teachers retire at 65 years of age or 40 years of service; others at 60 or
+  35.
+- **Salary scale.** The seeded scale `AB-TSS-ILLUSTRATIVE` is a placeholder. It must be replaced by the approved scale
+  before the first live pay run.
+
+### 23.5 Human-only decisions
+
+These decisions are refused unless a person makes them (A1):
+
+- promotion decisions;
+- employee-relations outcomes. Severe sanctions also need the staff member's response (or a lapsed deadline) and a
+  recorded hearing;
+- pay holds on integrity flags;
+- dispute resolutions.
+
+Agents and system jobs may compute, flag and propose; they never decide these.
+
+---
+
+## 24. Fee-clearance due diligence
+
+### 24.1 Purpose and guardrails
+
+CR-001 asks that, before admission, the system check whether a learner who is transferring from another school owes
+fees or other dues. The aim is to stop "debt hopping" between schools across the ecosystem.
+
+The MFS binds how this may work:
+
+- **P9.** Unpaid fees never automatically restrict attendance, teaching, assessment, results or record transfer.
+- **Human-only refusal.** Admission refusal is a human-only decision.
+- **UBE Act 2004.** Public basic education is free.
+- **SDAF.** SDAF arrears are pursued only through state revenue processes.
+- **NDPA 2023.** Financial data about a family is restricted personal data.
+
+CEDA therefore makes the check **mandatory and informative, never prohibitive** (CD-20).
+
+### 24.2 Entities (registry, state-wide)
+
+| Entity | Holds |
+|---|---|
+| `learner_obligation` | Outstanding fees or dues owed to a creditor institution by a learner's payer. It is a summary (kind, amount, oldest due date, periods) backed by evidence (invoice numbers and content hashes, or documents for manual claims). There is one open obligation per learner × creditor × kind. It expires unless the creditor reconfirms it within 90 days. |
+| `obligation_dispute` | A dispute raised by the family, the admitting institution or the creditor, resolved by the creditor's LGA (or the state) within 10 school days. |
+| `clearance_check` | Every check: who ran it, why, the snapshot of obligations, the total, the result (`clear`, `outstanding`, `disputed_only`, `protected`) and pattern flags. It is append-only and visible to the family. |
+| `clearance_decision` | The recorded admission decision on a check: `admit`, `admit_with_payment_plan`, `defer_pending_settlement` or `admit_protected`. **There is no refusal value.** |
+
+`obligation_kind` covers tuition, boarding, examination fees, transport, meals, books and materials, uniform,
+development levy, damaged property, library and other dues. **SDAF is deliberately absent:** the enum CHECK and the
+publication rules both refuse it.
+
+### 24.3 Flow
+
+1. **Publication (creditor, nightly).** `finance.obligations.publish_from_ledger` reads overdue issued invoices (past
+   the 30-day grace period) in the institution's ledger. It attributes the balance to obligation kinds pro rata to
+   the invoice lines; the SDAF share of a balance is dropped, not redistributed. It publishes a summary per learner
+   and kind, and settles obligations the ledger no longer supports. Manual claims (e.g. damaged property) need an
+   evidence document. Claims older than the 6-year limitation period are refused.
+2. **Check (admitting institution).** `clearance.services.gate` runs before every transfer (`learners.transfer`) and
+   before the re-admission of a known learner who was enrolled elsewhere (`learners.register` on an auto-linked
+   match). It reads every open obligation in the state except those owed to the admitting institution itself. The
+   check is logged, the creditors and the family are notified (`FCL.CHECK_PERFORMED`), and a learner with
+   obligations at two or more creditors, or with two or more prior "outstanding" checks in 24 months, is flagged
+   `repeat_unsettled_transfers` for state review.
+3. **Decision.** The decision depends on the result:
+
+| Result | Outcome |
+|---|---|
+| Clear | Enrolment proceeds. |
+| Disputed obligations only | They are shown for information, and enrolment proceeds. |
+| Public basic education (ECCDE, primary or JSS in a public institution) | `admit_protected` is recorded automatically. The creditor keeps its claim. |
+| Outstanding | The call returns 409 `FCL-DECISION-REQUIRED` with the obligations and allowed decisions; nothing is enrolled. A person with `admission:decide` records a decision on the check (API headers `X-Syntegra-Clearance-*`, or page FCL-01). `defer_pending_settlement` records the decision and creates no enrolment. Every other decision lets the enrolment proceed. The head may record `admit_protected` for SEND, safeguarding, a child in care, displacement or other vulnerability, and must give the reason. |
+
+4. **Disputes.** The creditor may dispute, and so may an institution or family that is a party to a check on the
+   learner in the last 30 days. Anyone else is refused, which prevents fishing for information. A disputed
+   obligation shows as disputed. Upheld disputes withdraw the claim; partly upheld disputes reduce it.
+
+### 24.4 What the check never does
+
+- It never refuses: refusal is not a value of `clearance_decision_kind`.
+- It never holds back the learner's records or touches attendance at the current school. The transfer of records is
+  not gated.
+- It never shows ledgers. The import contract "Fee clearance sees published obligation summaries only" forbids
+  `syntegra.clearance` from importing `finance` or `financing`.
+- It never includes SDAF.
+
+### 24.5 Metrics
+
+| Metric | Shows |
+|---|---|
+| FCL-OUTSTANDING-RATE | The share of incoming learners with outstanding obligations |
+| FCL-DISPUTE-UPHELD | Disputes upheld per creditor institution, which exposes unsupported claims |
+
+The state therefore sees both forms of abuse: families moving to avoid debts, and institutions publishing claims they
+cannot support.
 
