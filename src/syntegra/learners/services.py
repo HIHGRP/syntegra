@@ -106,16 +106,33 @@ def _candidates(data: RegisterLearner, nin_hmac: bytes | None) -> list[tuple[Lea
     q = Q(name_phonetic__endswith=" " + family_key) | Q(date_of_birth=data.date_of_birth)
     ids_by_nin: set[uuid.UUID] = set()
     if nin_hmac:
-        ids_by_nin = set(ExternalIdentifier.objects.filter(person_kind="learner", scheme="NG-NIN", value_hmac=nin_hmac)
-                         .values_list("person_id", flat=True))
+        ids_by_nin = set(
+            ExternalIdentifier.objects.filter(person_kind="learner", scheme="NG-NIN", value_hmac=nin_hmac).values_list(
+                "person_id", flat=True
+            )
+        )
         q |= Q(id__in=ids_by_nin)
     rows = list(Learner.objects.filter(q).exclude(status="merged")[:500])  # blocking group (all state learners)
     nins = {
         e.person_id: bytes(e.value_hmac)
-        for e in ExternalIdentifier.objects.filter(person_kind="learner", scheme="NG-NIN", person_id__in=[r.id for r in rows])
+        for e in ExternalIdentifier.objects.filter(
+            person_kind="learner", scheme="NG-NIN", person_id__in=[r.id for r in rows]
+        )
     }
-    return [(r, matching.Person(r.legal_given_name, r.legal_family_name, r.date_of_birth, r.sex, r.dob_precision,
-                                nin_hmac=nins.get(r.id))) for r in rows]
+    return [
+        (
+            r,
+            matching.Person(
+                r.legal_given_name,
+                r.legal_family_name,
+                r.date_of_birth,
+                r.sex,
+                r.dob_precision,
+                nin_hmac=nins.get(r.id),
+            ),
+        )
+        for r in rows
+    ]
 
 
 def match(data: RegisterLearner) -> list[tuple[Learner, matching.MatchResult]]:
@@ -155,83 +172,139 @@ def register(data: RegisterLearner, *, override_reason: str | None = None) -> Re
     found = match(data)
     top = found[0] if found else None
     if top and top[1].band == "review" and not override_reason:
-        err = SoftWarning("LRN-PROBABLE-MATCH", "This learner may already be registered",
-                          "Check the candidates; continue only if this is a different child.")
+        err = SoftWarning(
+            "LRN-PROBABLE-MATCH",
+            "This learner may already be registered",
+            "Check the candidates; continue only if this is a different child.",
+        )
         err.extra["candidates"] = [
-            {"learner_id": str(lr.id), "global_learner_id": lr.global_learner_id, "score": r.score,
-             "evidence": r.evidence} for lr, r in found[:3]
+            {
+                "learner_id": str(lr.id),
+                "global_learner_id": lr.global_learner_id,
+                "score": r.score,
+                "evidence": r.evidence,
+            }
+            for lr, r in found[:3]
         ]
         raise err
     with uow.command("registry", None, action="register", record_kind="learner", reason=override_reason) as cmd:
         if top and top[1].band == "auto_link":
             learner = top[0]
-            review = cmd.add(MatchReview(
-                entity_kind="learner", candidate_id=learner.id, existing_id=learner.id,
-                score=top[1].score, evidence={"fields": top[1].evidence, "model": matching.MODEL_VERSION,
-                                              "auto_linked": True},
-                source="registration", decision="same", decision_reason="auto-linked at ≥ 0.98",
-                status="resolved",
-            ))
+            review = cmd.add(
+                MatchReview(
+                    entity_kind="learner",
+                    candidate_id=learner.id,
+                    existing_id=learner.id,
+                    score=top[1].score,
+                    evidence={"fields": top[1].evidence, "model": matching.MODEL_VERSION, "auto_linked": True},
+                    source="registration",
+                    decision="same",
+                    decision_reason="auto-linked at ≥ 0.98",
+                    status="resolved",
+                )
+            )
             cmd.record_id = learner.id
             enr = _enrol(cmd, learner, inst, data.education_level, data.start_on, data.basis)
             return Registration(learner, enr, "linked", review.id, {"score": top[1].score})
         learner = Learner(
-            global_learner_id=allocate_glid(cmd.alias), legal_given_name=data.given.strip(),
-            legal_middle_names=data.middle, legal_family_name=data.family.strip(), preferred_name=data.preferred_name,
-            name_phonetic=name_phonetic(data.given, data.family), date_of_birth=data.date_of_birth,
-            dob_precision=data.dob_precision, sex=data.sex, nationality=data.nationality,
-            state_of_origin=data.state_of_origin, home_languages=data.home_languages or None,
+            global_learner_id=allocate_glid(cmd.alias),
+            legal_given_name=data.given.strip(),
+            legal_middle_names=data.middle,
+            legal_family_name=data.family.strip(),
+            preferred_name=data.preferred_name,
+            name_phonetic=name_phonetic(data.given, data.family),
+            date_of_birth=data.date_of_birth,
+            dob_precision=data.dob_precision,
+            sex=data.sex,
+            nationality=data.nationality,
+            state_of_origin=data.state_of_origin,
+            home_languages=data.home_languages or None,
             is_minimal_documentation=data.is_minimal_documentation,
-            identity_verified_level="unverified", status="registered",
+            identity_verified_level="unverified",
+            status="registered",
         )
         cmd.add(learner)
         cmd.record_id = learner.id
         if data.nin:
-            cmd.add(ExternalIdentifier(
-                person_kind="learner", person_id=learner.id, scheme="NG-NIN",
-                value_hmac=crypto.lookup_hmac(data.nin, scheme="NG-NIN", tenant_id=ctx.state_tenant_id),
-                value_enc=crypto.encrypt(data.nin, purpose="id:NG-NIN", tenant_id=ctx.state_tenant_id),
-                value_last4=crypto.last4(data.nin), status="unverified",
-            ))
+            cmd.add(
+                ExternalIdentifier(
+                    person_kind="learner",
+                    person_id=learner.id,
+                    scheme="NG-NIN",
+                    value_hmac=crypto.lookup_hmac(data.nin, scheme="NG-NIN", tenant_id=ctx.state_tenant_id),
+                    value_enc=crypto.encrypt(data.nin, purpose="id:NG-NIN", tenant_id=ctx.state_tenant_id),
+                    value_last4=crypto.last4(data.nin),
+                    status="unverified",
+                )
+            )
         review_id = None
         if top and top[1].band == "review":
-            review_id = cmd.add(MatchReview(
-                entity_kind="learner", candidate_id=learner.id, existing_id=top[0].id, score=top[1].score,
-                evidence={"fields": top[1].evidence, "model": matching.MODEL_VERSION, "override": override_reason},
-                source="registration", status="open",
-            )).id
-        cmd.emit("LRN.CREATED", aggregate_id=learner.id, scope_node_id=inst.scope_node_id,
-                 payload={"learner_id": learner.id, "global_learner_id": learner.global_learner_id})
+            review_id = cmd.add(
+                MatchReview(
+                    entity_kind="learner",
+                    candidate_id=learner.id,
+                    existing_id=top[0].id,
+                    score=top[1].score,
+                    evidence={"fields": top[1].evidence, "model": matching.MODEL_VERSION, "override": override_reason},
+                    source="registration",
+                    status="open",
+                )
+            ).id
+        cmd.emit(
+            "LRN.CREATED",
+            aggregate_id=learner.id,
+            scope_node_id=inst.scope_node_id,
+            payload={"learner_id": learner.id, "global_learner_id": learner.global_learner_id},
+        )
         enr = _enrol(cmd, learner, inst, data.education_level, data.start_on, data.basis)
         return Registration(learner, enr, "created", review_id, {"score": top[1].score} if top else None)
 
 
 # --------------------------------------------------------------------------- enrolment
-def _enrol(cmd: uow.Command, learner: Learner, inst: Institution, level: str, start_on: dt.date | None,
-           basis: str) -> Enrolment:
+def _enrol(
+    cmd: uow.Command, learner: Learner, inst: Institution, level: str, start_on: dt.date | None, basis: str
+) -> Enrolment:
     enr = Enrolment(
-        scope_node_id=inst.scope_node_id, learner_id=learner.id, institution_id=inst.id,
-        operating_tenant_id=inst.operating_tenant_id, education_level=level, is_primary=True, basis=basis,
-        start_on=start_on or dt.date.today(), status="active",
+        scope_node_id=inst.scope_node_id,
+        learner_id=learner.id,
+        institution_id=inst.id,
+        operating_tenant_id=inst.operating_tenant_id,
+        education_level=level,
+        is_primary=True,
+        basis=basis,
+        start_on=start_on or dt.date.today(),
+        status="active",
     )
     try:
         with transaction.atomic(using=cmd.alias):  # savepoint: keep the command usable after a conflict
             cmd.add(enr)
     except IntegrityError as exc:
         if "active_primary_key" in str(exc):
-            raise ConflictError("ENR-ACTIVE-PRIMARY", "Learner already enrolled",
-                                f"{learner.global_learner_id} has an active enrolment elsewhere; "
-                                "request a transfer instead.") from exc
+            raise ConflictError(
+                "ENR-ACTIVE-PRIMARY",
+                "Learner already enrolled",
+                f"{learner.global_learner_id} has an active enrolment elsewhere; request a transfer instead.",
+            ) from exc
         raise
     if learner.status == "registered":
         cmd.update(learner, status="active")
-    cmd.emit("ENR.STARTED", aggregate_id=enr.id, aggregate_kind="enrolment", scope_node_id=inst.scope_node_id,
-             payload={"enrolment_id": enr.id, "learner_id": learner.id, "institution_id": inst.id})
+    cmd.emit(
+        "ENR.STARTED",
+        aggregate_id=enr.id,
+        aggregate_kind="enrolment",
+        scope_node_id=inst.scope_node_id,
+        payload={"enrolment_id": enr.id, "learner_id": learner.id, "institution_id": inst.id},
+    )
     return enr
 
 
-def transfer(learner_id: uuid.UUID, to_institution_id: uuid.UUID, *, effective_on: dt.date | None = None,
-             education_level: str | None = None) -> LearnerTransfer:
+def transfer(
+    learner_id: uuid.UUID,
+    to_institution_id: uuid.UUID,
+    *,
+    effective_on: dt.date | None = None,
+    education_level: str | None = None,
+) -> LearnerTransfer:
     """Move a learner's active primary enrolment to another institution in the state (FR-LRN-07)."""
     ctx = context.require()
     authz.require("enrolment:transfer", ctx)
@@ -242,26 +315,50 @@ def transfer(learner_id: uuid.UUID, to_institution_id: uuid.UUID, *, effective_o
     authz.require_scope(to_inst.scope_node_id, ctx)  # the receiving institution requests the transfer
     with uow.command("registry", None, action="transfer", record_kind="learner_transfer") as cmd:
         learner = cmd.lock(Learner, learner_id)
-        cur = Enrolment.unscoped.using(cmd.alias).select_for_update().filter(
-            tenant_id=ctx.state_tenant_id, learner_id=learner.id, status="active", is_primary=True).first()
+        cur = (
+            Enrolment.unscoped.using(cmd.alias)
+            .select_for_update()
+            .filter(tenant_id=ctx.state_tenant_id, learner_id=learner.id, status="active", is_primary=True)
+            .first()
+        )
         if cur is None:
             raise ConflictError("ENR-NONE", "No active enrolment", "The learner has no active primary enrolment.")
         if cur.institution_id == to_inst.id:
             raise HardValidation("ENR-SAME", "Same institution", "The learner is already enrolled here.")
-        cmd.update(cur, status="transferred", end_on=effective_on, leaving_reason="transferred",
-                   destination={"institution_id": str(to_inst.id)})
-        cmd.emit("ENR.ENDED", aggregate_id=cur.id, aggregate_kind="enrolment", scope_node_id=cur.scope_node_id,
-                 payload={"enrolment_id": cur.id, "status": "transferred"})
+        cmd.update(
+            cur,
+            status="transferred",
+            end_on=effective_on,
+            leaving_reason="transferred",
+            destination={"institution_id": str(to_inst.id)},
+        )
+        cmd.emit(
+            "ENR.ENDED",
+            aggregate_id=cur.id,
+            aggregate_kind="enrolment",
+            scope_node_id=cur.scope_node_id,
+            payload={"enrolment_id": cur.id, "status": "transferred"},
+        )
         new = _enrol(cmd, learner, to_inst, education_level or cur.education_level, effective_on, "transfer")
         t = LearnerTransfer(
-            scope_node_id=to_inst.scope_node_id, learner_id=learner.id, from_enrolment_id=cur.id,
-            to_institution_id=to_inst.id, to_enrolment_id=new.id, requested_by_id=ctx.actor_id,
-            effective_on=effective_on, dsl_handover_due_on=effective_on + dt.timedelta(days=5), status="completed",
+            scope_node_id=to_inst.scope_node_id,
+            learner_id=learner.id,
+            from_enrolment_id=cur.id,
+            to_institution_id=to_inst.id,
+            to_enrolment_id=new.id,
+            requested_by_id=ctx.actor_id,
+            effective_on=effective_on,
+            dsl_handover_due_on=effective_on + dt.timedelta(days=5),
+            status="completed",
         )
         cmd.add(t)
         cmd.record_id = t.id
-        cmd.emit("LRN.TRANSFERRED", aggregate_id=t.id, scope_node_id=to_inst.scope_node_id,
-                 payload={"learner_id": learner.id, "learner_transfer_id": t.id, "to_institution_id": to_inst.id})
+        cmd.emit(
+            "LRN.TRANSFERRED",
+            aggregate_id=t.id,
+            scope_node_id=to_inst.scope_node_id,
+            payload={"learner_id": learner.id, "learner_transfer_id": t.id, "to_institution_id": to_inst.id},
+        )
         return t
 
 

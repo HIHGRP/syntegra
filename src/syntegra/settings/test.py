@@ -6,6 +6,9 @@ from .base import DATABASES, REST_FRAMEWORK
 SYNTEGRA_TENANCY = "single"
 SYNTEGRA_AUDIT_LANES = 4
 CELERY_TASK_ALWAYS_EAGER = True
-REST_FRAMEWORK = {**REST_FRAMEWORK, "DEFAULT_THROTTLE_RATES": {"public_verify": "1000/hour", "anon": "1000/minute", "user": "10000/minute"}}
+REST_FRAMEWORK = {
+    **REST_FRAMEWORK,
+    "DEFAULT_THROTTLE_RATES": {"public_verify": "1000/hour", "anon": "1000/minute", "user": "10000/minute"},
+}
 for _alias, _cfg in DATABASES.items():
     _cfg["CONN_MAX_AGE"] = 0

@@ -4,14 +4,18 @@ from __future__ import annotations
 
 from typing import Any
 
-from django.middleware.csrf import get_token
 from django.templatetags.static import static
 from django.urls import reverse
 from jinja2 import Environment, StrictUndefined
 
 
+def _date(value: Any, fmt: str = "%d %b %Y") -> str:
+    return value.strftime(fmt) if value else "—"
+
+
 def environment(**options: Any) -> Environment:
     options.setdefault("undefined", StrictUndefined)
-    env = Environment(**options)  # noqa: S701 — autoescape is set in settings.TEMPLATES
-    env.globals.update({"static": static, "url": reverse, "csrf_token": get_token})
+    env = Environment(**options)  # noqa: S701 — autoescape is enabled in settings.TEMPLATES
+    env.globals.update({"static": static, "url": reverse})
+    env.filters["date"] = _date
     return env

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Verify a certificate{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>Verify a certificate</h1>
+  <p class="muted">Enter the certificate number (for example NG-ABMOE-2026-00011702) or the 8-character verification code printed beside the QR code.</p>
+  <form method="get">
+    <label>Certificate number or code<input name="number" value="{{ q }}" required autocomplete="off" spellcheck="false"></label>
+    <button class="primary">Verify</button>
+  </form>
+  {% if result %}
+    {% if result.result == "valid" %}
+    <div class="verdict ok" role="status"><strong>Valid certificate</strong>
+      <dl>
+        <dt>Holder</dt><dd>{{ result.holder }}</dd>
+        <dt>Award</dt><dd>{{ result.award.title }}{% if result.award["class"] %} — {{ result.award["class"] }}{% endif %}</dd>
+        <dt>Awarded</dt><dd>{{ result.award.date }}</dd>
+        <dt>Institution</dt><dd>{{ result.institution.name }} ({{ result.institution.code }})</dd>
+        <dt>Issued by</dt><dd>{{ result.issuer.authority }} · key {{ result.issuer.kid }}</dd>
+        <dt>Digital signature</dt><dd>{{ "verified" if result.signature_valid else "not verified" }}</dd>
+      </dl>
+    </div>
+    {% elif result.result == "not_found" %}
+    <div class="verdict bad" role="alert"><strong>No certificate found</strong><p>Check the number. If you were shown this certificate as genuine, report it to the issuing authority.</p></div>
+    {% else %}
+    <div class="verdict warn" role="alert"><strong>Certificate {{ result.result }}</strong>
+      {% if result.superseded_by is defined %}<p>Replaced by <a href="/verify?number={{ result.superseded_by }}">{{ result.superseded_by }}</a>.</p>{% endif %}
+      <p>This certificate is not currently valid as presented.</p></div>
+    {% endif %}
+  {% endif %}
+</section>
+{% endblock %}

@@ -80,12 +80,33 @@ def emit(
     zone = zone_of_alias(alias)
     event_id = uuid7()
     now = utcnow().replace(tzinfo=None)
-    cols = ["id", "created_on", "event_type", "schema_version", "aggregate_kind", "aggregate_id", "scope_node_id_at",
-            "actor", "correlation_id", "payload", "created_at", "created_by"]
+    cols = [
+        "id",
+        "created_on",
+        "event_type",
+        "schema_version",
+        "aggregate_kind",
+        "aggregate_id",
+        "scope_node_id_at",
+        "actor",
+        "correlation_id",
+        "payload",
+        "created_at",
+        "created_by",
+    ]
     vals: list[Any] = [
-        event_id.bytes, now.date(), event_type, int(spec.get("version", 1)), aggregate_kind, aggregate_id.bytes,
-        scope_node_id.bytes if scope_node_id else None, ctx.actor_label()[:120], ctx.correlation_id[:64],
-        json.dumps(_jsonable(payload)), now, ctx.actor_id.bytes if ctx.actor_id else None,
+        event_id.bytes,
+        now.date(),
+        event_type,
+        int(spec.get("version", 1)),
+        aggregate_kind,
+        aggregate_id.bytes,
+        scope_node_id.bytes if scope_node_id else None,
+        ctx.actor_label()[:120],
+        ctx.correlation_id[:64],
+        json.dumps(_jsonable(payload)),
+        now,
+        ctx.actor_id.bytes if ctx.actor_id else None,
     ]
     if zone != "platform":
         tenant = ctx.state_tenant_id if zone == "registry" else ctx.tenant_id
@@ -128,8 +149,8 @@ def dispatch_pending(alias: str, limit: int = 500) -> int:
     delivered = 0
     with connections[alias].cursor() as cur:
         cur.execute(
-            f"SELECT id, created_on, event_type, schema_version, aggregate_kind, aggregate_id, scope_node_id_at, actor, "
-            f"correlation_id, payload, created_at{tenant_col} FROM outbox_event WHERE published_at IS NULL "
+            f"SELECT id, created_on, event_type, schema_version, aggregate_kind, aggregate_id, scope_node_id_at, "
+            f"actor, correlation_id, payload, created_at{tenant_col} FROM outbox_event WHERE published_at IS NULL "
             f"ORDER BY created_at, id LIMIT %s",
             [limit],
         )

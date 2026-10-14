@@ -21,8 +21,11 @@ def test_every_model_matches_its_table_in_every_zone() -> None:
     for m in apps.get_models():
         for zone in getattr(m, "ceda_zones", ()):
             with connections[zone].cursor() as cur:
-                cur.execute("SELECT column_name FROM information_schema.columns WHERE table_schema = DATABASE() "
-                            "AND table_name = %s", [m._meta.db_table])
+                cur.execute(
+                    "SELECT column_name FROM information_schema.columns WHERE table_schema = DATABASE() "
+                    "AND table_name = %s",
+                    [m._meta.db_table],
+                )
                 cols = {r[0] for r in cur.fetchall()}
             model_cols = {f.column for f in m._meta.concrete_fields}
             if m.ceda_entity in REPLICATED_KERNEL and zone != "platform":
@@ -41,7 +44,9 @@ def test_tenant_data_cannot_be_queried_without_context() -> None:
 
 def test_audit_chain_is_append_only_and_tamper_evident(world: object) -> None:
     with connections["registry"].cursor() as cur:
-        cur.execute("SELECT chain_id, tenant_id, last_seq, last_hash FROM audit_chain_head ORDER BY last_seq DESC LIMIT 1")
+        cur.execute(
+            "SELECT chain_id, tenant_id, last_seq, last_hash FROM audit_chain_head ORDER BY last_seq DESC LIMIT 1"
+        )
         chain_id, tenant_id, last, last_hash = cur.fetchone()
     chain = uuid.UUID(bytes=bytes(chain_id))
     ok, n = audit.verify_chain("registry", chain)
@@ -53,7 +58,8 @@ def test_audit_chain_is_append_only_and_tamper_evident(world: object) -> None:
         cur.execute(
             "INSERT INTO audit_event (tenant_id, chain_id, chain_seq, occurred_at, event_id, actor_kind, action, "
             "record_kind, field_changes, correlation_id, prev_hash, hash, created_at) VALUES "
-            "(%s, %s, %s, UTC_TIMESTAMP(6), %s, 'system', 'update', 'learner', '[]', 'forged', %s, %s, UTC_TIMESTAMP(6))",
+            "(%s, %s, %s, UTC_TIMESTAMP(6), %s, 'system', 'update', 'learner', '[]', 'forged', %s, %s, "
+            "UTC_TIMESTAMP(6))",
             [bytes(tenant_id), chain.bytes, last + 1, uuid.uuid4().bytes, bytes(last_hash), b"\x01" * 32],
         )
     assert audit.verify_chain("registry", chain) == (False, last)
@@ -69,7 +75,6 @@ def test_outbox_events_written_with_the_change(world: object) -> None:
 def test_append_only_refused_in_orm_and_database(world: object) -> None:
     from syntegra.certificates.models import Verification
     from syntegra.core.fields import utcnow
-
     from tests.conftest import system_ctx
 
     with context.use(system_ctx()):

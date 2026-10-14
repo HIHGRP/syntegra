@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en-NG">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Syntegra{% endblock %} · {{ tenant.name if tenant else "Syntegra" }}</title>
+  <link rel="stylesheet" href="{{ static('css/syntegra.css') }}">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <a class="brand" href="/">Syntegra <span>{{ tenant.name if tenant else "" }}</span></a>
+  {% if signed_in %}
+  <nav aria-label="Primary">
+    <a href="/">Home</a>
+    {% if ctx.has("coverage:view") %}<a href="/coverage">Coverage</a>{% endif %}
+    <a href="/pages">Pages</a>
+    <a href="/verify">Verify</a>
+  </nav>
+  <div class="who">
+    <span>{{ user.display_name }} · <strong>{{ ctx.role_code or "no role" }}</strong></span>
+    <form method="post" action="/sign-out"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><button class="link">Sign out</button></form>
+  </div>
+  {% else %}
+  <nav aria-label="Primary"><a href="/verify">Verify a certificate</a><a href="/sign-in">Sign in</a></nav>
+  {% endif %}
+</header>
+<main id="main">
+  {% if page is defined and page %}<p class="crumb">{{ page.module }} · <code>{{ page.id }}</code> · <span class="cls cls-{{ page.classification }}">{{ page.classification }}</span></p>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="foot">Syntegra · CEDA {{ ctx.correlation_id[:8] if ctx else "" }}</footer>
+</body>
+</html>

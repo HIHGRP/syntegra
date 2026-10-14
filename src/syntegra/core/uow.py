@@ -17,6 +17,7 @@ import uuid
 from collections.abc import Iterator
 from typing import Any, TypeVar
 
+from django.core.exceptions import FieldDoesNotExist
 from django.db import models, transaction
 
 from syntegra.core import audit, authz, context, outbox
@@ -59,7 +60,7 @@ class Command:
         mgr = model._base_manager.using(self.alias)  # tenant filter applied explicitly below
         qs = mgr.select_for_update().filter(pk=pk, **filters)
         qs = _tenant_filter(model, qs, self.ctx, self.alias)
-        obj = qs.first()
+        obj: M | None = qs.first()
         if obj is None:
             raise NotFound(getattr(model, "ceda_entity", model.__name__), pk)
         if "scope_node_id" in getattr(model, "ceda_fields", {}):
@@ -88,10 +89,24 @@ class Command:
             self.record_id = _pk_uuid(obj)
         return obj
 
-    def emit(self, event_type: str, *, aggregate_id: uuid.UUID, payload: dict[str, Any],
-             aggregate_kind: str | None = None, scope_node_id: uuid.UUID | None = None) -> uuid.UUID:
-        eid = outbox.emit(self.alias, self.ctx, event_type, aggregate_kind=aggregate_kind or self.record_kind,
-                          aggregate_id=aggregate_id, payload=payload, scope_node_id=scope_node_id or self.ctx.scope_node_id)
+    def emit(
+        self,
+        event_type: str,
+        *,
+        aggregate_id: uuid.UUID,
+        payload: dict[str, Any],
+        aggregate_kind: str | None = None,
+        scope_node_id: uuid.UUID | None = None,
+    ) -> uuid.UUID:
+        eid = outbox.emit(
+            self.alias,
+            self.ctx,
+            event_type,
+            aggregate_kind=aggregate_kind or self.record_kind,
+            aggregate_id=aggregate_id,
+            payload=payload,
+            scope_node_id=scope_node_id or self.ctx.scope_node_id,
+        )
         self.events.append(eid)
         return eid
 
@@ -100,7 +115,9 @@ class Command:
 
     def _capture(self, obj: models.Model, before: dict[str, Any] | None) -> None:
         model = type(obj)
-        prefix = "" if self.record_kind == getattr(model, "ceda_entity", "") else f"{getattr(model, 'ceda_entity', '')}."
+        prefix = (
+            "" if self.record_kind == getattr(model, "ceda_entity", "") else f"{getattr(model, 'ceda_entity', '')}."
+        )
         if before is None:
             for f in model._meta.concrete_fields:
                 if f.column in SKIP_AUDIT_FIELDS or getattr(f, "generated", False):
@@ -114,21 +131,26 @@ class Command:
                 col = _column(obj, k)
                 new = getattr(obj, _attname(obj, k))
                 if old != new:
-                    self.changes.append({"field": prefix + col, "old": audit.redact_value(model, col, old),
-                                         "new": audit.redact_value(model, col, new)})
+                    self.changes.append(
+                        {
+                            "field": prefix + col,
+                            "old": audit.redact_value(model, col, old),
+                            "new": audit.redact_value(model, col, new),
+                        }
+                    )
 
 
 def _attname(obj: models.Model, name: str) -> str:
     try:
-        return obj._meta.get_field(name).attname
-    except Exception:  # noqa: BLE001
+        return str(getattr(obj._meta.get_field(name), "attname", name))
+    except FieldDoesNotExist:
         return name
 
 
 def _column(obj: models.Model, name: str) -> str:
     try:
-        return str(obj._meta.get_field(name).column)
-    except Exception:  # noqa: BLE001
+        return str(getattr(obj._meta.get_field(name), "column", name))
+    except FieldDoesNotExist:
         return name
 
 
@@ -147,8 +169,15 @@ def _tenant_filter(model: type[models.Model], qs: Any, ctx: Context, alias: str)
 
 
 @contextlib.contextmanager
-def command(zone: str, permission: str | None, *, action: str, record_kind: str, reason: str | None = None,
-            ctx: Context | None = None) -> Iterator[Command]:
+def command(
+    zone: str,
+    permission: str | None,
+    *,
+    action: str,
+    record_kind: str,
+    reason: str | None = None,
+    ctx: Context | None = None,
+) -> Iterator[Command]:
     """Run a command: authorise, open the zone transaction, yield the Command, then audit and commit."""
     ctx = ctx or context.require()
     if permission:
@@ -158,5 +187,13 @@ def command(zone: str, permission: str | None, *, action: str, record_kind: str,
         cmd = Command(ctx, alias, action, record_kind, reason)
         yield cmd
         if cmd.audited:
-            audit.write_event(alias, ctx, action=action, record_kind=record_kind, record_id=cmd.record_id,
-                              field_changes=cmd.changes, reason=reason, approval_ref=cmd.approval_ref)
+            audit.write_event(
+                alias,
+                ctx,
+                action=action,
+                record_kind=record_kind,
+                record_id=cmd.record_id,
+                field_changes=cmd.changes,
+                reason=reason,
+                approval_ref=cmd.approval_ref,
+            )

@@ -26,14 +26,48 @@ from typing import Any
 
 from syntegra.core.errors import HardValidation
 
-_BIN = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul, ast.Div: operator.truediv,
-        ast.FloorDiv: operator.floordiv, ast.Mod: operator.mod, ast.Pow: operator.pow}
-_CMP = {ast.Eq: operator.eq, ast.NotEq: operator.ne, ast.Lt: operator.lt, ast.LtE: operator.le, ast.Gt: operator.gt,
-        ast.GtE: operator.ge, ast.In: lambda a, b: a in b, ast.NotIn: lambda a, b: a not in b}
+_BIN = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+    ast.FloorDiv: operator.floordiv,
+    ast.Mod: operator.mod,
+    ast.Pow: operator.pow,
+}
+_CMP = {
+    ast.Eq: operator.eq,
+    ast.NotEq: operator.ne,
+    ast.Lt: operator.lt,
+    ast.LtE: operator.le,
+    ast.Gt: operator.gt,
+    ast.GtE: operator.ge,
+    ast.In: lambda a, b: a in b,
+    ast.NotIn: lambda a, b: a not in b,
+}
 _FUNCS = {"min": min, "max": max, "abs": abs, "round": round, "len": len}
-_ALLOWED = (ast.Expression, ast.BoolOp, ast.BinOp, ast.UnaryOp, ast.Compare, ast.IfExp, ast.Call, ast.Name,
-            ast.Load, ast.Constant, ast.List, ast.Tuple, ast.Subscript, ast.And, ast.Or, ast.Not, ast.USub, ast.UAdd,
-            *_BIN, *_CMP)
+_ALLOWED = (
+    ast.Expression,
+    ast.BoolOp,
+    ast.BinOp,
+    ast.UnaryOp,
+    ast.Compare,
+    ast.IfExp,
+    ast.Call,
+    ast.Name,
+    ast.Load,
+    ast.Constant,
+    ast.List,
+    ast.Tuple,
+    ast.Subscript,
+    ast.And,
+    ast.Or,
+    ast.Not,
+    ast.USub,
+    ast.UAdd,
+    *_BIN,
+    *_CMP,
+)
 
 
 class PolicyExpressionError(HardValidation):
@@ -61,7 +95,7 @@ def evaluate(source: str, variables: dict[str, Any]) -> Any:
     return _eval(compile_expression(source).body, variables)
 
 
-def _eval(n: ast.AST, v: dict[str, Any]) -> Any:  # noqa: PLR0911
+def _eval(n: ast.AST, v: dict[str, Any]) -> Any:
     if isinstance(n, ast.Constant):
         return n.value
     if isinstance(n, ast.Name):
@@ -152,8 +186,9 @@ def merge_chain(chain: list[dict[str, Any]]) -> tuple[dict[str, Any], list[dict[
     return params, conflicts, expression
 
 
-def effective_rule(rule_key: str, scope_node_id: uuid.UUID, *, on: dt.date | None = None,
-                   subject: tuple[str, uuid.UUID] | None = None) -> EffectiveRule | None:
+def effective_rule(
+    rule_key: str, scope_node_id: uuid.UUID, *, on: dt.date | None = None, subject: tuple[str, uuid.UUID] | None = None
+) -> EffectiveRule | None:
     from syntegra.core import authz, context
     from syntegra.core.zones import current_alias
     from syntegra.governance.models import PolicyException, PolicyRule
@@ -163,10 +198,16 @@ def effective_rule(rule_key: str, scope_node_id: uuid.UUID, *, on: dt.date | Non
     alias = current_alias("registry")
     path = authz.ancestors(ctx.state_tenant_id, scope_node_id)  # type: ignore[arg-type]
     rules = list(
-        PolicyRule.unscoped.using(alias).filter(
-            tenant_id=ctx.state_tenant_id, rule_key=rule_key, status="published", scope_node_id__in=path,
+        PolicyRule.unscoped.using(alias)
+        .filter(
+            tenant_id=ctx.state_tenant_id,
+            rule_key=rule_key,
+            status="published",
+            scope_node_id__in=path,
             effective_from__lte=on,
-        ).exclude(effective_to__lt=on).order_by("-version")
+        )
+        .exclude(effective_to__lt=on)
+        .order_by("-version")
     )
     if not rules:
         return None
@@ -174,15 +215,31 @@ def effective_rule(rule_key: str, scope_node_id: uuid.UUID, *, on: dt.date | Non
     for r in rules:
         by_node.setdefault(r.scope_node_id, r)  # latest version per node
     chain = [by_node[n] for n in reversed(path) if n in by_node]  # root → leaf
-    params, conflicts, expression = merge_chain([
-        {"id": r.id, "expression": r.expression, "parameters": r.parameters, "is_mandatory_below": r.is_mandatory_below}
-        for r in chain
-    ])
+    params, conflicts, expression = merge_chain(
+        [
+            {
+                "id": r.id,
+                "expression": r.expression,
+                "parameters": r.parameters,
+                "is_mandatory_below": r.is_mandatory_below,
+            }
+            for r in chain
+        ]
+    )
     eff = EffectiveRule(rule_key, expression, params, [r.id for r in chain], conflicts)
     if subject is not None:
-        exc = PolicyException.unscoped.using(alias).filter(
-            tenant_id=ctx.state_tenant_id, rule_id__in=eff.source_rule_ids, subject_kind=subject[0],
-            subject_id=subject[1], status__in=("approved", "active"), start_on__lte=on, end_on__gte=on,
-        ).first()
+        exc = (
+            PolicyException.unscoped.using(alias)
+            .filter(
+                tenant_id=ctx.state_tenant_id,
+                rule_id__in=eff.source_rule_ids,
+                subject_kind=subject[0],
+                subject_id=subject[1],
+                status__in=("approved", "active"),
+                start_on__lte=on,
+                end_on__gte=on,
+            )
+            .first()
+        )
         eff.exception_id = exc.id if exc else None
     return eff

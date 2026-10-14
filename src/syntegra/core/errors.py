@@ -82,4 +82,6 @@ class PreconditionFailed(DomainError):
 
 class AppendOnlyViolation(DomainError):
     def __init__(self, entity: str):
-        super().__init__("APPEND-ONLY", "Record cannot be changed", f"{entity} is append-only; record a correction.", 409)
+        super().__init__(
+            "APPEND-ONLY", "Record cannot be changed", f"{entity} is append-only; record a correction.", 409
+        )

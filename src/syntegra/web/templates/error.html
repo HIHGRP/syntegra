@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ problem.title }}{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>{{ problem.title }}</h1>
+  <p>{{ problem.detail }}</p>
+  <p class="muted">Reference <code>{{ problem.code }}</code>{% if ctx %} · {{ ctx.correlation_id[:12] }}{% endif %}</p>
+  <p><a href="/">Back to home</a></p>
+</section>
+{% endblock %}

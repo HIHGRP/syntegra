@@ -11,7 +11,7 @@ from rest_framework.request import Request
 
 
 class _CSRFCheck(CsrfViewMiddleware):
-    def _reject(self, request: Any, reason: str) -> str:  # type: ignore[override]
+    def _reject(self, request: Any, reason: str) -> str:
         return reason
 
 
@@ -24,7 +24,7 @@ class ContextAuthentication(BaseAuthentication):
         if ctx is None or ctx.actor_kind == "public":
             return None
         if getattr(raw, "syntegra_token_cookie", False):
-            check = _CSRFCheck(lambda r: None)  # type: ignore[arg-type,return-value]
+            check = _CSRFCheck(lambda r: None)  # type: ignore[arg-type]
             check.process_request(raw)
             reason = check.process_view(raw, None, (), {})  # type: ignore[arg-type]
             if reason:

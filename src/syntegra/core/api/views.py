@@ -49,15 +49,26 @@ def idempotent(request: Request, fn: Callable[[], Response]) -> Response:
     hit = cache.get(ck)
     if hit is not None:
         if hit["body"] != body:
-            raise HardValidation("IDEMPOTENCY-MISMATCH", "Idempotency key reused",
-                                 "The same Idempotency-Key was used with a different request body.")
+            raise HardValidation(
+                "IDEMPOTENCY-MISMATCH",
+                "Idempotency key reused",
+                "The same Idempotency-Key was used with a different request body.",
+            )
         r = Response(hit["data"], status=hit["status"], headers=hit.get("headers"))
         r["Idempotent-Replayed"] = "true"
         return r
     resp = fn()
     if resp.status_code < 500:
-        cache.set(ck, {"body": body, "data": resp.data, "status": resp.status_code,
-                       "headers": {k: v for k, v in resp.items() if k in ("ETag", "Location")}}, IDEMPOTENCY_TTL)
+        cache.set(
+            ck,
+            {
+                "body": body,
+                "data": resp.data,
+                "status": resp.status_code,
+                "headers": {k: v for k, v in resp.items() if k in ("ETag", "Location")},
+            },
+            IDEMPOTENCY_TTL,
+        )
     return resp
 
 

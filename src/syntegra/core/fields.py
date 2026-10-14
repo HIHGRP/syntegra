@@ -115,12 +115,12 @@ class PointField(models.Field):  # type: ignore[type-arg]
             return None
         if isinstance(value, bytes):
             value = value.decode()
-        inner = value[value.index("(") + 1: value.rindex(")")]
+        inner = value[value.index("(") + 1 : value.rindex(")")]
         lon, lat = inner.split()
         return float(lon), float(lat)
 
 
 def generated(field: models.Field) -> models.Field:  # type: ignore[type-arg]
     """Mark a field as a database-generated (STORED) column: excluded from INSERT/UPDATE, read-only."""
-    field.generated = True  # type: ignore[attr-defined]
+    setattr(field, "generated", True)  # noqa: B010 — Field.generated is a class attribute in Django
     return field

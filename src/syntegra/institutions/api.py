@@ -51,7 +51,9 @@ class InstitutionList(APIView):
 
         def run() -> Response:
             inst = services.register(services.RegisterInstitution(**d), override_reason=m.override_reason)
-            return v.with_etag(Response(v.row(inst), status=201, headers={"Location": f"/api/v1/institutions/{inst.id}"}), inst)
+            return v.with_etag(
+                Response(v.row(inst), status=201, headers={"Location": f"/api/v1/institutions/{inst.id}"}), inst
+            )
 
         return v.idempotent(request, run)
 

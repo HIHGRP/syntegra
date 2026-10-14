@@ -83,5 +83,11 @@ class Catalogue(APIView):
 
         authz.require("ceda:view")
         c = catalog.catalog()
-        return Response({"ceda": c["ceda"], "zones": c["zones"], "events": sorted(c["events"]),
-                         "metrics": [{"id": m["id"], "name": m["name"], "group": m["group"]} for m in c["metrics"]]})
+        return Response(
+            {
+                "ceda": c["ceda"],
+                "zones": c["zones"],
+                "events": sorted(c["events"]),
+                "metrics": [{"id": m["id"], "name": m["name"], "group": m["group"]} for m in c["metrics"]],
+            }
+        )

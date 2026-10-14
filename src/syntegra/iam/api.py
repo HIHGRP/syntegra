@@ -24,8 +24,14 @@ class SignInSerializer(serializers.Serializer):  # type: ignore[type-arg]
 
 
 def _set_cookie(resp: Response, token: str) -> None:
-    resp.set_cookie(settings.SESSION_COOKIE_NAME, token, httponly=True, samesite="Lax",
-                    secure=not settings.DEBUG, max_age=int(services.SESSION_MAX.total_seconds()))
+    resp.set_cookie(
+        settings.SESSION_COOKIE_NAME,
+        token,
+        httponly=True,
+        samesite="Lax",
+        secure=not settings.DEBUG,
+        max_age=int(services.SESSION_MAX.total_seconds()),
+    )
 
 
 class SignInView(APIView):
@@ -38,10 +44,13 @@ class SignInView(APIView):
         s.is_valid(raise_exception=True)
         ctx = context.require()
         tenant = request._request.syntegra_tenant  # type: ignore[attr-defined]
-        r = services.sign_in(tenant, s.validated_data["username"], s.validated_data["password"],
-                             ip=ctx.ip, ua=ctx.user_agent)
-        resp = Response({"token": r.token, "mfa_required": r.mfa_required, "grants": r.grants,
-                         "session_id": str(r.session_id)}, status=201)
+        r = services.sign_in(
+            tenant, s.validated_data["username"], s.validated_data["password"], ip=ctx.ip, ua=ctx.user_agent
+        )
+        resp = Response(
+            {"token": r.token, "mfa_required": r.mfa_required, "grants": r.grants, "session_id": str(r.session_id)},
+            status=201,
+        )
         _set_cookie(resp, r.token)
         return resp
 
@@ -85,10 +94,17 @@ class MeView(APIView):
 
         ctx = context.require()
         u = AppUser.objects.get(pk=ctx.actor_id)
-        return Response({
-            "user_id": str(u.id), "username": u.username, "display_name": u.display_name,
-            "role": ctx.role_code, "grant_id": str(ctx.grant_id) if ctx.grant_id else None,
-            "scope_node_id": str(ctx.scope_node_id) if ctx.scope_node_id else None, "clearance": ctx.clearance,
-            "permissions": sorted(ctx.permissions), "grants": services.user_grants(u),
-            "tenant": {"id": str(ctx.tenant_id), "state_tenant_id": str(ctx.state_tenant_id)},
-        })
+        return Response(
+            {
+                "user_id": str(u.id),
+                "username": u.username,
+                "display_name": u.display_name,
+                "role": ctx.role_code,
+                "grant_id": str(ctx.grant_id) if ctx.grant_id else None,
+                "scope_node_id": str(ctx.scope_node_id) if ctx.scope_node_id else None,
+                "clearance": ctx.clearance,
+                "permissions": sorted(ctx.permissions),
+                "grants": services.user_grants(u),
+                "tenant": {"id": str(ctx.tenant_id), "state_tenant_id": str(ctx.state_tenant_id)},
+            }
+        )

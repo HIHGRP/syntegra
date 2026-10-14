@@ -4,6 +4,7 @@ import base64
 import uuid
 
 from rest_framework import serializers
+from rest_framework.authentication import BaseAuthentication
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
@@ -51,8 +52,9 @@ class CertificateList(APIView):
     def post(self, request: Request) -> Response:
         s = IssueSerializer(data=request.data)
         s.is_valid(raise_exception=True)
-        return v.idempotent(request, lambda: Response(cert_row(services.issue(services.IssueRequest(**s.validated_data))),
-                                                      status=201))
+        return v.idempotent(
+            request, lambda: Response(cert_row(services.issue(services.IssueRequest(**s.validated_data))), status=201)
+        )
 
 
 class CertificateDetail(APIView):
@@ -85,7 +87,7 @@ class DecideReissue(APIView):
 class PublicVerify(APIView):
     """PUB-01: anyone may verify a certificate by number or code (rate-limited, logged)."""
 
-    authentication_classes: list[object] = []
+    authentication_classes: list[type[BaseAuthentication]] = []
     permission_classes = [Public]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "public_verify"
@@ -97,7 +99,7 @@ class PublicVerify(APIView):
 
 
 class Jwks(APIView):
-    authentication_classes: list[object] = []
+    authentication_classes: list[type[BaseAuthentication]] = []
     permission_classes = [Public]
 
     def get(self, request: Request) -> Response:

@@ -44,15 +44,21 @@ class TestPolicy:
         assert policy.evaluate("rate < threshold and not excused", {"rate": 0.8, "threshold": 0.9, "excused": False})
         assert policy.evaluate("min(a, b) + abs(-2)", {"a": 3, "b": 5}) == 5
 
-    @pytest.mark.parametrize("expr", ["__import__('os')", "a.__class__", "(lambda: 1)()", "[x for x in a]", "open('f')"])
+    @pytest.mark.parametrize(
+        "expr", ["__import__('os')", "a.__class__", "(lambda: 1)()", "[x for x in a]", "open('f')"]
+    )
     def test_rejects_unsafe_expressions(self, expr: str) -> None:
         with pytest.raises(policy.PolicyExpressionError):
             policy.evaluate(expr, {"a": [1]})
 
     def test_mandatory_floor_only_tightens(self) -> None:
         chain = [
-            {"id": 1, "expression": "rate < threshold", "is_mandatory_below": True,
-             "parameters": {"threshold": 0.9, "_tighten": {"threshold": "higher"}}},
+            {
+                "id": 1,
+                "expression": "rate < threshold",
+                "is_mandatory_below": True,
+                "parameters": {"threshold": 0.9, "_tighten": {"threshold": "higher"}},
+            },
             {"id": 2, "expression": "rate < 0.5", "is_mandatory_below": False, "parameters": {"threshold": 0.85}},
         ]
         params, conflicts, expr = policy.merge_chain(chain)
@@ -70,8 +76,10 @@ def test_attendance_rate_excludes_not_required() -> None:
 
 
 def test_institution_duplicate_detection() -> None:
-    existing = [duplicates.Candidate(1, "Community Secondary School, Ogbor Hill", None, (7.3667, 5.1066), "secondary"),
-                duplicates.Candidate(2, "St Mary's Primary", "AB/PS/0001", (7.40, 5.20), "primary")]
+    existing = [
+        duplicates.Candidate(1, "Community Secondary School, Ogbor Hill", None, (7.3667, 5.1066), "secondary"),
+        duplicates.Candidate(2, "St Mary's Primary", "AB/PS/0001", (7.40, 5.20), "primary"),
+    ]
     f = duplicates.check("Ogbor Hill Community Sec. School", None, (7.3670, 5.1068), "secondary", existing)
     assert f and f[0].key == 1 and f[0].level == "soft"
     f = duplicates.check("New name", "ab/ps/0001", None, "primary", existing)
@@ -82,20 +90,31 @@ def test_institution_duplicate_detection() -> None:
 def test_coverage_invariants() -> None:
     plan, cls, sub = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
     t1, t2 = uuid.uuid4(), uuid.uuid4()
-    base = dict(plan_id=plan, class_id=cls, subject_id=sub, level="jss_2", learners=38, is_mandatory=True)
+    base = {"plan_id": plan, "class_id": cls, "subject_id": sub, "level": "jss_2", "learners": 38, "is_mandatory": True}
     assert [b.rule for b in coverage.evaluate(coverage.ClassSubjectFacts(**base))] == ["g2"]
     assert coverage.evaluate(coverage.ClassSubjectFacts(**base, teachers_of_record=[t1], authorised={t1: True})) == []
-    rules = [b.rule for b in coverage.evaluate(coverage.ClassSubjectFacts(**base, teachers_of_record=[t1, t2],
-                                                                          authorised={t1: True}))]
+    rules = [
+        b.rule
+        for b in coverage.evaluate(
+            coverage.ClassSubjectFacts(**base, teachers_of_record=[t1, t2], authorised={t1: True})
+        )
+    ]
     assert rules == ["g2", "g3"]
     assert coverage.add_school_days(dt.date(2026, 10, 16), 3) == dt.date(2026, 10, 21)  # Fri + 3 school days
 
 
 def test_sdaf_classification_and_ube() -> None:
     a, b, c = (uuid.uuid4() for _ in range(3))
-    lines = sdaf.classify([sdaf.CensusInput(a, uuid.uuid4(), True), sdaf.CensusInput(b, uuid.uuid4(), False),
-                           sdaf.CensusInput(c, uuid.uuid4(), True), sdaf.CensusInput(a, uuid.uuid4(), True)],
-                          billed_elsewhere={b}, exempt={c})
+    lines = sdaf.classify(
+        [
+            sdaf.CensusInput(a, uuid.uuid4(), True),
+            sdaf.CensusInput(b, uuid.uuid4(), False),
+            sdaf.CensusInput(c, uuid.uuid4(), True),
+            sdaf.CensusInput(a, uuid.uuid4(), True),
+        ],
+        billed_elsewhere={b},
+        exempt={c},
+    )
     assert sdaf.totals(lines) == {"enrolled": 3, "verified": 3, "billable": 1, "exempt": 1, "excluded": 2}
     assert sdaf.is_basic_education("jss_2", True) and not sdaf.is_basic_education("jss_2", False)
     assert not sdaf.is_basic_education("sss_1", True)

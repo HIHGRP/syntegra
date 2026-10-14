@@ -46,6 +46,7 @@ def uuid7_time_ms(u: uuid.UUID) -> int:
 
 # --------------------------------------------------------------------------- ISO 7064 MOD 97-10
 
+
 def mod97_check_digits(digits: str) -> str:
     """Two check digits per ISO 7064 MOD 97-10 (as IBAN): CC = 98 − (N × 100 mod 97)."""
     if not digits.isdigit():
@@ -72,10 +73,13 @@ def format_glid(serial: int) -> str:
 
 def glid_valid(glid: str) -> bool:
     m = GLID_RE.match(glid)
-    return bool(m) and mod97_valid(m.group(1) + m.group(2) + m.group(3))
+    if m is None:
+        return False
+    return mod97_valid(m.group(1) + m.group(2) + m.group(3))
 
 
 # --------------------------------------------------------------------------- other human identifiers
+
 
 def format_staff_number(serial: int) -> str:
     body = f"{serial:08d}"
@@ -98,7 +102,9 @@ def format_certificate_number(country: str, authority: str, year: int, seq: int)
 
 def certificate_number_valid(number: str) -> bool:
     m = CERT_RE.match(number)
-    return bool(m) and mod97_valid(m.group(3) + m.group(4) + m.group(5))
+    if m is None:
+        return False
+    return mod97_valid(m.group(3) + m.group(4) + m.group(5))
 
 
 def short_code(n: int = 8) -> str:

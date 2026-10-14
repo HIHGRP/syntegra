@@ -15,7 +15,7 @@ def test_glid_check_digits_detect_single_digit_errors() -> None:
     assert g == "LRN-0004-1185-" + g[-2:] and ids.glid_valid(g)
     for i, ch in enumerate(g):
         if ch.isdigit() and i < 13:
-            wrong = g[:i] + str((int(ch) + 1) % 10) + g[i + 1:]
+            wrong = g[:i] + str((int(ch) + 1) % 10) + g[i + 1 :]
             assert not ids.glid_valid(wrong)
 
 
@@ -49,6 +49,8 @@ def test_envelope_encryption_and_lookup() -> None:
     assert b"12345678901" not in blob
     assert crypto.decrypt(blob, purpose="id:NG-NIN", tenant_id=t) == "12345678901"
     assert crypto.lookup_hmac("123 4567 8901", scheme="NG-NIN", tenant_id=t) == crypto.lookup_hmac(
-        "12345678901", scheme="NG-NIN", tenant_id=t)
+        "12345678901", scheme="NG-NIN", tenant_id=t
+    )
     assert crypto.lookup_hmac("12345678901", scheme="NG-NIN", tenant_id=uuid.uuid4()) != crypto.lookup_hmac(
-        "12345678901", scheme="NG-NIN", tenant_id=t)
+        "12345678901", scheme="NG-NIN", tenant_id=t
+    )

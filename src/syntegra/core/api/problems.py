@@ -30,20 +30,44 @@ def exception_handler(exc: Exception, ctx: dict[str, Any]) -> Response | None:
     if isinstance(exc, ObjectDoesNotExist):
         return _resp({"type": PROBLEM_BASE + "NOT-FOUND", "title": "Not found", "status": 404, **corr}, 404)
     if isinstance(exc, IntegrityError):
-        code, msg = (exc.args + ("",))[:2] if exc.args else (0, "")
-        return _resp({"type": PROBLEM_BASE + "INTEGRITY", "title": "The change conflicts with existing data",
-                      "status": 409, "detail": _integrity_detail(str(msg)), **corr}, 409)
+        msg = (*exc.args, "", "")[1]
+        return _resp(
+            {
+                "type": PROBLEM_BASE + "INTEGRITY",
+                "title": "The change conflicts with existing data",
+                "status": 409,
+                "detail": _integrity_detail(str(msg)),
+                **corr,
+            },
+            409,
+        )
     if isinstance(exc, OperationalError) and exc.args and exc.args[0] == 1644:  # SIGNAL from CEDA triggers
-        return _resp({"type": PROBLEM_BASE + "APPEND-ONLY", "title": "Record cannot be changed", "status": 409,
-                      "detail": str(exc.args[1]), **corr}, 409)
+        return _resp(
+            {
+                "type": PROBLEM_BASE + "APPEND-ONLY",
+                "title": "Record cannot be changed",
+                "status": 409,
+                "detail": str(exc.args[1]),
+                **corr,
+            },
+            409,
+        )
     resp = drf_handler(exc, ctx)
     if resp is None:
         return None
     status = resp.status_code
     if isinstance(exc, exceptions.ValidationError):
         errors = _flatten(resp.data)
-        return _resp({"type": PROBLEM_BASE + "VALIDATION", "title": "Some fields need attention", "status": 422,
-                      "errors": errors, **corr}, 422)
+        return _resp(
+            {
+                "type": PROBLEM_BASE + "VALIDATION",
+                "title": "Some fields need attention",
+                "status": 422,
+                "errors": errors,
+                **corr,
+            },
+            422,
+        )
     detail = resp.data.get("detail") if isinstance(resp.data, dict) else resp.data
     code = {401: "AUTH-401", 403: "AUTH-403", 404: "NOT-FOUND", 405: "METHOD", 429: "RATE-LIMIT"}.get(status, "ERROR")
     headers = {k: v for k, v in resp.items() if k in ("WWW-Authenticate", "Retry-After", "Allow")}

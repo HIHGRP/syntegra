@@ -5,18 +5,70 @@ from __future__ import annotations
 import re
 import unicodedata
 
-TITLES = {"mr", "mrs", "ms", "miss", "dr", "prof", "chief", "alhaji", "alhaja", "hajia", "pastor", "rev", "engr", "barr", "hon", "sir", "lady", "mallam"}
+TITLES = {
+    "mr",
+    "mrs",
+    "ms",
+    "miss",
+    "dr",
+    "prof",
+    "chief",
+    "alhaji",
+    "alhaja",
+    "hajia",
+    "pastor",
+    "rev",
+    "engr",
+    "barr",
+    "hon",
+    "sir",
+    "lady",
+    "mallam",
+}
 
 # Nigerian given-name variants and short forms (seed table; extended from steward decisions)
 VARIANTS: dict[str, str] = {
-    "seun": "oluwaseun", "seyi": "oluwaseyi", "tunde": "babatunde", "tayo": "omotayo", "bayo": "adebayo",
-    "funmi": "olufunmilayo", "funmilayo": "olufunmilayo", "dayo": "adedayo", "femi": "olufemi", "kemi": "oluwakemi",
-    "tobi": "oluwatobi", "dami": "oluwadamilare", "segun": "olusegun", "yemi": "oluwayemisi", "gbenga": "oluwagbenga",
-    "emeka": "chukwuemeka", "chidi": "chidiebere", "nkem": "nkemdirim", "ngozi": "ngozichukwu", "obi": "obinna",
-    "ike": "ikechukwu", "uche": "uchechukwu", "chi": "chinyere", "ada": "adaeze", "nnamdi": "nnamdi",
-    "musa": "musa", "mohammed": "muhammad", "mohammad": "muhammad", "muhammed": "muhammad", "ahmad": "ahmed",
-    "abubakar": "abubakar", "aisha": "aishat", "aishatu": "aishat", "fatima": "fatimah", "fatimatu": "fatimah",
-    "ibrahim": "ibrahim", "ibraheem": "ibrahim", "usman": "usman", "uthman": "usman", "yusuf": "yusuf", "yusuff": "yusuf",
+    "seun": "oluwaseun",
+    "seyi": "oluwaseyi",
+    "tunde": "babatunde",
+    "tayo": "omotayo",
+    "bayo": "adebayo",
+    "funmi": "olufunmilayo",
+    "funmilayo": "olufunmilayo",
+    "dayo": "adedayo",
+    "femi": "olufemi",
+    "kemi": "oluwakemi",
+    "tobi": "oluwatobi",
+    "dami": "oluwadamilare",
+    "segun": "olusegun",
+    "yemi": "oluwayemisi",
+    "gbenga": "oluwagbenga",
+    "emeka": "chukwuemeka",
+    "chidi": "chidiebere",
+    "nkem": "nkemdirim",
+    "ngozi": "ngozichukwu",
+    "obi": "obinna",
+    "ike": "ikechukwu",
+    "uche": "uchechukwu",
+    "chi": "chinyere",
+    "ada": "adaeze",
+    "nnamdi": "nnamdi",
+    "musa": "musa",
+    "mohammed": "muhammad",
+    "mohammad": "muhammad",
+    "muhammed": "muhammad",
+    "ahmad": "ahmed",
+    "abubakar": "abubakar",
+    "aisha": "aishat",
+    "aishatu": "aishat",
+    "fatima": "fatimah",
+    "fatimatu": "fatimah",
+    "ibrahim": "ibrahim",
+    "ibraheem": "ibrahim",
+    "usman": "usman",
+    "uthman": "usman",
+    "yusuf": "yusuf",
+    "yusuff": "yusuf",
 }
 
 
@@ -47,8 +99,23 @@ def phonetic_key(name: str) -> str:
     s = normalise_name(name).replace(" ", "")
     if not s:
         return ""
-    rules = [("ph", "f"), ("gh", "g"), ("kw", "k"), ("gb", "b"), ("kp", "p"), ("ch", "c"), ("sh", "s"),
-             ("th", "t"), ("ck", "k"), ("q", "k"), ("x", "ks"), ("z", "s"), ("v", "f"), ("j", "g"), ("y", "i")]
+    rules = [
+        ("ph", "f"),
+        ("gh", "g"),
+        ("kw", "k"),
+        ("gb", "b"),
+        ("kp", "p"),
+        ("ch", "c"),
+        ("sh", "s"),
+        ("th", "t"),
+        ("ck", "k"),
+        ("q", "k"),
+        ("x", "ks"),
+        ("z", "s"),
+        ("v", "f"),
+        ("j", "g"),
+        ("y", "i"),
+    ]
     for a, b in rules:
         s = s.replace(a, b)
     head, rest = s[0], s[1:]

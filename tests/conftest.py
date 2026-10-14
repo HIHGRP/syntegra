@@ -23,7 +23,7 @@ def django_db_setup(django_db_setup: Any, django_db_blocker: Any) -> Iterator[No
 
     with django_db_blocker.unblock():
         bootstrap(admin_password="admin-password-123")
-    yield
+    return
 
 
 @dataclass
@@ -51,8 +51,9 @@ def user_ctx(user_id: uuid.UUID, grant_id: uuid.UUID, **kw: Any) -> Any:
     from syntegra.core.context import Context
     from syntegra.core.tenancy import SEED_STATE_TENANT
 
-    base = Context(tenant_id=SEED_STATE_TENANT, state_tenant_id=SEED_STATE_TENANT, actor_kind="user",
-                   actor_id=user_id, **kw)
+    base = Context(
+        tenant_id=SEED_STATE_TENANT, state_tenant_id=SEED_STATE_TENANT, actor_kind="user", actor_id=user_id, **kw
+    )
     from syntegra.core import context
 
     with context.use(base):
@@ -76,19 +77,37 @@ def world(db: Any, django_db_blocker: Any) -> World:
         w.users["STA"] = (admin, RoleGrant.objects.get(user_id=admin.id).id)
         admin_ctx = user_ctx(admin.id, w.users["STA"][1])
     with context.use(admin_ctx):
-        w.institution = inst.register(inst.RegisterInstitution(
-            name="Government Secondary School Aba", category="secondary", ownership="state", lga_scope_id=lga.id,
-            address={"town": "Aba", "lga": "Aba South"}, levels=["jss_1", "jss_2", "jss_3"], gov_reg_no="AB/SS/0412",
-            location=(7.3667, 5.1066), capacity=1200))
-        w.institution2 = inst.register(inst.RegisterInstitution(
-            name="Umuahia Primary School", category="primary", ownership="state", lga_scope_id=lga2.id,
-            address={"town": "Umuahia"}, levels=["primary_4", "primary_5", "jss_1"], gov_reg_no="AB/PS/0099",
-            location=(7.4896, 5.5320)))
+        w.institution = inst.register(
+            inst.RegisterInstitution(
+                name="Government Secondary School Aba",
+                category="secondary",
+                ownership="state",
+                lga_scope_id=lga.id,
+                address={"town": "Aba", "lga": "Aba South"},
+                levels=["jss_1", "jss_2", "jss_3"],
+                gov_reg_no="AB/SS/0412",
+                location=(7.3667, 5.1066),
+                capacity=1200,
+            )
+        )
+        w.institution2 = inst.register(
+            inst.RegisterInstitution(
+                name="Umuahia Primary School",
+                category="primary",
+                ownership="state",
+                lga_scope_id=lga2.id,
+                address={"town": "Umuahia"},
+                levels=["primary_4", "primary_5", "jss_1"],
+                gov_reg_no="AB/PS/0099",
+                location=(7.4896, 5.5320),
+            )
+        )
     with context.use(sysctx):
         from syntegra.academic import services as academic
 
-        w.period = academic.create_session(w.state_scope, f"2026/2027-{uuid.uuid4().hex[:6]}",
-                                           dt.date(2026, 9, 7), dt.date(2027, 7, 23))
+        w.period = academic.create_session(
+            w.state_scope, f"2026/2027-{uuid.uuid4().hex[:6]}", dt.date(2026, 9, 7), dt.date(2027, 7, 23)
+        )
     return w
 
 
@@ -97,15 +116,19 @@ def make_user(w: World, role: str, scope_id: uuid.UUID, name: str | None = None)
     from syntegra.iam import services as iam
 
     with context.use(system_ctx()):
-        u = iam.create_user(system_ctx(), username=f"{(name or role).lower()}-{uuid.uuid4().hex[:8]}@test.ng",
-                            display_name=name or role, password="correct-horse-battery")
+        u = iam.create_user(
+            system_ctx(),
+            username=f"{(name or role).lower()}-{uuid.uuid4().hex[:8]}@test.ng",
+            display_name=name or role,
+            password="correct-horse-battery",
+        )
         g = iam.grant_role(system_ctx(), user=u, role_code=role, scope_id=scope_id)
     return u, g.id
 
 
 @pytest.fixture
 def as_user(world: World) -> Any:
-    """``with as_user("HT", scope) as ctx:`` — run service code as a fresh user holding ``role`` at ``scope``."""
+    """``with as_user("HEAD", scope) as ctx:`` — run service code as a fresh user holding ``role`` at ``scope``."""
     import contextlib
 
     from syntegra.core import context
@@ -126,8 +149,11 @@ def api(world: World, client: Any) -> Any:
 
     def _api(role: str, scope_id: uuid.UUID) -> Any:
         u, _ = make_user(world, role, scope_id)
-        r = client.post("/api/v1/auth/sign-in", {"username": u.username, "password": "correct-horse-battery"},
-                        content_type="application/json")
+        r = client.post(
+            "/api/v1/auth/sign-in",
+            {"username": u.username, "password": "correct-horse-battery"},
+            content_type="application/json",
+        )
         assert r.status_code == 201, r.content
         token = r.json()["token"]
 

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Page catalogue{% endblock %}
+{% block content %}
+<h1>Page catalogue</h1>
+<p class="muted">{{ live }} of {{ total }} MFS pages are live in this release; the rest are planned by phase.</p>
+<form method="get" class="inline"><label class="sr" for="q">Search pages</label><input id="q" name="q" value="{{ q }}" placeholder="Search by id, title or module"><button>Search</button></form>
+<table>
+  <thead><tr><th scope="col">Id</th><th scope="col">Title</th><th scope="col">Module</th><th scope="col">Route</th><th scope="col">Class</th><th scope="col">Phase</th><th scope="col">Status</th></tr></thead>
+  <tbody>
+  {% for p in rows %}
+  <tr><td><code>{{ p.id }}</code></td><td>{{ p.title }}</td><td>{{ p.module }}</td><td><code>{{ p.route or "" }}</code></td>
+      <td><span class="cls cls-{{ p.classification }}">{{ p.classification }}</span></td><td>{{ p.phase or "" }}</td>
+      <td><span class="pill pill-{{ page_status(p.id) }}">{{ page_status(p.id) }}</span></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

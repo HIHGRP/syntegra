@@ -29,6 +29,33 @@ class CedaModel(models.Model):
     class Meta:
         abstract = True
 
+    # ------------------------------------------------------------------ persistence
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        ctx = context.current(required=False)
+        adding = self._state.adding
+        if not adding and self.ceda_append_only:
+            raise AppendOnlyViolation(self.ceda_entity)
+        if self.has_column("tenant_id") and getattr(self, "tenant_id", None) is None and ctx is not None:
+            using = kwargs.get("using") or self._state.db
+            zone = self._zone_for(using, ctx)
+            self.tenant_id = ctx.state_tenant_id if zone == "registry" else ctx.tenant_id
+        actor = ctx.actor_id if ctx is not None else None
+        if adding and self.has_column("created_by") and getattr(self, "created_by", None) is None:
+            self.created_by = actor
+        if not adding:
+            if self.has_column("row_version"):
+                self.row_version = (getattr(self, "row_version", 0) or 0) + 1
+            if self.has_column("updated_at"):
+                self.updated_at = utcnow()
+            if self.has_column("updated_by"):
+                self.updated_by = actor
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: Any, **kwargs: Any) -> Any:
+        if self.ceda_append_only:
+            raise AppendOnlyViolation(self.ceda_entity)
+        return super().delete(*args, **kwargs)
+
     # ------------------------------------------------------------------ helpers
     @classmethod
     def has_column(cls, name: str) -> bool:
@@ -43,38 +70,11 @@ class CedaModel(models.Model):
 
         return zone_of_alias(self._state.db) if self._state.db else self.ceda_zones[0]
 
-    # ------------------------------------------------------------------ persistence
-    def save(self, *args: Any, **kwargs: Any) -> None:
-        ctx = context.current(required=False)
-        adding = self._state.adding
-        if not adding and self.ceda_append_only:
-            raise AppendOnlyViolation(self.ceda_entity)
-        if self.has_column("tenant_id") and getattr(self, "tenant_id", None) is None and ctx is not None:
-            using = kwargs.get("using") or self._state.db
-            zone = self._zone_for(using, ctx)
-            self.tenant_id = ctx.state_tenant_id if zone == "registry" else ctx.tenant_id  # type: ignore[attr-defined]
-        actor = ctx.actor_id if ctx is not None else None
-        if adding and self.has_column("created_by") and getattr(self, "created_by", None) is None:
-            self.created_by = actor  # type: ignore[attr-defined]
-        if not adding:
-            if self.has_column("row_version"):
-                self.row_version = (getattr(self, "row_version", 0) or 0) + 1  # type: ignore[attr-defined]
-            if self.has_column("updated_at"):
-                self.updated_at = utcnow()  # type: ignore[attr-defined]
-            if self.has_column("updated_by"):
-                self.updated_by = actor  # type: ignore[attr-defined]
-        super().save(*args, **kwargs)
-
-    def delete(self, *args: Any, **kwargs: Any) -> Any:
-        if self.ceda_append_only:
-            raise AppendOnlyViolation(self.ceda_entity)
-        return super().delete(*args, **kwargs)
-
     def _zone_for(self, using: str | None, ctx: context.Context) -> str:
         from syntegra.core.zones import zone_of_alias
 
         if using:
             return zone_of_alias(using)
         if ctx.zone_override in self.ceda_zones:
-            return ctx.zone_override  # type: ignore[return-value]
+            return ctx.zone_override
         return self.ceda_zones[0]

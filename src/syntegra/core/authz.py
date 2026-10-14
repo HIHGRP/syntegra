@@ -22,9 +22,11 @@ from syntegra.core.errors import Forbidden, PurposeRequired
 def subtree(state_tenant_id: uuid.UUID, scope_node_id: uuid.UUID) -> frozenset[uuid.UUID]:
     from syntegra.governance.models import ScopeClosure
 
-    ids = ScopeClosure.unscoped.using(_registry()).filter(
-        tenant_id=state_tenant_id, ancestor_id=scope_node_id
-    ).values_list("descendant_id", flat=True)
+    ids = (
+        ScopeClosure.unscoped.using(_registry())
+        .filter(tenant_id=state_tenant_id, ancestor_id=scope_node_id)
+        .values_list("descendant_id", flat=True)
+    )
     return frozenset(ids) | {scope_node_id}
 
 
@@ -32,9 +34,12 @@ def ancestors(state_tenant_id: uuid.UUID, scope_node_id: uuid.UUID) -> list[uuid
     """Ancestors of a node, nearest first (depth ascending, self included)."""
     from syntegra.governance.models import ScopeClosure
 
-    rows = ScopeClosure.unscoped.using(_registry()).filter(
-        tenant_id=state_tenant_id, descendant_id=scope_node_id
-    ).order_by("depth").values_list("ancestor_id", flat=True)
+    rows = (
+        ScopeClosure.unscoped.using(_registry())
+        .filter(tenant_id=state_tenant_id, descendant_id=scope_node_id)
+        .order_by("depth")
+        .values_list("ancestor_id", flat=True)
+    )
     out = list(rows)
     return out or [scope_node_id]
 
@@ -88,9 +93,11 @@ def require_scope(scope_node_id: uuid.UUID | None, ctx: Context | None = None) -
         # nodes created after the context was resolved (e.g. inside this command) are checked on the closure
         from syntegra.governance.models import ScopeClosure
 
-        if ScopeClosure.unscoped.using(_registry()).filter(
-            tenant_id=ctx.state_tenant_id, ancestor_id=ctx.scope_node_id, descendant_id=scope_node_id
-        ).exists():
+        if (
+            ScopeClosure.unscoped.using(_registry())
+            .filter(tenant_id=ctx.state_tenant_id, ancestor_id=ctx.scope_node_id, descendant_id=scope_node_id)
+            .exists()
+        ):
             return
     raise Forbidden("The record is outside your scope.", code="AUTH-SCOPE")
 

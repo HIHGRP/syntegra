@@ -158,7 +158,10 @@ REST_FRAMEWORK = {
 
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 if os.environ.get("SYNTEGRA_VALKEY_URL"):
-    CACHES["default"] = {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": os.environ["SYNTEGRA_VALKEY_URL"]}
+    CACHES["default"] = {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": os.environ["SYNTEGRA_VALKEY_URL"],
+    }
 
 # --------------------------------------------------------------------------- workers (Celery on RabbitMQ)
 CELERY_BROKER_URL = env("SYNTEGRA_BROKER_URL", "memory://")
@@ -186,7 +189,9 @@ CSRF_COOKIE_HTTPONLY = True
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-    "formatters": {"json": {"format": '{"t":"%(asctime)s","lvl":"%(levelname)s","log":"%(name)s","msg":"%(message)s"}'}},
+    "formatters": {
+        "json": {"format": '{"t":"%(asctime)s","lvl":"%(levelname)s","log":"%(name)s","msg":"%(message)s"}'}
+    },
     "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "json"}},
     "root": {"handlers": ["console"], "level": env("SYNTEGRA_LOG_LEVEL", "INFO")},
 }

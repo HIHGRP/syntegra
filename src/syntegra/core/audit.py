@@ -46,7 +46,11 @@ def chain_id_for(tenant: uuid.UUID, zone: str, lane: int) -> uuid.UUID:
 
 def redact_value(model: Any, field: str, value: Any) -> Any:
     info = getattr(model, "ceda_fields", {}).get(field, {})
-    sensitive = info.get("class") in ("restricted", "special") or info.get("type") in ("sealed", "secret") or "secret_of" in info
+    sensitive = (
+        info.get("class") in ("restricted", "special")
+        or info.get("type") in ("sealed", "secret")
+        or "secret_of" in info
+    )
     if value is None:
         return None
     if sensitive:
@@ -102,7 +106,9 @@ def write_event(
             "chain_seq": seq,
             "occurred_at": occurred_at.isoformat(timespec="microseconds"),
             "event_id": str(event_id),
-            "actor_kind": ctx.actor_kind if ctx.actor_kind in ("user", "agent", "api_client", "system", "platform_operator") else "system",
+            "actor_kind": ctx.actor_kind
+            if ctx.actor_kind in ("user", "agent", "api_client", "system", "platform_operator")
+            else "system",
             "actor_id": str(ctx.actor_id) if ctx.actor_id else None,
             "on_behalf_of_user_id": str(ctx.on_behalf_of) if ctx.on_behalf_of else None,
             "action": action,
@@ -114,30 +120,59 @@ def write_event(
         }
         digest = hashlib.sha256(bytes(prev_hash) + canonicalize(event)).digest()
         cols = [
-            "chain_id", "chain_seq", "occurred_at", "event_id", "actor_kind", "actor_id", "on_behalf_of_user_id",
-            "actor_grant_id", "scope_node_id_at", "action", "record_kind", "record_id", "field_changes", "reason",
-            "purpose_code", "approval_ref", "correlation_id", "ip", "user_agent", "prev_hash", "hash", "created_at",
+            "chain_id",
+            "chain_seq",
+            "occurred_at",
+            "event_id",
+            "actor_kind",
+            "actor_id",
+            "on_behalf_of_user_id",
+            "actor_grant_id",
+            "scope_node_id_at",
+            "action",
+            "record_kind",
+            "record_id",
+            "field_changes",
+            "reason",
+            "purpose_code",
+            "approval_ref",
+            "correlation_id",
+            "ip",
+            "user_agent",
+            "prev_hash",
+            "hash",
+            "created_at",
         ]
         import json
 
         vals: list[Any] = [
-            chain_id.bytes, seq, occurred_at, event_id.bytes, event["actor_kind"],
+            chain_id.bytes,
+            seq,
+            occurred_at,
+            event_id.bytes,
+            event["actor_kind"],
             ctx.actor_id.bytes if ctx.actor_id else None,
             ctx.on_behalf_of.bytes if ctx.on_behalf_of else None,
             ctx.grant_id.bytes if ctx.grant_id else None,
             ctx.scope_node_id.bytes if ctx.scope_node_id else None,
-            action, record_kind, record_id.bytes if record_id else None,
-            json.dumps(field_changes or []), reason, ctx.purpose,
-            approval_ref.bytes if approval_ref else None, ctx.correlation_id[:64],
-            _packed_ip(ctx.ip), (ctx.user_agent or "")[:400] or None,
-            bytes(prev_hash), digest, occurred_at,
+            action,
+            record_kind,
+            record_id.bytes if record_id else None,
+            json.dumps(field_changes or []),
+            reason,
+            ctx.purpose,
+            approval_ref.bytes if approval_ref else None,
+            ctx.correlation_id[:64],
+            _packed_ip(ctx.ip),
+            (ctx.user_agent or "")[:400] or None,
+            bytes(prev_hash),
+            digest,
+            occurred_at,
         ]
         if has_tenant:
             cols.insert(0, "tenant_id")
             vals.insert(0, tenant.bytes)
-        cur.execute(
-            f"INSERT INTO audit_event ({', '.join(cols)}) VALUES ({', '.join(['%s'] * len(cols))})", vals
-        )
+        cur.execute(f"INSERT INTO audit_event ({', '.join(cols)}) VALUES ({', '.join(['%s'] * len(cols))})", vals)
         cur.execute(
             "UPDATE audit_chain_head SET last_seq = %s, last_hash = %s WHERE chain_id = %s",
             [seq, digest, chain_id.bytes],
@@ -162,11 +197,19 @@ def verify_chain(alias: str, chain_id: uuid.UUID) -> tuple[bool, int]:
             seq, occ, eid, akind, aid, obo, action, rkind, rid, changes, reason, purpose, ph, h = row
             u = lambda b: str(uuid.UUID(bytes=bytes(b))) if b else None  # noqa: E731
             event = {
-                "chain_id": str(chain_id), "chain_seq": int(seq),
-                "occurred_at": occ.isoformat(timespec="microseconds"), "event_id": u(eid),
-                "actor_kind": akind, "actor_id": u(aid), "on_behalf_of_user_id": u(obo), "action": action,
-                "record_kind": rkind, "record_id": u(rid),
-                "field_changes": json.loads(changes) if changes else [], "reason": reason, "purpose_code": purpose,
+                "chain_id": str(chain_id),
+                "chain_seq": int(seq),
+                "occurred_at": occ.isoformat(timespec="microseconds"),
+                "event_id": u(eid),
+                "actor_kind": akind,
+                "actor_id": u(aid),
+                "on_behalf_of_user_id": u(obo),
+                "action": action,
+                "record_kind": rkind,
+                "record_id": u(rid),
+                "field_changes": json.loads(changes) if changes else [],
+                "reason": reason,
+                "purpose_code": purpose,
             }
             if bytes(ph) != prev or hashlib.sha256(prev + canonicalize(event)).digest() != bytes(h):
                 return False, n

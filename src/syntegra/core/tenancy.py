@@ -46,8 +46,13 @@ def _load(tenant_id: uuid.UUID) -> TenantInfo:
             break
         node = Tenant.objects.using("platform").get(pk=node.parent_id)
     return TenantInfo(
-        id=t.id, code=t.code, kind=t.kind, name=t.name, state_tenant_id=(state or t).id,
-        state_code=t.state_code, status=t.status,
+        id=t.id,
+        code=t.code,
+        kind=t.kind,
+        name=t.name,
+        state_tenant_id=(state or t).id,
+        state_code=t.state_code,
+        status=t.status,
     )
 
 

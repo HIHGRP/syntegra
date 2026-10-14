@@ -27,8 +27,9 @@ EXEMPT_PREFIXES = ("/healthz", "/static/")
 def client_ip(request: HttpRequest) -> str | None:
     fwd = request.META.get("HTTP_X_FORWARDED_FOR")
     if fwd and getattr(settings, "SYNTEGRA_TRUST_PROXY", False):
-        return fwd.split(",")[0].strip()
-    return request.META.get("REMOTE_ADDR")
+        return str(fwd).split(",")[0].strip()
+    addr = request.META.get("REMOTE_ADDR")
+    return str(addr) if addr else None
 
 
 def session_token(request: HttpRequest) -> tuple[str | None, bool]:
@@ -53,11 +54,15 @@ class ContextMiddleware:
             return JsonResponse(exc.problem(), status=exc.status, content_type="application/problem+json")
         except DatabaseError:
             log.exception("tenant resolution failed")
-            return JsonResponse({"title": "Service unavailable", "status": 503}, status=503,
-                                content_type="application/problem+json")
+            return JsonResponse(
+                {"title": "Service unavailable", "status": 503}, status=503, content_type="application/problem+json"
+            )
         if ctx is None:
-            return JsonResponse({"type": "https://errors.syntegra.io/TENANT-UNKNOWN", "title": "Unknown tenant",
-                                 "status": 404}, status=404, content_type="application/problem+json")
+            return JsonResponse(
+                {"type": "https://errors.syntegra.io/TENANT-UNKNOWN", "title": "Unknown tenant", "status": 404},
+                status=404,
+                content_type="application/problem+json",
+            )
         request.syntegra_ctx = ctx  # type: ignore[attr-defined]
         with context.use(ctx):
             response = self.get_response(request)
@@ -70,9 +75,15 @@ class ContextMiddleware:
             return None
         corr = request.META.get("HTTP_X_REQUEST_ID") or uuid.uuid4().hex
         base = Context(
-            tenant_id=tenant.id, state_tenant_id=tenant.state_tenant_id, actor_kind="public",
-            clearance="public", permissions=frozenset(), scope_ids=frozenset(), correlation_id=corr[:64],
-            ip=client_ip(request), user_agent=request.META.get("HTTP_USER_AGENT", "")[:400] or None,
+            tenant_id=tenant.id,
+            state_tenant_id=tenant.state_tenant_id,
+            actor_kind="public",
+            clearance="public",
+            permissions=frozenset(),
+            scope_ids=frozenset(),
+            correlation_id=corr[:64],
+            ip=client_ip(request),
+            user_agent=request.META.get("HTTP_USER_AGENT", "")[:400] or None,
         )
         request.syntegra_tenant = tenant  # type: ignore[attr-defined]
         request.syntegra_token_cookie = False  # type: ignore[attr-defined]

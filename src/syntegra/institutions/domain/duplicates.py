@@ -14,8 +14,25 @@ from typing import Any
 
 from syntegra.core.text import jaro_winkler, normalise_name
 
-STOP = {"school", "schools", "the", "of", "and", "college", "academy", "nursery", "primary", "secondary",
-        "community", "comprehensive", "model", "international", "ltd", "limited", "group"}
+STOP = {
+    "school",
+    "schools",
+    "the",
+    "of",
+    "and",
+    "college",
+    "academy",
+    "nursery",
+    "primary",
+    "secondary",
+    "community",
+    "comprehensive",
+    "model",
+    "international",
+    "ltd",
+    "limited",
+    "group",
+}
 
 
 def name_key(name: str) -> str:
@@ -47,8 +64,9 @@ class Finding:
     distance_m: float | None
 
 
-def check(name: str, gov_reg_no: str | None, location: tuple[float, float] | None, category: str,
-          existing: list[Candidate]) -> list[Finding]:
+def check(
+    name: str, gov_reg_no: str | None, location: tuple[float, float] | None, category: str, existing: list[Candidate]
+) -> list[Finding]:
     out: list[Finding] = []
     nk = name_key(name)
     for c in existing:

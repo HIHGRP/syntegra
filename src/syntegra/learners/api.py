@@ -57,11 +57,18 @@ class LearnerList(APIView):
 
         def run() -> Response:
             r = services.register(services.RegisterLearner(**s.validated_data), override_reason=m.override_reason)
-            body = {"outcome": r.outcome, "learner": learner_row(r.learner),
-                    "enrolment": v.row(r.enrolment) if r.enrolment else None,
-                    "match_review_id": str(r.review_id) if r.review_id else None, "match": r.match}
-            return Response(body, status=201 if r.outcome == "created" else 200,
-                            headers={"Location": f"/api/v1/learners/{r.learner.id}"})
+            body = {
+                "outcome": r.outcome,
+                "learner": learner_row(r.learner),
+                "enrolment": v.row(r.enrolment) if r.enrolment else None,
+                "match_review_id": str(r.review_id) if r.review_id else None,
+                "match": r.match,
+            }
+            return Response(
+                body,
+                status=201 if r.outcome == "created" else 200,
+                headers={"Location": f"/api/v1/learners/{r.learner.id}"},
+            )
 
         return v.idempotent(request, run)
 

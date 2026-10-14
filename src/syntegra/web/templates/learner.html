@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ learner.legal_given_name }} {{ learner.legal_family_name }}{% endblock %}
+{% block content %}
+<h1>{{ learner.legal_given_name }} {{ learner.legal_middle_names or "" }} {{ learner.legal_family_name }}</h1>
+<p class="muted"><code>{{ learner.global_learner_id }}</code> · {{ learner.sex }} · born {{ learner.date_of_birth | date }} · identity {{ learner.identity_verified_level.replace("_", " ") }} · {{ learner.status }}</p>
+<section class="grid2">
+  <article class="card">
+    <h2>Enrolments</h2>
+    <table class="compact"><thead><tr><th scope="col">Institution</th><th scope="col">Level</th><th scope="col">From</th><th scope="col">To</th><th scope="col">Status</th></tr></thead>
+      <tbody>{% for e in enrolments %}<tr><td>{{ insts[e.institution_id].name }}</td><td>{{ e.education_level }}</td><td>{{ e.start_on | date }}</td><td>{{ e.end_on | date }}</td><td>{{ e.status }}</td></tr>{% endfor %}</tbody></table>
+  </article>
+  {% if attendance %}
+  <article class="card">
+    <h2>Attendance (90 days)</h2>
+    <p class="big">{{ "—" if attendance.rate is none else "{:.1%}".format(attendance.rate) }}</p>
+    <p class="muted">{{ attendance.attended }} of {{ attendance.possible }} sessions · {{ attendance.unauthorised_absence }} unauthorised · {{ attendance.late }} late</p>
+    {% if attendance.flags["ATT-SEVERE"] %}<div class="alert alert-error">Severe absence — below the state threshold.</div>
+    {% elif attendance.flags["ATT-PERSISTENT"] %}<div class="alert">Persistent absence — below the state threshold.</div>{% endif %}
+  </article>
+  {% endif %}
+</section>
+{% endblock %}

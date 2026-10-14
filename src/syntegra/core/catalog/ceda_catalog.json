@@ -5663,6 +5663,4125 @@
    ]
   }
  ],
+ "pages": [
+  {
+   "classification": "internal",
+   "id": "ACA-01",
+   "module": "Academic structure",
+   "pattern": "Settings / configuration",
+   "phase": "P1",
+   "purpose": "Sessions, terms/semesters, holidays, examination windows and key dates. Inherited from state/country calendar with permitted institution variations.",
+   "roles": [
+    "IADM",
+    "SLT",
+    "STA"
+   ],
+   "route": "/academic/calendar",
+   "title": "Academic calendar"
+  },
+  {
+   "classification": "internal",
+   "id": "ACA-02",
+   "module": "Academic structure",
+   "pattern": "Settings / configuration",
+   "phase": "P1",
+   "purpose": "Configures education levels, year groups/grades, classes/arms, programmes and cohorts using the country education model (e.g. ECCDE, Primary 1–6, JSS1–3, SS1–3; ND/HND; 100–600 level).",
+   "roles": [
+    "IADM",
+    "SLT",
+    "REG"
+   ],
+   "route": "/academic/structure",
+   "title": "Year groups, classes & programmes"
+  },
+  {
+   "classification": "internal",
+   "id": "ACA-03",
+   "module": "Academic structure",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Subject/course catalogue mapped to Subject 360 master and to curriculum. Higher education uses courses/modules with credit units.",
+   "roles": [
+    "IADM",
+    "SLT",
+    "CURA"
+   ],
+   "route": "/academic/subjects",
+   "title": "Subjects & courses"
+  },
+  {
+   "classification": "internal",
+   "id": "ACA-04",
+   "module": "Academic structure",
+   "pattern": "Workspace",
+   "phase": "P5",
+   "purpose": "Builds programmes (diplomas, degrees, TVET qualifications, professional programmes) from modules/courses with credits, prerequisites, core/elective status and progression rules.",
+   "roles": [
+    "IADM",
+    "SLT",
+    "REG",
+    "CURA"
+   ],
+   "route": "/academic/programmes/{id}",
+   "title": "Programme builder"
+  },
+  {
+   "classification": "confidential",
+   "id": "ACA-05",
+   "module": "Academic structure",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Teacher's class page: roster, today's lessons, register, markbook shortcuts, authorised adjustments for learners, homework and messages.",
+   "roles": [
+    "TCH",
+    "SLT"
+   ],
+   "route": "/classes/{id}",
+   "title": "My class"
+  },
+  {
+   "classification": "internal",
+   "id": "ACA-101",
+   "module": "Academic structure",
+   "pattern": "Grid",
+   "phase": "P1",
+   "purpose": "Build each class's subject offering with teacher of record, periods and curriculum version, validated live.",
+   "roles": [
+    "HEAD",
+    "SLT",
+    "IADM"
+   ],
+   "route": "/classes/{id}/plan",
+   "title": "Class subject plan"
+  },
+  {
+   "classification": "internal",
+   "id": "ACA-102",
+   "module": "Academic structure",
+   "pattern": "Record 360",
+   "phase": "P1",
+   "purpose": "One record per academic department: HOD, subject areas, programmes, accreditation, courses, lecturers and load.",
+   "roles": [
+    "HOD",
+    "SLT",
+    "REG",
+    "STA"
+   ],
+   "route": "/departments/{id}",
+   "title": "Department 360"
+  },
+  {
+   "classification": "internal",
+   "id": "ACA-103",
+   "module": "Academic structure",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Allocate every course section of the semester to a lecturer of record with specialism and load checks.",
+   "roles": [
+    "HOD",
+    "SLT"
+   ],
+   "route": "/departments/{id}/allocation/{semester}",
+   "title": "Course allocation"
+  },
+  {
+   "classification": "internal",
+   "id": "ADM-01",
+   "module": "Platform administration",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Provider view of tenants (global, country, regional, institutional, department), plans, data residency and health.",
+   "roles": [
+    "PLAT"
+   ],
+   "route": "/platform/tenants",
+   "title": "Tenants"
+  },
+  {
+   "classification": "internal",
+   "id": "ADM-02",
+   "module": "Platform administration",
+   "pattern": "Settings / configuration",
+   "phase": "P1",
+   "purpose": "Country configuration layer: education levels, grade structures, calendars, qualifications, identifiers (e.g. NIN), age-of-majority and consent rules, attendance codes, grading scales, currencies, languages, mandatory datasets.",
+   "roles": [
+    "PLAT",
+    "FED"
+   ],
+   "route": "/config/country/{code}",
+   "title": "Country configuration"
+  },
+  {
+   "classification": "internal",
+   "id": "ADM-03",
+   "module": "Platform administration",
+   "pattern": "Wizard",
+   "phase": "P1",
+   "purpose": "Self-service onboarding for an institution: organisation, academic structure, users and roles, billing, workflows, reports, branding and integrations — within mandatory government policies.",
+   "roles": [
+    "IADM",
+    "HEAD"
+   ],
+   "route": "/setup",
+   "title": "Institution setup"
+  },
+  {
+   "classification": "internal",
+   "id": "ADM-04",
+   "module": "Platform administration",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "User accounts and role-at-scope grants; invitations, deactivation, access reviews.",
+   "roles": [
+    "IADM",
+    "PLAT",
+    "STA",
+    "FED",
+    "HR"
+   ],
+   "route": "/admin/users",
+   "title": "Users"
+  },
+  {
+   "classification": "internal",
+   "id": "ADM-05",
+   "module": "Platform administration",
+   "pattern": "Settings / configuration",
+   "phase": "P1",
+   "purpose": "Role definitions and permission matrix (module × action), data-classification clearance and scope rules.",
+   "roles": [
+    "IADM",
+    "PLAT",
+    "DPO"
+   ],
+   "route": "/admin/roles",
+   "title": "Roles & permissions"
+  },
+  {
+   "classification": "internal",
+   "id": "ADM-06",
+   "module": "Platform administration",
+   "pattern": "Workspace",
+   "phase": "P2",
+   "purpose": "Ministry Policy Engine: version-controlled rules (attendance minimums, curriculum, teacher qualifications, exam eligibility, progression, certification, accreditation, registration) at global → country → state → authority → institution → department levels, with conflict detection.",
+   "roles": [
+    "FED",
+    "STA",
+    "IADM",
+    "CURA"
+   ],
+   "route": "/admin/policies",
+   "title": "Policy & rule engine"
+  },
+  {
+   "classification": "internal",
+   "id": "ADM-07",
+   "module": "Platform administration",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Configures workflows on the Universal Workflow Engine: steps, assignees, SLAs, approvals, escalations and forms.",
+   "roles": [
+    "IADM",
+    "PLAT",
+    "STA"
+   ],
+   "route": "/admin/workflows",
+   "title": "Workflow designer"
+  },
+  {
+   "classification": "internal",
+   "id": "ADM-08",
+   "module": "Platform administration",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Connectors for LMS, finance, payroll, HR, assessment, library, catering, transport, payments, identity, communication, examination bodies, healthcare and government systems.",
+   "roles": [
+    "IADM",
+    "PLAT",
+    "FED",
+    "STA"
+   ],
+   "route": "/admin/integrations",
+   "title": "Integration marketplace"
+  },
+  {
+   "classification": "internal",
+   "id": "ADM-09",
+   "module": "Platform administration",
+   "pattern": "List / register",
+   "phase": "P6",
+   "purpose": "API clients and data-sharing agreements for the Global Education Data Exchange (records, transcripts, results, funding, attendance, outcomes).",
+   "roles": [
+    "PLAT",
+    "FED",
+    "STA",
+    "DPO"
+   ],
+   "route": "/admin/data-exchange",
+   "title": "API clients & data exchange"
+  },
+  {
+   "classification": "internal",
+   "id": "ADM-10",
+   "module": "Platform administration",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Data Governance Engine: classification, retention schedules, consent and legal basis, residency, subject-access and erasure requests, exports, minimisation reviews.",
+   "roles": [
+    "DPO"
+   ],
+   "route": "/admin/data-governance",
+   "title": "Data governance"
+  },
+  {
+   "classification": "restricted",
+   "id": "ADM-11",
+   "module": "Platform administration",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Tamper-evident audit trail: who, what, when, where, why, previous value, new value, approval and related record.",
+   "roles": [
+    "DPO",
+    "IADM",
+    "PLAT",
+    "INTEG"
+   ],
+   "route": "/admin/audit",
+   "title": "Audit log"
+  },
+  {
+   "classification": "internal",
+   "id": "ADM-12",
+   "module": "Platform administration",
+   "pattern": "Settings / configuration",
+   "phase": "P1",
+   "purpose": "Platform-level translation: enabled languages, coverage, terminology overrides (e.g. 'pupil' vs 'learner', 'term' vs 'semester') and RTL support.",
+   "roles": [
+    "PLAT",
+    "IADM"
+   ],
+   "route": "/admin/languages",
+   "title": "Languages"
+  },
+  {
+   "classification": "internal",
+   "id": "ADM-13",
+   "module": "Platform administration",
+   "pattern": "Settings / configuration",
+   "phase": "P1",
+   "purpose": "Tenant branding (logo, colours, crest, document templates) within accessibility constraints.",
+   "roles": [
+    "IADM",
+    "NET"
+   ],
+   "route": "/admin/branding",
+   "title": "Branding"
+  },
+  {
+   "classification": "internal",
+   "id": "ADM-14",
+   "module": "Platform administration",
+   "pattern": "Settings / configuration",
+   "phase": "P1",
+   "purpose": "SaaS billing for the platform itself: per learner, institution, module, user, campus, enterprise, government contract, national deployment, trust or university-group licence — combinable.",
+   "roles": [
+    "PLAT",
+    "IADM",
+    "FED",
+    "STA"
+   ],
+   "route": "/admin/subscription",
+   "title": "Subscription & licensing"
+  },
+  {
+   "classification": "internal",
+   "id": "ADM-15",
+   "module": "Platform administration",
+   "pattern": "Wizard",
+   "phase": "P1",
+   "purpose": "Imports legacy data (spreadsheets, CSV, previous MIS exports) through mapping, validation, matching against masters and staged commit with rollback.",
+   "roles": [
+    "IADM",
+    "DQ",
+    "PLAT"
+   ],
+   "route": "/admin/imports",
+   "title": "Data import & migration"
+  },
+  {
+   "classification": "internal",
+   "id": "ADM-16",
+   "module": "Platform administration",
+   "pattern": "Dashboard / command centre",
+   "phase": "P1",
+   "purpose": "Availability, latency, error rates, queue depth, backup status and DR readiness per region.",
+   "roles": [
+    "PLAT"
+   ],
+   "route": "/platform/health",
+   "title": "System health"
+  },
+  {
+   "classification": "restricted",
+   "id": "ADM-17",
+   "module": "Platform administration",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Merge queue and stewardship across all master entities (learners, guardians, staff, institutions, suppliers, courses, programmes, qualifications).",
+   "roles": [
+    "DQ"
+   ],
+   "route": "/mdm",
+   "title": "Master data stewardship"
+  },
+  {
+   "classification": "internal",
+   "id": "ADM-18",
+   "module": "Platform administration",
+   "pattern": "Settings / configuration",
+   "phase": "P1",
+   "purpose": "Event-to-notification rules, channels, templates, quiet hours, digests and escalation.",
+   "roles": [
+    "IADM",
+    "PLAT"
+   ],
+   "route": "/admin/notifications",
+   "title": "Notification rules"
+  },
+  {
+   "classification": "internal",
+   "id": "AGT-101",
+   "module": "Automation agents",
+   "pattern": "Card gallery",
+   "phase": "P3",
+   "purpose": "Browse and enable agent templates.",
+   "roles": [
+    "AGTO",
+    "IADM",
+    "STA"
+   ],
+   "route": "/agents/library",
+   "title": "Agent library"
+  },
+  {
+   "classification": "internal",
+   "id": "AGT-102",
+   "module": "Automation agents",
+   "pattern": "Wizard",
+   "phase": "P3",
+   "purpose": "Set triggers, scope, level, tools, limits and templates; simulate; approve.",
+   "roles": [
+    "AGTO"
+   ],
+   "route": "/agents/{id}/configure",
+   "title": "Configure agent"
+  },
+  {
+   "classification": "internal",
+   "id": "AGT-103",
+   "module": "Automation agents",
+   "pattern": "Dashboard",
+   "phase": "P3",
+   "purpose": "Monitor every agent's status, results and live activity; pause instantly.",
+   "roles": [
+    "AGTO",
+    "IADM",
+    "HEAD",
+    "STA"
+   ],
+   "route": "/agents",
+   "title": "Agent console"
+  },
+  {
+   "classification": "internal",
+   "id": "AGT-104",
+   "module": "Automation agents",
+   "pattern": "List / register",
+   "phase": "P3",
+   "purpose": "Searchable record of every agent action with trigger, evidence, rule, outcome and undo.",
+   "roles": [
+    "AGTO",
+    "DPO",
+    "INTEG"
+   ],
+   "route": "/agents/activity",
+   "title": "Agent activity log"
+  },
+  {
+   "classification": "internal",
+   "id": "AIX-01",
+   "module": "Intelligence",
+   "pattern": "List / register",
+   "phase": "P7",
+   "purpose": "Every AI recommendation awaiting a human decision, each with finding, evidence, confidence, recommendation and the approve/reject decision.",
+   "roles": [
+    "SLT",
+    "HEAD",
+    "LGA",
+    "STA",
+    "FED",
+    "PAST",
+    "SENCO"
+   ],
+   "route": "/ai/recommendations",
+   "title": "Recommendations queue"
+  },
+  {
+   "classification": "internal",
+   "id": "AIX-02",
+   "module": "Intelligence",
+   "pattern": "Workspace",
+   "phase": "P7",
+   "purpose": "Extracts structured data from uploaded forms, PDFs, certificates, transcripts, reports, contracts and invoices; flags missing data, duplicates, contradictions, expiry and key dates; a human validates consequential fields.",
+   "roles": [
+    "REG",
+    "IADM",
+    "FINO",
+    "HR"
+   ],
+   "route": "/ai/documents",
+   "title": "Document intelligence"
+  },
+  {
+   "classification": "internal",
+   "id": "AIX-03",
+   "module": "Intelligence",
+   "pattern": "List / register",
+   "phase": "P7",
+   "purpose": "Register of AI models and rules: purpose, owner, data used, excluded features, performance, fairness metrics, drift, human-oversight level and approval.",
+   "roles": [
+    "DPO",
+    "PLAT",
+    "FED"
+   ],
+   "route": "/ai/models",
+   "title": "Model governance"
+  },
+  {
+   "classification": "confidential",
+   "id": "ASM-01",
+   "module": "Assessment",
+   "pattern": "Grid",
+   "phase": "P1",
+   "purpose": "Gradebook for a class/subject: assessments as columns mapped to curriculum objectives, marks, grades per configured scale, flags for missing work, and adjustments.",
+   "roles": [
+    "TCH",
+    "SLT"
+   ],
+   "route": "/markbook/{class}/{subject}",
+   "title": "Markbook"
+  },
+  {
+   "classification": "internal",
+   "id": "ASM-02",
+   "module": "Assessment",
+   "pattern": "Form",
+   "phase": "P1",
+   "purpose": "Defines an assessment and traces it to curriculum objectives (Curriculum → Subject → Objective → Assessment → Performance).",
+   "roles": [
+    "TCH",
+    "SLT",
+    "EXO"
+   ],
+   "route": "/assessments/new",
+   "title": "Assessment setup"
+  },
+  {
+   "classification": "internal",
+   "id": "ASM-03",
+   "module": "Assessment",
+   "pattern": "Settings / configuration",
+   "phase": "P1",
+   "purpose": "Configurable grading: percentage, letters, grade points, GPA/CGPA, pass/fail, competency levels, degree classifications.",
+   "roles": [
+    "IADM",
+    "STA",
+    "CURA"
+   ],
+   "route": "/settings/grading",
+   "title": "Grading scales"
+  },
+  {
+   "classification": "internal",
+   "id": "ASM-04",
+   "module": "Assessment",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Generates termly report cards / progress reports from markbooks, attendance, behaviour and teacher comments in the institution's branded template.",
+   "roles": [
+    "SLT",
+    "IADM",
+    "TCH"
+   ],
+   "route": "/reports/learner",
+   "title": "Report cards"
+  },
+  {
+   "classification": "internal",
+   "id": "ASM-05",
+   "module": "Assessment",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Internal moderation and verification of marking: samples, moderator marks, adjustments.",
+   "roles": [
+    "SLT",
+    "EXO"
+   ],
+   "route": "/moderation",
+   "title": "Moderation"
+  },
+  {
+   "classification": "confidential",
+   "id": "ATT-01",
+   "module": "Attendance",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Fast lesson/session register for teachers on any device. Pre-fills known absences (parent-reported, trips, exams).",
+   "roles": [
+    "TCH"
+   ],
+   "route": "/registers/{lesson}",
+   "title": "Take register"
+  },
+  {
+   "classification": "internal",
+   "id": "ATT-02",
+   "module": "Attendance",
+   "pattern": "Dashboard / command centre",
+   "phase": "P1",
+   "purpose": "Institution or authority attendance: today, trends, persistent absence, patterns by day/period/cohort, and early warnings.",
+   "roles": [
+    "PAST",
+    "SLT",
+    "HEAD",
+    "LGA",
+    "STA"
+   ],
+   "route": "/attendance",
+   "title": "Attendance dashboard"
+  },
+  {
+   "classification": "internal",
+   "id": "ATT-03",
+   "module": "Attendance",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "First-day absence contact and escalation workflow: call/SMS guardians, record reasons, escalate repeated absence.",
+   "roles": [
+    "PAST",
+    "IADM"
+   ],
+   "route": "/attendance/follow-up",
+   "title": "Absence follow-up"
+  },
+  {
+   "classification": "internal",
+   "id": "ATT-101",
+   "module": "Attendance",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Account for every learner, member of staff and visitor at assembly points during an evacuation or drill, in real time, on mobile and offline.",
+   "roles": [
+    "TCH",
+    "SLT",
+    "OPS"
+   ],
+   "route": "/attendance/evacuation",
+   "title": "Evacuation roll call"
+  },
+  {
+   "classification": "internal",
+   "id": "ATT-102",
+   "module": "Attendance",
+   "pattern": "Dashboard / command centre",
+   "phase": "P1",
+   "purpose": "See registers not taken or left incomplete, nudge teachers with a direct link and track register compliance by teacher, institution and LGA.",
+   "roles": [
+    "SLT",
+    "PAST",
+    "HEAD",
+    "LGA"
+   ],
+   "route": "/attendance/registers",
+   "title": "Register compliance"
+  },
+  {
+   "classification": "internal",
+   "id": "ATT-103",
+   "module": "Attendance",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Receive absences reported by parents through the app, WhatsApp or web, acknowledge them, apply the attendance code and query unauthorised reasons.",
+   "roles": [
+    "PAST",
+    "TCH",
+    "PAR"
+   ],
+   "route": "/attendance/reported",
+   "title": "Parent-reported absences"
+  },
+  {
+   "classification": "internal",
+   "id": "AUT-01",
+   "module": "Access",
+   "pattern": "Authentication",
+   "phase": "P1",
+   "purpose": "Authenticate every user through one entry point. Supports federated SSO (government identity provider, Microsoft Entra ID, Google Workspace), local credentials for small institutions and passwordless magic links for parents.",
+   "roles": [
+    "All"
+   ],
+   "route": "/auth/sign-in",
+   "title": "Sign in"
+  },
+  {
+   "classification": "internal",
+   "id": "AUT-02",
+   "module": "Access",
+   "pattern": "Authentication",
+   "phase": "P1",
+   "purpose": "Second factor for users whose role clearance is restricted or special, and for any user on a new device.",
+   "roles": [
+    "All"
+   ],
+   "route": "/auth/mfa",
+   "title": "Multi-factor verification"
+  },
+  {
+   "classification": "internal",
+   "id": "AUT-03",
+   "module": "Access",
+   "pattern": "Authentication",
+   "phase": "P1",
+   "purpose": "Users holding several role-at-scope grants (e.g. a teacher who is also a parent, or a state officer seconded to an LGA) choose the context they will work in. The context sets navigation, default dashboard and data scope.",
+   "roles": [
+    "All"
+   ],
+   "route": "/auth/context",
+   "title": "Choose workspace"
+  },
+  {
+   "classification": "internal",
+   "id": "AUT-04",
+   "module": "Access",
+   "pattern": "Authentication",
+   "phase": "P1",
+   "purpose": "Self-service password reset by e-mail link. Not available to SSO-only users.",
+   "roles": [
+    "All"
+   ],
+   "route": "/auth/reset",
+   "title": "Reset password"
+  },
+  {
+   "classification": "internal",
+   "id": "BEH-01",
+   "module": "Behaviour",
+   "pattern": "Form",
+   "phase": "P2",
+   "purpose": "Quick capture of positive and negative behaviour events against the institution's behaviour policy.",
+   "roles": [
+    "TCH",
+    "PAST",
+    "SLT"
+   ],
+   "route": "/behaviour/new",
+   "title": "Log behaviour"
+  },
+  {
+   "classification": "internal",
+   "id": "BEH-02",
+   "module": "Behaviour",
+   "pattern": "Dashboard / command centre",
+   "phase": "P2",
+   "purpose": "Patterns by learner, class, time, location and category; exclusions and suspension records.",
+   "roles": [
+    "PAST",
+    "SLT",
+    "HEAD",
+    "LGA"
+   ],
+   "route": "/behaviour",
+   "title": "Behaviour overview"
+  },
+  {
+   "classification": "internal",
+   "id": "BEH-101",
+   "module": "Behaviour",
+   "pattern": "Settings / configuration",
+   "phase": "P2",
+   "purpose": "Turn the institution's behaviour policy into configured positive and negative behaviours, points, default outcomes, rewards and achievement badges, within the minimum framework the state publishes.",
+   "roles": [
+    "HEAD",
+    "SLT",
+    "PAST",
+    "LGA"
+   ],
+   "route": "/behaviour/policy",
+   "title": "Behaviour policy and rewards"
+  },
+  {
+   "classification": "internal",
+   "id": "BEH-102",
+   "module": "Behaviour",
+   "pattern": "Workspace",
+   "phase": "P2",
+   "purpose": "Arrange a class on a room layout by drag and drop or by strategy, see each learner's context at a glance, log behaviour in two taps and use influence data to decide who sits where.",
+   "roles": [
+    "TCH",
+    "HOD",
+    "SLT"
+   ],
+   "route": "/classes/{id}/seating",
+   "title": "Seating plan and influences"
+  },
+  {
+   "classification": "internal",
+   "id": "BEH-103",
+   "module": "Behaviour",
+   "pattern": "Settings / configuration",
+   "phase": "P2",
+   "purpose": "Set thresholds on behaviour, attendance, homework and wellbeing data that trigger actions automatically, so low-level patterns are dealt with early and positive milestones are celebrated.",
+   "roles": [
+    "SLT",
+    "PAST",
+    "HEAD"
+   ],
+   "route": "/behaviour/intel-events",
+   "title": "Intelligence events"
+  },
+  {
+   "classification": "internal",
+   "id": "BEH-104",
+   "module": "Behaviour",
+   "pattern": "List / register",
+   "phase": "P2",
+   "purpose": "Issue, share and track detentions by type, location, duration and supervisor; escalate missed detentions up the ladder automatically and report time owed.",
+   "roles": [
+    "TCH",
+    "PAST",
+    "SLT",
+    "PAR",
+    "LRN"
+   ],
+   "route": "/behaviour/detentions",
+   "title": "Detention manager"
+  },
+  {
+   "classification": "internal",
+   "id": "BEH-105",
+   "module": "Behaviour",
+   "pattern": "Dashboard / command centre",
+   "phase": "P2",
+   "purpose": "Receive and respond to on-call requests raised from classrooms, with room, class and reason, acknowledgement times and escalation.",
+   "roles": [
+    "SLT",
+    "PAST",
+    "TCH"
+   ],
+   "route": "/behaviour/on-call",
+   "title": "On-call board"
+  },
+  {
+   "classification": "internal",
+   "id": "BEH-106",
+   "module": "Behaviour",
+   "pattern": "Record 360",
+   "phase": "P2",
+   "purpose": "Put a learner on report for a set period with personalised targets; every timetabled teacher rates and comments on each target, and parents can view and comment.",
+   "roles": [
+    "TCH",
+    "PAST",
+    "SLT",
+    "PAR",
+    "LRN"
+   ],
+   "route": "/learners/{id}/on-report",
+   "title": "On-report card"
+  },
+  {
+   "classification": "internal",
+   "id": "BIL-01",
+   "module": "Billing",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Global Billing Rule Engine: define charge types and the rules that apply them by institution, campus, programme, course, year group, learner category, residency, citizenship, scholarship, family, funding source and level.",
+   "roles": [
+    "FINO",
+    "IADM",
+    "NET"
+   ],
+   "route": "/billing/rules",
+   "title": "Fee structure & billing rules"
+  },
+  {
+   "classification": "internal",
+   "id": "BIL-02",
+   "module": "Billing",
+   "pattern": "Workflow / approval",
+   "phase": "P1",
+   "purpose": "Generates invoices for a period from rules; preview, exceptions, approval and issue.",
+   "roles": [
+    "FINO"
+   ],
+   "route": "/billing/runs/{id}",
+   "title": "Billing run"
+  },
+  {
+   "classification": "restricted",
+   "id": "BIL-03",
+   "module": "Billing",
+   "pattern": "Record 360",
+   "phase": "P1",
+   "purpose": "Individual learner ledger: charges, funding, discounts, payments, credits, balance and plan.",
+   "roles": [
+    "FINO",
+    "REG"
+   ],
+   "route": "/accounts/learners/{id}",
+   "title": "Learner account"
+  },
+  {
+   "classification": "restricted",
+   "id": "BIL-04",
+   "module": "Billing",
+   "pattern": "Report / analysis",
+   "phase": "P1",
+   "purpose": "One consolidated statement per family/payer across children and institutions, while each learner keeps an individual ledger.",
+   "roles": [
+    "FINO",
+    "PAR"
+   ],
+   "route": "/accounts/families/{id}/statement",
+   "title": "Family statement"
+  },
+  {
+   "classification": "restricted",
+   "id": "BIL-05",
+   "module": "Billing",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "All invoices with status, ageing and payer.",
+   "roles": [
+    "FINO"
+   ],
+   "route": "/invoices",
+   "title": "Invoices"
+  },
+  {
+   "classification": "restricted",
+   "id": "BIL-06",
+   "module": "Billing",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Instalment plans, hardship assessments, fee waivers and ethical recovery policy configuration.",
+   "roles": [
+    "FINO",
+    "HEAD"
+   ],
+   "route": "/billing/plans",
+   "title": "Payment plans & hardship"
+  },
+  {
+   "classification": "internal",
+   "id": "BIL-07",
+   "module": "Billing",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Scholarships, bursaries, grants, sponsorships, employer funding, student loans and donor funding with caps and rules.",
+   "roles": [
+    "FINO",
+    "TVC"
+   ],
+   "route": "/funding-sources",
+   "title": "Funding sources & sponsors"
+  },
+  {
+   "classification": "internal",
+   "id": "BIL-08",
+   "module": "Billing",
+   "pattern": "Report / analysis",
+   "phase": "P6",
+   "purpose": "Capitation, per-learner funding, institutional and conditional grants, development and donor funding reconciled so Government + Student payment + Scholarship + Sponsor = Total student funding, without double counting.",
+   "roles": [
+    "FINO",
+    "STA",
+    "LGA",
+    "FED"
+   ],
+   "route": "/funding/government",
+   "title": "Government funding reconciliation"
+  },
+  {
+   "classification": "restricted",
+   "id": "CER-01",
+   "module": "Certificate 360",
+   "pattern": "List / register",
+   "phase": "P2",
+   "purpose": "Authoritative register of awards and certificates issued by authorities and institutions in scope.",
+   "roles": [
+    "CERT",
+    "REG",
+    "STA",
+    "FED",
+    "INTEG"
+   ],
+   "route": "/certificates",
+   "title": "Certificate register"
+  },
+  {
+   "classification": "restricted",
+   "id": "CER-02",
+   "module": "Certificate 360",
+   "pattern": "Workspace",
+   "phase": "P2",
+   "purpose": "Batch Certificate Eligibility Engine for a cohort/series: each learner evaluated against the full chain from identity to award approval.",
+   "roles": [
+    "CERT",
+    "REG"
+   ],
+   "route": "/certificates/eligibility-runs/{id}",
+   "title": "Award eligibility run"
+  },
+  {
+   "classification": "restricted",
+   "id": "CER-03",
+   "module": "Certificate 360",
+   "pattern": "Workflow / approval",
+   "phase": "P2",
+   "purpose": "Intelligent cross-check before issuance. Only when every mandatory check passes (or an authorised exception exists) can a certificate be issued.",
+   "roles": [
+    "CERT"
+   ],
+   "route": "/certificates/issue/{learner}",
+   "title": "Issue certificate"
+  },
+  {
+   "classification": "restricted",
+   "id": "CER-04",
+   "module": "Certificate 360",
+   "pattern": "Record 360",
+   "phase": "P2",
+   "purpose": "Single certificate master record with everything that supports it, its verification history and lifecycle.",
+   "roles": [
+    "CERT",
+    "REG",
+    "INTEG",
+    "STA"
+   ],
+   "route": "/certificates/{id}",
+   "title": "Certificate 360"
+  },
+  {
+   "classification": "restricted",
+   "id": "CER-05",
+   "module": "Certificate 360",
+   "pattern": "Workflow / approval",
+   "phase": "P2",
+   "purpose": "Lifecycle actions: revocation, suspension, correction, replacement and reissue — each with authorised user, reason, date/time, evidence and approval. The original record is never deleted.",
+   "roles": [
+    "CERT"
+   ],
+   "route": "/certificates/{id}/lifecycle",
+   "title": "Revoke, correct or reissue"
+  },
+  {
+   "classification": "internal",
+   "id": "CER-06",
+   "module": "Certificate 360",
+   "pattern": "Settings / configuration",
+   "phase": "P2",
+   "purpose": "Certificate designs, security features, numbering rules and authorised signatories with signing keys.",
+   "roles": [
+    "CERT",
+    "IADM"
+   ],
+   "route": "/settings/certificates",
+   "title": "Certificate templates & signatories"
+  },
+  {
+   "classification": "internal",
+   "id": "CER-07",
+   "module": "Certificate 360",
+   "pattern": "List / register",
+   "phase": "P2",
+   "purpose": "Log of all verifications (public, API, institutional) with failed lookups and suspected forgeries reported.",
+   "roles": [
+    "CERT",
+    "INTEG"
+   ],
+   "route": "/certificates/verifications",
+   "title": "Verification requests"
+  },
+  {
+   "classification": "internal",
+   "id": "CER-101",
+   "module": "Certificate 360",
+   "pattern": "List / register",
+   "phase": "P2",
+   "purpose": "Work queue of certificate reissue and copy requests.",
+   "roles": [
+    "CERT",
+    "REG"
+   ],
+   "route": "/certificates/reissues",
+   "title": "Reissue requests"
+  },
+  {
+   "classification": "internal",
+   "id": "CER-102",
+   "module": "Certificate 360",
+   "pattern": "Workflow / approval",
+   "phase": "P2",
+   "purpose": "Decide a reissue with the identity, archive and payment evidence in one place.",
+   "roles": [
+    "CERT"
+   ],
+   "route": "/certificates/reissues/{id}",
+   "title": "Reissue review"
+  },
+  {
+   "classification": "internal",
+   "id": "CMD-01",
+   "module": "Command centre",
+   "pattern": "Dashboard / command centre",
+   "phase": "P7",
+   "purpose": "Cross-country view for international organisations and the global administrator. Shows aggregated, comparable indicators only, always labelled as verified, calculated or estimated.",
+   "roles": [
+    "GLB"
+   ],
+   "route": "/command/global",
+   "title": "Global education dashboard"
+  },
+  {
+   "classification": "internal",
+   "id": "CMD-02",
+   "module": "Command centre",
+   "pattern": "Dashboard / command centre",
+   "phase": "P6",
+   "purpose": "Federal Ministry of Education control tower. Aggregated national view with drill-down Country → State → LGA → Institution → Department → Programme → Class → Learner (to the depth the user's clearance allows).",
+   "roles": [
+    "FED"
+   ],
+   "route": "/command/national",
+   "title": "National command centre"
+  },
+  {
+   "classification": "internal",
+   "id": "CMD-03",
+   "module": "Command centre",
+   "pattern": "Dashboard / command centre",
+   "phase": "P6",
+   "purpose": "State Ministry of Education operational and regulatory control tower: every registered institution in the state, public and private, with comparison against LGAs, prior year and government targets.",
+   "roles": [
+    "STA",
+    "FED"
+   ],
+   "route": "/command/state/{state}",
+   "title": "State command centre"
+  },
+  {
+   "classification": "internal",
+   "id": "CMD-04",
+   "module": "Command centre",
+   "pattern": "Dashboard / command centre",
+   "phase": "P6",
+   "purpose": "Local education authority view: day-to-day operational monitoring of the institutions in one LGA or district.",
+   "roles": [
+    "LGA",
+    "STA"
+   ],
+   "route": "/command/authority/{id}",
+   "title": "LGA / district command centre"
+  },
+  {
+   "classification": "internal",
+   "id": "CMD-05",
+   "module": "Command centre",
+   "pattern": "Dashboard / command centre",
+   "phase": "P4",
+   "purpose": "For Multi-Academy Trusts, school groups, university groups and faith/community networks: performance, finance and risk across member institutions.",
+   "roles": [
+    "NET"
+   ],
+   "route": "/command/network/{id}",
+   "title": "Network dashboard"
+  },
+  {
+   "classification": "internal",
+   "id": "CMD-06",
+   "module": "Command centre",
+   "pattern": "Dashboard / command centre",
+   "phase": "P1",
+   "purpose": "Head of institution home: today, this week, this month and this year for one school, college or university, with the institution health index decomposed.",
+   "roles": [
+    "HEAD",
+    "SLT",
+    "IADM"
+   ],
+   "route": "/institutions/{id}/dashboard",
+   "title": "Institution dashboard"
+  },
+  {
+   "classification": "internal",
+   "id": "CMD-07",
+   "module": "Command centre",
+   "pattern": "Workspace",
+   "phase": "P6",
+   "purpose": "Drill-down browser through the configured governance hierarchy. At every level the same indicator set is shown: performance, attendance, behaviour, safeguarding, SEND, staffing, finance, infrastructure, curriculum, assessment, compliance, risks and trends.",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "NET",
+    "HEAD"
+   ],
+   "route": "/explore/{scope}",
+   "title": "Hierarchy explorer"
+  },
+  {
+   "classification": "internal",
+   "id": "CMD-08",
+   "module": "Command centre",
+   "pattern": "Workspace",
+   "phase": "P6",
+   "purpose": "Investigation workspace that moves an administrator from Symptom → Evidence → Root cause → Action → Outcome. Opened from any alert, KPI or assistant answer.",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "NET",
+    "HEAD",
+    "SLT",
+    "INSP"
+   ],
+   "route": "/investigations/{id}",
+   "title": "Follow the problem"
+  },
+  {
+   "classification": "internal",
+   "id": "CMD-09",
+   "module": "Command centre",
+   "pattern": "List / register",
+   "phase": "P6",
+   "purpose": "Global Education Alert Centre: every alert in the user's scope, categorised Critical / High / Moderate / Informational, with owner, due date and status.",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "NET",
+    "HEAD",
+    "SLT",
+    "IADM",
+    "TCH",
+    "PAST",
+    "DSL",
+    "SENCO",
+    "EXO",
+    "REG",
+    "FINO",
+    "HR",
+    "OPSM",
+    "INSP",
+    "CURA",
+    "CERT",
+    "INTEG",
+    "DQ",
+    "DPO"
+   ],
+   "route": "/alerts",
+   "title": "Alert centre"
+  },
+  {
+   "classification": "internal",
+   "id": "CMD-10",
+   "module": "Command centre",
+   "pattern": "Record 360",
+   "phase": "P6",
+   "purpose": "Single alert with full explanation, evidence and actions.",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "NET",
+    "HEAD",
+    "SLT",
+    "IADM",
+    "TCH",
+    "PAST",
+    "DSL",
+    "SENCO",
+    "EXO",
+    "REG",
+    "FINO",
+    "HR",
+    "OPSM",
+    "INSP",
+    "CURA",
+    "CERT",
+    "INTEG",
+    "DQ",
+    "DPO"
+   ],
+   "route": "/alerts/{id}",
+   "title": "Alert detail"
+  },
+  {
+   "classification": "internal",
+   "id": "CMD-101",
+   "module": "Command centres",
+   "pattern": "Dashboard",
+   "phase": "P1 / P6",
+   "purpose": "One screen for the whole state: KPIs, where to act, LGA health and every institution's performance.",
+   "roles": [
+    "STA",
+    "FED",
+    "LGA"
+   ],
+   "route": "/command/control-room",
+   "title": "State education control room"
+  },
+  {
+   "classification": "internal",
+   "id": "CMD-102",
+   "module": "Command centres",
+   "pattern": "Report / analysis",
+   "phase": "P6",
+   "purpose": "Compare institutions fairly within comparable context groups and against their own trend.",
+   "roles": [
+    "STA",
+    "LGA",
+    "PRA"
+   ],
+   "route": "/command/compare",
+   "title": "Institution league with context"
+  },
+  {
+   "classification": "internal",
+   "id": "CMD-103",
+   "module": "Command centres",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Track every institution's onboarding readiness and data freshness against LGA targets.",
+   "roles": [
+    "STA",
+    "LGA",
+    "PLAT"
+   ],
+   "route": "/command/onboarding",
+   "title": "Coverage and onboarding tracker"
+  },
+  {
+   "classification": "internal",
+   "id": "CMD-104",
+   "module": "Command centres",
+   "pattern": "Record 360",
+   "phase": "P6",
+   "purpose": "The administrator's own record: scopes and delegations, portfolio of institutions, open alerts, investigations and improvement plans they own, decisions with outcomes, and briefing preferences — the fifth fundamental intelligence object.",
+   "roles": [
+    "STA",
+    "LGA",
+    "FED",
+    "NET",
+    "HEAD"
+   ],
+   "route": "/me/administrator",
+   "title": "Education Administrator 360"
+  },
+  {
+   "classification": "internal",
+   "id": "CMD-11",
+   "module": "Command centre",
+   "pattern": "Report / analysis",
+   "phase": "P6",
+   "purpose": "Cross-institution comparison: school vs school, LGA vs LGA, state vs state, programme vs programme. Contextual indicators are always shown alongside outcomes to avoid misleading league tables.",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "NET",
+    "GLB"
+   ],
+   "route": "/compare",
+   "title": "Compare"
+  },
+  {
+   "classification": "internal",
+   "id": "CMD-12",
+   "module": "Command centre",
+   "pattern": "Dashboard / command centre",
+   "phase": "P7",
+   "purpose": "Positive intelligence: high-performing schools, outstanding teachers, successful interventions, improving attendance, strong financial management — and the practice behind them, so it can be shared.",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "NET",
+    "HEAD"
+   ],
+   "route": "/positive",
+   "title": "What's working"
+  },
+  {
+   "classification": "internal",
+   "id": "CMD-13",
+   "module": "Command centre",
+   "pattern": "Report / analysis",
+   "phase": "P6",
+   "purpose": "Evidence-based identification of resource imbalances (learners, classrooms, teachers, funding). Recommends, never reallocates automatically.",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA"
+   ],
+   "route": "/resources/allocation",
+   "title": "Resource allocation"
+  },
+  {
+   "classification": "internal",
+   "id": "CMD-14",
+   "module": "Command centre",
+   "pattern": "Workspace",
+   "phase": "P7",
+   "purpose": "Global Education Planning Engine. Example: 'If enrolment increases by 15% over five years, how many additional teachers, classrooms and institutions will be required?'",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "GLB"
+   ],
+   "route": "/planning",
+   "title": "Planning scenarios"
+  },
+  {
+   "classification": "restricted",
+   "id": "CMD-15",
+   "module": "Command centre",
+   "pattern": "Dashboard / command centre",
+   "phase": "P6",
+   "purpose": "Education Fraud & Integrity Command Centre: identity fraud, certificate fraud, fake institutions, unauthorised qualifications, exam anomalies, duplicate learners, curriculum and accreditation violations.",
+   "roles": [
+    "FED",
+    "STA",
+    "INTEG",
+    "CERT"
+   ],
+   "route": "/integrity",
+   "title": "Integrity command centre"
+  },
+  {
+   "classification": "internal",
+   "id": "CMD-16",
+   "module": "Command centre",
+   "pattern": "Dashboard / command centre",
+   "phase": "P6",
+   "purpose": "Data Quality Index by institution with the defects behind it: missing records, duplicates, invalid values, late submissions, inconsistencies, unverified records.",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "DQ",
+    "IADM"
+   ],
+   "route": "/data-quality",
+   "title": "Data quality command centre"
+  },
+  {
+   "classification": "internal",
+   "id": "COM-01",
+   "module": "Communication",
+   "pattern": "Form",
+   "phase": "P1",
+   "purpose": "Compose messages to guardians, learners and staff by audience rules; delivered by app, e-mail, SMS, WhatsApp or voice per recipient preference and cost policy.",
+   "roles": [
+    "TCH",
+    "PAST",
+    "SLT",
+    "HEAD",
+    "IADM",
+    "LGA",
+    "STA"
+   ],
+   "route": "/messages/new",
+   "title": "Send a message"
+  },
+  {
+   "classification": "internal",
+   "id": "COM-02",
+   "module": "Communication",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Sent messages, delivery/read status and reusable templates in multiple languages.",
+   "roles": [
+    "SLT",
+    "IADM",
+    "PAST"
+   ],
+   "route": "/messages",
+   "title": "Communication log & templates"
+  },
+  {
+   "classification": "internal",
+   "id": "COM-101",
+   "module": "Communication",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Handle two-way WhatsApp, SMS and app conversations with families, matched to their records.",
+   "roles": [
+    "IADM",
+    "REG",
+    "FINO",
+    "TCH",
+    "PAST",
+    "STA",
+    "LGA"
+   ],
+   "route": "/conversations",
+   "title": "Conversations inbox"
+  },
+  {
+   "classification": "internal",
+   "id": "COM-102",
+   "module": "Communication",
+   "pattern": "Settings",
+   "phase": "P1",
+   "purpose": "Connect WhatsApp, Zenzap and other channels; manage templates, opt-ins, quiet hours and spend caps.",
+   "roles": [
+    "MSGA",
+    "IADM"
+   ],
+   "route": "/admin/messaging",
+   "title": "Channels and templates"
+  },
+  {
+   "classification": "internal",
+   "id": "COM-103",
+   "module": "Communication",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Send scheduled messages to rule-defined audiences with cost estimate and results.",
+   "roles": [
+    "HEAD",
+    "SLT",
+    "STA",
+    "LGA",
+    "MSGA"
+   ],
+   "route": "/broadcasts",
+   "title": "Broadcast campaigns"
+  },
+  {
+   "classification": "internal",
+   "id": "COM-104",
+   "module": "Communication",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Send announcements to staff by relationship to a learner or role, and consent requests to parents with tracking, reminders and comments.",
+   "roles": [
+    "SLT",
+    "PAST",
+    "TCH",
+    "PAR"
+   ],
+   "route": "/communication/announcements",
+   "title": "Staff announcements and consent requests"
+  },
+  {
+   "classification": "internal",
+   "id": "CUR-01",
+   "module": "Curriculum 360",
+   "pattern": "List / register",
+   "phase": "P2",
+   "purpose": "All curricula the user may see: national/federal, state adaptations, international frameworks (Cambridge, IB, Pearson), vocational/competency frameworks and institution-specific curricula, with versions and effective dates.",
+   "roles": [
+    "CURA",
+    "FED",
+    "STA",
+    "IADM",
+    "SLT",
+    "INSP",
+    "TCH"
+   ],
+   "route": "/curricula",
+   "title": "Curriculum library"
+  },
+  {
+   "classification": "internal",
+   "id": "CUR-02",
+   "module": "Curriculum 360",
+   "pattern": "Workspace",
+   "phase": "P2",
+   "purpose": "Authoring environment for a curriculum version: structure (subject → strand → topic → learning objective/competency), mandatory/optional/recommended/restricted status, minimum teaching hours, instructional and resource requirements, assessment requirements and progression rules.",
+   "roles": [
+    "CURA"
+   ],
+   "route": "/curricula/{id}/versions/{v}/edit",
+   "title": "Curriculum editor"
+  },
+  {
+   "classification": "internal",
+   "id": "CUR-03",
+   "module": "Curriculum 360",
+   "pattern": "Workflow / approval",
+   "phase": "P2",
+   "purpose": "Approval and publication workflow: author → reviewer → approver → publish with effective date. Every change carries author, approver, version, date, effective date, reason and audit trail.",
+   "roles": [
+    "CURA",
+    "FED",
+    "STA"
+   ],
+   "route": "/curricula/{id}/versions/{v}/approval",
+   "title": "Curriculum approval"
+  },
+  {
+   "classification": "internal",
+   "id": "CUR-04",
+   "module": "Curriculum 360",
+   "pattern": "Record 360",
+   "phase": "P2",
+   "purpose": "The curriculum as an intelligence object: authority, versions, applicable institutions, subjects, objectives, assessments, qualifications, teacher requirements and live compliance across adopters.",
+   "roles": [
+    "CURA",
+    "FED",
+    "STA",
+    "INSP",
+    "SLT"
+   ],
+   "route": "/curricula/{id}",
+   "title": "Curriculum 360"
+  },
+  {
+   "classification": "internal",
+   "id": "CUR-05",
+   "module": "Curriculum 360",
+   "pattern": "Workspace",
+   "phase": "P2",
+   "purpose": "State/local authorised additions or adaptations layered on a federal curriculum, with conflict detection against higher-level mandatory rules.",
+   "roles": [
+    "CURA",
+    "STA"
+   ],
+   "route": "/curricula/{id}/adaptations",
+   "title": "State adaptation"
+  },
+  {
+   "classification": "internal",
+   "id": "CUR-06",
+   "module": "Curriculum 360",
+   "pattern": "Report / analysis",
+   "phase": "P2",
+   "purpose": "Curriculum Compliance Engine result for an institution: compliance score with breakdown and specific deficiencies — not just a percentage.",
+   "roles": [
+    "HEAD",
+    "SLT",
+    "IADM",
+    "INSP",
+    "STA",
+    "LGA",
+    "CURA"
+   ],
+   "route": "/institutions/{id}/curriculum-compliance",
+   "title": "Curriculum compliance"
+  },
+  {
+   "classification": "internal",
+   "id": "CUR-07",
+   "module": "Curriculum 360",
+   "pattern": "Report / analysis",
+   "phase": "P6",
+   "purpose": "Geographic and hierarchical heatmap of curriculum compliance: National → State → District → Institution, filterable by subject, level, institution type, public/private, region and academic year.",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "CURA",
+    "INSP"
+   ],
+   "route": "/curricula/heatmap",
+   "title": "Compliance heatmap"
+  },
+  {
+   "classification": "internal",
+   "id": "CUR-08",
+   "module": "Curriculum 360",
+   "pattern": "List / register",
+   "phase": "P2",
+   "purpose": "Conflicts between lower-level configuration and higher-level mandatory rules, and the exception requests that legitimately override them for a period.",
+   "roles": [
+    "CURA",
+    "FED",
+    "STA",
+    "HEAD",
+    "IADM"
+   ],
+   "route": "/policy/exceptions",
+   "title": "Policy conflicts & exceptions"
+  },
+  {
+   "classification": "internal",
+   "id": "CUR-09",
+   "module": "Curriculum 360",
+   "pattern": "Workspace",
+   "phase": "P2",
+   "purpose": "Teacher plans lessons against curriculum objectives and logs delivery; this is the primary evidence for curriculum compliance.",
+   "roles": [
+    "TCH",
+    "SLT"
+   ],
+   "route": "/teaching/plans",
+   "title": "Lesson plan & delivery log"
+  },
+  {
+   "classification": "internal",
+   "id": "CUR-101",
+   "module": "Curriculum 360",
+   "pattern": "Dashboard",
+   "phase": "P2",
+   "purpose": "Show, for any scope, whether every mandatory subject in every class has a qualified teacher of record, enough scheduled periods and evidence of delivery.",
+   "roles": [
+    "STA",
+    "LGA",
+    "HEAD",
+    "SLT",
+    "CURA"
+   ],
+   "route": "/coverage/{scope}",
+   "title": "Coverage assurance"
+  },
+  {
+   "classification": "internal",
+   "id": "CUR-102",
+   "module": "Curriculum 360",
+   "pattern": "Grid",
+   "phase": "P1",
+   "purpose": "Assign a teacher of record (and co-teachers) to every class-subject in one grid, with live authorisation and load checks.",
+   "roles": [
+    "HEAD",
+    "SLT",
+    "HOD",
+    "IADM"
+   ],
+   "route": "/institutions/{id}/assignments",
+   "title": "Teaching assignment matrix"
+  },
+  {
+   "classification": "internal",
+   "id": "CUR-103",
+   "module": "Curriculum 360",
+   "pattern": "List / register",
+   "phase": "P2",
+   "purpose": "List every open and closed coverage gap with severity, owner, due date, suggested fixes and history.",
+   "roles": [
+    "HEAD",
+    "SLT",
+    "HOD",
+    "LGA",
+    "STA"
+   ],
+   "route": "/gaps",
+   "title": "Gap register"
+  },
+  {
+   "classification": "internal",
+   "id": "DOC-101",
+   "module": "Records & archives",
+   "pattern": "Dashboard",
+   "phase": "P1",
+   "purpose": "Plan and monitor the state digitisation programme.",
+   "roles": [
+    "RECM",
+    "STA",
+    "PLAT"
+   ],
+   "route": "/digitisation",
+   "title": "Digitisation programme"
+  },
+  {
+   "classification": "internal",
+   "id": "DOC-102",
+   "module": "Records & archives",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Track boxes and volumes from collection to disposition.",
+   "roles": [
+    "RECM",
+    "DIGO"
+   ],
+   "route": "/digitisation/batches",
+   "title": "Batches and custody"
+  },
+  {
+   "classification": "internal",
+   "id": "DOC-103",
+   "module": "Records & archives",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Verify extracted fields against the page image and link records.",
+   "roles": [
+    "DIGO",
+    "RECM"
+   ],
+   "route": "/digitisation/qa/{batch}",
+   "title": "Indexing and QA workstation"
+  },
+  {
+   "classification": "internal",
+   "id": "DOC-104",
+   "module": "Records & archives",
+   "pattern": "Report / analysis",
+   "phase": "P1",
+   "purpose": "Find any record by name variant, date, school, number or full text.",
+   "roles": [
+    "REG",
+    "HR",
+    "RECM",
+    "STA",
+    "CERT"
+   ],
+   "route": "/records/search",
+   "title": "Records search"
+  },
+  {
+   "classification": "internal",
+   "id": "DOC-105",
+   "module": "Records & archives",
+   "pattern": "Record 360",
+   "phase": "P1",
+   "purpose": "View a document with metadata, links, history and permitted downloads.",
+   "roles": [
+    "All"
+   ],
+   "route": "/documents/{id}",
+   "title": "Document viewer"
+  },
+  {
+   "classification": "internal",
+   "id": "DOC-106",
+   "module": "Records & archives",
+   "pattern": "Settings",
+   "phase": "P1",
+   "purpose": "Maintain record series, retention, legal holds and disposal approvals.",
+   "roles": [
+    "RECM",
+    "DPO"
+   ],
+   "route": "/records/file-plan",
+   "title": "File plan and retention"
+  },
+  {
+   "classification": "internal",
+   "id": "EXM-01",
+   "module": "Examinations",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Internal and external examination series (e.g. BECE, WAEC/NECO SSCE, NABTEB, university semester exams) linked to approved curriculum, qualification and programme.",
+   "roles": [
+    "EXO",
+    "EXAM",
+    "SLT",
+    "REG"
+   ],
+   "route": "/exams/series",
+   "title": "Examination series"
+  },
+  {
+   "classification": "internal",
+   "id": "EXM-02",
+   "module": "Examinations",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Entering candidates: eligibility checks, subject combinations, access arrangements, fees, candidate numbers.",
+   "roles": [
+    "EXO",
+    "REG"
+   ],
+   "route": "/exams/series/{id}/entries",
+   "title": "Candidate entries"
+  },
+  {
+   "classification": "internal",
+   "id": "EXM-03",
+   "module": "Examinations",
+   "pattern": "Grid",
+   "phase": "P1",
+   "purpose": "Sittings, rooms, seating plans, invigilation rota, clashes and access-arrangement rooms.",
+   "roles": [
+    "EXO"
+   ],
+   "route": "/exams/series/{id}/sittings",
+   "title": "Exam timetable & seating"
+  },
+  {
+   "classification": "internal",
+   "id": "EXM-04",
+   "module": "Examinations",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Enters internal results or imports external board results (file/API), matching candidates to Learner 360.",
+   "roles": [
+    "EXO",
+    "EXAM"
+   ],
+   "route": "/exams/series/{id}/results",
+   "title": "Results entry & import"
+  },
+  {
+   "classification": "internal",
+   "id": "EXM-05",
+   "module": "Examinations",
+   "pattern": "Workflow / approval",
+   "phase": "P1",
+   "purpose": "Approval of results by exam board/academic board and scheduled release to learners and parents.",
+   "roles": [
+    "EXO",
+    "SLT",
+    "HEAD",
+    "EXAM",
+    "REG"
+   ],
+   "route": "/exams/series/{id}/release",
+   "title": "Results approval & release"
+  },
+  {
+   "classification": "confidential",
+   "id": "EXM-06",
+   "module": "Examinations",
+   "pattern": "Workspace",
+   "phase": "P5",
+   "purpose": "Official transcripts generated from approved results across the learner's programme, digitally signed and verifiable.",
+   "roles": [
+    "REG"
+   ],
+   "route": "/transcripts",
+   "title": "Transcripts"
+  },
+  {
+   "classification": "internal",
+   "id": "EXM-07",
+   "module": "Examinations",
+   "pattern": "Report / analysis",
+   "phase": "P5",
+   "purpose": "Computes GPA/CGPA, credits earned, progression status and degree classification per programme rules.",
+   "roles": [
+    "REG",
+    "SLT",
+    "EXO"
+   ],
+   "route": "/academic/classification",
+   "title": "GPA & classification"
+  },
+  {
+   "classification": "restricted",
+   "id": "EXM-08",
+   "module": "Examinations",
+   "pattern": "List / register",
+   "phase": "P6",
+   "purpose": "Statistical anomalies in results (unusual grade distributions, identical answer patterns, out-of-pattern improvements) for human review.",
+   "roles": [
+    "EXAM",
+    "INTEG",
+    "EXO"
+   ],
+   "route": "/exams/anomalies",
+   "title": "Exam anomaly review"
+  },
+  {
+   "classification": "internal",
+   "id": "EYR-01",
+   "module": "Early years",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Early-years learning observations (text, photo, video) against development milestones, shared with parents.",
+   "roles": [
+    "TCH",
+    "SLT",
+    "PAR"
+   ],
+   "route": "/early-years/observations",
+   "title": "Observations & milestones"
+  },
+  {
+   "classification": "internal",
+   "id": "EYR-02",
+   "module": "Early years",
+   "pattern": "Report / analysis",
+   "phase": "P1",
+   "purpose": "Cohort and individual development tracking, with nutrition, health information and daily care logs.",
+   "roles": [
+    "TCH",
+    "SLT"
+   ],
+   "route": "/early-years/tracker",
+   "title": "Development tracker"
+  },
+  {
+   "classification": "confidential",
+   "id": "FAM-01",
+   "module": "Families",
+   "pattern": "Record 360",
+   "phase": "P1",
+   "purpose": "Household view linking guardians and children across one or many institutions, with relationships, parental responsibility, contact priority, consolidated billing and communications.",
+   "roles": [
+    "REG",
+    "IADM",
+    "FINO",
+    "HEAD",
+    "PAST"
+   ],
+   "route": "/families/{id}",
+   "title": "Family 360"
+  },
+  {
+   "classification": "restricted",
+   "id": "FAM-02",
+   "module": "Families",
+   "pattern": "Form",
+   "phase": "P1",
+   "purpose": "Creates or links a guardian with duplicate checks on phone, e-mail and NIN.",
+   "roles": [
+    "REG",
+    "IADM"
+   ],
+   "route": "/guardians/new",
+   "title": "Link a guardian"
+  },
+  {
+   "classification": "internal",
+   "id": "FAM-03",
+   "module": "Families",
+   "pattern": "Portal (parents, learners, employers)",
+   "phase": "P1",
+   "purpose": "Parent/guardian portal home (web and mobile): each linked child's day, attendance, homework, results, fees, messages, consents and events.",
+   "roles": [
+    "PAR"
+   ],
+   "route": "/parent",
+   "title": "Parent home"
+  },
+  {
+   "classification": "internal",
+   "id": "FAM-04",
+   "module": "Families",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Consent and legal-basis records (photography, trips, data sharing, medical treatment, biometric use, digital services) by learner and guardian.",
+   "roles": [
+    "REG",
+    "IADM",
+    "DPO",
+    "PAR"
+   ],
+   "route": "/consents",
+   "title": "Consents"
+  },
+  {
+   "classification": "internal",
+   "id": "FIN-01",
+   "module": "Finance",
+   "pattern": "Workspace",
+   "phase": "P4",
+   "purpose": "Budget preparation by cost centre and account, linked to enrolment forecasts and staffing plans.",
+   "roles": [
+    "FINO",
+    "HEAD",
+    "NET"
+   ],
+   "route": "/budgets/{id}",
+   "title": "Budget planning"
+  },
+  {
+   "classification": "internal",
+   "id": "FIN-02",
+   "module": "Finance",
+   "pattern": "Report / analysis",
+   "phase": "P4",
+   "purpose": "Budget monitoring with variance analysis and forecast to year end.",
+   "roles": [
+    "FINO",
+    "HEAD",
+    "NET",
+    "STA"
+   ],
+   "route": "/finance/performance",
+   "title": "Budget vs actual"
+  },
+  {
+   "classification": "internal",
+   "id": "FIN-03",
+   "module": "Finance",
+   "pattern": "Workflow / approval",
+   "phase": "P4",
+   "purpose": "Request → Approval → Purchase order → Goods received → Invoice → Payment → Reconciliation, with delegated limits.",
+   "roles": [
+    "FINO",
+    "OPSM",
+    "HEAD",
+    "SLT"
+   ],
+   "route": "/procurement",
+   "title": "Procurement"
+  },
+  {
+   "classification": "restricted",
+   "id": "FIN-04",
+   "module": "Finance",
+   "pattern": "Record 360",
+   "phase": "P4",
+   "purpose": "Supplier master with bank details (restricted), contracts, POs, invoices, performance and duplicate detection.",
+   "roles": [
+    "FINO"
+   ],
+   "route": "/suppliers/{id}",
+   "title": "Supplier 360"
+  },
+  {
+   "classification": "internal",
+   "id": "FIN-05",
+   "module": "Finance",
+   "pattern": "List / register",
+   "phase": "P4",
+   "purpose": "Chart of accounts, journals and postings (or integration to an external accounting system via adapter).",
+   "roles": [
+    "FINO"
+   ],
+   "route": "/ledger",
+   "title": "General ledger"
+  },
+  {
+   "classification": "internal",
+   "id": "FIN-06",
+   "module": "Finance",
+   "pattern": "Settings / configuration",
+   "phase": "P1",
+   "purpose": "Local and reporting currencies, exchange-rate sources and history, tax rules and billing calendar.",
+   "roles": [
+    "FINO",
+    "IADM"
+   ],
+   "route": "/settings/currency",
+   "title": "Currencies & tax"
+  },
+  {
+   "classification": "internal",
+   "id": "FRM-101",
+   "module": "Forms",
+   "pattern": "Workspace",
+   "phase": "P2",
+   "purpose": "Build digital forms and workflows to replace paper forms.",
+   "roles": [
+    "IADM",
+    "SLT"
+   ],
+   "route": "/forms/builder",
+   "title": "Form builder"
+  },
+  {
+   "classification": "internal",
+   "id": "FRM-102",
+   "module": "Forms",
+   "pattern": "List / register",
+   "phase": "P2",
+   "purpose": "Raise, track and file forms and Daybook entries.",
+   "roles": [
+    "TCH",
+    "PAST",
+    "SLT",
+    "PAR",
+    "LRN"
+   ],
+   "route": "/daybook",
+   "title": "Forms and Daybook"
+  },
+  {
+   "classification": "internal",
+   "id": "HED-01",
+   "module": "Admissions",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Applicant management from application to enrolment for schools, colleges, polytechnics and universities.",
+   "roles": [
+    "REG",
+    "SLT"
+   ],
+   "route": "/admissions",
+   "title": "Admissions pipeline"
+  },
+  {
+   "classification": "confidential",
+   "id": "HED-02",
+   "module": "Admissions",
+   "pattern": "Record 360",
+   "phase": "P1",
+   "purpose": "Single application: applicant, documents (with extracted data), scores, identity match, decision and offer.",
+   "roles": [
+    "REG",
+    "SLT"
+   ],
+   "route": "/admissions/applications/{id}",
+   "title": "Application review"
+  },
+  {
+   "classification": "internal",
+   "id": "HED-03",
+   "module": "Higher education",
+   "pattern": "Workspace",
+   "phase": "P5",
+   "purpose": "Student course/module registration for a semester with credit limits, prerequisites, carry-overs and adviser approval.",
+   "roles": [
+    "LRN",
+    "REG",
+    "TCH"
+   ],
+   "route": "/registration/courses",
+   "title": "Course registration"
+  },
+  {
+   "classification": "internal",
+   "id": "HED-04",
+   "module": "Higher education",
+   "pattern": "Workspace",
+   "phase": "P5",
+   "purpose": "Halls, rooms and bed spaces; applications, allocation (with accessibility needs), check-in/out and charges.",
+   "roles": [
+    "OPSM",
+    "REG",
+    "LRN"
+   ],
+   "route": "/accommodation",
+   "title": "Accommodation"
+  },
+  {
+   "classification": "internal",
+   "id": "HED-05",
+   "module": "Higher education",
+   "pattern": "Workspace",
+   "phase": "P5",
+   "purpose": "Postgraduate research: supervision, milestones, progression reviews, ethics applications and thesis examination.",
+   "roles": [
+    "SLT",
+    "TCH",
+    "REG"
+   ],
+   "route": "/research",
+   "title": "Research students & ethics"
+  },
+  {
+   "classification": "internal",
+   "id": "HED-06",
+   "module": "Higher education",
+   "pattern": "Workspace",
+   "phase": "P5",
+   "purpose": "Graduation list from classification and certificate eligibility, ceremony management and alumni records.",
+   "roles": [
+    "REG",
+    "SLT"
+   ],
+   "route": "/graduation",
+   "title": "Graduation & alumni"
+  },
+  {
+   "classification": "internal",
+   "id": "HED-07",
+   "module": "Finance",
+   "pattern": "Workspace",
+   "phase": "P4",
+   "purpose": "Scholarship and bursary schemes, applications, awards and disbursement (linked to billing to prevent double funding).",
+   "roles": [
+    "FINO",
+    "REG",
+    "SLT"
+   ],
+   "route": "/scholarships",
+   "title": "Scholarships & bursaries"
+  },
+  {
+   "classification": "internal",
+   "id": "HOM-01",
+   "module": "Home",
+   "pattern": "Dashboard / command centre",
+   "phase": "P6",
+   "purpose": "Personalised executive briefing answering 'What needs my attention?' Generated every morning (06:00 local) and refreshed live. Groups items into Priority 1 (critical, act now), Priority 2 (intervention needed), Priority 3 (emerging risks) and Information (positive developments).",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "NET",
+    "HEAD",
+    "SLT",
+    "IADM",
+    "TCH",
+    "PAST",
+    "DSL",
+    "SENCO",
+    "EXO",
+    "REG",
+    "FINO",
+    "HR",
+    "OPSM",
+    "INSP",
+    "CURA",
+    "CERT",
+    "INTEG",
+    "DQ",
+    "DPO"
+   ],
+   "route": "/",
+   "title": "My briefing"
+  },
+  {
+   "classification": "internal",
+   "id": "HOM-02",
+   "module": "Home",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Unified inbox of system notifications, mentions, approvals and messages. Notifications are generated by the Notification Engine from domain events and the user's subscription rules.",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "NET",
+    "HEAD",
+    "SLT",
+    "IADM",
+    "TCH",
+    "PAST",
+    "DSL",
+    "SENCO",
+    "EXO",
+    "REG",
+    "FINO",
+    "HR",
+    "OPSM",
+    "INSP",
+    "CURA",
+    "CERT",
+    "INTEG",
+    "DQ",
+    "DPO",
+    "PAR",
+    "LRN"
+   ],
+   "route": "/notifications",
+   "title": "Notifications"
+  },
+  {
+   "classification": "internal",
+   "id": "HOM-03",
+   "module": "Home",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Work queue of workflow steps assigned to the user or their role (approvals, reviews, sign-offs). Every workflow in the platform uses the Universal Workflow Engine, so all pending work appears here.",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "NET",
+    "HEAD",
+    "SLT",
+    "IADM",
+    "TCH",
+    "PAST",
+    "DSL",
+    "SENCO",
+    "EXO",
+    "REG",
+    "FINO",
+    "HR",
+    "OPSM",
+    "INSP",
+    "CURA",
+    "CERT",
+    "INTEG",
+    "DQ",
+    "DPO"
+   ],
+   "route": "/tasks",
+   "title": "My tasks"
+  },
+  {
+   "classification": "internal",
+   "id": "HOM-04",
+   "module": "Home",
+   "pattern": "Settings / configuration",
+   "phase": "P1",
+   "purpose": "Personal details, language, accessibility preferences, notification preferences and security (MFA devices, sessions).",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "NET",
+    "HEAD",
+    "SLT",
+    "IADM",
+    "TCH",
+    "PAST",
+    "DSL",
+    "SENCO",
+    "EXO",
+    "REG",
+    "FINO",
+    "HR",
+    "OPSM",
+    "INSP",
+    "CURA",
+    "CERT",
+    "INTEG",
+    "DQ",
+    "DPO",
+    "PAR",
+    "LRN"
+   ],
+   "route": "/me",
+   "title": "My profile & preferences"
+  },
+  {
+   "classification": "internal",
+   "id": "HOM-05",
+   "module": "Home",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Global search across every record the user may see: learners, staff, institutions, curricula, certificates, invoices, cases (only for cleared users), reports and pages. Results are permission-trimmed at query time.",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "NET",
+    "HEAD",
+    "SLT",
+    "IADM",
+    "TCH",
+    "PAST",
+    "DSL",
+    "SENCO",
+    "EXO",
+    "REG",
+    "FINO",
+    "HR",
+    "OPSM",
+    "INSP",
+    "CURA",
+    "CERT",
+    "INTEG",
+    "DQ",
+    "DPO"
+   ],
+   "route": "/search?q=",
+   "title": "Search"
+  },
+  {
+   "classification": "internal",
+   "id": "HOM-06",
+   "module": "Intelligence",
+   "pattern": "Workspace",
+   "phase": "P7",
+   "purpose": "Natural-language education administrator. Authorised users ask questions in plain language; answers are computed from permission-trimmed data with every figure linked to its source records.",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "NET",
+    "HEAD",
+    "SLT",
+    "IADM",
+    "TCH",
+    "PAST",
+    "DSL",
+    "SENCO",
+    "EXO",
+    "REG",
+    "FINO",
+    "HR",
+    "OPSM",
+    "INSP",
+    "CURA",
+    "CERT",
+    "INTEG",
+    "DQ",
+    "DPO"
+   ],
+   "route": "/assistant",
+   "title": "Education assistant"
+  },
+  {
+   "classification": "internal",
+   "id": "ILP-101",
+   "module": "Interventions",
+   "pattern": "List / register",
+   "phase": "P3",
+   "purpose": "Create and track personal learning plans for any learner from templates, see progress at a glance and never miss a review.",
+   "roles": [
+    "TCH",
+    "PAST",
+    "SEND",
+    "SLT",
+    "HEAD"
+   ],
+   "route": "/learning-plans",
+   "title": "Learning plans"
+  },
+  {
+   "classification": "internal",
+   "id": "ILP-102",
+   "module": "Interventions",
+   "pattern": "Record 360",
+   "phase": "P3",
+   "purpose": "One learner's plan with goals linked to curriculum objectives and targets, agreed actions, the learner's own voice, parent comments, evidence and reviews.",
+   "roles": [
+    "TCH",
+    "PAST",
+    "SEND",
+    "LRN",
+    "PAR"
+   ],
+   "route": "/learning-plans/{id}",
+   "title": "Personal learning plan"
+  },
+  {
+   "classification": "internal",
+   "id": "INS-01",
+   "module": "Institutions",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Authoritative register of every institution in the user's scope (Institution 360 master). Public and private, all levels and types, with registration, licence and accreditation status.",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "NET",
+    "INSP",
+    "DQ",
+    "GLB"
+   ],
+   "route": "/institutions",
+   "title": "Institution register"
+  },
+  {
+   "classification": "internal",
+   "id": "INS-02",
+   "module": "Institutions",
+   "pattern": "Record 360",
+   "phase": "P1",
+   "purpose": "Single authoritative view of an institution. Every other module references this record; nothing about the institution is stored elsewhere.",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "NET",
+    "HEAD",
+    "SLT",
+    "IADM",
+    "INSP"
+   ],
+   "route": "/institutions/{id}",
+   "title": "Institution 360"
+  },
+  {
+   "classification": "internal",
+   "id": "INS-03",
+   "module": "Institutions",
+   "pattern": "Wizard",
+   "phase": "P1",
+   "purpose": "Controlled registration and licensing workflow for new institutions (public establishment or private application). Runs duplicate detection before a new Institution 360 is created.",
+   "roles": [
+    "STA",
+    "FED",
+    "LGA",
+    "APP"
+   ],
+   "route": "/institutions/new",
+   "title": "Register an institution"
+  },
+  {
+   "classification": "internal",
+   "id": "INS-04",
+   "module": "Institutions",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Licence and accreditation lifecycle across institutions: grants, renewals, conditions, suspensions and expiries, including examination-centre and certificate-issuing authorisations.",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "INSP",
+    "CERT"
+   ],
+   "route": "/institutions/licensing",
+   "title": "Licences & accreditation"
+  },
+  {
+   "classification": "internal",
+   "id": "INS-05",
+   "module": "Institutions",
+   "pattern": "Report / analysis",
+   "phase": "P6",
+   "purpose": "Decomposition of the Institution Performance & Health Index into its indicators, weights, sources and trends. The score is never shown as an unexplained single number.",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "NET",
+    "HEAD",
+    "SLT"
+   ],
+   "route": "/institutions/{id}/health",
+   "title": "Health index breakdown"
+  },
+  {
+   "classification": "internal",
+   "id": "INS-06",
+   "module": "Institutions",
+   "pattern": "Settings / configuration",
+   "phase": "P1",
+   "purpose": "Campuses, sites, faculties, schools, departments and units of an institution. Feeds every hierarchy-based permission and report.",
+   "roles": [
+    "IADM",
+    "HEAD",
+    "STA"
+   ],
+   "route": "/institutions/{id}/structure",
+   "title": "Organisation structure"
+  },
+  {
+   "classification": "internal",
+   "id": "INS-07",
+   "module": "Inspection & compliance",
+   "pattern": "List / register",
+   "phase": "P6",
+   "purpose": "Inspection programme: risk-based scheduling, visits, outcomes and follow-up across institutions.",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "INSP"
+   ],
+   "route": "/inspections",
+   "title": "Inspections"
+  },
+  {
+   "classification": "confidential",
+   "id": "INS-08",
+   "module": "Inspection & compliance",
+   "pattern": "Workspace",
+   "phase": "P6",
+   "purpose": "Inspector's working page during a visit (offline-capable on tablet). Pre-loads the applicable curriculum, required subjects, teaching hours, assessments, implementation evidence, historical compliance and outstanding deficiencies.",
+   "roles": [
+    "INSP"
+   ],
+   "route": "/inspections/{id}",
+   "title": "Inspection workspace"
+  },
+  {
+   "classification": "internal",
+   "id": "INS-09",
+   "module": "Inspection & compliance",
+   "pattern": "Dashboard / command centre",
+   "phase": "P4",
+   "purpose": "Institutional Compliance Centre: policy, safeguarding, staff training, certifications, health & safety, fire, data protection, financial reporting, examination compliance, accreditation.",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "HEAD",
+    "SLT",
+    "IADM",
+    "INSP"
+   ],
+   "route": "/institutions/{id}/compliance",
+   "title": "Compliance centre"
+  },
+  {
+   "classification": "internal",
+   "id": "INS-10",
+   "module": "Inspection & compliance",
+   "pattern": "Workspace",
+   "phase": "P6",
+   "purpose": "Performance Improvement Engine workspace created when an institution is identified as weak: problem, evidence, contributing indicators, actions, owner, review date and measured outcome (Detect → Understand → Act → Measure → Learn).",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "HEAD",
+    "SLT"
+   ],
+   "route": "/improvement/{id}",
+   "title": "Improvement workspace"
+  },
+  {
+   "classification": "internal",
+   "id": "INS-11",
+   "module": "Inspection & compliance",
+   "pattern": "Workflow / approval",
+   "phase": "P6",
+   "purpose": "Government Intervention Engine: when compliance falls below threshold, a corrective action plan with assigned officer, deadline, follow-up inspection and reassessment.",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "INSP",
+    "HEAD"
+   ],
+   "route": "/corrective-actions/{id}",
+   "title": "Corrective action plan"
+  },
+  {
+   "classification": "internal",
+   "id": "INT-01",
+   "module": "Interventions",
+   "pattern": "Workspace",
+   "phase": "P2",
+   "purpose": "Plans, tracks and evaluates interventions for learners and groups (academic, attendance, behaviour, wellbeing), closing the loop to measured outcomes.",
+   "roles": [
+    "PAST",
+    "SENCO",
+    "SLT",
+    "TCH"
+   ],
+   "route": "/interventions",
+   "title": "Interventions"
+  },
+  {
+   "classification": "confidential",
+   "id": "INT-02",
+   "module": "Interventions",
+   "pattern": "List / register",
+   "phase": "P7",
+   "purpose": "Learner-level early warning: dropout, attendance, behaviour, academic decline, wellbeing and SEND support gaps, with explanation for each flag.",
+   "roles": [
+    "PAST",
+    "SLT",
+    "HEAD",
+    "SENCO"
+   ],
+   "route": "/early-warning/learners",
+   "title": "Early warning — learners"
+  },
+  {
+   "classification": "internal",
+   "id": "LMS-101",
+   "module": "LMS",
+   "pattern": "Workspace",
+   "phase": "P2",
+   "purpose": "The online space for a class-subject or course section: units, content, assignments, live classes and discussion.",
+   "roles": [
+    "TCH",
+    "LRN",
+    "HOD"
+   ],
+   "route": "/courses/{id}",
+   "title": "Course space"
+  },
+  {
+   "classification": "internal",
+   "id": "LMS-102",
+   "module": "LMS",
+   "pattern": "Form",
+   "phase": "P2",
+   "purpose": "Set coursework linked to curriculum objectives with clear submission, marking and accessibility settings.",
+   "roles": [
+    "TCH"
+   ],
+   "route": "/courses/{id}/assignments/new",
+   "title": "Create or edit assignment"
+  },
+  {
+   "classification": "internal",
+   "id": "LMS-103",
+   "module": "LMS",
+   "pattern": "Portal",
+   "phase": "P2",
+   "purpose": "Let a learner submit work from a phone, online or offline, and get a receipt.",
+   "roles": [
+    "LRN"
+   ],
+   "route": "/work/{assignment}",
+   "title": "Submission (learner)"
+  },
+  {
+   "classification": "internal",
+   "id": "LMS-104",
+   "module": "LMS",
+   "pattern": "Grid",
+   "phase": "P2",
+   "purpose": "Mark submissions quickly with rubrics, annotations and feedback that flow to the markbook and curriculum evidence.",
+   "roles": [
+    "TCH"
+   ],
+   "route": "/courses/{id}/assignments/{a}/marking",
+   "title": "Marking workspace"
+  },
+  {
+   "classification": "internal",
+   "id": "LMS-105",
+   "module": "LMS",
+   "pattern": "List / register",
+   "phase": "P2",
+   "purpose": "Everything a teacher has to mark across classes, oldest first.",
+   "roles": [
+    "TCH"
+   ],
+   "route": "/marking",
+   "title": "My marking"
+  },
+  {
+   "classification": "internal",
+   "id": "LMS-106",
+   "module": "LMS",
+   "pattern": "Workspace",
+   "phase": "P2",
+   "purpose": "Author, review and reuse questions; build quizzes and secure CBT tests.",
+   "roles": [
+    "TCH",
+    "HOD",
+    "LMSA"
+   ],
+   "route": "/question-banks/{id}",
+   "title": "Quiz and question bank"
+  },
+  {
+   "classification": "internal",
+   "id": "LMS-107",
+   "module": "LMS",
+   "pattern": "Portal",
+   "phase": "P2",
+   "purpose": "Show a learner (and parent) all work due, submitted and marked.",
+   "roles": [
+    "LRN",
+    "PAR"
+   ],
+   "route": "/work",
+   "title": "Learner work (my assignments)"
+  },
+  {
+   "classification": "internal",
+   "id": "LMS-108",
+   "module": "LMS",
+   "pattern": "Dashboard",
+   "phase": "P2",
+   "purpose": "Show digital adoption and coursework indicators by scope.",
+   "roles": [
+    "HEAD",
+    "HOD",
+    "STA",
+    "LGA"
+   ],
+   "route": "/digital-learning/{scope}",
+   "title": "Digital learning dashboard"
+  },
+  {
+   "classification": "internal",
+   "id": "LMS-109",
+   "module": "Digital learning",
+   "pattern": "Workspace",
+   "phase": "P2",
+   "purpose": "Show learners and parents every homework with due dates and status, keep the homework load balanced across subjects, and give teachers submission insights.",
+   "roles": [
+    "TCH",
+    "LRN",
+    "PAR",
+    "HOD"
+   ],
+   "route": "/homework",
+   "title": "Homework calendar"
+  },
+  {
+   "classification": "confidential",
+   "id": "LRN-01",
+   "module": "Learners",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Search and list learners in scope. Teachers see their own classes; institution staff see their institution; government users see aggregated lists only where policy allows learner-level access.",
+   "roles": [
+    "HEAD",
+    "SLT",
+    "IADM",
+    "REG",
+    "TCH",
+    "PAST",
+    "DSL",
+    "SENCO",
+    "EXO",
+    "LGA",
+    "STA"
+   ],
+   "route": "/learners",
+   "title": "Learners"
+  },
+  {
+   "classification": "restricted",
+   "id": "LRN-02",
+   "module": "Learners",
+   "pattern": "Wizard",
+   "phase": "P1",
+   "purpose": "Single registration path for every learner (ages 0+). Captures identity, NIN where legally applicable, guardians for minors, and runs the Identity Matching Engine before a Learner 360 is created.",
+   "roles": [
+    "REG",
+    "IADM",
+    "HEAD"
+   ],
+   "route": "/learners/new",
+   "title": "Register a learner"
+  },
+  {
+   "classification": "restricted",
+   "id": "LRN-03",
+   "module": "Learners",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Side-by-side comparison of a new record against a probable existing match. Authorised users merge, reject the match or create a new record; every decision is retained in the duplicate history.",
+   "roles": [
+    "REG",
+    "DQ",
+    "IADM"
+   ],
+   "route": "/match-reviews/{id}",
+   "title": "Duplicate review"
+  },
+  {
+   "classification": "special",
+   "id": "LRN-04",
+   "module": "Learners",
+   "pattern": "Record 360",
+   "phase": "P2",
+   "purpose": "Complete, permission-trimmed view of one learner across their lifetime: identity, enrolments, attendance, behaviour, assessment, examinations, qualifications, certificates, finance, wellbeing, SEND and safeguarding (cleared users only).",
+   "roles": [
+    "HEAD",
+    "SLT",
+    "IADM",
+    "REG",
+    "TCH",
+    "PAST",
+    "DSL",
+    "SENCO",
+    "EXO",
+    "FINO"
+   ],
+   "route": "/learners/{id}",
+   "title": "Learner 360"
+  },
+  {
+   "classification": "confidential",
+   "id": "LRN-05",
+   "module": "Learners",
+   "pattern": "Wizard",
+   "phase": "P1",
+   "purpose": "Moves a learner between institutions without creating a new person: closes the old enrolment, transfers the authorised record set, opens the new enrolment.",
+   "roles": [
+    "REG",
+    "IADM",
+    "LGA",
+    "STA"
+   ],
+   "route": "/learners/{id}/transfer",
+   "title": "Transfer a learner"
+  },
+  {
+   "classification": "confidential",
+   "id": "LRN-06",
+   "module": "Learners",
+   "pattern": "Portal (parents, learners, employers)",
+   "phase": "P7",
+   "purpose": "Learner-facing Digital Education Passport: portable, authorised, longitudinal record of qualifications, certificates, skills, competencies, credits, transcripts, badges and achievements, with consented sharing.",
+   "roles": [
+    "LRN",
+    "PAR",
+    "REG"
+   ],
+   "route": "/passport",
+   "title": "Education passport"
+  },
+  {
+   "classification": "internal",
+   "id": "LRN-07",
+   "module": "Learners",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Places learners into year groups, classes, programmes, courses and cohorts for a session; handles promotion and progression in bulk.",
+   "roles": [
+    "REG",
+    "IADM",
+    "SLT"
+   ],
+   "route": "/enrolments",
+   "title": "Enrolment & placement"
+  },
+  {
+   "classification": "restricted",
+   "id": "LRN-08",
+   "module": "Learners",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Merges two existing master records confirmed to be the same person (learner, parent, staff). Chooses the surviving value per field and re-points all references.",
+   "roles": [
+    "DQ"
+   ],
+   "route": "/mdm/merge/{id}",
+   "title": "Merge records"
+  },
+  {
+   "classification": "internal",
+   "id": "LRN-09",
+   "module": "Learners",
+   "pattern": "Form",
+   "phase": "P1",
+   "purpose": "Records a learner leaving: destination, reason, date; closes enrolment and triggers outcome tracking.",
+   "roles": [
+    "REG",
+    "IADM"
+   ],
+   "route": "/learners/{id}/leave",
+   "title": "Withdraw / leaver"
+  },
+  {
+   "classification": "internal",
+   "id": "MED-01",
+   "module": "Medical education",
+   "pattern": "Grid",
+   "phase": "P5",
+   "purpose": "Rotation planner across hospitals and departments with capacity, supervisor allocation and prerequisites.",
+   "roles": [
+    "CLIN",
+    "SLT"
+   ],
+   "route": "/clinical/rotations",
+   "title": "Clinical placements & rotations"
+  },
+  {
+   "classification": "internal",
+   "id": "MED-02",
+   "module": "Medical education",
+   "pattern": "Workspace",
+   "phase": "P5",
+   "purpose": "Student logbook of procedures and cases (anonymised), supervisor verification and competency sign-off.",
+   "roles": [
+    "LRN",
+    "CLIN",
+    "EMP"
+   ],
+   "route": "/clinical/logbook",
+   "title": "Clinical logbook & sign-off"
+  },
+  {
+   "classification": "internal",
+   "id": "MED-03",
+   "module": "Medical education",
+   "pattern": "Report / analysis",
+   "phase": "P5",
+   "purpose": "Clinical hours, placement attendance and competency completion against professional-registration requirements (e.g. MDCN, NMCN).",
+   "roles": [
+    "CLIN",
+    "REG",
+    "SLT"
+   ],
+   "route": "/clinical/readiness",
+   "title": "Clinical hours & registration readiness"
+  },
+  {
+   "classification": "internal",
+   "id": "OPS-01",
+   "module": "Operations",
+   "pattern": "List / register",
+   "phase": "P3",
+   "purpose": "Buildings, rooms, capacity, type, accessibility features, ICT and condition; feeds infrastructure indicators.",
+   "roles": [
+    "OPSM",
+    "SLT",
+    "IADM",
+    "LGA",
+    "STA"
+   ],
+   "route": "/estate",
+   "title": "Estate & rooms"
+  },
+  {
+   "classification": "internal",
+   "id": "OPS-02",
+   "module": "Operations",
+   "pattern": "List / register",
+   "phase": "P3",
+   "purpose": "Fixed and portable assets (ICT, lab equipment, furniture, vehicles) with location, custodian, value and lifecycle.",
+   "roles": [
+    "OPSM",
+    "SLT",
+    "IADM",
+    "FINO"
+   ],
+   "route": "/assets",
+   "title": "Asset register"
+  },
+  {
+   "classification": "internal",
+   "id": "OPS-03",
+   "module": "Operations",
+   "pattern": "Workspace",
+   "phase": "P3",
+   "purpose": "Maintenance requests and planned maintenance with risk ratings; critical infrastructure failures raise alerts.",
+   "roles": [
+    "OPSM",
+    "SLT",
+    "IADM",
+    "TCH",
+    "LGA"
+   ],
+   "route": "/maintenance",
+   "title": "Maintenance"
+  },
+  {
+   "classification": "internal",
+   "id": "OPS-04",
+   "module": "Operations",
+   "pattern": "Workspace",
+   "phase": "P3",
+   "purpose": "Routes, stops, vehicles, drivers (with checks), learner allocations and boarding records.",
+   "roles": [
+    "OPSM",
+    "SLT",
+    "IADM"
+   ],
+   "route": "/transport",
+   "title": "Transport"
+  },
+  {
+   "classification": "internal",
+   "id": "OPS-05",
+   "module": "Operations",
+   "pattern": "List / register",
+   "phase": "P3",
+   "purpose": "Clubs, sports and extra-curricular activities with enrolment, attendance and achievements (feeds passport badges).",
+   "roles": [
+    "OPSM",
+    "SLT",
+    "IADM",
+    "TCH",
+    "LRN",
+    "PAR"
+   ],
+   "route": "/activities",
+   "title": "Clubs & activities"
+  },
+  {
+   "classification": "internal",
+   "id": "OPS-06",
+   "module": "Operations",
+   "pattern": "Workflow / approval",
+   "phase": "P3",
+   "purpose": "Trip planning, risk assessment, approval, consent collection, payments and on-the-day register.",
+   "roles": [
+    "OPSM",
+    "SLT",
+    "IADM",
+    "TCH",
+    "PAR"
+   ],
+   "route": "/trips",
+   "title": "Trips & visits"
+  },
+  {
+   "classification": "internal",
+   "id": "OPS-07",
+   "module": "Operations",
+   "pattern": "Workspace",
+   "phase": "P3",
+   "purpose": "School meals and feeding programmes (e.g. National Home-Grown School Feeding): menus, dietary requirements, numbers served and programme reporting.",
+   "roles": [
+    "OPSM",
+    "SLT",
+    "IADM",
+    "LGA",
+    "STA"
+   ],
+   "route": "/meals",
+   "title": "Meals & nutrition"
+  },
+  {
+   "classification": "internal",
+   "id": "OPS-08",
+   "module": "Operations",
+   "pattern": "List / register",
+   "phase": "P3",
+   "purpose": "Catalogue, loans, returns, digital resources and reading records (or integration with an external LMS/library system).",
+   "roles": [
+    "OPSM",
+    "SLT",
+    "IADM",
+    "TCH",
+    "LRN"
+   ],
+   "route": "/library",
+   "title": "Library"
+  },
+  {
+   "classification": "internal",
+   "id": "P16-01",
+   "module": "Post-16 & careers",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Subject/option selection for SS1 or sixth form with combination rules, capacity and guidance.",
+   "roles": [
+    "REG",
+    "SLT",
+    "LRN",
+    "PAR"
+   ],
+   "route": "/options",
+   "title": "Subject options"
+  },
+  {
+   "classification": "internal",
+   "id": "P16-02",
+   "module": "Post-16 & careers",
+   "pattern": "Workspace",
+   "phase": "P5",
+   "purpose": "University/college applications (JAMB/UTME-, UCAS-equivalent workflows), references, work experience and career planning.",
+   "roles": [
+    "REG",
+    "SLT",
+    "TCH",
+    "LRN"
+   ],
+   "route": "/careers",
+   "title": "Applications & careers"
+  },
+  {
+   "classification": "restricted",
+   "id": "PAY-01",
+   "module": "People",
+   "pattern": "List / register",
+   "phase": "P4",
+   "purpose": "Monthly payroll for institution- or network-employed staff (government payroll systems integrate via adapter).",
+   "roles": [
+    "PAYR",
+    "FINO"
+   ],
+   "route": "/payroll",
+   "title": "Payroll runs"
+  },
+  {
+   "classification": "restricted",
+   "id": "PAY-02",
+   "module": "People",
+   "pattern": "Record 360",
+   "phase": "P4",
+   "purpose": "Calculated pay lines with exceptions (new starters, leavers, large variances) requiring review before approval.",
+   "roles": [
+    "PAYR",
+    "FINO"
+   ],
+   "route": "/payroll/{id}",
+   "title": "Pay run detail"
+  },
+  {
+   "classification": "restricted",
+   "id": "PMT-01",
+   "module": "Payments",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "All incoming payments by channel (bank transfer/virtual account, card, direct debit, mobile money, USSD, gateway, cash, cheque, government, employer, scholarship) with automatic allocation to ledgers.",
+   "roles": [
+    "FINO"
+   ],
+   "route": "/payments",
+   "title": "Payments & receipts"
+  },
+  {
+   "classification": "internal",
+   "id": "PMT-02",
+   "module": "Payments",
+   "pattern": "Workspace",
+   "phase": "P4",
+   "purpose": "Imports bank statements (MT940/CSV/API) and reconciles to recorded payments and disbursements.",
+   "roles": [
+    "FINO"
+   ],
+   "route": "/reconciliation",
+   "title": "Bank reconciliation"
+  },
+  {
+   "classification": "internal",
+   "id": "PMT-03",
+   "module": "Payments",
+   "pattern": "Portal (parents, learners, employers)",
+   "phase": "P1",
+   "purpose": "Parent/learner checkout supporting card, bank transfer, USSD and mobile money via configured gateways (e.g. Paystack, Flutterwave, Remita for government revenue).",
+   "roles": [
+    "PAR",
+    "LRN"
+   ],
+   "route": "/pay/{invoice}",
+   "title": "Pay online"
+  },
+  {
+   "classification": "internal",
+   "id": "PTM-101",
+   "module": "Parents' meetings",
+   "pattern": "Workspace",
+   "phase": "P2",
+   "purpose": "Organise and run in-person, video and hybrid parents' meetings.",
+   "roles": [
+    "SLT",
+    "TCH",
+    "PAR"
+   ],
+   "route": "/parents-meetings",
+   "title": "Parents' meetings"
+  },
+  {
+   "classification": "public",
+   "id": "PUB-01",
+   "module": "Public verification",
+   "pattern": "Public service",
+   "phase": "P2",
+   "purpose": "Public, unauthenticated Certificate Verification Service. Employers, embassies, universities and the public verify a certificate by number + holder surname, by scanning the QR code, or by verification code.",
+   "roles": [
+    "PUB"
+   ],
+   "route": "/verify",
+   "title": "Verify a certificate"
+  },
+  {
+   "classification": "public",
+   "id": "PUB-02",
+   "module": "Public verification",
+   "pattern": "Public service",
+   "phase": "P2",
+   "purpose": "Shows the outcome of a public certificate check with the minimum necessary information.",
+   "roles": [
+    "PUB"
+   ],
+   "route": "/verify/result/{token}",
+   "title": "Verification result"
+  },
+  {
+   "classification": "confidential",
+   "id": "PUB-03",
+   "module": "Admissions",
+   "pattern": "Public service",
+   "phase": "P1",
+   "purpose": "Public admissions portal for applicants and guardians. Applications create an Applicant record and, on enrolment, reuse the matched Learner 360 rather than creating a new person.",
+   "roles": [
+    "APP",
+    "PAR"
+   ],
+   "route": "/apply/{institution}",
+   "title": "Online application"
+  },
+  {
+   "classification": "internal",
+   "id": "PUB-101",
+   "module": "Public verification",
+   "pattern": "Public service",
+   "phase": "P2",
+   "purpose": "Let a holder request a reissue online with identity verification and payment.",
+   "roles": [
+    "PUB"
+   ],
+   "route": "/certificates/reissue",
+   "title": "Request a certificate reissue"
+  },
+  {
+   "classification": "internal",
+   "id": "PVT-101",
+   "module": "Private providers",
+   "pattern": "Wizard",
+   "phase": "P1",
+   "purpose": "Apply online for approval of a private institution.",
+   "roles": [
+    "PROP",
+    "APP"
+   ],
+   "route": "/apply/provider",
+   "title": "Provider application"
+  },
+  {
+   "classification": "internal",
+   "id": "PVT-102",
+   "module": "Private providers",
+   "pattern": "Workflow / approval",
+   "phase": "P1",
+   "purpose": "Review, query, inspect and decide private-provider applications.",
+   "roles": [
+    "PRA",
+    "INSP"
+   ],
+   "route": "/provider-applications/{id}",
+   "title": "Application review"
+  },
+  {
+   "classification": "internal",
+   "id": "PVT-103",
+   "module": "Private providers",
+   "pattern": "Record 360",
+   "phase": "P1",
+   "purpose": "One record for a provider and its institutions, approvals, conditions, payments and compliance.",
+   "roles": [
+    "PROP",
+    "PRA",
+    "STA"
+   ],
+   "route": "/providers/{id}",
+   "title": "Provider 360"
+  },
+  {
+   "classification": "internal",
+   "id": "PVT-104",
+   "module": "Private providers",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "List every private institution with approval status, expiry and risk.",
+   "roles": [
+    "PRA",
+    "STA",
+    "LGA"
+   ],
+   "route": "/private-institutions",
+   "title": "Private institutions register"
+  },
+  {
+   "classification": "internal",
+   "id": "PVT-105",
+   "module": "Private providers",
+   "pattern": "List / register",
+   "phase": "P2",
+   "purpose": "Track approval conditions and renewals to completion.",
+   "roles": [
+    "PRA",
+    "PROP"
+   ],
+   "route": "/private-institutions/conditions",
+   "title": "Approval conditions and renewals"
+  },
+  {
+   "classification": "internal",
+   "id": "RPT-01",
+   "module": "Reporting",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Standard, statutory and saved custom reports available in the user's scope.",
+   "roles": [
+    "HEAD",
+    "SLT",
+    "IADM",
+    "FINO",
+    "LGA",
+    "STA",
+    "FED",
+    "NET"
+   ],
+   "route": "/reports",
+   "title": "Report library"
+  },
+  {
+   "classification": "internal",
+   "id": "RPT-02",
+   "module": "Reporting",
+   "pattern": "Workspace",
+   "phase": "P6",
+   "purpose": "Self-service report builder over the semantic layer (governed metrics and dimensions), permission-trimmed, with small-number suppression.",
+   "roles": [
+    "SLT",
+    "IADM",
+    "FINO",
+    "LGA",
+    "STA",
+    "FED"
+   ],
+   "route": "/reports/builder",
+   "title": "Report builder"
+  },
+  {
+   "classification": "internal",
+   "id": "RPT-03",
+   "module": "Reporting",
+   "pattern": "Workflow / approval",
+   "phase": "P6",
+   "purpose": "Automated statutory/government return (e.g. Annual School Census) generated from live master records; institution reviews, explains anomalies and certifies — no re-keying.",
+   "roles": [
+    "HEAD",
+    "IADM",
+    "LGA",
+    "STA",
+    "FED"
+   ],
+   "route": "/returns/{id}",
+   "title": "Government return"
+  },
+  {
+   "classification": "internal",
+   "id": "RPT-04",
+   "module": "Reporting",
+   "pattern": "Workspace",
+   "phase": "P6",
+   "purpose": "Explains any reported number: definition, formula, sources, filters, refresh time and drill-through to records (e.g. National Enrolment = 4,827,201 → State → Institution → Learner).",
+   "roles": [
+    "FED",
+    "STA",
+    "LGA",
+    "DQ",
+    "SLT"
+   ],
+   "route": "/lineage?metric=",
+   "title": "Data lineage"
+  },
+  {
+   "classification": "internal",
+   "id": "RPT-05",
+   "module": "Reporting",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Scheduled report deliveries with recipients, format and last status.",
+   "roles": [
+    "SLT",
+    "IADM",
+    "FINO",
+    "STA"
+   ],
+   "route": "/reports/schedules",
+   "title": "Scheduled reports"
+  },
+  {
+   "classification": "special",
+   "id": "SAF-01",
+   "module": "Safeguarding",
+   "pattern": "Form",
+   "phase": "P2",
+   "purpose": "Any member of staff can record a welfare or safeguarding concern. Once submitted the reporter can no longer see the case; it routes immediately to the DSL.",
+   "roles": [
+    "TCH",
+    "PAST",
+    "SLT",
+    "HEAD",
+    "IADM",
+    "REG",
+    "SENCO",
+    "OPSM",
+    "HR",
+    "FINO",
+    "EXO"
+   ],
+   "route": "/safeguarding/concerns/new",
+   "title": "Record a concern"
+  },
+  {
+   "classification": "special",
+   "id": "SAF-02",
+   "module": "Safeguarding",
+   "pattern": "Dashboard / command centre",
+   "phase": "P2",
+   "purpose": "DSL workspace: new concerns, open cases by risk, overdue actions, referrals and reviews.",
+   "roles": [
+    "DSL"
+   ],
+   "route": "/safeguarding",
+   "title": "Safeguarding caseload"
+  },
+  {
+   "classification": "special",
+   "id": "SAF-03",
+   "module": "Safeguarding",
+   "pattern": "Record 360",
+   "phase": "P2",
+   "purpose": "Case record with automatically assembled chronology from linked concerns, attendance, behaviour, health and agency contacts the DSL is authorised to see.",
+   "roles": [
+    "DSL"
+   ],
+   "route": "/safeguarding/cases/{id}",
+   "title": "Safeguarding case"
+  },
+  {
+   "classification": "special",
+   "id": "SAF-04",
+   "module": "Safeguarding",
+   "pattern": "Form",
+   "phase": "P2",
+   "purpose": "Referral to an external agency with the minimum necessary information and a secure transmission record.",
+   "roles": [
+    "DSL"
+   ],
+   "route": "/safeguarding/cases/{id}/referrals/new",
+   "title": "External referral"
+  },
+  {
+   "classification": "internal",
+   "id": "SAF-101",
+   "module": "Safeguarding",
+   "pattern": "Workspace",
+   "phase": "P2",
+   "purpose": "Record and manage allegations about adults, low-level concerns and self-referrals in a restricted area separate from learner safeguarding.",
+   "roles": [
+    "HEAD",
+    "LGA",
+    "HR"
+   ],
+   "route": "/safeguarding/staff",
+   "title": "Staff allegations and low-level concerns"
+  },
+  {
+   "classification": "internal",
+   "id": "SAF-102",
+   "module": "Safeguarding",
+   "pattern": "Settings / configuration",
+   "phase": "P2",
+   "purpose": "Build branded reporting forms for learners, parents and the community; publish them by link, QR code, poster, website embed and WhatsApp; receive reports anonymously into the DSL queue.",
+   "roles": [
+    "DSL",
+    "HEAD",
+    "LGA"
+   ],
+   "route": "/safeguarding/forms",
+   "title": "Community reporting forms"
+  },
+  {
+   "classification": "internal",
+   "id": "SAF-103",
+   "module": "Safeguarding",
+   "pattern": "Report / analysis",
+   "phase": "P2",
+   "purpose": "Show concern types, trends, response times and open actions for an institution or area, with saved reports and an inspection pack.",
+   "roles": [
+    "DSL",
+    "HEAD",
+    "LGA",
+    "STA"
+   ],
+   "route": "/safeguarding/insights",
+   "title": "Safeguarding insights"
+  },
+  {
+   "classification": "special",
+   "id": "SEN-01",
+   "module": "SEND & inclusion",
+   "pattern": "Dashboard / command centre",
+   "phase": "P2",
+   "purpose": "Learners with special educational needs, disabilities or additional support: need areas, support level, plan status, provision and reviews.",
+   "roles": [
+    "SENCO",
+    "SLT",
+    "HEAD",
+    "LGA",
+    "STA"
+   ],
+   "route": "/send",
+   "title": "SEND register"
+  },
+  {
+   "classification": "special",
+   "id": "SEN-02",
+   "module": "SEND & inclusion",
+   "pattern": "Record 360",
+   "phase": "P2",
+   "purpose": "Individual Learner Support Profile: strengths, needs, preferences, communication, adjustments, strategies, accessibility, assistive technology, interventions, progress, student voice and parent/carer input.",
+   "roles": [
+    "SENCO",
+    "SLT"
+   ],
+   "route": "/send/learners/{id}",
+   "title": "Learner support profile"
+  },
+  {
+   "classification": "special",
+   "id": "SEN-03",
+   "module": "SEND & inclusion",
+   "pattern": "Workflow / approval",
+   "phase": "P2",
+   "purpose": "Individual education/support plans and EHCP-equivalent statutory plans with outcomes, provision, review cycle and parent/learner participation.",
+   "roles": [
+    "SENCO"
+   ],
+   "route": "/send/plans/{id}",
+   "title": "Support plan & review"
+  },
+  {
+   "classification": "special",
+   "id": "SEN-04",
+   "module": "SEND & inclusion",
+   "pattern": "Report / analysis",
+   "phase": "P2",
+   "purpose": "What support is provided, to whom, by whom, at what cost, and with what impact; feeds 'high SEND demand but insufficient provision' intelligence.",
+   "roles": [
+    "SENCO",
+    "SLT",
+    "HEAD",
+    "STA"
+   ],
+   "route": "/send/provision",
+   "title": "Provision map"
+  },
+  {
+   "classification": "internal",
+   "id": "STF-01",
+   "module": "People",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "All staff in scope (teaching, lecturing, support, contractors, volunteers) from the Staff 360 master.",
+   "roles": [
+    "HEAD",
+    "SLT",
+    "HR",
+    "IADM",
+    "STA",
+    "LGA",
+    "NET"
+   ],
+   "route": "/staff",
+   "title": "Staff directory"
+  },
+  {
+   "classification": "restricted",
+   "id": "STF-02",
+   "module": "People",
+   "pattern": "Record 360",
+   "phase": "P1",
+   "purpose": "Single staff record: employment, posts across institutions, qualifications, teaching authorisations, timetable, absence, CPD, performance, safer-recruitment checks, payroll link (cleared users).",
+   "roles": [
+    "HEAD",
+    "SLT",
+    "HR",
+    "IADM",
+    "PAYR",
+    "STA"
+   ],
+   "route": "/staff/{id}",
+   "title": "Staff 360"
+  },
+  {
+   "classification": "restricted",
+   "id": "STF-03",
+   "module": "People",
+   "pattern": "Wizard",
+   "phase": "P4",
+   "purpose": "Creates a Staff 360 (with duplicate check) and a post; collects safer-recruitment evidence before the person can be given access to learners.",
+   "roles": [
+    "HR",
+    "IADM"
+   ],
+   "route": "/staff/new",
+   "title": "Onboard staff"
+  },
+  {
+   "classification": "internal",
+   "id": "STF-04",
+   "module": "People",
+   "pattern": "Workspace",
+   "phase": "P4",
+   "purpose": "Vacancy → Application → Shortlist → Interview → References → Safeguarding checks → Offer → Appointment.",
+   "roles": [
+    "HR",
+    "HEAD",
+    "SLT"
+   ],
+   "route": "/recruitment",
+   "title": "Recruitment"
+  },
+  {
+   "classification": "restricted",
+   "id": "STF-05",
+   "module": "People",
+   "pattern": "Record 360",
+   "phase": "P4",
+   "purpose": "Single candidate application with scoring rubric, panel notes and checks.",
+   "roles": [
+    "HR",
+    "HEAD",
+    "SLT"
+   ],
+   "route": "/recruitment/applications/{id}",
+   "title": "Applicant review"
+  },
+  {
+   "classification": "internal",
+   "id": "STF-06",
+   "module": "People",
+   "pattern": "Workspace",
+   "phase": "P3",
+   "purpose": "Records staff absence; the Timetable engine identifies affected lessons, the Cover engine proposes qualified available staff, the Workload engine checks fairness.",
+   "roles": [
+    "HR",
+    "SLT",
+    "IADM",
+    "HEAD"
+   ],
+   "route": "/absence",
+   "title": "Staff absence & cover"
+  },
+  {
+   "classification": "internal",
+   "id": "STF-07",
+   "module": "People",
+   "pattern": "List / register",
+   "phase": "P4",
+   "purpose": "Continuing professional development: required training (e.g. safeguarding, curriculum updates), records, hours and compliance by staff member.",
+   "roles": [
+    "HR",
+    "SLT",
+    "HEAD",
+    "STA"
+   ],
+   "route": "/cpd",
+   "title": "CPD & training"
+  },
+  {
+   "classification": "internal",
+   "id": "STF-08",
+   "module": "People",
+   "pattern": "List / register",
+   "phase": "P6",
+   "purpose": "Government/institution register of teacher qualifications and subject authorisations; detects qualification mismatches against timetabled curriculum.",
+   "roles": [
+    "STA",
+    "FED",
+    "LGA",
+    "HR",
+    "HEAD"
+   ],
+   "route": "/teacher-register",
+   "title": "Teacher qualifications register"
+  },
+  {
+   "classification": "restricted",
+   "id": "STF-09",
+   "module": "People",
+   "pattern": "Form",
+   "phase": "P4",
+   "purpose": "Annual appraisal with objectives, evidence, observations and development plan.",
+   "roles": [
+    "SLT",
+    "HEAD",
+    "HR",
+    "TCH"
+   ],
+   "route": "/appraisals/{id}",
+   "title": "Performance review"
+  },
+  {
+   "classification": "internal",
+   "id": "STF-10",
+   "module": "People",
+   "pattern": "Report / analysis",
+   "phase": "P6",
+   "purpose": "State/LGA view of teacher supply vs curriculum demand by subject and school; supports posting decisions.",
+   "roles": [
+    "STA",
+    "LGA",
+    "FED"
+   ],
+   "route": "/deployment",
+   "title": "Teacher deployment"
+  },
+  {
+   "classification": "internal",
+   "id": "STF-101",
+   "module": "Staff, HR and payroll",
+   "pattern": "Dashboard / command centre",
+   "phase": "P2",
+   "purpose": "Assign, deliver and evidence safeguarding and statutory training for every adult, with assessments, certificates, renewals and compliance by institution, LGA and state.",
+   "roles": [
+    "HR",
+    "HEAD",
+    "DSL",
+    "LGA",
+    "STA"
+   ],
+   "route": "/staff/training-compliance",
+   "title": "Safeguarding training and compliance"
+  },
+  {
+   "classification": "internal",
+   "id": "SUB-101",
+   "module": "Billing",
+   "pattern": "Settings / configuration",
+   "phase": "P1",
+   "purpose": "Propose, approve and publish the Student Digital Access Fee rates in naira by institution type and level, per term or per semester.",
+   "roles": [
+    "STA",
+    "REV",
+    "FIN"
+   ],
+   "route": "/financing/sdaf/rates",
+   "title": "SDAF rate card"
+  },
+  {
+   "classification": "internal",
+   "id": "SUB-102",
+   "module": "Billing",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Count, check and confirm the billable learners of a public institution on the census date of each term or semester.",
+   "roles": [
+    "HEAD",
+    "IADM",
+    "STA",
+    "REV"
+   ],
+   "route": "/financing/census/{period}",
+   "title": "Term census and billable learners"
+  },
+  {
+   "classification": "internal",
+   "id": "SUB-103",
+   "module": "Billing",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Issue demand notices and follow collections into the state's revenue account, with state e-receipts and daily reconciliation.",
+   "roles": [
+    "REV",
+    "STA",
+    "HEAD"
+   ],
+   "route": "/financing/sdaf/collections",
+   "title": "SDAF demand and collections"
+  },
+  {
+   "classification": "internal",
+   "id": "SUB-104",
+   "module": "Billing",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Record the full remittance of collected SDAF from the State Government to Syntegra Digital Infrastructure Nigeria Ltd, follow variances and sign off the period statement under dual control.",
+   "roles": [
+    "REV",
+    "ACG",
+    "OPF"
+   ],
+   "route": "/financing/sdaf/remittance",
+   "title": "Remittance and reconciliation"
+  },
+  {
+   "classification": "internal",
+   "id": "SUB-105",
+   "module": "Billing",
+   "pattern": "Dashboard / command centre",
+   "phase": "P1",
+   "purpose": "Show the state and the operator the full financing picture: billable learners, SDAF billed, collected, remitted and outstanding, exemptions, and private subscription revenue.",
+   "roles": [
+    "STA",
+    "REV",
+    "ACG",
+    "OPF"
+   ],
+   "route": "/financing/dashboard",
+   "title": "Programme financing dashboard"
+  },
+  {
+   "classification": "internal",
+   "id": "SUB-106",
+   "module": "Billing",
+   "pattern": "Settings / configuration",
+   "phase": "P1",
+   "purpose": "Set who pays the SDAF for each institution type and level, and manage exemption categories, evidence and approvals.",
+   "roles": [
+    "STA",
+    "REV",
+    "HEAD"
+   ],
+   "route": "/financing/sdaf/payers",
+   "title": "SDAF exemptions and payers"
+  },
+  {
+   "classification": "internal",
+   "id": "SUB-107",
+   "module": "Billing",
+   "pattern": "Workspace",
+   "phase": "P1",
+   "purpose": "Let a private provider see and manage its subscription with Syntegra Digital Infrastructure Nigeria Ltd: plan, usage, invoices, receipts, statement and payment methods.",
+   "roles": [
+    "PROP",
+    "PRA",
+    "FIN"
+   ],
+   "route": "/account/subscription",
+   "title": "Subscription and billing"
+  },
+  {
+   "classification": "internal",
+   "id": "SUB-108",
+   "module": "Billing",
+   "pattern": "List / register",
+   "phase": "P1",
+   "purpose": "Run private subscriptions for Syntegra Digital Infrastructure Nigeria Ltd: plan catalogue, quotes, contracts, invoicing, payments, reminders, credit notes and receivables.",
+   "roles": [
+    "OPF",
+    "PLAT"
+   ],
+   "route": "/operator/subscriptions",
+   "title": "Operator subscription management"
+  },
+  {
+   "classification": "internal",
+   "id": "SUB-109",
+   "module": "Billing",
+   "pattern": "Public service",
+   "phase": "Pages",
+   "purpose": "Let a parent or student who is the designated payer view the SDAF assessment and pay it into the State Government's revenue account.",
+   "roles": [
+    "PAR",
+    "LRN"
+   ],
+   "route": "/pay/sdaf",
+   "title": "Pay the Student Digital Access Fee"
+  },
+  {
+   "classification": "internal",
+   "id": "TIM-01",
+   "module": "Timetable",
+   "pattern": "Grid",
+   "phase": "P3",
+   "purpose": "Constraint-based timetable construction: curriculum hours, teacher qualification and availability, room type and accessibility, class clashes, workload limits.",
+   "roles": [
+    "SLT",
+    "IADM"
+   ],
+   "route": "/timetable/builder",
+   "title": "Timetable builder"
+  },
+  {
+   "classification": "internal",
+   "id": "TIM-02",
+   "module": "Timetable",
+   "pattern": "Grid",
+   "phase": "P3",
+   "purpose": "Personal and resource timetables (learner, teacher, class, room) with today's changes (cover, room swaps).",
+   "roles": [
+    "TCH",
+    "LRN",
+    "PAR",
+    "SLT",
+    "OPSM"
+   ],
+   "route": "/timetable",
+   "title": "Timetable"
+  },
+  {
+   "classification": "internal",
+   "id": "TIM-03",
+   "module": "Timetable",
+   "pattern": "Workspace",
+   "phase": "P3",
+   "purpose": "Today's absences, affected lessons, cover assignments and gaps with fairness metrics.",
+   "roles": [
+    "SLT",
+    "IADM"
+   ],
+   "route": "/cover",
+   "title": "Cover board"
+  },
+  {
+   "classification": "internal",
+   "id": "TIM-04",
+   "module": "Timetable",
+   "pattern": "Grid",
+   "phase": "P3",
+   "purpose": "Room and resource booking (labs, workshops, halls, ICT suites) with accessibility attributes.",
+   "roles": [
+    "TCH",
+    "SLT",
+    "OPSM"
+   ],
+   "route": "/rooms/bookings",
+   "title": "Rooms & bookings"
+  },
+  {
+   "classification": "internal",
+   "id": "TVT-01",
+   "module": "TVET",
+   "pattern": "Grid",
+   "phase": "P5",
+   "purpose": "Competency-based progress per trainee against a qualification framework (e.g. NSQ levels, NABTEB trade syllabus, industry certifications), with evidence and assessor sign-off.",
+   "roles": [
+    "TVC",
+    "TCH",
+    "SLT"
+   ],
+   "route": "/tvet/competencies",
+   "title": "Competency tracking"
+  },
+  {
+   "classification": "internal",
+   "id": "TVT-02",
+   "module": "TVET",
+   "pattern": "Grid",
+   "phase": "P5",
+   "purpose": "Workshop allocation, equipment allocation and safety, practical assessment scheduling and consumables.",
+   "roles": [
+    "TVC",
+    "OPSM"
+   ],
+   "route": "/tvet/workshops",
+   "title": "Workshops & practicals"
+  },
+  {
+   "classification": "internal",
+   "id": "TVT-03",
+   "module": "TVET",
+   "pattern": "Workspace",
+   "phase": "P5",
+   "purpose": "Industry placements and apprenticeships: matching, agreements, attendance, workplace assessment, employer funding.",
+   "roles": [
+    "TVC",
+    "EMP"
+   ],
+   "route": "/tvet/placements",
+   "title": "Apprenticeships & placements"
+  },
+  {
+   "classification": "internal",
+   "id": "TVT-04",
+   "module": "TVET",
+   "pattern": "Record 360",
+   "phase": "P5",
+   "purpose": "Employer/industry partner record: placements, sponsorships, apprenticeship funding, assessors, outcomes.",
+   "roles": [
+    "TVC",
+    "FINO",
+    "SLT"
+   ],
+   "route": "/employers/{id}",
+   "title": "Employer partner 360"
+  },
+  {
+   "classification": "internal",
+   "id": "TVT-05",
+   "module": "TVET",
+   "pattern": "Portal (parents, learners, employers)",
+   "phase": "P5",
+   "purpose": "Trainee-facing portable record of competencies, certifications and work experience (part of the Education Passport).",
+   "roles": [
+    "LRN",
+    "TVC",
+    "EMP"
+   ],
+   "route": "/tvet/passport/{learner}",
+   "title": "Skills passport"
+  },
+  {
+   "classification": "special",
+   "id": "WEL-01",
+   "module": "Wellbeing",
+   "pattern": "Dashboard / command centre",
+   "phase": "P2",
+   "purpose": "Learner (and optional staff) wellbeing check-ins, trends and follow-up, with opt-in and age-appropriate design.",
+   "roles": [
+    "PAST",
+    "SLT",
+    "DSL"
+   ],
+   "route": "/wellbeing",
+   "title": "Wellbeing"
+  },
+  {
+   "classification": "internal",
+   "id": "WEL-101",
+   "module": "Wellbeing",
+   "pattern": "Dashboard / command centre",
+   "phase": "P2",
+   "purpose": "Bring together wellbeing check-ins, staff observations and concerns reported by learners and parents, route them to pastoral staff and track the impact of support.",
+   "roles": [
+    "PAST",
+    "SEND",
+    "DSL",
+    "SLT"
+   ],
+   "route": "/wellbeing/insights",
+   "title": "Wellbeing concerns and insights"
+  }
+ ],
  "retention": {
   "RS-AI-LOG": {
    "action": "purge",

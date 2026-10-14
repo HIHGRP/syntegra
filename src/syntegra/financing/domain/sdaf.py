@@ -7,8 +7,19 @@ import uuid
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-BASIC_LEVELS = {"primary_1", "primary_2", "primary_3", "primary_4", "primary_5", "primary_6",
-                "jss_1", "jss_2", "jss_3", "primary", "jss"}
+BASIC_LEVELS = {
+    "primary_1",
+    "primary_2",
+    "primary_3",
+    "primary_4",
+    "primary_5",
+    "primary_6",
+    "jss_1",
+    "jss_2",
+    "jss_3",
+    "primary",
+    "jss",
+}
 
 
 def is_basic_education(level: str, public: bool) -> bool:
@@ -32,7 +43,9 @@ class CensusLine:
     verified: bool
 
 
-def classify(rows: Iterable[CensusInput], *, billed_elsewhere: set[uuid.UUID], exempt: set[uuid.UUID]) -> list[CensusLine]:
+def classify(
+    rows: Iterable[CensusInput], *, billed_elsewhere: set[uuid.UUID], exempt: set[uuid.UUID]
+) -> list[CensusLine]:
     seen: set[uuid.UUID] = set()
     out = []
     for r in rows:

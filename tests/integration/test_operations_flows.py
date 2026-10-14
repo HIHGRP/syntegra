@@ -16,14 +16,20 @@ def enrol_class(world, as_user, n=6):  # type: ignore[no-untyped-def]
     from syntegra.learners import services as learners
 
     node = world.institution.scope_node_id
-    with as_user("HT", node):
+    with as_user("HEAD", node):
         cls = academic.create_class(world.institution.id, world.period.id, "JSS 2 Gold", "jss_2")
         ids = []
         for i in range(n):
-            r = learners.register(learners.RegisterLearner(
-                given=["Ada", "Bayo", "Chidi", "Dami", "Efe", "Funke", "Gbenga", "Hauwa"][i], family=f"Pupil{i}x",
-                date_of_birth=dt.date(2013, 1 + i, 10 + i), sex="female" if i % 2 else "male",
-                institution_id=world.institution.id, education_level="jss_2"))
+            r = learners.register(
+                learners.RegisterLearner(
+                    given=["Ada", "Bayo", "Chidi", "Dami", "Efe", "Funke", "Gbenga", "Hauwa"][i],
+                    family=f"Pupil{i}x",
+                    date_of_birth=dt.date(2013, 1 + i, 10 + i),
+                    sex="female" if i % 2 else "male",
+                    institution_id=world.institution.id,
+                    education_level="jss_2",
+                )
+            )
             academic.add_member(cls.id, r.learner.id)
             ids.append(r.learner.id)
     return cls, ids
@@ -37,8 +43,10 @@ def test_register_submission_with_offline_replay_and_rates(world, as_user, api) 
     assert r.status_code == 201, r.content
     reg_id, etag = r.json()["id"], r["ETag"]
     ops = [str(uuid.uuid4()) for _ in ids]
-    marks = [{"learner_id": str(lid), "code": c, "client_op_id": op, **({"minutes_late": 7} if c == "L" else {})}
-             for lid, c, op in zip(ids, ["P", "P", "L", "A", "M", "P"], ops, strict=True)]
+    marks = [
+        {"learner_id": str(lid), "code": c, "client_op_id": op, **({"minutes_late": 7} if c == "L" else {})}
+        for lid, c, op in zip(ids, ["P", "P", "L", "A", "M", "P"], ops, strict=True)
+    ]
     # partial submission first (device synced half the class)
     r = tch("put", f"/api/v1/registers/{reg_id}", {"marks": marks[:3]}, **{"If-Match": etag})
     assert r.status_code == 200, r.content
@@ -54,7 +62,7 @@ def test_register_submission_with_offline_replay_and_rates(world, as_user, api) 
     # a teacher cannot change a submitted mark; the head can (audited correction)
     marks[3]["code"], marks[3]["client_op_id"] = "E", str(uuid.uuid4())
     assert tch("put", f"/api/v1/registers/{reg_id}", {"marks": [marks[3]]}).status_code == 403
-    ht = api("HT", world.institution.scope_node_id)
+    ht = api("HEAD", world.institution.scope_node_id)
     r = ht("put", f"/api/v1/registers/{reg_id}", {"marks": [marks[3]]})
     assert r.json()["status"] == "corrected" and r.json()["corrected"] == 1
     # learner not in the class
@@ -74,7 +82,7 @@ def test_coverage_g2_g3_open_and_close(world, as_user) -> None:  # type: ignore[
     node = world.institution.scope_node_id
     with as_user("STA", world.state_scope):  # subjects belong to the state library
         subj = academic.create_subject(world.state_scope, f"BSC{uuid.uuid4().hex[:4]}", "Basic Science", ["jss_2"])
-    with as_user("HT", node):
+    with as_user("HEAD", node):
         with pytest.raises(Forbidden):
             academic.create_subject(world.state_scope, "XX1", "Not mine", ["jss_2"])
         plan = academic.add_subject_plan(cls.id, subj.id, 4)
@@ -102,19 +110,33 @@ def test_certificate_issue_verify_and_four_eyes_reissue(world, as_user, client) 
     from syntegra.learners import services as learners
 
     node = world.institution.scope_node_id
-    with as_user("HT", node):
-        lrn = learners.register(learners.RegisterLearner(
-            given="Amarachi", family="Udeh", date_of_birth=dt.date(2010, 4, 4), sex="female",
-            institution_id=world.institution.id, education_level="jss_3")).learner
+    with as_user("HEAD", node):
+        lrn = learners.register(
+            learners.RegisterLearner(
+                given="Amarachi",
+                family="Udeh",
+                date_of_birth=dt.date(2010, 4, 4),
+                sex="female",
+                institution_id=world.institution.id,
+                education_level="jss_3",
+            )
+        ).learner
     with as_user("STA", world.state_scope) as sta:
         certs.ensure_signing_key(world.state_scope, "abia-moe-test-01")
         tpl = certs.create_template(world.state_scope, f"BECE-{uuid.uuid4().hex[:4]}")
-        sig = certs.add_signatory(world.state_scope, sta.actor_id, "Honourable Commissioner for Education",
-                                 valid_from=dt.date(2026, 1, 1))
-    req = certs.IssueRequest(learner_id=lrn.id, institution_id=world.institution.id, template_id=tpl.id,
-                             signatory_id=sig.id, award_date=dt.date(2026, 7, 20), award_title="Basic Education Certificate",
-                             award_class="Distinction")
-    with as_user("CRO", world.state_scope):
+        sig = certs.add_signatory(
+            world.state_scope, sta.actor_id, "Honourable Commissioner for Education", valid_from=dt.date(2026, 1, 1)
+        )
+    req = certs.IssueRequest(
+        learner_id=lrn.id,
+        institution_id=world.institution.id,
+        template_id=tpl.id,
+        signatory_id=sig.id,
+        award_date=dt.date(2026, 7, 20),
+        award_title="Basic Education Certificate",
+        award_class="Distinction",
+    )
+    with as_user("CERT", world.state_scope):
         cert = certs.issue(req)
         with pytest.raises(ConflictError, match="already"):
             certs.issue(req)
@@ -125,13 +147,15 @@ def test_certificate_issue_verify_and_four_eyes_reissue(world, as_user, client) 
     assert client.get("/api/v1/public/verify?number=NG-ABMOE-2026-00000199").json()["result"] == "not_found"
     jwks = client.get("/api/v1/public/jwks.json").json()
     assert any(k["kid"] == "abia-moe-test-01" and k["crv"] == "P-256" for k in jwks["keys"])
-    with as_user("CRO", world.state_scope) as cro:
-        case = certs.request_reissue(cert.id, "lost_or_stolen", applicant_name="Amarachi Udeh",
-                                     applicant_phone="+2348030000000")
-        with pytest.raises(Forbidden):
-            certs.decide_reissue(case.id, True)  # CRO lacks certificate:approve
-        del cro
-    with as_user("CRA", world.state_scope):
+    with as_user("CERT", world.state_scope):
+        case = certs.request_reissue(
+            cert.id, "lost_or_stolen", applicant_name="Amarachi Udeh", applicant_phone="+2348030000000"
+        )
+        with pytest.raises(Forbidden, match="four eyes"):
+            certs.decide_reissue(case.id, True)  # the reviewer cannot approve their own case
+    with as_user("TCH", world.state_scope), pytest.raises(Forbidden):
+        certs.decide_reissue(case.id, True)
+    with as_user("CERT", world.state_scope):  # a second registrar
         done = certs.decide_reissue(case.id, True, note="Police report and affidavit verified")
     assert done.status == "issued"
     old = client.get(f"/api/v1/public/verify?number={cert.certificate_number}").json()
@@ -145,32 +169,47 @@ def test_sdaf_census_freeze_once_per_period_and_ube_demand(world, as_user) -> No
     from syntegra.learners import services as learners
 
     node = world.institution.scope_node_id
-    with as_user("HT", node):
-        lids = [learners.register(learners.RegisterLearner(
-            given=g, family="Census", date_of_birth=dt.date(2012, 1, i + 1), sex="male",
-            institution_id=world.institution.id, education_level=lvl, start_on=dt.date(2026, 9, 8))).learner.id
-            for i, (g, lvl) in enumerate([("Uche", "jss_1"), ("Obinna", "jss_1"), ("Tunde", "sss_1")])]
+    with as_user("HEAD", node):
+        lids = [
+            learners.register(
+                learners.RegisterLearner(
+                    given=g,
+                    family="Census",
+                    date_of_birth=dt.date(2012, 1, i + 1),
+                    sex="male",
+                    institution_id=world.institution.id,
+                    education_level=lvl,
+                    start_on=dt.date(2026, 9, 8),
+                )
+            ).learner.id
+            for i, (g, lvl) in enumerate([("Uche", "jss_1"), ("Obinna", "jss_1"), ("Tunde", "sss_1")])
+        ]
     with as_user("STA", world.state_scope) as sta:
-        maker, _ = __import__("tests.conftest", fromlist=["make_user"]).make_user(world, "FIN", world.state_scope)
-        fin.publish_rate_card(world.state_scope, [("secondary", "jss_1", 150_000), ("secondary", "sss_1", 250_000)],
-                              effective_from=dt.date(2026, 9, 1), proposed_by=maker.id,
-                              approval_instrument="Abia State Executive Council resolution 2026/14")
+        maker, _ = __import__("tests.conftest", fromlist=["make_user"]).make_user(world, "FINO", world.state_scope)
+        fin.publish_rate_card(
+            world.state_scope,
+            [("secondary", "jss_1", 150_000), ("secondary", "sss_1", 250_000)],
+            effective_from=dt.date(2026, 9, 1),
+            proposed_by=maker.id,
+            approval_instrument="Abia State Executive Council resolution 2026/14",
+        )
         with pytest.raises(HardValidation, match="UBE"):
             fin.set_payer_rule(world.state_scope, "secondary", "jss_1", "parent_or_student", public=True)
         fin.set_payer_rule(world.state_scope, "secondary", "sss_1", "parent_or_student", public=True)
-        period = fin.open_period(world.state_scope, world.period.id, f"T1-{uuid.uuid4().hex[:4]}",
-                                 dt.date(2026, 9, 25), ["secondary"])
+        period = fin.open_period(
+            world.state_scope, world.period.id, f"T1-{uuid.uuid4().hex[:4]}", dt.date(2026, 9, 25), ["secondary"]
+        )
         del sta
-    with as_user("HT", node):
+    with as_user("HEAD", node):
         snap = fin.take_census(world.institution.id, period.id)
         assert (snap.enrolled, snap.billable) == (3, 3)
         frozen = fin.confirm_and_freeze(snap.id)
         assert frozen.status == "frozen" and len(bytes(frozen.content_hash)) == 32
-    with as_user("HT", world.institution2.scope_node_id):
+    with as_user("HEAD", world.institution2.scope_node_id):
         learners.transfer(lids[0], world.institution2.id, effective_on=dt.date(2026, 9, 20))
         snap2 = fin.take_census(world.institution2.id, period.id)
         assert snap2.billable == 0 and snap2.excluded == 1  # already billed at the first school this period
-    with as_user("FIN", world.state_scope):
+    with as_user("FINO", world.state_scope):
         demands = fin.issue_demand(frozen.id)
     gov = [d for d in demands if d.payer_kind == "government"]
     parents = [d for d in demands if d.payer_kind == "parent_or_student"]
@@ -186,12 +225,19 @@ def test_metrics_scope_and_small_number_suppression(world, as_user, api) -> None
     cells = {c["scope_node_id"]: c for c in r.json()["cells"]}
     mine = cells[str(world.institution.scope_node_id)]
     assert mine["n"] == 6 and not mine["suppressed"]
-    with as_user("HT", world.institution2.scope_node_id):
+    with as_user("HEAD", world.institution2.scope_node_id):
         from syntegra.learners import services as learners
 
-        learners.register(learners.RegisterLearner(given="Solo", family="Learner", date_of_birth=dt.date(2016, 1, 1),
-                                                   sex="male", institution_id=world.institution2.id,
-                                                   education_level="primary_4"))
+        learners.register(
+            learners.RegisterLearner(
+                given="Solo",
+                family="Learner",
+                date_of_birth=dt.date(2016, 1, 1),
+                sex="male",
+                institution_id=world.institution2.id,
+                education_level="primary_4",
+            )
+        )
     cells = {c["scope_node_id"]: c for c in sta("get", "/api/v1/metrics/ENR-COUNT").json()["cells"]}
     small = cells[str(world.institution2.scope_node_id)]
     assert small["suppressed"] and small["value"] is None and small["n"] is None

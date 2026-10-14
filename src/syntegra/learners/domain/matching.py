@@ -44,7 +44,9 @@ class MatchResult:
 
 def _name_weight(a: str, b: str, *, given: bool) -> tuple[float, float]:
     if given:
-        sim = max(jaro_winkler(canonical_given(a), canonical_given(b)), jaro_winkler(normalise_name(a), normalise_name(b)))
+        sim = max(
+            jaro_winkler(canonical_given(a), canonical_given(b)), jaro_winkler(normalise_name(a), normalise_name(b))
+        )
     else:
         sim = jaro_winkler(normalise_name(a), normalise_name(b))
     hi, mid = (4.0, 1.5) if given else (4.5, 2.0)

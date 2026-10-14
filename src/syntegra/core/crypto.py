@@ -43,7 +43,9 @@ class LocalKeyProvider:
         self._master = master.encode()
 
     def _derive(self, info: str, length: int = 32) -> bytes:
-        return HKDF(algorithm=hashes.SHA256(), length=length, salt=b"syntegra-ceda", info=info.encode()).derive(self._master)
+        return HKDF(algorithm=hashes.SHA256(), length=length, salt=b"syntegra-ceda", info=info.encode()).derive(
+            self._master
+        )
 
     def data_key(self, purpose: str, tenant_id: uuid.UUID | None, version: int = 1) -> bytes:
         return self._derive(f"dek:{purpose}:{tenant_id}:{version}")
@@ -63,7 +65,15 @@ class LocalKeyProvider:
     def public_jwk(self, kid: str) -> dict[str, str]:
         nums = self._signing_key(kid).public_key().public_numbers()
         b64 = lambda i: base64.urlsafe_b64encode(i.to_bytes(32, "big")).rstrip(b"=").decode()  # noqa: E731
-        return {"kty": "EC", "crv": "P-256", "x": b64(nums.x), "y": b64(nums.y), "kid": kid, "alg": "ES256", "use": "sig"}
+        return {
+            "kty": "EC",
+            "crv": "P-256",
+            "x": b64(nums.x),
+            "y": b64(nums.y),
+            "kid": kid,
+            "alg": "ES256",
+            "use": "sig",
+        }
 
 
 @lru_cache(maxsize=1)
@@ -73,6 +83,7 @@ def provider() -> KeyProvider:
 
 
 # --------------------------------------------------------------------------- field encryption (type secret)
+
 
 def encrypt(plaintext: str, *, purpose: str, tenant_id: uuid.UUID | None, aad: bytes = b"") -> bytes:
     """AES-256-GCM envelope: version(1) | key version(2) | nonce(12) | ciphertext+tag."""
@@ -103,6 +114,7 @@ def last4(value: str) -> str:
 
 # --------------------------------------------------------------------------- sealed special-category text
 
+
 def seal(text: str, *, tenant_id: uuid.UUID | None, record_kind: str) -> bytes:
     """Encrypt with a fresh per-record key wrapped by the tenant's vault key.
 
@@ -126,6 +138,7 @@ def unseal(blob: bytes, *, tenant_id: uuid.UUID | None, record_kind: str) -> str
 
 
 # --------------------------------------------------------------------------- signatures
+
 
 def sign_es256(kid: str, message: bytes) -> bytes:
     return provider().sign_es256(kid, message)

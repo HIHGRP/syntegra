@@ -48,15 +48,30 @@ def _open_task(cmd: uow.Command, inst: Any, spec: dict[str, Any], state: str) ->
         return
     due = utcnow() + dt.timedelta(hours=int(task["sla_hours"])) if task.get("sla_hours") else None
     t = WorkflowTask(
-        tenant_id=inst.tenant_id, scope_node_id=inst.scope_node_id, instance_id=inst.id, step_key=state,
-        title=task["title"], assignee_role=task.get("role"), assignee_scope_id=inst.scope_node_id,
-        approval_type=task.get("approval_type", "single"), due_at=due, status="open",
+        tenant_id=inst.tenant_id,
+        scope_node_id=inst.scope_node_id,
+        instance_id=inst.id,
+        step_key=state,
+        title=task["title"],
+        assignee_role=task.get("role"),
+        assignee_scope_id=inst.scope_node_id,
+        approval_type=task.get("approval_type", "single"),
+        due_at=due,
+        status="open",
     )
     cmd.add(t)
 
 
-def start(zone: str, key: str, *, subject_kind: str, subject_id: uuid.UUID, scope_node_id: uuid.UUID,
-          variables: dict[str, Any] | None = None, cmd: uow.Command | None = None) -> Any:
+def start(
+    zone: str,
+    key: str,
+    *,
+    subject_kind: str,
+    subject_id: uuid.UUID,
+    scope_node_id: uuid.UUID,
+    variables: dict[str, Any] | None = None,
+    cmd: uow.Command | None = None,
+) -> Any:
     from syntegra.governance.models import WorkflowInstance, WorkflowTransition
 
     d = _definition(key)
@@ -64,12 +79,25 @@ def start(zone: str, key: str, *, subject_kind: str, subject_id: uuid.UUID, scop
 
     def run(c: uow.Command) -> Any:
         inst = WorkflowInstance(
-            scope_node_id=scope_node_id, definition_id=d.id, subject_kind=subject_kind, subject_id=subject_id,
-            state=spec["initial"], status="running", started_by=c.ctx.actor_id, context=variables or {},
+            scope_node_id=scope_node_id,
+            definition_id=d.id,
+            subject_kind=subject_kind,
+            subject_id=subject_id,
+            state=spec["initial"],
+            status="running",
+            started_by=c.ctx.actor_id,
+            context=variables or {},
         )
         c.add(inst)
-        c.add(WorkflowTransition(instance_id=inst.id, from_state=None, to_state=spec["initial"],
-                                 actor=c.ctx.actor_id, occurred_at=utcnow()))
+        c.add(
+            WorkflowTransition(
+                instance_id=inst.id,
+                from_state=None,
+                to_state=spec["initial"],
+                actor=c.ctx.actor_id,
+                occurred_at=utcnow(),
+            )
+        )
         _open_task(c, inst, spec, spec["initial"])
         return inst
 
@@ -83,8 +111,9 @@ def available(spec: dict[str, Any], state: str) -> list[str]:
     return [t["on"] for t in spec.get("transitions", []) if t["from"] == state]
 
 
-def fire(zone: str, instance_id: uuid.UUID, event: str, *, reason: str | None = None,
-         variables: dict[str, Any] | None = None) -> Any:
+def fire(
+    zone: str, instance_id: uuid.UUID, event: str, *, reason: str | None = None, variables: dict[str, Any] | None = None
+) -> Any:
     from syntegra.governance.models import WorkflowDefinition, WorkflowInstance, WorkflowTask, WorkflowTransition
 
     ctx = context.require()
@@ -96,8 +125,11 @@ def fire(zone: str, instance_id: uuid.UUID, event: str, *, reason: str | None = 
         spec = d.definition
         match = [t for t in spec.get("transitions", []) if t["from"] == inst.state and t["on"] == event]
         if not match:
-            raise ConflictError("WF-TRANSITION", "Action not available",
-                                f"'{event}' is not possible from '{inst.state}'. Available: {available(spec, inst.state)}")
+            raise ConflictError(
+                "WF-TRANSITION",
+                "Action not available",
+                f"'{event}' is not possible from '{inst.state}'. Available: {available(spec, inst.state)}",
+            )
         t = match[0]
         if t.get("permission") and not ctx.has(t["permission"]):
             raise Forbidden(f"Missing permission {t['permission']}.", code="AUTH-PERMISSION")
@@ -108,10 +140,23 @@ def fire(zone: str, instance_id: uuid.UUID, event: str, *, reason: str | None = 
         for task in WorkflowTask.unscoped.using(c.alias).filter(instance_id=inst.id, status__in=("open", "claimed")):
             c.update(task, status="completed", decision=event, decided_by=ctx.actor_id, decided_at=utcnow())
         final = t["to"] in spec.get("final", [])
-        c.update(inst, state=t["to"], context=vars_, status="completed" if final else "running",
-                 completed_at=utcnow() if final else None)
-        c.add(WorkflowTransition(instance_id=inst.id, from_state=from_state, to_state=t["to"], actor=ctx.actor_id,
-                                 reason=reason, occurred_at=utcnow()))
+        c.update(
+            inst,
+            state=t["to"],
+            context=vars_,
+            status="completed" if final else "running",
+            completed_at=utcnow() if final else None,
+        )
+        c.add(
+            WorkflowTransition(
+                instance_id=inst.id,
+                from_state=from_state,
+                to_state=t["to"],
+                actor=ctx.actor_id,
+                reason=reason,
+                occurred_at=utcnow(),
+            )
+        )
         c.record_id = inst.id
         if not final:
             _open_task(c, inst, spec, t["to"])

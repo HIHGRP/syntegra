@@ -42,8 +42,10 @@ class RegisterDetail(APIView):
         reg = view["register"]
         marks = view["marks"]
         body = v.row(reg)
-        body["roster"] = [{"learner_id": str(m.learner_id),
-                           "mark": v.row(marks[m.learner_id]) if m.learner_id in marks else None} for m in view["roster"]]
+        body["roster"] = [
+            {"learner_id": str(m.learner_id), "mark": v.row(marks[m.learner_id]) if m.learner_id in marks else None}
+            for m in view["roster"]
+        ]
         return v.with_etag(Response(body), reg)
 
     def put(self, request: Request, pk: uuid.UUID) -> Response:
@@ -53,8 +55,9 @@ class RegisterDetail(APIView):
         marks = [services.Mark(**x) for x in s.validated_data["marks"]]
 
         def run() -> Response:
-            r = services.submit(pk, marks, device_captured_at=s.validated_data.get("device_captured_at"),
-                                if_match=m.if_match)
+            r = services.submit(
+                pk, marks, device_captured_at=s.validated_data.get("device_captured_at"), if_match=m.if_match
+            )
             resp = Response(v.jsonable(r))
             resp["ETag"] = f'W/"{r["row_version"]}"'
             return resp

@@ -17,6 +17,7 @@ It also writes runtime catalogues (events, metrics, enums, code lists) to ``synt
 
 Usage:  python3 ceda/tools/gen_django.py generate | check
 """
+
 from __future__ import annotations
 
 import json
@@ -24,8 +25,10 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+import yaml
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import cedagen  # noqa: E402
+import cedagen
 
 REPO = Path(__file__).resolve().parents[2]
 SRC = REPO / "src" / "syntegra"
@@ -105,6 +108,25 @@ class Raw:
         self.s = s
 
 
+def _pages() -> list[dict]:
+    """MFS page catalogue (ceda/sources/mfs_pages.yaml) reduced to what the page registry needs."""
+    src = yaml.safe_load((REPO / "ceda" / "sources" / "mfs_pages.yaml").read_text(encoding="utf-8"))["pages"]
+    return [
+        {
+            "id": p["id"],
+            "title": p["title"],
+            "module": p["module"],
+            "pattern": p.get("pattern"),
+            "route": p.get("route"),
+            "classification": (p.get("classification") or "Internal").lower(),
+            "phase": p.get("phase"),
+            "roles": [str(r).split(" ", 1)[0] for r in p.get("roles") or []],
+            "purpose": p.get("purpose"),
+        }
+        for p in src
+    ]
+
+
 def field_for(m: cedagen.Model, e: cedagen.Entity, c: cedagen.Column, fk_cols: dict, names: set) -> tuple[str, str]:
     """Return (python attribute name, field constructor source)."""
     a = c.attr
@@ -137,13 +159,18 @@ def field_for(m: cedagen.Model, e: cedagen.Entity, c: cedagen.Column, fk_cols: d
         fname = c.name[:-3] if c.name.endswith("_id") else c.name
         if fname not in names or fname == c.name:
             ref = f'"{tgt.module}.{pascal(tgt.name)}"'
-            o = {"on_delete": Raw("models.DO_NOTHING"), "db_constraint": False, "related_name": "+",
-                 "db_column": c.name, **opts}
+            o = {
+                "on_delete": Raw("models.DO_NOTHING"),
+                "db_constraint": False,
+                "related_name": "+",
+                "db_column": c.name,
+                **opts,
+            }
             return fname, f"models.ForeignKey({ref}, {kw(o)})"
     lt = c.logical_type
     if lt in ("enum",):
         vals = m.enums[a.args[0]]["values"]
-        o = {"max_length": 32, "choices": Raw(repr([(v, v.replace('_', ' ').capitalize()) for v in vals])), **opts}
+        o = {"max_length": 32, "choices": Raw(repr([(v, v.replace("_", " ").capitalize()) for v in vals])), **opts}
         cls = "models.CharField"
     elif lt in ("cl",):
         cls, o = "models.CharField", {"max_length": 32, **opts}
@@ -287,12 +314,20 @@ def build(m: cedagen.Model) -> dict[str, str]:
         "events": m.events,
         "metrics": m.metrics,
         "enums": {k: v["values"] for k, v in m.enums.items()},
-        "code_lists": {k: [x if isinstance(x, str) else x["code"] for x in v.get("values", [])] for k, v in m.codelists.items()},
+        "code_lists": {
+            k: [x if isinstance(x, str) else x["code"] for x in v.get("values", [])] for k, v in m.codelists.items()
+        },
         "retention": m.retention,
-        "zones": {k: {kk: vv for kk, vv in v.items() if kk in ("title", "schema", "tenant_column")} for k, v in m.meta["zones"].items()},
+        "zones": {
+            k: {kk: vv for kk, vv in v.items() if kk in ("title", "schema", "tenant_column")}
+            for k, v in m.meta["zones"].items()
+        },
         "ceda": m.meta["ceda"],
+        "pages": _pages(),
     }
-    out["core/catalog/ceda_catalog.json"] = json.dumps(catalog, indent=1, sort_keys=True, ensure_ascii=False, default=str) + "\n"
+    out["core/catalog/ceda_catalog.json"] = (
+        json.dumps(catalog, indent=1, sort_keys=True, ensure_ascii=False, default=str) + "\n"
+    )
     return out
 
 

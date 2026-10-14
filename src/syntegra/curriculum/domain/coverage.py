@@ -11,9 +11,20 @@ import datetime as dt
 import uuid
 from dataclasses import dataclass, field
 
-SEVERITY = {"g1": "critical", "g2": "critical", "g3": "high", "g4": "high", "g5": "moderate", "g6": "moderate",
-            "g7": "moderate", "g8": "high", "g9": "critical", "g11": "moderate", "g12": "critical"}
-OWNER = {"g1": "HT", "g2": "HT", "g3": "HT", "g11": "HT"}
+SEVERITY = {
+    "g1": "critical",
+    "g2": "critical",
+    "g3": "high",
+    "g4": "high",
+    "g5": "moderate",
+    "g6": "moderate",
+    "g7": "moderate",
+    "g8": "high",
+    "g9": "critical",
+    "g11": "moderate",
+    "g12": "critical",
+}
+OWNER = {"g1": "HEAD", "g2": "HEAD", "g3": "HEAD", "g11": "HEAD"}
 DUE_SCHOOL_DAYS = {"g1": 5, "g2": 3, "g3": 10, "g11": 10}
 
 
@@ -44,12 +55,20 @@ def evaluate(facts: ClassSubjectFacts) -> list[Breach]:
         return out
     if len(facts.teachers_of_record) != 1:
         n = len(facts.teachers_of_record)
-        out.append(Breach("g2", facts.plan_id, SEVERITY["g2"],
-                          "no teacher of record" if n == 0 else f"{n} teachers of record"))
+        out.append(
+            Breach("g2", facts.plan_id, SEVERITY["g2"], "no teacher of record" if n == 0 else f"{n} teachers of record")
+        )
     for staff in facts.teachers_of_record:
         if not facts.authorised.get(staff, False):
-            out.append(Breach("g3", facts.plan_id, SEVERITY["g3"],
-                              "teacher of record lacks a valid authorisation for the subject and level", staff))
+            out.append(
+                Breach(
+                    "g3",
+                    facts.plan_id,
+                    SEVERITY["g3"],
+                    "teacher of record lacks a valid authorisation for the subject and level",
+                    staff,
+                )
+            )
     return out
 
 
