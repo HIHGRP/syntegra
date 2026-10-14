@@ -88,11 +88,18 @@ Module boundaries are enforced by `import-linter`:
 | Security agencies' training (CR-004) | A national sector registry (`ng-fse`) for the education and training institutions of the Armed Forces, Police and paramilitary, law-enforcement, emergency and security services: each agency with its own structure (the access hierarchy), ranks, institutions and per-institution course catalogues with syllabus headings, intakes and trainee outcomes; administration only — never operational or tactical content; reference data illustrative until each agency confirms it | `security-training/agencies`, `…/agencies/{id}`, `…/institutions/{id}`, `…/courses/{id}`, `…/courses/{id}/intakes`, `…/intakes/{id}`, `…/intakes/{id}/trainees`, `…/trainees/{id}/outcome` | STI-01 `/security-training`, STI-02, STI-03, STI-04 |
 | Federal institutions (CR-005) | A national sector registry (`ng-fed`) for the federal unity colleges (FGCs, FGGCs, King's and Queen's College, Federal Science and Technical Colleges) and federal special training institutions (colleges of education, agriculture, forestry, fisheries, co-operatives, statistics, surveying, aviation, maritime, petroleum, NTI) under their owning ministries and structures (FME zones and departments); official lists imported and validated row by row | `federal-institutions`, `federal-institutions/import` | FED-01 `/federal-institutions` |
 | Education watchdogs (CR-005) | National directory of regulators, examination, admission, curriculum, teacher, funding and professional bodies (FME, NUC, NBTE, NCCE, UBEC, NERDC, TRCN, WAEC, NECO, NABTEB, NBAIS, JAMB, TETFund, NMCN …) with their dependencies; every institution in every registry gets its regulatory profile on registration (supervision, accreditation, curriculum, examination, admission, teachers, funding) with gaps reported | `regulators` (public), `institutions/{id}/regulation`, `regulation-links/{id}` | REG-01 `/regulators`, REG-02 `/institutions/{id}/regulation` |
+| Institutional budgets and imprest (CR-006) | Cost centres, versioned budgets by cost centre, economic code and funding source approved by a second person; commitments before spending (refused beyond the available amount); spending, release, virements with a second approver; imprest issued by a second person and retired with receipts; budget execution | `finance/cost-centres`, `finance/budgets`, `finance/commitments`, `finance/virements`, `finance/imprest` | FIN-02 `/finance/performance`, ACC-01 `/finance/imprest` |
+| Funding and loans (CR-006) | Programmes for institutions, staff and learners (NELFUND, TETFund, UBEC, scholarships, co-operative and salary-advance loans …); applications with eligibility shown, review and decision by different people, agreements with repayment schedules, the net-pay floor for payroll repayments, disbursements into budget lines, repayments oldest-first, daily arrears | `funding/programmes`, `funding/overview`, `funding/applications`, `funding/agreements/{id}`, `funding/mine` | FND-01 `/funding`, FND-02 `/funding/agreements/{id}` |
+| Government property and facilities (CR-006) | Sites with title, fencing and encroachment; buildings, rooms, equipment; dated condition and usability assessments; preventive maintenance; proactive actions for the head with escalation to the LGA and ministry; work orders | `estate/sites`, `estate/buildings`, `estate/rooms`, `estate/assets`, `estate/assessments`, `estate/schedules`, `estate/actions`, `estate/institutions/{id}/workspace` | OPS-01 `/estate`, EST-01 `/estate/property`, EST-02 `/estate/actions` |
+| Infrastructure warehouse (CR-006) | Nightly load of facility condition, maintenance, budgets and funding; roll-up every level of the hierarchy; the Commissioner's state-wide view with drill-down | `estate/infrastructure` | EST-03 `/estate/state` |
+| Agency careers (CR-006) | Per rank, the courses required for promotion, appointment or command; per course, the units that sponsor, approve, deliver and hold quotas | — | STI-05 `/security-training/agencies/{id}/careers` |
+| School performance | Control room and school comparison for every school in scope: mean score, pass rate, attendance and a performance index ranked within primary, secondary and tertiary; best school and best student overall and per group; by-LGA charts | — | CMD-101 `/command/control-room`, CMD-102 `/command/compare` |
+| Bulk roll import | A school's whole roll in one audited command (all or nothing, same validation as single registration, guardians for minors, duplicates checked); Global Learner IDs leased in national blocks | — | used by the demonstration loader |
 | Metrics | Semantic layer (`ENR-COUNT`, `ATT-RATE`, `CUR-GAPS-OPEN`) limited to the caller's scope; small-number suppression set by policy | `metrics/{id}` | Home tiles |
-| Forms | Every write action above also has a web form: 34 forms at `/forms`, listed by module for the role in use. Each form validates with the API's own serializer and calls the same service, so a page and the API accept and refuse exactly the same things; errors show beside the field they belong to, values are kept, and option lists only offer records in the user's scope (anything else is refused). Record pages link to the forms that act on them (end a regulatory link, accept a gap, add a trainee, record an outcome, transfer a learner, publish unpaid fees) | — | `/forms`, `/forms/{key}` |
+| Forms | Every write action above also has a web form: 59 forms at `/forms`, listed by module for the role in use. Each form validates with the API's own serializer and calls the same service, so a page and the API accept and refuse exactly the same things; errors show beside the field they belong to, values are kept, and option lists only offer records in the user's scope (anything else is refused). Record pages link to the forms that act on them (end a regulatory link, accept a gap, add a trainee, record an outcome, transfer a learner, publish unpaid fees) | — | `/forms`, `/forms/{key}` |
 | Any CEDA entity | Read-only, scoped and clearance-trimmed. Vault, warehouse and special-category data are excluded. | `ceda`, `ceda/{entity}`, `ceda/{entity}/{id}` | `/pages` (the 260-page catalogue with live and planned status) |
 
-The models for all 528 tables exist and are tested against MySQL. Pages and services for the other MFS modules are
+The models for all 552 tables exist and are tested against MySQL. Pages and services for the other MFS modules are
 **planned**, and are listed by phase at `/pages`.
 
 ## API conventions (Book 3 §26)
@@ -126,6 +133,18 @@ python manage.py syntegra_federal_registry import list.csv --dry-run  # validate
 python manage.py syntegra_regulation      # watchdog directory + regulatory profile of every institution in every registry
 python manage.py runserver                # http://localhost:8000 (host → tenant through tenant_domain)
 ```
+
+### The Abia demonstration state
+
+```bash
+python manage.py syntegra_demo_abia       # DEBUG only: ministries, ASUBEB, 170 schools × 500 pupils, ABSU, ASCETA, 150 staff,
+                                          # marks, attendance, facilities, budgets, funding; then the warehouse load
+python manage.py syntegra_demo_abia --schools-per-lga 1 --pupils 40   # a quick, smaller state
+```
+
+It prints the demonstration accounts (password `Demo-password-2026`, development only), e.g.
+`commissioner.education@abia.gov.ng` for the control room. The **End-User Guide** — every task step by step with
+annotated screenshots — is §30 of [`ceda/CEDA.md`](ceda/CEDA.md#30-end-user-guide).
 
 Configuration comes from environment variables:
 

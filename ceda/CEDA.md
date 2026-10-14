@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **Document** | SYN-CEDA-001 — Canonical Enterprise Data Architecture |
-| **Version** | 1.6.0 — adds the federal unity colleges and federal special training institutions, extends the security agencies' institutions, and links every institution to the education watchdogs and examination bodies it depends on (change request CR-005; §27). 1.5.0 added the security agencies' education and training institutions, each under its own agency structure with its own curricula (CR-004; §26). 1.4.0 modelled two-factor authentication and single sign-on (CR-003); 1.3.0 the national clearance network (CR-002; §25); 1.2.0 the HRMS and fee-clearance due diligence (CR-001; §23, §24). Change log in §22 |
+| **Version** | 1.7.0 — adds institutional budgets and imprest, funding and loan platforms for institutions, staff and learners, the government property register with facility condition, usability and proactive maintenance, the infrastructure data warehouse for the Commissioner, and security-agency curricula through each agency's structure (change request CR-006; §28); documents the Abia State demonstration and school performance comparison (§29) and adds the End-User Guide (§30). 1.6.0 added the federal unity colleges and federal special training institutions, extends the security agencies' institutions, and links every institution to the education watchdogs and examination bodies it depends on (change request CR-005; §27). 1.5.0 added the security agencies' education and training institutions, each under its own agency structure with its own curricula (CR-004; §26). 1.4.0 modelled two-factor authentication and single sign-on (CR-003); 1.3.0 the national clearance network (CR-002; §25); 1.2.0 the HRMS and fee-clearance due diligence (CR-001; §23, §24). Change log in §22 |
 | **Date** | 14 October 2026 (1.0.0 and 1.1.0: 13–14 October 2026) |
-| **Derived from** | SYN-MFS-002 v2.4, Master Functional Specification (consolidated single volume: Books 1–3, 517 functional requirements, 260 pages, Appendix J MySQL schema of 174 tables), extended by change requests CR-001 (23 requirements, 13 pages), CR-002 (6 requirements, 1 page), CR-003 (7 requirements), CR-004 (8 requirements, 4 pages) and CR-005 (8 requirements, 3 pages) |
+| **Derived from** | SYN-MFS-002 v2.4, Master Functional Specification (consolidated single volume: Books 1–3, 517 functional requirements, 260 pages, Appendix J MySQL schema of 174 tables), extended by change requests CR-001 (23 requirements, 13 pages), CR-002 (6 requirements, 1 page), CR-003 (7 requirements), CR-004 (8 requirements, 4 pages), CR-005 (8 requirements, 3 pages) and CR-006 (26 requirements, 7 pages) |
 | **Platform** | Python 3.12 · Django 5.2 LTS (+ FastAPI for high-throughput services) · MySQL 9.7 LTS · Red Hat Enterprise Linux 10 / OpenShift |
 | **Machine-readable model** | `ceda/model/` (single source of truth) → `ceda/generated/` (DDL, dictionary, ERDs, JSON Schema, OpenAPI components, event schemas, metric catalogue, traceability) |
 | **Status of artefacts** | Model validates with 0 errors, 0 warnings; every zone's DDL loads into MySQL 9.7.2; 12 database-level guarantees verified on MySQL 9.7 (§18) |
@@ -45,14 +45,14 @@ CEDA is the **authoritative data blueprint** for Syntegra. The MFS says *what* t
 
 | Measure | Value |
 |---|---|
-| Domains (subject areas) | 35 operational + 1 warehouse |
-| Canonical entities | 498 (174 re-specified from Appendix J, 324 added to give MFS and change-request requirements a home) |
-| Physical tables | 528 across 6 data zones (platform 26, registry 196, ops 223, vault 26, records 19, warehouse 38) — 18 cross-cutting entities are replicated per zone |
-| Columns · enforced foreign keys · soft references | 8,044 · 699 · 340 |
-| Append-only tables · partitioned tables | 96 · 21 |
-| Fixed enumerations · jurisdiction code lists | 360 · 51 (Nigerian pack) |
-| Domain events · semantic-layer metrics · retention series | 153 · 63 · 32 |
-| Coverage | 281/281 pages (260 MFS + 13 CR-001 + 1 CR-002 + 4 CR-004 + 3 CR-005); 569/569 functional requirements accounted for (517 MFS + 23 CR-001 + 6 CR-002 + 7 CR-003 + 8 CR-004 + 8 CR-005; 562 realised in data, 7 behavioural); 174/174 Appendix J tables mapped |
+| Domains (subject areas) | 37 operational + 1 warehouse |
+| Canonical entities | 522 (174 re-specified from Appendix J, 348 added to give MFS and change-request requirements a home) |
+| Physical tables | 552 across 6 data zones (platform 26, registry 198, ops 239, vault 26, records 19, warehouse 44) — 18 cross-cutting entities are replicated per zone |
+| Columns · enforced foreign keys · soft references | 8,515 · 726 · 365 |
+| Append-only tables · partitioned tables | 99 · 21 |
+| Fixed enumerations · jurisdiction code lists | 388 · 51 (Nigerian pack) |
+| Domain events · semantic-layer metrics · retention series | 166 · 74 · 33 |
+| Coverage | 288/288 pages (260 MFS + 13 CR-001 + 1 CR-002 + 4 CR-004 + 3 CR-005 + 7 CR-006); 595/595 functional requirements accounted for (517 MFS + 23 CR-001 + 6 CR-002 + 7 CR-003 + 8 CR-004 + 8 CR-005 + 26 CR-006; 588 realised in data, 7 behavioural); 174/174 Appendix J tables mapped |
 
 ---
 
@@ -767,6 +767,19 @@ The Appendix J DDL (174 tables) was extracted from the MFS and loaded into MySQL
 
 ## 22. Change log
 
+### 1.7.0 — 14 October 2026 (change request CR-006)
+
+| Change | Reason |
+|---|---|
+| Finance (22): `cost_centre`, `budget_line`, `budget_commitment`, `budget_virement`, `imprest`, `imprest_retirement` (§28.1) | Institutional accounting and budgets: commitments before spending, virements and imprest with a second approver |
+| Domain **FND** (module `funding`, 6 entities): `funding_programme`, `funding_application`, `funding_agreement`, `funding_disbursement`, `repayment_instalment`, `funding_repayment` (§28.2) | Funding and loan platforms for institutions (capital), staff (welfare) and learners (support) |
+| Domain **EST** (module `estate`, 4 entities): `property_site`, `facility_assessment`, `maintenance_schedule`, `facility_action` (§28.3) | The government property register, facility condition and usability, preventive maintenance and proactive actions |
+| Warehouse: `dim_facility`, `fact_facility_condition`, `fact_maintenance_work`, `agg_infrastructure_scope`, `fact_budget_execution`, `fact_funding` (§28.4) | The Commissioner's holistic view of school infrastructure, budgets and funding |
+| Security training: `security_course_unit`, `security_career_requirement` (§28.5) | Curricula tied to each agency's structure and careers |
+| Roles OPSM and COMM; 28 enums, 13 events (incl. `LRN.ROLL_IMPORTED`), 11 metrics, retention series RS-FUND; room types and asset categories for estate; 7 pages | Needed by the new domains |
+| Release 1.7.0: expand script adding the unique key `(tenant_id, id)` to the ops-zone tables the new entities reference (`budget`, `capital_plan_item`, `maintenance_request` …), plus the derived delta | Upgrading a live 1.6.0 database in place |
+| Application: bulk roll import, national GLID block leasing, assessment service, Abia bodies (ASUBEB, ABMOE, ABMTE), the Abia demonstration loader, the control room and school comparison (§29), CR-006 pages, forms and API, the End-User Guide (§30) | End-to-end testing at state scale; performance comparison; using the platform |
+
 ### 1.6.0 — 14 October 2026 (change request CR-005)
 
 | Change | Reason |
@@ -1228,3 +1241,607 @@ Pages: FED-01 `/federal-institutions` (by body, zone and type, with each institu
 `/regulators` (public directory with dependencies); REG-02 `/institutions/{id}/regulation` (an institution's profile and
 gaps). API: `/api/v1/regulators`, `/api/v1/institutions/{id}/regulation`, `/api/v1/federal-institutions`.
 
+---
+
+## 28. Institutional finance, funding and loans, and the government property warehouse
+
+Change request CR-006 (1.7.0) widens Syntegra from records into the money and the buildings of education.
+
+### 28.1 Institutional accounting and budgets (FR-ACC-01..06)
+
+| Concept | Entity | Rule |
+|---|---|---|
+| Cost centre | `cost_centre` | Administration, a department, boarding, feeding, estate, ICT, transport, a project … per institution |
+| Budget | `budget`, `budget_line` | A versioned draft per institution and year; lines by cost centre, economic code and funding source (subvention, overhead, capital allocation, IGR, grant, intervention, loan …). The preparer cannot approve it; approving supersedes the previous approved version |
+| Commitment | `budget_commitment` | Money reserved on a line before an order, contract, requisition, imprest or disbursement; refused when the line has not enough **available** (revised − committed − actual) |
+| Virement | `budget_virement` | Budget moved between two lines with a reason, approved by someone other than the requester |
+| Imprest | `imprest`, `imprest_retirement` | Cash advanced to a named holder against a line, approved and issued by a second person, retired with receipts and refunds by a due date; overdue imprest is flagged daily |
+
+Budget execution (page FIN-02) shows original, revised, committed, actual, available and execution % by institution,
+cost centre and economic code. The warehouse fact `fact_budget_execution` rolls it up every level of the hierarchy.
+
+### 28.2 Funding and loan platforms (FR-FND-01..07)
+
+Programmes (`funding_programme`) are seeded from public sources and marked *to confirm*: NELFUND student loans,
+state scholarships and bursaries, SEND support, TETFund interventions, UBEC matching grants, development-partner
+grants, bank capital loans, PTA and alumni support, staff co-operative loans, salary advances, NHF mortgages, vehicle
+loans and staff development. An **application** is made for an institution, a member of staff or a learner; the
+programme's eligibility rules are evaluated and shown, never decisive. A reviewer recommends; a **different person
+decides** (FR-FND-02). Signing creates the **agreement** and, for repayable instruments, its repayment schedule.
+A staff loan repaid from pay is refused if the instalment would take net pay below the policy floor
+(`FND-NET-PAY-FLOOR`, one third of gross by default). Disbursements can be paid into a budget line (the institution's
+revised budget rises); repayments are allocated oldest instalment first and are idempotent on their reference; a
+daily job computes arrears. Loan data is restricted; borrowers see their own agreements. Unpaid loans never restrict a
+learner's attendance, teaching, results or record transfer (P9).
+
+### 28.3 Government property, facility condition and proactive maintenance (FR-EST-01..05)
+
+Every site (land) used by a public institution is in `property_site` — owner, land title and reference, area,
+fencing, encroachment and valuation, *to confirm* until checked against the land registry. Buildings, rooms and
+equipment are the existing operations entities. A **facility assessment** records, on a date, the condition grade
+(good, fair, poor, unsafe), the usability (fully usable … condemned), the structural risk, whether it is still in
+use, learners affected and the repair estimate. **Maintenance schedules** plan repeating tasks (generator servicing,
+fire-safety checks, borehole service …). Rules (`estate.domain.rules`) turn the facts into **facility actions** for the
+head of institution — *stop using an unsafe block*, *assessment overdue*, *service due*, *safety check overdue* —
+with a priority, an owner and a due date; overdue actions escalate to the LGA and then the ministry. The platform
+proposes and escalates; it never closes a facility by itself.
+
+### 28.4 The infrastructure data warehouse (FR-IDW-01..04)
+
+The nightly load (`syntegra_jobs warehouse`, or `analytics.warehouse.load()`) writes `dim_facility`,
+`fact_facility_condition`, `fact_maintenance_work`, `fact_budget_execution`, `fact_funding` and rolls infrastructure up
+every level of the governance hierarchy into `agg_infrastructure_scope`: usable classrooms, learners per usable
+classroom (counted only where classrooms are recorded), unsafe facilities still in use, sites fenced and encroached,
+water and power, open, critical and overdue actions, the repair backlog and an infrastructure index (0–100). The
+Commissioner's page EST-03 reads it and drills down area by area.
+
+### 28.5 Security-agency curricula through each agency's structure (FR-STI-09..12)
+
+Each agency's courses carry syllabus headings specific to its mandate (`security_training.curricula`), the units that
+sponsor, approve, deliver and hold quotas on each course (`security_course_unit`), and per rank the courses required
+for promotion, appointment or command (`security_career_requirement`). Page STI-05 shows them. CR-004's constraint
+holds: syllabus headings and administration only, never operational content.
+
+### 28.6 Pages and API
+
+| Page | Route | For |
+|---|---|---|
+| FIN-02 Budget against actual | `/finance/performance` | Bursar, head, state |
+| ACC-01 Imprest and retirement | `/finance/imprest` | Bursar, head, state |
+| FND-01 Funding and loan programmes | `/funding` | Bursar, head, state, Commissioner |
+| FND-02 Funding agreement | `/funding/agreements/{id}` | Bursar, state, the borrower |
+| OPS-01 Facilities workspace | `/estate` | Head, facilities officer |
+| EST-01 Government property register | `/estate/property` | Facilities, head, LGA, state, Commissioner |
+| EST-02 Facility actions | `/estate/actions` | Head, facilities, LGA, state |
+| EST-03 State infrastructure overview | `/estate/state` | Commissioner, state, LGA |
+| STI-05 Agency careers and course requirements | `/security-training/agencies/{id}/careers` | Security training administrators |
+
+Twenty-five forms (`/forms`) cover every write action. The API is `/api/v1/finance/…` (cost centres, budgets,
+approval, commitments, spending, release, virements, imprest), `/api/v1/funding/…` (programmes, overview,
+applications, recommendation, decision, agreement, disbursements, repayments, own agreements) and `/api/v1/estate/…`
+(sites, buildings, rooms, equipment, assessments, schedules, actions, work orders, workspace, infrastructure). The pages,
+forms and API validate with the same serializers and call the same services.
+
+---
+
+## 29. The Abia State demonstration and school performance
+
+### 29.1 What is loaded
+
+`manage.py syntegra_demo_abia` (development and test only — it refuses to run unless `DEBUG` is on) builds a complete
+state for end-to-end testing:
+
+| Layer | Content |
+|---|---|
+| Governance | Abia State, its 17 LGAs; the **Abia State Ministry of Education** with the **Abia State Universal Basic and Secondary Education Board (ASUBEB)** under it; the **Abia State Ministry of Tertiary Education** |
+| Regulators | ASUBEB (supervised by the Ministry of Education, funded by UBEC), ABMOE and ABMTE replace the generic state ministry and SUBEB in every Abia institution's regulatory profile; ASUBEB also supervises public secondary schools |
+| Schools | 5 government primary and 5 government secondary schools in each LGA — **170 schools of 500 learners each (85,000)** — with classes per level and arm, subjects, first-term continuous assessment and examination marks (locked), and ten days of attendance registers |
+| Tertiary | **Abia State University, Uturu (ABSU)** — 380 students across its faculties and departments — and **Abia State College of Education (Technical), Arochukwu (ASCETA)** — 120 students; each student with programme, cohort, JAMB registration and institution ID, courses, marks and attendance |
+| Staff | 150 lecturers and support staff (ABSU 100, ASCETA 50) on positions in the establishment, with appointments and grade levels |
+| CR-006 samples | Sites, buildings, classrooms, toilets and generators with assessments and maintenance plans at 14 institutions; ABSU's approved 2026 budget with commitments and spending; an imprest; a staff co-operative loan and a TETFund intervention taken through review, decision, agreement and disbursement |
+| Warehouse | Loaded at the end, so the Commissioner's views have data |
+
+Learners are written through the **bulk roll import** (`learners.roll.import_roll`, part of FR-ADM-12): one audited
+command per school, all or nothing, the same validation as single registration (identity, a guardian with parental
+responsibility for every minor, duplicates within the roll and against the state). Global Learner IDs are leased from
+the national service in blocks of 10,000 (`platform.glid.lease_block`). The loader is idempotent and resumable:
+a re-run adds only what is missing.
+
+### 29.2 Comparing schools and choosing the best
+
+The **control room** (CMD-101, `/command/control-room`) and the **school comparison** (CMD-102, `/command/compare`)
+compute, for every institution in the caller's scope:
+
+* **mean score** — the mean of each learner's weighted subject totals (CA + examination, out of 100);
+* **pass rate** — the share of subject totals of 50 or more;
+* **attendance** — present, late or approved activity ÷ sessions recorded;
+* **performance index** = 0.60 × mean score + 0.25 × pass rate × 100 + 0.15 × attendance × 100.
+
+Schools are ranked **only within their group** — primary, secondary, tertiary (P7: context before comparison). The
+**best school** is the highest index among primary and secondary schools, and the best of each group is shown. The
+**best student** is the highest overall average among learners assessed in at least five subjects (three in tertiary),
+attendance breaking ties; learner names are shown only to roles holding `learner:view`. Results are computed in the
+database and cached for ten minutes.
+
+On the loaded data (seed 2026): best school **Community Primary School, Apumiri** (Umuahia South, index 83.8); best
+secondary school **Comprehensive Secondary School, Utuga** (Arochukwu, 81.3); best student **Kenechukwu Nwangwu**
+(`LRN-0045-5218-10`, Community Primary School, Apumiri, average 99.0 across five subjects, attendance 100 %); best
+secondary student **Somtochukwu Chikere** (Community Secondary School, Ihechiowa, 98.6); best tertiary student
+**Ebube Onyekwere** (ABSU, 93.0). The marks are synthetic: they test the platform, not real schools.
+
+---
+
+## 30. End-User Guide
+
+This part is for the people who use Syntegra every day — the Commissioner, ministry and board officers, head
+teachers, bursars, HR officers, facilities officers and security-training administrators. Every task is written as
+numbered steps; the red numbered circles on each picture show exactly where to click or type, in the same order as
+the steps. The pictures are from the Abia demonstration (§29); your screens show your own school or state.
+
+### 30.1 Before you start
+
+**What you need.** A computer, tablet or phone with an up-to-date browser (Chrome, Edge, Firefox or Safari), the
+address of your state's Syntegra (for example `https://abia.syntegra.ng`), and the username and password your
+administrator gave you.
+
+**Demonstration accounts** (development and training systems only; password `Demo-password-2026`):
+
+| Account | Role | Use it to try |
+|---|---|---|
+| `commissioner.education@abia.gov.ng` | Commissioner (COMM) | Control room, school comparison, infrastructure, funding |
+| `chairman.asubeb@abia.gov.ng` | ASUBEB (COMM) | The same views for the board |
+| `director.planning@abia.gov.ng` | State ministry (STA) | Registering schools, every state-level form |
+| `head.secondary.abn1@abia.demo` (and `head.primary.<lga><1–5>`, `head.secondary.<lga><1–5>`) | Head of school (HEAD) | Registers, learners, fee clearance, facilities |
+| `vc.absu@abia.demo`, `provost.asceta@abia.demo` | Head of institution (HEAD) | Approvals at ABSU and ASCETA |
+| `bursar.absu@abia.demo` | Bursar (FINO) | Budgets, imprest, funding |
+| `hr.absu@abia.demo` | HR (HR) | Establishment, appointments, leave |
+| `estate.ins-ng-000002@abia.demo` | Facilities officer at ABSU (OPSM) | Facilities, assessments, maintenance |
+| `admin.fse@demo.ng` (at the security-training address) | Security training administrator (SADM) | Agencies, courses, careers |
+
+**How every screen is laid out.**
+
+| Part | Where | What it does |
+|---|---|---|
+| Top bar | Top of every page | Your state, the menu, your name and role, **Switch role** and **Sign out** |
+| Menu | In the top bar | Only the pages your role may open. If a page is missing, your role does not include it |
+| Page line | Above the title | The module, the page code (e.g. `CMD-101`) and how sensitive the page is (*internal*, *confidential*, *restricted*, *special*). Quote the page code when you ask for help |
+| Links under the title | Below the title | The actions you can take from this page (they open forms) |
+
+**How every form works.**
+
+1. Fields marked *(optional)* may be left empty; all others are required.
+2. Money is typed in **naira** — `12500`, `12,500` or `12,500.50`. Syntegra stores it exactly.
+3. Dates use the date picker. Choose from the lists offered — they only show records you are allowed to act on.
+4. Press the green button. If anything is wrong, **nothing is saved**: the form comes back with each problem in red
+   beside its field. Correct them and press the button again.
+5. When it is saved, a green message says what happened and gives a link to the result.
+6. **Four eyes.** Approvals (budgets, virements, imprest, funding decisions, certificate reissues, postings) must be
+   made by someone other than the person who asked. If you try to approve your own request, Syntegra refuses and says
+   so.
+
+---
+
+### 30.2 Sign in
+
+![Sign-in page with the username, password and Sign in button marked](guide/img/01-sign-in.png)
+
+1. Type your **username** (usually your e-mail address).
+2. Type your **password**.
+3. Press **Sign in**.
+
+You arrive at your home page. If you hold more than one role (for example head of one school and teacher at another),
+choose the one you want to work in; you can change it at any time with **Switch role** in the top bar. **Sign out**
+when you leave a shared computer.
+
+*Problems.* "The username or password is incorrect" — check Caps Lock and try again; after repeated failures wait a few
+minutes or ask your administrator to reset the password.
+
+---
+
+### 30.3 Commissioner and ministry: see how every school is doing
+
+**Who:** Commissioner, ASUBEB, state ministry, LGA education officers (an LGA officer sees only that LGA).
+**Where:** menu **Control room** (`/command/control-room`, page CMD-101).
+
+![Control room with the menu item, best school and best student marked](guide/img/02-control-room.png)
+
+1. Click **Control room** in the menu.
+2. Read the **Best overall school** card: the school, its LGA, its performance index and how it was reached (mean
+   score, pass rate, attendance). Under it, the best school in each group — primary, secondary, tertiary.
+3. Read the **Best overall student** card: the learner's name and Global Learner ID, school, average and attendance.
+   Under it, the top student in each group.
+
+The five tiles at the top are the state's headline figures: schools and institutions, learners on roll, mean score,
+pass rate and attendance.
+
+![Control room scrolled down to the LGA charts and the top-10 tables](guide/img/03-control-room-lgas.png)
+
+4. Scroll down to **performance index by LGA**: one bar per LGA, longest first, for primary and secondary schools.
+   Hover over a bar to see the exact value and the number of schools.
+5. Below the charts, the **top 10** of each group. Click **See all** for the full list.
+
+*How the index is worked out:* 60 % mean score + 25 % pass rate + 15 % attendance. Schools are compared only with
+schools of the same kind, so a primary school is never ranked against a university.
+
+---
+
+### 30.4 Compare schools against each other
+
+**Where:** **See all** under any top-10 table, or `/command/compare` (page CMD-102).
+
+![School comparison with the group tabs and LGA filter marked](guide/img/04-compare-schools.png)
+
+1. Choose the group: **Primary schools**, **Secondary schools** or **Tertiary institutions**.
+2. To look at one LGA, choose it in the list and press **Filter**. Choose *All LGAs* to go back.
+3. The first table is the **best students** of the group; the second ranks **every school** with its learners, mean
+   score, pass rate, share of learners with five or more passes, attendance and performance index.
+
+---
+
+### 30.5 See the state of school buildings (Commissioner's infrastructure view)
+
+**Where:** menu **Infrastructure** (`/estate/state`, page EST-03).
+
+![State infrastructure overview with the menu item marked](guide/img/05-infrastructure.png)
+
+1. Click **Infrastructure**.
+2. Read the tiles: how many classrooms are usable, how many learners share each usable classroom, unsafe facilities
+   still in use, open and critical actions, and the cost of repairs waiting (the backlog).
+3. **Infrastructure index by area** compares the LGAs. Click an LGA's name in the table below the chart to look inside
+   it; keep clicking to reach a single school.
+4. **Institutions needing attention first** lists the lowest-scoring institutions first.
+
+The figures come from the nightly warehouse load; the date of the load is shown under the title.
+
+![Government property register](guide/img/06-property-register.png)
+
+5. For the land itself, open **Property register** (link at the foot of the page, `/estate/property`): each site's
+   owner, title document, area, fencing, encroachment and latest assessment. Rows marked *to confirm* still need
+   checking against the land registry.
+
+---
+
+### 30.6 See funding and loans across the state
+
+**Where:** menu **Funding** (`/funding`, page FND-01).
+
+![Funding programmes with the Staff welfare tab marked](guide/img/07-funding.png)
+
+1. Use the tabs — **Institutions**, **Staff welfare**, **Learner support** — to see the programmes for each.
+2. The tiles show what has been approved, disbursed, is still owed and is in arrears.
+3. Scroll down to **Applications** and **Agreements**. Click an agreement number to open it (§30.20).
+
+---
+
+### 30.7 Head of school: your home page
+
+**Who:** head teacher, principal, provost, rector, vice-chancellor. **Where:** **Home**.
+
+![Head teacher's home page](guide/img/08-head-home.png)
+
+Your home page shows learners enrolled, open coverage gaps, **today's registers** for every class (click a class to
+take its register) and the pages your role can use (*planned* pages are not yet available).
+
+---
+
+### 30.8 Take the class register
+
+**Where:** **Home → Today's registers →** the class.
+
+![Class register with the first mark and the Save button marked](guide/img/09-class-register.png)
+
+1. For each learner click one mark: **P** present, **L** late, **A** absent (unauthorised), **M** medical, **E**
+   excused, **AA** approved activity, **NR** not required. For **L**, type the minutes late.
+2. Scroll down and press **Save register**.
+
+A register submitted after its due time is accepted and marked late. Click a learner's name to open their record.
+
+---
+
+### 30.9 Register a new learner
+
+**Where:** menu **Register learner** (`/learners/new`, page LRN-02).
+
+![Learner registration with institution and first name marked](guide/img/10-register-learner.png)
+
+1. **Admission:** choose the institution and the level. For a college, polytechnic or university also choose the
+   programme and cohort and enter the JAMB registration and matriculation numbers.
+2. **Identity:** given, middle and family names, date of birth and sex. Add the NIN and state of origin if you have
+   them.
+3. **Parents and guardians:** a learner under 18 needs at least one guardian with parental responsibility. Add up to
+   two; tick who the child lives with, who may collect the child and who pays.
+4. Press **Check and register**. If Syntegra finds a possible existing record of the same child it shows it: open it, or give the reason and press
+   **Register as a different child**.
+5. Before admitting a transfer, Syntegra checks unpaid fees at other schools (§30.10). It never stops the child
+   attending.
+
+When it is saved you get the learner's **Global Learner ID** (e.g. `LRN-0045-5218-10`) and a link to their record.
+Whole classes are loaded by the roll import, not one by one (§29.1).
+
+---
+
+### 30.10 Check unpaid fees before admitting a learner
+
+**Where:** menu **Fee clearance** (`/admissions/clearance`, page FCL-01).
+
+![Fee clearance desk with the Global Learner ID field marked](guide/img/11-fee-clearance.png)
+
+1. Type the learner's **Global Learner ID**, choose your institution, the level and the purpose (admission or
+   transfer), and press **Run check**. Syntegra asks every school in your state — and, through the national network,
+   every other state — whether the learner owes fees.
+2. If nothing is owed, admit. If fees are outstanding you see who is owed and how much; record your decision —
+   **admit**, **admit with a payment plan** or **defer pending settlement** — with a reason, and press **Record decision**.
+
+The check never holds back the learner's records, results or right to attend.
+
+---
+
+### 30.11 See everything about one learner (learner 360)
+
+**Where:** click a learner's name anywhere, or `/learners/{id}` (page LRN-04).
+
+![Learner 360](guide/img/14-learner-360.png)
+
+The page shows the learner's enrolments, parents and guardians and attendance over 90 days. **Transfer** moves the
+learner to another school (the receiving school's fee check runs first); **Publish unpaid fees** tells other schools
+what the learner owes yours.
+
+---
+
+### 30.12 See who regulates your school
+
+**Where:** `/institutions/{id}/regulation` (page REG-02), linked from the school's pages, and the public **Regulators**
+directory (`/regulators`).
+
+![An institution's regulatory profile](guide/img/12-regulation-profile.png)
+
+Every body your school depends on — in Abia, the Ministry of Education and ASUBEB (supervision), UBEC (funding),
+NERDC (curriculum), TRCN (teachers), WAEC and NECO (examinations) — with any **gaps** the platform found. A state
+administrator adds or ends a link with the forms *Link a regulator* and *End a regulator link*.
+
+![Regulators directory](guide/img/16-regulators.png)
+
+---
+
+### 30.13 Find any form
+
+**Where:** menu **Forms** (`/forms`).
+
+![Forms hub](guide/img/13-forms-hub.png)
+
+Every action you are allowed to take, grouped by subject. Click a form, fill it in as in §30.1 and press its button.
+If you cannot see a form, your role does not include that action.
+
+---
+
+### 30.14 State ministry: register a new school
+
+**Who:** state ministry (STA). **Where:** **Forms → Institutions → Register an institution**.
+
+![Register an institution with name, category and LGA marked](guide/img/15-register-institution.png)
+
+1. Type the **name**.
+2. Choose the **category** (primary, junior/senior/combined secondary, technical college, college of education …) and
+   the **ownership**.
+3. Choose the **LGA**, type the town and choose the **levels offered** (hold Ctrl, or ⌘ on a Mac, to choose several).
+4. Add the registration number, capacity, day/boarding, intake and location if known.
+5. Press **Register institution**. If a school with the same name, number or location exists in the LGA, Syntegra
+   shows it; give an **override reason** only if you are sure it is a different school.
+
+The school gets its institution code, and its regulatory profile is filled in automatically.
+
+---
+
+### 30.15 HR: establishment and appointments
+
+**Who:** head of establishments (HR). **Where:** menu **HR** (`/hr/establishment`, page HRM-01).
+
+![Establishment with the first action marked](guide/img/17-establishment.png)
+
+1. Choose the institution and press **Show**: approved positions, filled, vacant, and posts without a position.
+2. Use the links above: **Create a position**, **Appoint**, **Request a posting**.
+
+![Appoint a member of staff](guide/img/18-appoint.png)
+
+3. To appoint: choose the member of staff and the vacant position, the appointment type, the first appointment date,
+   grade level and step, and press **Appoint**. Syntegra refuses an appointment past statutory retirement age or
+   outside the position's grade range.
+
+Other HR forms: leave requests and decisions, postings and their approval, separations, promotions, staff relations
+cases, payroll integrity scans and holds, payroll runs and approval.
+
+---
+
+### 30.16 Bursar: budget against actual
+
+**Who:** bursar, finance officer, head, state. **Where:** menu **Budgets** (`/finance/performance`, page FIN-02).
+
+![Budget against actual with the menu item and the institution list marked](guide/img/19-budget-execution.png)
+
+1. Click **Budgets**.
+2. Choose the institution and the year and press **Show**.
+3. The tiles show the revised budget, how much is committed, spent and still available, the execution rate and any
+   overdue imprest. Each line shows its cost centre, economic code, funding source, original and revised amounts,
+   committed, spent, available and a bar for execution.
+
+### 30.17 Prepare and approve a budget
+
+![Prepare a budget with the lines box and the Save button marked](guide/img/20-prepare-budget.png)
+
+1. First add your **cost centres** (link *Add a cost centre*): code, name and kind.
+2. Open **Prepare a budget**, choose the institution and the year.
+3. In **Budget lines** type one line per row, with the parts separated by `|`:
+   `cost-centre code | economic code | amount in naira | source | description` —
+   e.g. `WORKS | 22020403 | 190,000,000 | overhead | Maintenance of buildings`.
+4. Press **Save draft**.
+5. A second person (the head or vice-chancellor) opens **Approve a budget**, chooses the draft and presses **Approve**.
+
+### 30.18 Commit funds, record spending and move funds
+
+1. Before ordering, open **Commit funds**: choose the budget line (its available amount is shown), the amount and
+   what it is for. Syntegra refuses if the line has not enough available.
+2. When you pay, open **Record spending**: choose the commitment and the amount. Tick **Final payment** to give any
+   balance back to the line.
+3. To move budget between lines, open **Move funds (virement)**:
+
+![Virement form](guide/img/21-virement.png)
+
+   choose the **from** and **to** lines, the amount and the reason, and press **Submit**. Someone else approves it in
+   **Decide a virement**.
+
+### 30.19 Imprest: request, approve, retire
+
+**Where:** `/finance/imprest` (page ACC-01).
+
+![Imprest register with Request imprest marked](guide/img/22-imprest.png)
+
+1. **Request imprest:** choose the member of staff, the budget line, the purpose, the amount and the date by which it
+   must be accounted for.
+2. **Approve and issue** (a different person): choose the imprest and *Approve*. The line is committed.
+3. **Retire imprest:** list the receipts one per row — `reference | amount | payee` — enter the total spent and any
+   cash refunded. Imprest not retired by its date turns **Overdue** (in red).
+
+### 30.20 Apply for funding or a loan, and follow it to payment
+
+**Where:** **Funding → Apply** (form *Apply for funding or a loan*).
+
+![Apply for funding with the programme and applicant kind marked](guide/img/23-funding-apply.png)
+
+1. Choose the **programme**.
+2. Choose who it is for — **institution**, **staff** or **learner** — and fill only the matching field (the
+   institution, the member of staff, or the learner's Global Learner ID).
+3. Enter the amount and what it is for, and press **Submit application**. The eligibility check runs; a failed check
+   is shown to the reviewer but does not decide.
+4. **Review** (another person): *Review a funding application* → recommendation.
+5. **Decide** (a third person): *Decide a funding application* → approve or reject, with a reason and, if different,
+   the amount approved.
+6. **Sign the agreement:** *Sign a funding agreement*. For a staff loan repaid from pay, enter the gross monthly pay;
+   Syntegra refuses the agreement if the repayment would take net pay below one third of gross.
+7. **Disburse:** *Disburse funds* — choose the agreement, amount, payee and reference; choose a budget line to add the
+   money to the institution's budget.
+8. **Record repayments:** *Record a repayment*; it is applied to the oldest instalment first.
+
+![Funding agreement with its repayment schedule](guide/img/24-funding-agreement.png)
+
+The agreement page shows the terms, balances, repayment schedule, disbursements and repayments. A member of staff sees
+their own agreements.
+
+---
+
+### 30.21 Facilities: your workspace
+
+**Who:** head of any institution — nursery, primary, secondary, technical, college, university — and the facilities
+officer. **Where:** menu **Facilities** (`/estate`, page OPS-01).
+
+![Facilities workspace with Record an assessment marked](guide/img/25-facilities.png)
+
+1. Choose the institution and press **Show**.
+2. Read the tiles: usable classrooms, learners per usable classroom, unsafe facilities, open actions and the repair
+   backlog.
+3. **Do these first** lists the actions the platform proposes, most urgent first, with due dates.
+4. Below: buildings and rooms with their latest usability, sites, equipment and the maintenance plan.
+5. Use the links to **register a site**, **add a building**, **add a room**, **add equipment**, **plan maintenance**,
+   **record an assessment** or **mark maintenance done**.
+
+### 30.22 Record a condition assessment
+
+![Assessment form with facility, usability and Still in use marked](guide/img/26-assess-facility.png)
+
+1. Choose the **facility** — a site, building, room or item of equipment.
+2. Choose the **condition** and **usability** (fully usable … condemned) and the structural risk.
+3. Tick **Still in use** if people are still using it.
+4. Add learners affected, the repair estimate and when to re-assess, and press **Record assessment**.
+
+If an unsafe facility is still in use, a **critical** action appears at once for the head: move learners and staff,
+restrict access and raise a work order.
+
+### 30.23 Act on facility actions and plan maintenance
+
+**Where:** `/estate/actions` (page EST-02).
+
+![Facility actions](guide/img/27-facility-actions.png)
+
+1. Open **Update a facility action**: choose the action and set it to *acknowledged*, *in progress* or *done*. To
+   dismiss one, give a reason of at least ten characters.
+2. **Raise a work order** turns an action into a maintenance request with the same priority and due date.
+3. **Plan preventive maintenance**: the facility, the task, how often (days) and the next due date. When it is done,
+   **Mark planned maintenance done** — the next due date moves on.
+
+Actions not dealt with by their due date move up to the LGA and then the ministry.
+
+---
+
+### 30.24 Anyone: verify a certificate
+
+**Where:** **Verify** (`/verify`), no sign-in needed.
+
+![Certificate verification with the number field marked](guide/img/28-verify.png)
+
+1. Type the certificate number exactly as printed and press **Verify**. Syntegra says whether it is genuine, by whom
+   it was issued and whether it has been replaced.
+
+---
+
+### 30.25 Security agencies' training institutions
+
+**Who:** security training administrators and officers, at the Federal Security Education Registry address.
+**Where:** menu **Security training** (page STI-01).
+
+![Security agencies directory](guide/img/29-security-training.png)
+
+1. Choose an agency to see its own structure (headquarters, commands, formations), its ranks and its training
+   institutions; choose an institution to see its courses; a course to see its curriculum and intakes.
+2. Forms: **Create a course intake**, **Add a trainee to an intake**, **Record a trainee's outcome**, and the course
+   import for official files.
+
+![Agency careers and course requirements](guide/img/30-security-careers.png)
+
+3. On an agency, **Careers and course requirements by rank** (page STI-05) lists each rank, most senior first, the
+   courses required before promotion or appointment, where each course is run, and which units sponsor, approve,
+   deliver and hold quotas on each course.
+
+---
+
+### 30.26 On a phone
+
+![Control room on a phone in dark mode](guide/img/31-phone-control-room.png)
+
+Every page works on a phone; tables scroll sideways and the menu wraps. Dark mode follows your phone's setting.
+
+---
+
+### 30.27 When something goes wrong
+
+| You see | It means | What to do |
+|---|---|---|
+| Fields in red after pressing the button | Nothing was saved; the message says what is wrong | Correct each field and press the button again |
+| "You do not have permission" / the page is missing from the menu | Your role does not include it | Switch role, or ask your administrator |
+| "The person who requested … cannot approve it" | Four-eyes rule | Ask a colleague with the approving role |
+| "Possible duplicate" when registering | A similar record exists | Open it; register anew only with a reason |
+| "No longer enough available on the source line" | The budget line has been committed or spent since | Choose another line or a smaller amount |
+| "Repayment would take net pay below the floor" | The staff loan is not affordable from pay | Reduce the amount or lengthen the tenor |
+| A list is empty ("nothing waiting") | Nothing in your scope needs that action | No action needed |
+| The control room or infrastructure figures look old | Figures are cached for ten minutes; the warehouse loads nightly | Check again later |
+
+Quote the **page code** in the page line (e.g. `FIN-02`) and the time when you report a problem.
+
+### 30.28 For integrators: the same tasks through the API
+
+Every form has an API equivalent under `/api/v1/` with the same validation (problem responses, HTTP 422, never 500).
+Sign in with `POST /api/v1/auth/sign-in` and send the token as `Authorization: Bearer …`.
+
+| Task | Endpoint |
+|---|---|
+| Budget execution / prepare a budget | `GET` / `POST /api/v1/finance/budgets` |
+| Approve a budget | `POST /api/v1/finance/budgets/{id}/approve` |
+| Commit, spend, release | `POST /api/v1/finance/commitments`, `…/{id}/spend`, `…/{id}/release` |
+| Virement and decision | `POST /api/v1/finance/virements`, `…/{id}/decision` |
+| Imprest, approval, retirement | `GET`/`POST /api/v1/finance/imprest`, `…/{id}/approval`, `…/{id}/retirement` |
+| Funding programmes, overview | `GET /api/v1/funding/programmes`, `GET /api/v1/funding/overview` |
+| Apply, recommend, decide, sign | `POST /api/v1/funding/applications`, `…/{id}/recommendation`, `…/{id}/decision`, `…/{id}/agreement` |
+| Disburse, repay, own agreements | `POST /api/v1/funding/agreements/{id}/disbursements`, `…/{id}/repayments`, `GET /api/v1/funding/mine` |
+| Property register, sites | `GET`/`POST /api/v1/estate/sites` |
+| Buildings, rooms, equipment | `POST /api/v1/estate/buildings`, `/rooms`, `/assets` |
+| Assessments, maintenance | `POST /api/v1/estate/assessments`, `/schedules`, `/schedules/{id}/done` |
+| Actions, work orders | `GET /api/v1/estate/actions`, `POST /api/v1/estate/actions/{id}`, `…/{id}/work-order` |
+| Facilities workspace, infrastructure | `GET /api/v1/estate/institutions/{id}/workspace`, `GET /api/v1/estate/infrastructure` |

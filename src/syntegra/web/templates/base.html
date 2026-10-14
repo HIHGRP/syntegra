@@ -23,7 +23,8 @@
     {% if ctx.has("hr:view") %}<a href="/hr/establishment">HR</a>{% endif %}
     {% if ctx.has("budget:view") %}<a href="/finance/performance">Budgets</a>{% endif %}
     {% if ctx.has("funding:view") %}<a href="/funding">Funding</a>{% endif %}
-    {% if ctx.has("warehouse:view") %}<a href="/estate/state">Infrastructure</a>{% elif ctx.has("estate:view") %}<a href="/estate">Facilities</a>{% endif %}
+    {% if ctx.has("estate:view") %}<a href="/estate">Facilities</a>{% endif %}
+    {% if ctx.has("warehouse:view") %}<a href="/estate/state">Infrastructure</a>{% endif %}
     <a href="/forms">Forms</a>
     <a href="/pages">Pages</a>
     <a href="/verify">Verify</a>
