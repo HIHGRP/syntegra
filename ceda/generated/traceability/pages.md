@@ -22,7 +22,7 @@ Every one of the 260 pages in SYN-MFS-002 v2.4 is served by at least one CEDA en
 | ADM-08 | Integration marketplace | Platform administration | P1 | `api_client`, `integration_connection`, `webhook_delivery`, `webhook_subscription` | Integration |
 | ADM-09 | API clients & data exchange | Platform administration | P6 | `api_client`, `data_sharing_agreement`, `exchange_transfer`, `service_identity` | DataSharingAgreement, ApiClient |
 | ADM-10 | Data governance | Platform administration | P1 | `legal_hold`, `privacy_request`, `record_series` | DataSubjectRequest, RetentionRule |
-| ADM-11 | Audit log | Platform administration | P1 | `audit_anchor`, `audit_event`, `break_glass_grant`, `outbox_event` | AuditEvent |
+| ADM-11 | Audit log | Platform administration | P1 | `audit_anchor`, `audit_chain_head`, `audit_event`, `break_glass_grant`, `outbox_event` | AuditEvent |
 | ADM-12 | Languages | Platform administration | P1 | `config_version`, `translation` | Language |
 | ADM-13 | Branding | Platform administration | P1 | `config_version`, `tenant_domain` | Branding |
 | ADM-14 | Subscription & licensing | Platform administration | P1 | `subscription`, `subscription_plan` | Subscription |

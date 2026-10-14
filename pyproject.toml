@@ -1,0 +1,122 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "syntegra"
+version = "0.1.0"
+description = "Syntegra Intelligent EMIS/SMIS — enterprise Python application built on the Canonical Enterprise Data Architecture (SYN-CEDA-001)"
+requires-python = ">=3.12,<3.13"
+readme = "README.md"
+license = { text = "Proprietary — Syntegra Digital Infrastructure Nigeria Ltd" }
+dependencies = [
+  "Django==5.2.7",
+  "djangorestframework==3.16.1",
+  "mysqlclient==2.2.7",
+  "cryptography==45.0.7",
+  "argon2-cffi==25.1.0",
+  "PyYAML==6.0.2",
+  "Jinja2==3.1.6",
+  "celery==5.5.3",
+  "gunicorn==23.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==8.4.2",
+  "pytest-django==4.11.1",
+  "ruff==0.13.3",
+  "mypy==1.18.2",
+  "django-stubs==5.2.5",
+  "djangorestframework-stubs==3.16.4",
+  "import-linter==2.5",
+  "types-PyYAML",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+syntegra = ["**/templates/**/*", "**/static/**/*"]
+
+# --------------------------------------------------------------------- tests (MFS §16.7: real MySQL 9.7, never SQLite)
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "syntegra.settings.test"
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --reuse-db"
+markers = ["slow: long-running tests"]
+
+# --------------------------------------------------------------------- lint and format
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+src = ["src", "tests"]
+extend-exclude = ["src/syntegra/*/models.py"]  # generated from CEDA
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "C4", "DJ", "PT", "SIM", "RUF"]
+ignore = ["S101", "RUF012", "DJ001", "S608"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "S311"]
+
+# --------------------------------------------------------------------- typing (strict on the kernel and domain packages)
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+ignore_missing_imports = true
+warn_unused_ignores = true
+exclude = ["src/syntegra/[a-z_]+/models\\.py$", "migrations/"]
+
+[[tool.mypy.overrides]]
+module = ["syntegra.core.*", "syntegra.*.domain.*"]
+strict = true
+disallow_subclassing_any = false
+disallow_untyped_calls = false
+
+[tool.django-stubs]
+django_settings_module = "syntegra.settings.test"
+
+# --------------------------------------------------------------------- module boundaries (MFS §16.7, Book 3 §5.5)
+[tool.importlinter]
+root_package = "syntegra"
+
+[[tool.importlinter.contracts]]
+name = "The kernel depends on no business module"
+type = "forbidden"
+source_modules = ["syntegra.core"]
+forbidden_modules = [
+  "syntegra.institutions", "syntegra.providers", "syntegra.learners", "syntegra.families", "syntegra.people",
+  "syntegra.academic", "syntegra.curriculum", "syntegra.timetable", "syntegra.attendance", "syntegra.assessment",
+  "syntegra.certificates", "syntegra.success", "syntegra.safeguarding", "syntegra.sectors", "syntegra.lms",
+  "syntegra.comms", "syntegra.finance", "syntegra.financing", "syntegra.operations", "syntegra.forms",
+  "syntegra.records", "syntegra.intelligence", "syntegra.reporting", "syntegra.integration", "syntegra.analytics",
+]
+
+[[tool.importlinter.contracts]]
+name = "Domain packages are framework-free (no Django, no DRF)"
+type = "forbidden"
+source_modules = [
+  "syntegra.learners.domain", "syntegra.attendance.domain", "syntegra.certificates.domain",
+  "syntegra.curriculum.domain", "syntegra.financing.domain", "syntegra.mdm.domain", "syntegra.institutions.domain",
+]
+forbidden_modules = ["django", "rest_framework"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Education services never read payment or subscription state (P9, FR-SUB-116)"
+type = "forbidden"
+source_modules = ["syntegra.attendance", "syntegra.assessment", "syntegra.certificates", "syntegra.lms", "syntegra.learners"]
+forbidden_modules = ["syntegra.finance", "syntegra.financing", "syntegra.platform.services"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Only the safeguarding and success modules touch the special-category vault models"
+type = "forbidden"
+source_modules = [
+  "syntegra.learners", "syntegra.attendance", "syntegra.assessment", "syntegra.certificates", "syntegra.lms",
+  "syntegra.comms", "syntegra.finance", "syntegra.financing", "syntegra.reporting", "syntegra.analytics",
+]
+forbidden_modules = ["syntegra.safeguarding.models"]
+allow_indirect_imports = true

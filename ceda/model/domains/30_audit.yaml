@@ -50,6 +50,27 @@ entities:
       - "hash: hash!"
     ix: [[record_kind, record_id], [actor_id, occurred_at]]
 
+  audit_chain_head:
+    title: Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain
+    kind: projection
+    zone: [platform, registry, ops, vault, records]
+    class: internal
+    history: none
+    origin: ceda
+    pk: [chain_id]
+    scope_note: One row per chain (tenant × zone × lane).
+    reqs: [FR-ADM-08]
+    pages: [ADM-11]
+    notes: >
+      Chains are split into lanes (chain_id = UUID5(tenant_id, "lane-<n>"), default 16 lanes per tenant and zone)
+      so concurrent writers at the 07:30–09:30 register peak do not serialise on a single row; each lane is an
+      independent hash chain anchored daily and verified nightly (CD-12).
+    attrs:
+      - "chain_id: uuid!"
+      - "lane: smallint!"
+      - "last_seq: bigint!"
+      - "last_hash: hash!"
+
   audit_anchor:
     title: Daily anchor of an audit chain written to write-once storage, and the nightly verification result
     kind: event

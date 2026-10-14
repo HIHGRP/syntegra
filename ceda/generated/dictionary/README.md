@@ -1,6 +1,6 @@
 # CEDA data dictionary
 
-Generated from the CEDA model (SYN-CEDA-001 v1.0.0). Do not edit by hand.
+Generated from the CEDA model (SYN-CEDA-001 v1.1.0). Do not edit by hand.
 
 | Domain | Code | Module (Django app) | Default zone | Entities |
 |---|---|---|---|---|
@@ -33,5 +33,5 @@ Generated from the CEDA model (SYN-CEDA-001 v1.0.0). Do not edit by hand.
 | [Intelligence and automation — alerts, investigations, improvement, recommendations, early warning, model register, agents, assistant and planning](27_intelligence.md) | INT | `intelligence` | ops | 24 |
 | [Reporting, semantic layer registry, government returns, scheduled reports and lineage](28_reporting.md) | RPT | `reporting` | registry | 6 |
 | [Integration, data exchange, imports, webhooks, idempotency and data-subject requests](29_integration.md) | INTG | `integration` | registry | 16 |
-| [Audit trail, chain anchors and the transactional outbox](30_audit.md) | AUD | `core` | ops | 15 |
+| [Audit trail, chain anchors and the transactional outbox](30_audit.md) | AUD | `core` | ops | 20 |
 | [Analytics warehouse — conformed dimensions, facts, aggregates, live KPI read model and feature store](90_warehouse.md) | DW | `analytics` | dw | 38 |

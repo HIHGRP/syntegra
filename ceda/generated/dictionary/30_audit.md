@@ -11,6 +11,11 @@ Module (system of record): `core` · default zone: **ops** · default retention:
 | [`audit_event`](#ops-audit_event) | ops | event | restricted | append | Tamper-evident audit event (append-only, hash-chained per tenant and zone, partitioned by day) |
 | [`audit_event`](#vault-audit_event) | vault | event | restricted | append | Tamper-evident audit event (append-only, hash-chained per tenant and zone, partitioned by day) |
 | [`audit_event`](#records-audit_event) | records | event | restricted | append | Tamper-evident audit event (append-only, hash-chained per tenant and zone, partitioned by day) |
+| [`audit_chain_head`](#platform-audit_chain_head) | platform | projection | internal | none | Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain |
+| [`audit_chain_head`](#registry-audit_chain_head) | registry | projection | internal | none | Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain |
+| [`audit_chain_head`](#ops-audit_chain_head) | ops | projection | internal | none | Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain |
+| [`audit_chain_head`](#vault-audit_chain_head) | vault | projection | internal | none | Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain |
+| [`audit_chain_head`](#records-audit_chain_head) | records | projection | internal | none | Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain |
 | [`audit_anchor`](#platform-audit_anchor) | platform | event | internal | append | Daily anchor of an audit chain written to write-once storage, and the nightly verification result |
 | [`audit_anchor`](#registry-audit_anchor) | registry | event | internal | append | Daily anchor of an audit chain written to write-once storage, and the nightly verification result |
 | [`audit_anchor`](#ops-audit_anchor) | ops | event | internal | append | Daily anchor of an audit chain written to write-once storage, and the nightly verification result |
@@ -265,6 +270,170 @@ Tamper-evident audit event (append-only, hash-chained per tenant and zone, parti
 
 - Index: (tenant_id, record_kind, record_id)
 - Index: (tenant_id, actor_id, occurred_at)
+
+<a id="platform-audit_chain_head"></a>
+## `audit_chain_head` (platform)
+
+Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain  
+
+Chains are split into lanes (chain_id = UUID5(tenant_id, "lane-<n>"), default 16 lanes per tenant and zone) so concurrent writers at the 07:30–09:30 register peak do not serialise on a single row; each lane is an independent hash chain anchored daily and verified nightly (CD-12).
+
+| | |
+|---|---|
+| Zone | platform |
+| Kind | projection |
+| Classification | internal |
+| History | none |
+| Scope | none |
+| Module | `core` |
+| Origin | ceda |
+| Retention | `RS-AUDIT` |
+| Requirements | FR-ADM-08 |
+| Pages | ADM-11 |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `chain_id` **PK** | `BINARY(16)` | no |  |  |
+| `lane` | `SMALLINT` | no |  |  |
+| `last_seq` | `BIGINT` | no |  |  |
+| `last_hash` | `BINARY(32)` | no |  |  |
+| `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
+| `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+| `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
+| `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
+| `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
+
+<a id="registry-audit_chain_head"></a>
+## `audit_chain_head` (registry)
+
+Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain  
+
+Chains are split into lanes (chain_id = UUID5(tenant_id, "lane-<n>"), default 16 lanes per tenant and zone) so concurrent writers at the 07:30–09:30 register peak do not serialise on a single row; each lane is an independent hash chain anchored daily and verified nightly (CD-12).
+
+| | |
+|---|---|
+| Zone | registry |
+| Kind | projection |
+| Classification | internal |
+| History | none |
+| Scope | none |
+| Module | `core` |
+| Origin | ceda |
+| Retention | `RS-AUDIT` |
+| Requirements | FR-ADM-08 |
+| Pages | ADM-11 |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `chain_id` **PK** | `BINARY(16)` | no |  |  |
+| `lane` | `SMALLINT` | no |  |  |
+| `last_seq` | `BIGINT` | no |  |  |
+| `last_hash` | `BINARY(32)` | no |  |  |
+| `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
+| `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+| `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
+| `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
+| `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
+
+<a id="ops-audit_chain_head"></a>
+## `audit_chain_head` (ops)
+
+Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain  
+
+Chains are split into lanes (chain_id = UUID5(tenant_id, "lane-<n>"), default 16 lanes per tenant and zone) so concurrent writers at the 07:30–09:30 register peak do not serialise on a single row; each lane is an independent hash chain anchored daily and verified nightly (CD-12).
+
+| | |
+|---|---|
+| Zone | ops |
+| Kind | projection |
+| Classification | internal |
+| History | none |
+| Scope | none |
+| Module | `core` |
+| Origin | ceda |
+| Retention | `RS-AUDIT` |
+| Requirements | FR-ADM-08 |
+| Pages | ADM-11 |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `chain_id` **PK** | `BINARY(16)` | no |  |  |
+| `lane` | `SMALLINT` | no |  |  |
+| `last_seq` | `BIGINT` | no |  |  |
+| `last_hash` | `BINARY(32)` | no |  |  |
+| `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
+| `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+| `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
+| `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
+| `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
+
+<a id="vault-audit_chain_head"></a>
+## `audit_chain_head` (vault)
+
+Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain  
+
+Chains are split into lanes (chain_id = UUID5(tenant_id, "lane-<n>"), default 16 lanes per tenant and zone) so concurrent writers at the 07:30–09:30 register peak do not serialise on a single row; each lane is an independent hash chain anchored daily and verified nightly (CD-12).
+
+| | |
+|---|---|
+| Zone | vault |
+| Kind | projection |
+| Classification | internal |
+| History | none |
+| Scope | none |
+| Module | `core` |
+| Origin | ceda |
+| Retention | `RS-AUDIT` |
+| Requirements | FR-ADM-08 |
+| Pages | ADM-11 |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `chain_id` **PK** | `BINARY(16)` | no |  |  |
+| `lane` | `SMALLINT` | no |  |  |
+| `last_seq` | `BIGINT` | no |  |  |
+| `last_hash` | `BINARY(32)` | no |  |  |
+| `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
+| `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+| `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
+| `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
+| `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
+
+<a id="records-audit_chain_head"></a>
+## `audit_chain_head` (records)
+
+Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain  
+
+Chains are split into lanes (chain_id = UUID5(tenant_id, "lane-<n>"), default 16 lanes per tenant and zone) so concurrent writers at the 07:30–09:30 register peak do not serialise on a single row; each lane is an independent hash chain anchored daily and verified nightly (CD-12).
+
+| | |
+|---|---|
+| Zone | records |
+| Kind | projection |
+| Classification | internal |
+| History | none |
+| Scope | none |
+| Module | `core` |
+| Origin | ceda |
+| Retention | `RS-AUDIT` |
+| Requirements | FR-ADM-08 |
+| Pages | ADM-11 |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `chain_id` **PK** | `BINARY(16)` | no |  |  |
+| `lane` | `SMALLINT` | no |  |  |
+| `last_seq` | `BIGINT` | no |  |  |
+| `last_hash` | `BINARY(32)` | no |  |  |
+| `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
+| `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+| `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
+| `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
+| `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
 
 <a id="platform-audit_anchor"></a>
 ## `audit_anchor` (platform)

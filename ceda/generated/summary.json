@@ -1,22 +1,22 @@
 {
   "ceda": "SYN-CEDA-001",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "domains": 31,
-  "entities": 458,
-  "tables": 484,
+  "entities": 459,
+  "tables": 489,
   "tables_by_zone": {
-    "platform": 22,
-    "registry": 165,
-    "ops": 216,
-    "vault": 25,
-    "records": 18,
+    "platform": 23,
+    "registry": 166,
+    "ops": 217,
+    "vault": 26,
+    "records": 19,
     "dw": 38
   },
   "origin": {
     "appj": 174,
-    "ceda": 284
+    "ceda": 285
   },
-  "columns": 7294,
+  "columns": 7343,
   "foreign_keys": 601,
   "soft_references": 330,
   "append_only_tables": 93,

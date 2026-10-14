@@ -35,7 +35,7 @@
 | FR-ADM-05 | SHALL | P2 | `outbox_event`, `policy_rule`, `policy_rule_test`, `workflow_definition`, `workflow_instance`, `workflow_transition` | Author, test and publish policy rules and workflow definitions. |
 | FR-ADM-06 | SHALL | P1 | `api_client`, `data_sharing_agreement`, `exchange_transfer`, `integration_connection`, `webhook_delivery`, `webhook_subscription` | Provide an integration marketplace and API client/data-sharing agreement management. |
 | FR-ADM-07 | SHALL | P1 | `break_glass_grant`, `data_sharing_agreement`, `legal_hold`, `privacy_request`, `record_series` | Provide the Data Governance Engine: classification, retention schedules, consent and legal basis, residency, subject access and erasure (respecting legal holds), exports and minimisation reviews. |
-| FR-ADM-08 | SHALL | P1 | `audit_anchor`, `audit_event` | Provide the audit log explorer. |
+| FR-ADM-08 | SHALL | P1 | `audit_anchor`, `audit_chain_head`, `audit_event` | Provide the audit log explorer. |
 | FR-ADM-09 | SHALL | P1 | `config_version`, `translation` | Manage platform-level translations, terminology overrides and RTL languages. |
 | FR-ADM-10 | SHALL | P1 | `tenant_domain` | Manage branding with contrast validation. |
 | FR-ADM-101 | SHALL | P2 | `live_class` | Provide voice interaction (voice search, voice commands and dictation into forms), captions for video and live classes, and alternative formats (large print, easy-read, braille-ready export). |

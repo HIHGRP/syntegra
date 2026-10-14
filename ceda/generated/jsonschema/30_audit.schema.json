@@ -1161,6 +1161,384 @@
       ],
       "additionalProperties": false
     },
+    "AuditChainHeadPlatform": {
+      "title": "AuditChainHead",
+      "description": "Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain",
+      "type": "object",
+      "x-ceda": {
+        "entity": "audit_chain_head",
+        "zone": "platform",
+        "domain": "AUD",
+        "kind": "projection",
+        "classification": "internal",
+        "history": "none",
+        "module": "core"
+      },
+      "properties": {
+        "chain_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "lane": {
+          "type": "integer"
+        },
+        "last_seq": {
+          "type": "integer"
+        },
+        "last_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "chain_id",
+        "lane",
+        "last_seq",
+        "last_hash",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "AuditChainHeadRegistry": {
+      "title": "AuditChainHead",
+      "description": "Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain",
+      "type": "object",
+      "x-ceda": {
+        "entity": "audit_chain_head",
+        "zone": "registry",
+        "domain": "AUD",
+        "kind": "projection",
+        "classification": "internal",
+        "history": "none",
+        "module": "core"
+      },
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "chain_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "lane": {
+          "type": "integer"
+        },
+        "last_seq": {
+          "type": "integer"
+        },
+        "last_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "tenant_id",
+        "chain_id",
+        "lane",
+        "last_seq",
+        "last_hash",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "AuditChainHeadOps": {
+      "title": "AuditChainHead",
+      "description": "Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain",
+      "type": "object",
+      "x-ceda": {
+        "entity": "audit_chain_head",
+        "zone": "ops",
+        "domain": "AUD",
+        "kind": "projection",
+        "classification": "internal",
+        "history": "none",
+        "module": "core"
+      },
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "chain_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "lane": {
+          "type": "integer"
+        },
+        "last_seq": {
+          "type": "integer"
+        },
+        "last_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "tenant_id",
+        "chain_id",
+        "lane",
+        "last_seq",
+        "last_hash",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "AuditChainHeadVault": {
+      "title": "AuditChainHead",
+      "description": "Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain",
+      "type": "object",
+      "x-ceda": {
+        "entity": "audit_chain_head",
+        "zone": "vault",
+        "domain": "AUD",
+        "kind": "projection",
+        "classification": "internal",
+        "history": "none",
+        "module": "core"
+      },
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "chain_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "lane": {
+          "type": "integer"
+        },
+        "last_seq": {
+          "type": "integer"
+        },
+        "last_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "tenant_id",
+        "chain_id",
+        "lane",
+        "last_seq",
+        "last_hash",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "AuditChainHeadRecords": {
+      "title": "AuditChainHead",
+      "description": "Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain",
+      "type": "object",
+      "x-ceda": {
+        "entity": "audit_chain_head",
+        "zone": "records",
+        "domain": "AUD",
+        "kind": "projection",
+        "classification": "internal",
+        "history": "none",
+        "module": "core"
+      },
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "chain_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "lane": {
+          "type": "integer"
+        },
+        "last_seq": {
+          "type": "integer"
+        },
+        "last_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "tenant_id",
+        "chain_id",
+        "lane",
+        "last_seq",
+        "last_hash",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
     "AuditAnchorPlatform": {
       "title": "AuditAnchor",
       "description": "Daily anchor of an audit chain written to write-once storage, and the nightly verification result",
