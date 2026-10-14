@@ -84,3 +84,18 @@ def test_clearance_desk_and_establishment_pages(world, as_user, client) -> None:
     )
     assert r.status_code == 200 and b"Decision recorded" in r.content
     assert client.get("/hr/establishment").status_code == 200  # heads hold hr:view
+
+
+def test_national_clearance_network_page(world, client) -> None:  # type: ignore[no-untyped-def]
+    from tests.conftest import make_user
+
+    u, _ = make_user(world, "STA", world.state_scope)
+    client.handler.enforce_csrf_checks = False
+    assert client.post("/sign-in", {"username": u.username, "password": "correct-horse-battery"}).status_code == 302
+    r = client.get("/clearance/network")
+    assert r.status_code == 200 and b"National clearance network" in r.content
+    assert b"NG-FC" in r.content and b"1 / 37" in r.content and b"(this state)" in r.content
+    h, _ = make_user(world, "HEAD", world.institution.scope_node_id)
+    client.post("/sign-out")
+    client.post("/sign-in", {"username": h.username, "password": "correct-horse-battery"})
+    assert client.get("/clearance/network").status_code == 403

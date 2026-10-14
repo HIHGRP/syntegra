@@ -143,7 +143,7 @@ class ExchangeClearance(APIView):
     def post(self, request: Request) -> Response:
         token = request.data.get("jws") if isinstance(request.data, dict) else None
         if not isinstance(token, str) or token.count(".") != 2 or len(token) > 16384:
-            raise federation.ExchangeRefused("body must be {\"jws\": <compact JWS>}")
+            raise federation.ExchangeRefused('body must be {"jws": <compact JWS>}')
         return Response({"jws": federation.answer(token)}, headers={"Cache-Control": "no-store"})
 
 

@@ -14,7 +14,10 @@ from syntegra.platform.models import ExchangePeer
 
 
 class Command(BaseCommand):
-    help = "directory | onboard <NG-XX> --endpoint https://… --jwk '{…}' --agreement REF | suspend <NG-XX> | backfill <NG-XX>"
+    help = (
+        "directory | onboard <NG-XX> --endpoint https://… --jwk '{…}' --agreement REF | suspend <NG-XX> "
+        "| backfill <NG-XX>"
+    )
 
     def add_arguments(self, parser: Any) -> None:
         parser.add_argument("action", choices=["directory", "onboard", "suspend", "backfill"])
@@ -41,8 +44,9 @@ class Command(BaseCommand):
             if action == "onboard":
                 if not opts["endpoint"] or not opts["jwk"]:
                     raise CommandError("--endpoint and --jwk are required")
-                peer = federation.onboard_remote(code, opts["endpoint"], json.loads(opts["jwk"]),
-                                                 agreement_ref=opts["agreement"])
+                peer = federation.onboard_remote(
+                    code, opts["endpoint"], json.loads(opts["jwk"]), agreement_ref=opts["agreement"]
+                )
                 self.stdout.write(self.style.SUCCESS(f"{peer.state_code} active at {peer.endpoint_url}"))
             elif action == "suspend":
                 n = ExchangePeer.objects.using("platform").filter(state_code=code).update(status="suspended")

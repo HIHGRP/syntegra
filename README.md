@@ -84,10 +84,11 @@ Module boundaries are enforced by `import-linter`:
 | SDAF financing | Census with a content hash, billing at most once per period across institutions, UBE payer rule, rate cards with four eyes, demands | `institutions/{id}/census`, `census/{id}/freeze`, `census/{id}/demand` | — |
 | HRMS (CR-001) | Establishment and vacancies; appointments with statutory retirement; posting orders that move role grants, end teaching and re-run coverage (G9→G2); leave with balances the database cannot over-book and cover hand-off (G8); promotions; employee relations with due process; separation that ends access everywhere; encrypted salary accounts with four-eyes; Nigerian payroll (NTA 2025 PAYE, pension, NHF) with two-person approval; state-wide integrity scan (shared accounts/BVNs, double employment, pay after exit, past retirement, no attendance, failed headcount) with human pay holds | `hr/positions`, `hr/institutions/{id}/establishment`, `hr/appointments`, `hr/postings`, `hr/leave`, `hr/promotions`, `hr/relations`, `hr/separations`, `hr/integrity/*`, `hr/payroll-runs` | HRM-01 `/hr/establishment` |
 | Fee clearance (CR-001) | Obligations published from each institution's ledger (never SDAF); mandatory, purpose-bound check before transfer and re-admission across every public and private institution in the state; human admission decision — admit, payment plan, defer, protected — never a refusal and never blocking records or attendance (P9); UBE protection; disputes resolved by the LGA; debt-hopping flags; families see every check | `clearance/checks`, `clearance/checks/{id}/decision`, `clearance/obligations`, `clearance/obligations/{id}/disputes`, `clearance/disputes/{id}/resolution`, `learners/{id}/clearance-checks`; `X-Syntegra-Clearance-*` headers on transfer and registration | FCL-01 `/admissions/clearance` |
+| National clearance network (CR-002) | Every check also asks the other 36 states and the FCT: a directory of all 37 registries; signed (ES256), expiring, single-use queries; matching by Global Learner ID, a national NIN token (never the NIN) or demographics; data returned only for a confident match; states not on the network or not answering are reported as coverage gaps and never block (P9); new arrivals checked before enrolment; both states log; families see checks from other states | `exchange/clearance` (state-to-state, signed messages), `exchange/keys` | FCL-04 `/clearance/network` |
 | Metrics | Semantic layer (`ENR-COUNT`, `ATT-RATE`, `CUR-GAPS-OPEN`) limited to the caller's scope; small-number suppression set by policy | `metrics/{id}` | Home tiles |
 | Any CEDA entity | Read-only, scoped and clearance-trimmed. Vault, warehouse and special-category data are excluded. | `ceda`, `ceda/{entity}`, `ceda/{entity}/{id}` | `/pages` (the 260-page catalogue with live and planned status) |
 
-The models for all 511 tables exist and are tested against MySQL. Pages and services for the other MFS modules are
+The models for all 513 tables exist and are tested against MySQL. Pages and services for the other MFS modules are
 **planned**, and are listed by phase at `/pages`.
 
 ## API conventions (Book 3 §26)
@@ -113,6 +114,8 @@ podman compose -f deploy/compose.yaml up -d db valkey   # or: docker compose …
 python manage.py migrate --database=default
 for z in platform registry ops vault records dw; do python manage.py migrate --database=$z; done
 python manage.py syntegra_bootstrap       # Abia State seed tenant, hierarchy, roles, policies, HR defaults; prints admin password
+python manage.py syntegra_state NG-LA     # provision another state on this platform (or --all: 36 states and the FCT)
+python manage.py syntegra_exchange directory   # national clearance network; also onboard | suspend | backfill
 python manage.py runserver                # http://localhost:8000 (host → tenant through tenant_domain)
 ```
 
@@ -141,7 +144,7 @@ python ceda/tools/release.py check --mysql # releases replay to the current DDL 
 
 The integration tests cover:
 
-- schema parity for all 511 tables in every zone;
+- schema parity for all 513 tables in every zone;
 - that tenant data cannot be queried without a context;
 - tamper detection and append-only enforcement for the audit chain;
 - learner matching, enrolment and transfer;
@@ -156,7 +159,11 @@ The integration tests cover:
 - fee clearance: decision required (never a refusal), deferral, payment plans, UBE protection, disputes and who may
   raise them, debt-hopping flags, ledger publication without SDAF, expiry, family view, re-admission and the API;
 - HRMS: appointment and establishment, posting chain (grants, teaching, G2 gap as of the effective date), leave and
-  cover, promotion, payroll with four-eyes and integrity holds, separation ending access.
+  cover, promotion, payroll with four-eyes and integrity holds, separation ending access;
+- national clearance: a Lagos debt found on admission in Abia (by NIN token and by demographics), no data for a
+  possible match, refusal of replayed, expired, forged and unknown-state messages, a remote state over HTTPS, an
+  unreachable state recorded without blocking, the family view, the network page, and complete 37-of-37 coverage
+  with every state provisioned.
 
 ## Layout
 

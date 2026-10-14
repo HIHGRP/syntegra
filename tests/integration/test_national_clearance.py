@@ -272,9 +272,8 @@ def test_transfer_within_abia_also_asks_lagos(world: Any, as_user: Any, lagos: A
             )
         )
     lagos_owes(lagos, lrn_la, 50_000)
-    with as_user("HEAD", world.institution.scope_node_id):
-        with pytest.raises(ClearanceDecisionRequired) as e:
-            learners.transfer(reg.learner.id, world.institution.id, education_level="sss_1")
+    with as_user("HEAD", world.institution.scope_node_id), pytest.raises(ClearanceDecisionRequired) as e:
+        learners.transfer(reg.learner.id, world.institution.id, education_level="sss_1")
     assert e.value.problem()["obligations"][0]["state"] == "NG-LA"
 
 
@@ -437,7 +436,7 @@ def test_national_tokens_backfilled_for_older_identifiers(world: Any, as_user: A
 def test_provisioning_an_unknown_state_fails() -> None:
     from syntegra.platform.bootstrap import provision_state
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="not a Nigerian state"):
         provision_state("NG-XX")
 
 
@@ -453,6 +452,32 @@ def test_decision_still_required_for_lagos_debt_cannot_be_refusal(world: Any, as
             world,
             as_user,
             clearance=DecisionInput(
-                decision="refuse", reason="Owes Lagos school", check_id=uuid.UUID(e.value.problem()["clearance_check_id"])
+                decision="refuse",
+                reason="Owes Lagos school",
+                check_id=uuid.UUID(e.value.problem()["clearance_check_id"]),
             ),
         )
+
+
+def test_every_state_on_the_network_gives_complete_national_coverage(world: Any, as_user: Any) -> None:
+    from syntegra.clearance.models import ClearanceCheck, ClearanceExchangeQuery
+    from syntegra.core import context, tenancy
+    from syntegra.platform.bootstrap import provision_state
+    from syntegra.platform.states import STATES
+
+    for code, _name, _capital in STATES:
+        provision_state(code)
+    try:
+        started = time.monotonic()
+        reg = arrive_in_abia(world, as_user, given="Zainab", nin="31415926535")
+        elapsed = time.monotonic() - started
+        with context.use(world_ctx()):
+            chk = ClearanceCheck.objects.get(learner_id=reg.learner.id)
+            sent = ClearanceExchangeQuery.objects.filter(clearance_check_id=chk.id).count()
+        assert chk.coverage == "national" and chk.result == "clear" and reg.enrolment is not None
+        assert chk.federation["covered"] == 37 and chk.federation["complete"] is True
+        assert len(chk.federation["not_found"]) == 36 and chk.federation["not_on_network"] == []
+        assert sent == 36  # one signed query to every other state and the FCT
+        assert elapsed < 30
+    finally:
+        tenancy.clear_caches()

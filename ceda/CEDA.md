@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **Document** | SYN-CEDA-001 — Canonical Enterprise Data Architecture |
-| **Version** | 1.2.0 — adds the enterprise HRMS and ecosystem-wide fee-clearance due diligence (change request CR-001; §23, §24); change log in §22 |
+| **Version** | 1.3.0 — adds the national clearance network: fee-clearance checks that cover all 36 states and the FCT (change request CR-002; §25). 1.2.0 added the enterprise HRMS and fee-clearance due diligence (CR-001; §23, §24). Change log in §22 |
 | **Date** | 14 October 2026 (1.0.0 and 1.1.0: 13–14 October 2026) |
-| **Derived from** | SYN-MFS-002 v2.4, Master Functional Specification (consolidated single volume: Books 1–3, 517 functional requirements, 260 pages, Appendix J MySQL schema of 174 tables), extended by change request CR-001 (23 requirements, 13 pages) |
+| **Derived from** | SYN-MFS-002 v2.4, Master Functional Specification (consolidated single volume: Books 1–3, 517 functional requirements, 260 pages, Appendix J MySQL schema of 174 tables), extended by change requests CR-001 (23 requirements, 13 pages) and CR-002 (6 requirements, 1 page) |
 | **Platform** | Python 3.12 · Django 5.2 LTS (+ FastAPI for high-throughput services) · MySQL 9.7 LTS · Red Hat Enterprise Linux 10 / OpenShift |
 | **Machine-readable model** | `ceda/model/` (single source of truth) → `ceda/generated/` (DDL, dictionary, ERDs, JSON Schema, OpenAPI components, event schemas, metric catalogue, traceability) |
 | **Status of artefacts** | Model validates with 0 errors, 0 warnings; every zone's DDL loads into MySQL 9.7.2; 12 database-level guarantees verified on MySQL 9.7 (§18) |
@@ -46,13 +46,13 @@ CEDA is the **authoritative data blueprint** for Syntegra. The MFS says *what* t
 | Measure | Value |
 |---|---|
 | Domains (subject areas) | 32 operational + 1 warehouse |
-| Canonical entities | 481 (174 re-specified from Appendix J, 307 added to give MFS and change-request requirements a home) |
-| Physical tables | 511 across 6 data zones (platform 23, registry 182, ops 223, vault 26, records 19, warehouse 38) — 18 cross-cutting entities are replicated per zone |
-| Columns · enforced foreign keys · soft references | 7,755 · 660 · 340 |
-| Append-only tables · partitioned tables | 95 · 21 |
-| Fixed enumerations · jurisdiction code lists | 335 · 51 (Nigerian pack) |
-| Domain events · semantic-layer metrics · retention series | 149 · 59 · 32 |
-| Coverage | 273/273 pages (260 MFS + 13 CR-001); 540/540 functional requirements accounted for (517 MFS + 23 CR-001; 533 realised in data, 7 behavioural); 174/174 Appendix J tables mapped |
+| Canonical entities | 483 (174 re-specified from Appendix J, 309 added to give MFS and change-request requirements a home) |
+| Physical tables | 513 across 6 data zones (platform 24, registry 183, ops 223, vault 26, records 19, warehouse 38) — 18 cross-cutting entities are replicated per zone |
+| Columns · enforced foreign keys · soft references | 7,794 · 663 · 340 |
+| Append-only tables · partitioned tables | 96 · 21 |
+| Fixed enumerations · jurisdiction code lists | 338 · 51 (Nigerian pack) |
+| Domain events · semantic-layer metrics · retention series | 150 · 60 · 32 |
+| Coverage | 274/274 pages (260 MFS + 13 CR-001 + 1 CR-002); 546/546 functional requirements accounted for (517 MFS + 23 CR-001 + 6 CR-002; 539 realised in data, 7 behavioural); 174/174 Appendix J tables mapped |
 
 ---
 
@@ -123,6 +123,7 @@ Decisions CEDA had to take to make the MFS buildable. Status **Adopted** means t
 | CD-19 | **HRMS is split between a state HR hub and employer operations.** Establishment, cadres, salary structures, employment records, postings, promotions, separations, bank-account tokens and payroll-integrity flags are in the registry; leave, employee relations and pay elements are in the employer's ops zone; payroll runs and payslips remain in STF. | Deployment across public and private employers, ghost-worker and double-employment detection must see every employer at once; day-to-day HR belongs to the employer. | Adopted (CR-001, §23) |
 | CD-20 | **Fee clearance informs a human admission decision; it never refuses.** The check is mandatory before re-admission or transfer, is purpose-bound, logged and visible to the family; outstanding obligations require a recorded decision (admit, admit with payment plan, defer pending settlement, admit as protected); learners entering public basic education are always admitted; SDAF is never an obligation; ledgers never reach the admission decision (import contract). | MFS P9 (education is never withheld for money), admission refusal is human-only (A1), UBE Act 2004, MFS §20.9 (SDAF via state revenue only), NDPA 2023. | Adopted (CR-001, §24) — **confirm** with the State Ministry's legal adviser |
 | CD-21 | **Releases are frozen; upgrades are expand-only deltas.** `ceda/releases/<version>/` holds the full baseline DDL (1.1.0) and, for each later release, the derived delta plus any hand-written expand script; one Django migration per release; `release.py check --mysql` proves the replayed releases are structurally identical to the current DDL. | A live state database is upgraded, never rebuilt (§17.4). | Adopted |
+| CD-22 | **Cross-state clearance is a federation of state registries, not a national register.** Each state keeps its own obligations register; a national directory (`exchange_peer`) lists all 36 states and the FCT with their hosting, endpoint and verification key. A check asks every other state with a signed (ES256), expiring, single-use message; the subject is identified by Global Learner ID, a national NIN lookup token and demographics, never the NIN; a state answers with obligations only for a confident match (≥ 0.98); states that are not on the network or do not answer are recorded as coverage gaps and never block the admission. Both states log the message. | NDPA 2023 data minimisation and state data sovereignty (each state controls its register); a single national copy of family debts would be a new, larger target. Completeness is reported, not assumed, on every check. | Adopted (CR-002, §25) |
 
 ---
 
@@ -688,7 +689,7 @@ Fixed enums change only through a CEDA release. Jurisdiction code lists change t
 | `.github/workflows/ceda.yml` | Runs all of the above on every change under `ceda/`, with a `mysql:9.7` service |
 | `ceda/tools/extract_mfs.py` | Re-extracts the page catalogue and requirement register from the MFS when it is revised |
 
-Verified on MySQL 9.7.2 (14 October 2026): all 7 DDL files load (511 tables); the 1.1.0 baseline plus the 1.2.0 delta replays to a structurally identical schema in every zone, and upgrades a seeded 1.1.0 database in place; the following hold in the database itself — one active primary enrolment per learner; tenant-consistent keys refuse cross-tenant references; UBE Act payer rule; enum CHECKs; append-only UPDATE and DELETE refused (registry and vault); four-eyes on policy exceptions; 12-month exception window; one-sided ledger entries; one open coverage gap per target per rule; partitioned attendance accepts marks; one open fee obligation per learner × creditor × kind; SDAF can never be a school obligation; a protected admission must state its reason; one active holder per establishment position; posting approver ≠ requester; leave balances refuse over-booking.
+Verified on MySQL 9.7.2 (14 October 2026): all 7 DDL files load (513 tables); the 1.1.0 baseline plus the 1.2.0 and 1.3.0 deltas replays to a structurally identical schema in every zone, and upgrades a seeded database in place; the following hold in the database itself — one active primary enrolment per learner; tenant-consistent keys refuse cross-tenant references; UBE Act payer rule; enum CHECKs; append-only UPDATE and DELETE refused (registry and vault); four-eyes on policy exceptions; 12-month exception window; one-sided ledger entries; one open coverage gap per target per rule; partitioned attendance accepts marks; one open fee obligation per learner × creditor × kind; SDAF can never be a school obligation; a protected admission must state its reason; one active holder per establishment position; posting approver ≠ requester; leave balances refuse over-booking.
 
 ---
 
@@ -727,7 +728,7 @@ The Appendix J DDL (174 tables) was extracted from the MFS and loaded into MySQL
 | CD-07 / CD-08 | Global Learner ID and certificate number check-digit formats | Product owner; certification registrar | As in §5.3 |
 | — | Lesson-register adoption per level (drives the attendance volume in §16.3) | State Ministry | Daily registers for all; lesson registers where institutions choose |
 | D28 | Fee-clearance policy: lawful basis and DPIA, limitation period, reconfirmation period, dispute service level, protected categories | State Ministry legal adviser + DPO | CD-20 as built: legitimate interest (admission due diligence), 6-year limitation, 90-day reconfirmation, 10 school days for disputes, protections as listed in §24 |
-| D29 | Cross-state clearance through the national exchange | Federal Ministry + states | Modelled (`clearance_check.coverage = national`); in-state checks only until the exchange agreement exists |
+| D29 | Cross-state clearance through the national exchange | Federal Ministry + states | **Built** in 1.3.0 (CD-22, §25). States on the platform join automatically; a state hosted elsewhere joins when it signs the exchange agreement (`agreement_ref`, default `NG-NCX-2026-001`) and the platform operator onboards its endpoint and key. Until every state has joined, each check reports which states were not covered |
 | D30 | Statutory payroll tables and the state's approved salary scales | State Head of Service, payroll and tax advisers | Versioned tables seeded with the 2026 values (Nigeria Tax Act 2025 PAYE bands; pension 8%/10%; NHF 2.5%); salary scale `AB-TSS-ILLUSTRATIVE` is a placeholder that must be replaced before a live pay run |
 | D31 | Retirement rules per cadre (teachers 65 years / 40 years of service; others 60 / 35) | Head of Service | Cadre attributes (`retirement_age`, `max_years_service`), not code |
 
@@ -756,10 +757,21 @@ The Appendix J DDL (174 tables) was extracted from the MFS and loaded into MySQL
 | `ceda/generated/traceability/` | Page, requirement and Appendix J traceability |
 | `ceda/generated/summary.json` | Counts |
 | `ceda/model/change_requests/CR-*.yaml` | Change requests: requirements and pages beyond the MFS (CD-18) |
-| `ceda/releases/<version>/` | Frozen release DDL: 1.1.0 baseline; 1.2.0 delta and expand script (CD-21) |
+| `ceda/releases/<version>/` | Frozen release DDL: 1.1.0 baseline; 1.2.0 and 1.3.0 deltas and expand scripts (CD-21) |
 | `ceda/tools/gen_django.py` → `src/syntegra/*/models.py`, `src/syntegra/core/catalog/ceda_catalog.json` | Django models (`managed = False`) and the runtime catalogue (events, metrics, enums, code lists, pages) for the application |
 
 ## 22. Change log
+
+### 1.3.0 — 14 October 2026 (change request CR-002)
+
+| Change | Reason |
+|---|---|
+| Platform entity `exchange_peer` — the national directory of the 36 state registries and the FCT (hosting, endpoint, key id, public JWK, agreement, status, last contact) | Checks must be able to say which states were asked and which were not (CD-22) |
+| Registry entity `clearance_exchange_query` (append-only, unique on direction × query reference × counterpart state) | Both states log every cross-state message; the unique key refuses replayed messages |
+| `clearance_check.federation` (json); `external_identifier.value_national_hmac` with index `(tenant_id, scheme, value_national_hmac)` | Per-state coverage on every check; a NIN lookup token computed with the national federation key, the same in every state, so states can match without exchanging NINs (the per-state `value_hmac` cannot be compared across states) |
+| Enums `peer_hosting`, `peer_status`, `exchange_match`; event `FCL.EXCHANGE_QUERY_RECEIVED`; metric `FCL-NATIONAL-COVERAGE`; page FCL-04 | CR-002 requirements FR-FCL-09..14 |
+| Release 1.3.0: delta plus expand script (`ALTER … ALGORITHM=INSTANT` for the two new columns); `release.py` treats tables altered by earlier expand scripts as covered and ignores charset introducers MySQL re-prints in CHECK constraints after an `ALTER` | Upgrading a live 1.2.0 database in place |
+| Schema-per-state seeding: the release migration seeds a state registry's code lists with that state's tenant id | Needed once more than one state is provisioned |
 
 ### 1.2.0 — 14 October 2026 (change request CR-001)
 
@@ -903,7 +915,9 @@ publication rules both refuse it.
    evidence document. Claims older than the 6-year limitation period are refused.
 2. **Check (admitting institution).** `clearance.services.gate` runs before every transfer (`learners.transfer`) and
    before the re-admission of a known learner who was enrolled elsewhere (`learners.register` on an auto-linked
-   match). It reads every open obligation in the state except those owed to the admitting institution itself. The
+   match). It reads every open obligation in the state except those owed to the admitting institution itself, and —
+   from 1.3.0 — asks every other state on the national clearance network (§25); a learner who is new to the state
+   is also checked nationally before being enrolled. The
    check is logged, the creditors and the family are notified (`FCL.CHECK_PERFORMED`), and a learner with
    obligations at two or more creditors, or with two or more prior "outstanding" checks in 24 months, is flagged
    `repeat_unsettled_transfers` for state review.
@@ -939,3 +953,104 @@ publication rules both refuse it.
 The state therefore sees both forms of abuse: families moving to avoid debts, and institutions publishing claims they
 cannot support.
 
+---
+
+## 25. National clearance network (cross-state fee clearance)
+
+### 25.1 Why a federation
+
+A family can move a child from Lagos to Abia as easily as between two schools in Aba. CR-002 extends the fee-clearance
+check of §24 to every state. CEDA does this by federating the 37 state registries rather than copying every state's
+obligations into one national register (CD-22):
+
+- each state remains the controller of its own obligations register (NDPA 2023, state data sovereignty);
+- only the minimum leaves a state: a match outcome and, for a confident match only, the obligation summaries;
+- the requesting state learns exactly which states answered, so completeness is reported rather than assumed.
+
+### 25.2 Directory and keys
+
+`exchange_peer` (platform zone) has one row for each of the 36 states and the FCT, seeded from the state list
+(`platform/states.py`) when the platform is first provisioned.
+
+| Field | Meaning |
+|---|---|
+| `hosting` | `co_hosted` — provisioned on this platform and answered in-process by its own registry; `remote` — hosted by another operator and reached over HTTPS |
+| `status` | `not_on_network` → `onboarding` → `active`; `suspended` stops traffic both ways |
+| `kid`, `public_jwk` | The state's exchange signing key (`exchange-ng-xx`, ES256 / P-256). Private keys stay in the state's HSM (`KeyProvider`) |
+| `endpoint_url` | Remote peers only: `https://…`, called at `/api/v1/exchange/clearance` |
+| `agreement_ref` | The exchange agreement the state signed (default `NG-NCX-2026-001`) |
+
+Provisioning a state on the platform (`manage.py syntegra_state NG-LA`, or `--all` for every state and the FCT) creates
+its tenant, scope hierarchy, roles and GLID block and makes it an active co-hosted peer. A state hosted elsewhere is
+added with `manage.py syntegra_exchange onboard NG-XX --endpoint https://… --jwk '{…}'`. The platform publishes the
+keys of the states it hosts at `GET /api/v1/exchange/keys` for other operators' directories.
+
+### 25.3 The message
+
+A query is a compact JWS (ES256) signed with the requesting state's key:
+
+| Claim | Content |
+|---|---|
+| `iss`, `aud` | Requesting and answering state codes (`NG-AB`, `NG-LA`) |
+| `iat`, `exp` | Issued at; expires after 120 seconds |
+| `jti` | Query reference, logged by both states; a second message with the same reference is refused as a replay |
+| `purpose` | `admission`, `transfer` or `re_enrolment` only |
+| `subject` | Global Learner ID, national NIN lookup token (hex HMAC, never the NIN), legal names, date of birth and precision, sex |
+| `requester` | Requesting institution code and name (shown to the answering state and the family) |
+
+The answer is signed by the answering state and carries `in_reply_to` = `jti`, the match outcome and, for a match, the
+obligation summaries (creditor, kind, amount, oldest due date, status). Refusals are signed answers too.
+
+The national NIN lookup token (`external_identifier.value_national_hmac`) uses one federation HMAC key held in the
+national HSM, so the same NIN gives the same token in every state. `manage.py syntegra_exchange backfill NG-XX` adds
+it to identifiers recorded before 1.3.0.
+
+### 25.4 Matching in the answering state
+
+The answering state looks up candidates by Global Learner ID, by national NIN token, and — if neither finds anyone —
+by demographic blocking (phonetic family name or date of birth). It scores them with the same model as registration
+(§9 of the MFS, `learners.domain.matching`):
+
+| Outcome | Returned |
+|---|---|
+| `matched` | One unambiguous candidate at ≥ 0.98: the learner's open obligations |
+| `possible_match` | A candidate at 0.80–0.98, or two at ≥ 0.98: **no data**; the admitting head is told to ask the family about schooling in that state |
+| `not_found` | Nothing |
+| `refused` | Bad signature, unknown or suspended state, expired, replayed, or a purpose outside the network |
+| `unavailable` | Timeout or network error (recorded by the requesting state) |
+| `not_on_network` | The state has not joined (no message is sent) |
+
+### 25.5 Effect on the check
+
+`clearance.services.check` queries the network before it opens its transaction: co-hosted states in-process, remote
+states in parallel with a 3-second timeout. Obligations from other states join the assessment with their state code
+and count towards the `repeat_unsettled_transfers` pattern. The check records `coverage = national` and
+`federation` — the requesting state, `states_total` (37), `covered` (answering states plus itself), `complete`, and the
+list of states per outcome. Every message is written to `clearance_exchange_query` in both states, and the answering
+state emits `FCL.EXCHANGE_QUERY_RECEIVED`.
+
+The guardrails of §24 hold unchanged: an outstanding obligation in another state needs the same human decision;
+public basic education is still admitted automatically; a state that is not on the network, does not answer, or
+refuses is a **coverage gap shown on the check, never a reason to block or delay** the admission (P9).
+
+A learner who is new to the admitting state is now checked nationally too: when other states are on the network,
+`learners.register` creates the learner record, runs the gate, and enrols only once the clearance outcome allows it.
+If a decision is required, the response carries the check id and the retry with the decision enrols the same record.
+
+### 25.6 Transparency and oversight
+
+- The family sees checks made in other states about their child (`GET /learners/{id}/clearance-checks`, rows with
+  `coverage = cross_state` and the requesting state).
+- Page **FCL-04** (`/clearance/network`, state administrators) lists all 37 registries with status, hosting, key, last
+  contact and the queries sent, received and matched in the last 30 days, plus the share of this state's checks with
+  complete national coverage.
+- Metric **FCL-NATIONAL-COVERAGE** reports the average number of states covered per check.
+
+### 25.7 Verification
+
+The application tests provision Lagos on the same platform as Abia and show that: a debt at a Lagos private school is
+found when the child is admitted in Abia, by NIN token or by demographics alone; a possible match shares no data;
+replayed, expired, forged, out-of-purpose and unknown-state messages are refused; a remote state answers over the
+HTTPS endpoint; an unreachable state is recorded as unavailable and the child is admitted; the family sees the
+cross-state query; and, with all 36 states and the FCT provisioned, a check sends 36 signed queries and reports
+complete national coverage (37 of 37).

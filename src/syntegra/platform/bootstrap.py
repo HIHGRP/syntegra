@@ -292,7 +292,7 @@ def _platform_base() -> uuid.UUID:
                 status="active",
                 activated_at=utcnow(),
             ).save(using=alias, force_insert=True)
-        return region.id
+        return uuid.UUID(str(region.id))
 
 
 def _state_tenant(state_code: str, hosts: list[str]) -> uuid.UUID:
