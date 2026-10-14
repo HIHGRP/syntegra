@@ -1,6 +1,6 @@
 # Requirement → data traceability
 
-546 functional requirements (SYN-MFS-002 v2.4 and change requests CR-001, CR-002): 539 are realised by CEDA entities or metrics; 7 are behavioural (UI, workflow or engine behaviour over data already modelled) and name the entity they operate on. Generated; do not edit.
+553 functional requirements (SYN-MFS-002 v2.4 and change requests CR-001, CR-002, CR-003): 546 are realised by CEDA entities or metrics; 7 are behavioural (UI, workflow or engine behaviour over data already modelled) and name the entity they operate on. Generated; do not edit.
 
 | Requirement | Source | Priority | Phase | Realised by | Text |
 |---|---|---|---|---|---|
@@ -81,6 +81,13 @@
 | FR-ATT-104 | MFS | SHALL | P1 | `attendance_register`, `metric:REG-COMPLIANCE` | Show missing and incomplete registers live, nudge the teacher with a direct link at the deadline plus 10 minutes, escalate at plus 30 minutes, and report compliance by teacher, institution and LGA. |
 | FR-ATT-105 | MFS | SHALL | P1 | `evacuation_event`, `evacuation_mark`, `staff_attendance`, `visitor_visit` | Run evacuation and drill roll calls at assembly points on mobile, offline, from live attendance, staff sign-in and visitor log, with real-time unaccounted list, all-clear and drill timing records. Extends FR-ATT-102. |
 | FR-ATT-106 | MFS | SHOULD | P1 | `attendance_register` | Let each institution share attendance with parents live or after a configured delay, in one daily view with behaviour, homework and detentions. |
+| FR-AUT-01 | CR-003 | SHALL | P1 | `mfa_factor` | Require a second factor before any role grant is active for users holding a role with restricted or special clearance (the threshold is configuration); users who enrolled a factor are always asked for it. |
+| FR-AUT-02 | CR-003 | SHALL | P1 | `credential_reset`, `mfa_factor` | Enrol an authenticator app (TOTP, RFC 6238) by scanning a QR code and confirming a code; issue ten single-use recovery codes shown once and stored hashed; adding or removing a factor needs a session that has passed MFA. |
+| FR-AUT-03 | CR-003 | SHALL | P1 | `mfa_factor` | Refuse a TOTP code already used in its time step; lock the account after five failed second-factor attempts; audit every MFA pass, failure, enrolment, removal and recovery-code use. |
+| FR-AUT-04 | CR-003 | SHALL | P1 | `identity_provider_config` | Offer federated single sign-on by OpenID Connect (authorization code with PKCE) with the state's government identity provider, Microsoft Entra ID and Google Workspace, configured per state; verify the ID token's signatur |
+| FR-AUT-05 | CR-003 | SHALL | P1 | `app_user`, `identity_provider_config`, `user_session` | Link a federated identity only to an existing active account whose e-mail the provider verified, in a domain allowed for that provider; later sign-ins match the provider's subject; record the authentication method on the |
+| FR-AUT-06 | CR-003 | SHALL | P1 | `app_user`, `identity_provider_config` | Accept the identity provider's MFA (amr/acr) as the second factor only for providers the state marks as trusted; otherwise ask for the local factor. Accounts linked to SSO cannot sign in with a password. |
+| FR-AUT-07 | CR-003 | SHALL | P1 | `user_session` | Let users see their MFA factors and active sessions, sign out other sessions and regenerate recovery codes (HOM-04). |
 | FR-BEH-01 | MFS | SHALL | P2 | `behaviour_event`, `behaviour_policy` | Log positive and concern events against the behaviour policy with categories, points, location, description and action. |
 | FR-BEH-02 | MFS | SHALL | P2 | `behaviour_event` | Route bullying events with target learners to the pastoral lead. |
 | FR-BEH-03 | MFS | SHALL | P2 | `behaviour_event` | Analyse patterns by learner, class, period, location, category and link to attendance. |

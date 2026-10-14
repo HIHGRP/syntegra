@@ -1,12 +1,12 @@
 # CEDA data dictionary
 
-Generated from the CEDA model (SYN-CEDA-001 v1.3.0). Do not edit by hand.
+Generated from the CEDA model (SYN-CEDA-001 v1.4.0). Do not edit by hand.
 
 | Domain | Code | Module (Django app) | Default zone | Entities |
 |---|---|---|---|---|
 | [Platform, tenancy and operator commercial records](01_platform.md) | PLT | `platform` | platform | 17 |
 | [Governance hierarchy, configuration, reference data, policy and workflow](02_governance.md) | GOV | `governance` | registry | 18 |
-| [Identity, access, permissions and service identities](03_iam.md) | IAM | `iam` | registry | 12 |
+| [Identity, access, permissions and service identities](03_iam.md) | IAM | `iam` | registry | 13 |
 | [Master data management, identity matching and data quality](04_mdm.md) | MDM | `mdm` | registry | 9 |
 | [Institution 360, state institution register, licensing, inspection and compliance](05_institutions.md) | INS | `institutions` | registry | 17 |
 | [Private education provider admission and regulation](06_providers.md) | PVT | `providers` | registry | 13 |

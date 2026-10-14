@@ -183,6 +183,50 @@ class CredentialReset(CedaModel):
         verbose_name = 'Password-reset or magic-link token (hashed, single use, short expiry; generic re'
 
 
+class IdentityProviderConfig(CedaModel):
+    """Federated sign-in provider of a state (OpenID Connect — government IdP, Microsoft Entra ID, Google Workspace)"""
+
+    ceda_entity = 'identity_provider_config'
+    ceda_zones = ('registry',)
+    ceda_domain = 'IAM'
+    ceda_kind = 'config'
+    ceda_class = 'restricted'
+    ceda_history = 'lifecycle'
+    ceda_scope = 'none'
+    ceda_append_only = False
+    ceda_partition = None
+    ceda_retention = 'RS-IAM'
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'provider': {'type': 'enum', 'enum': 'identity_provider'}, 'label': {'type': 'str'}, 'issuer': {'type': 'url'}, 'client_id': {'type': 'str'}, 'client_secret_enc': {'type': 'secret', 'class': 'restricted', 'secret_of': 'client_secret'}, 'scopes': {'type': 'str'}, 'allowed_domains': {'type': 'json'}, 'trust_idp_mfa': {'type': 'bool'}, 'sort_order': {'type': 'smallint'}, 'status': {'type': 'enum', 'enum': 'record_status'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
+
+    id = cf.UUID7Field(primary_key=True, default=uuid7)
+    tenant_id = cf.UUID7Field()
+    provider = models.CharField(max_length=32, choices=[('local', 'Local'), ('gov_sso', 'Gov sso'), ('entra', 'Entra'), ('google', 'Google'), ('magic_link', 'Magic link'), ('otp', 'Otp')])
+    label = models.CharField(max_length=80, help_text='Button text, e.g. Sign in with Abia Government ID')
+    issuer = models.CharField(max_length=2048, help_text='OIDC issuer; discovery document at {issuer}/.well-known/openid-configuration')
+    client_id = models.CharField(max_length=255)
+    client_secret_enc = models.BinaryField(null=True, blank=True, help_text='Envelope-encrypted client_secret. Confidential-client secret (envelope-encrypted)')
+    scopes = models.CharField(max_length=200, help_text='Space-separated, always including openid and email')
+    allowed_domains = models.JSONField(help_text='E-mail domains whose verified addresses may sign in through this provider')
+    trust_idp_mfa = models.BooleanField(default=False, help_text="Accept the provider's MFA (amr/acr) as the second factor")
+    sort_order = models.SmallIntegerField(null=True, blank=True)
+    status = models.CharField(max_length=32, choices=[('active', 'Active'), ('inactive', 'Inactive'), ('retired', 'Retired')])
+    created_at = models.DateTimeField(default=cf.utcnow)
+    created_by = cf.UUID7Field(null=True, blank=True)
+    updated_at = models.DateTimeField(default=cf.utcnow)
+    updated_by = cf.UUID7Field(null=True, blank=True)
+    row_version = models.PositiveIntegerField(default=1)
+
+    objects = TenantScopedManager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'identity_provider_config'
+        app_label = 'iam'
+        base_manager_name = 'unscoped'
+        verbose_name = 'Federated sign-in provider of a state (OpenID Connect — government IdP, Microsof'
+
+
 class MfaFactor(CedaModel):
     """Multi-factor authentication factor (TOTP, FIDO2 passkey, SMS/e-mail OTP fallback)"""
 
@@ -196,7 +240,7 @@ class MfaFactor(CedaModel):
     ceda_append_only = False
     ceda_partition = None
     ceda_retention = 'RS-IAM'
-    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'user_id': {'type': 'ref', 'ref': 'app_user'}, 'factor_type': {'type': 'enum', 'enum': 'mfa_type'}, 'label': {'type': 'str'}, 'secret_enc': {'type': 'secret', 'class': 'restricted', 'secret_of': 'secret'}, 'credential_id': {'type': 'code'}, 'last_used_at': {'type': 'ts'}, 'status': {'type': 'enum', 'enum': 'record_status'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'user_id': {'type': 'ref', 'ref': 'app_user'}, 'factor_type': {'type': 'enum', 'enum': 'mfa_type'}, 'label': {'type': 'str'}, 'secret_enc': {'type': 'secret', 'class': 'restricted', 'secret_of': 'secret'}, 'credential_id': {'type': 'code'}, 'last_used_at': {'type': 'ts'}, 'last_step': {'type': 'bigint'}, 'status': {'type': 'enum', 'enum': 'record_status'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
 
     id = cf.UUID7Field(primary_key=True, default=uuid7)
     tenant_id = cf.UUID7Field()
@@ -206,6 +250,7 @@ class MfaFactor(CedaModel):
     secret_enc = models.BinaryField(null=True, blank=True, help_text='Envelope-encrypted secret. TOTP seed or WebAuthn credential (public key and id)')
     credential_id = models.CharField(max_length=255, null=True, blank=True, help_text='WebAuthn credential id')
     last_used_at = models.DateTimeField(null=True, blank=True)
+    last_step = models.BigIntegerField(null=True, blank=True, help_text='TOTP time step of the last accepted code — a code is never accepted twice (FR-AUT-03)')
     status = models.CharField(max_length=32, choices=[('active', 'Active'), ('inactive', 'Inactive'), ('retired', 'Retired')])
     created_at = models.DateTimeField(default=cf.utcnow)
     created_by = cf.UUID7Field(null=True, blank=True)
@@ -480,7 +525,7 @@ class UserSession(CedaModel):
     ceda_append_only = False
     ceda_partition = None
     ceda_retention = 'RS-SESSION'
-    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'user_id': {'type': 'ref', 'ref': 'app_user'}, 'session_hash': {'type': 'hash'}, 'active_grant_id': {'type': 'ref', 'ref': 'role_grant'}, 'device_label': {'type': 'str'}, 'is_trusted_device': {'type': 'bool'}, 'ip': {'type': 'ip'}, 'user_agent': {'type': 'str'}, 'mfa_at': {'type': 'ts'}, 'started_at': {'type': 'ts'}, 'last_seen_at': {'type': 'ts'}, 'expires_at': {'type': 'ts'}, 'revoked_at': {'type': 'ts'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'user_id': {'type': 'ref', 'ref': 'app_user'}, 'session_hash': {'type': 'hash'}, 'active_grant_id': {'type': 'ref', 'ref': 'role_grant'}, 'device_label': {'type': 'str'}, 'is_trusted_device': {'type': 'bool'}, 'ip': {'type': 'ip'}, 'user_agent': {'type': 'str'}, 'mfa_at': {'type': 'ts'}, 'auth_method': {'type': 'code'}, 'started_at': {'type': 'ts'}, 'last_seen_at': {'type': 'ts'}, 'expires_at': {'type': 'ts'}, 'revoked_at': {'type': 'ts'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
 
     id = cf.UUID7Field(primary_key=True, default=uuid7)
     tenant_id = cf.UUID7Field()
@@ -492,6 +537,7 @@ class UserSession(CedaModel):
     ip = cf.PackedIPField(null=True, blank=True)
     user_agent = models.CharField(max_length=400, null=True, blank=True)
     mfa_at = models.DateTimeField(null=True, blank=True)
+    auth_method = models.CharField(max_length=40, null=True, blank=True, help_text='password, password+totp, password+recovery, sso:<provider>, sso:<provider>+idp_mfa')
     started_at = models.DateTimeField()
     last_seen_at = models.DateTimeField()
     expires_at = models.DateTimeField()

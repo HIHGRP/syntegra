@@ -40,6 +40,7 @@ class Context:
     ip: str | None = None
     user_agent: str | None = None
     zone_override: str | None = None  # for replicated models
+    auth_pending: str | None = None  # "mfa" or "mfa_setup": signed in, but the second factor is still owed (CR-003)
 
     @property
     def is_system(self) -> bool:

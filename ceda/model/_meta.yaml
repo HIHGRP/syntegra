@@ -4,7 +4,7 @@
 
 ceda:
   id: SYN-CEDA-001
-  version: 1.3.0
+  version: 1.4.0
   status: Baseline for build
   date: 2026-10-14
   derived_from: SYN-MFS-002 v2.4 (Master Functional Specification, consolidated single volume, 13 Oct 2026)

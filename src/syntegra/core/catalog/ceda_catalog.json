@@ -7,7 +7,7 @@
   "id": "SYN-CEDA-001",
   "platform": "Red Hat Enterprise Linux 10 / OpenShift",
   "status": "Baseline for build",
-  "version": "1.3.0"
+  "version": "1.4.0"
  },
  "code_lists": {
   "absence_reason": [

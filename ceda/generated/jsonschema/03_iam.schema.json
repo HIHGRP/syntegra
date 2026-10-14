@@ -305,6 +305,17 @@
             }
           ]
         },
+        "last_step": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "description": "TOTP time step of the last accepted code — a code is never accepted twice (FR-AUT-03)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "status": {
           "type": "string",
           "enum": [
@@ -447,6 +458,19 @@
             {
               "type": "string",
               "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "auth_method": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "password, password+totp, password+recovery, sso:<provider>, sso:<provider>+idp_mfa"
             },
             {
               "type": "null"
@@ -629,6 +653,143 @@
         "purpose",
         "token_hash",
         "expires_at",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "IdentityProviderConfig": {
+      "title": "IdentityProviderConfig",
+      "description": "Federated sign-in provider of a state (OpenID Connect — government IdP, Microsoft Entra ID, Google Workspace)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "identity_provider_config",
+        "zone": "registry",
+        "domain": "IAM",
+        "kind": "config",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "iam"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "provider": {
+          "type": "string",
+          "enum": [
+            "local",
+            "gov_sso",
+            "entra",
+            "google",
+            "magic_link",
+            "otp"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Button text, e.g. Sign in with Abia Government ID"
+        },
+        "issuer": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 2048,
+          "description": "OIDC issuer; discovery document at {issuer}/.well-known/openid-configuration"
+        },
+        "client_id": {
+          "type": "string",
+          "maxLength": 255
+        },
+        "client_secret": {
+          "type": "string",
+          "x-classification": "restricted",
+          "writeOnly": true,
+          "description": "Confidential-client secret (envelope-encrypted)"
+        },
+        "scopes": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Space-separated, always including openid and email"
+        },
+        "allowed_domains": {
+          "type": "object",
+          "description": "E-mail domains whose verified addresses may sign in through this provider"
+        },
+        "trust_idp_mfa": {
+          "type": "boolean",
+          "description": "Accept the provider's MFA (amr/acr) as the second factor"
+        },
+        "sort_order": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "provider",
+        "label",
+        "issuer",
+        "client_id",
+        "scopes",
+        "allowed_domains",
+        "trust_idp_mfa",
+        "status",
         "created_at",
         "updated_at",
         "row_version"

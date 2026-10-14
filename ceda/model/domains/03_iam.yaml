@@ -19,7 +19,7 @@ entities:
     history: lifecycle
     origin: appj
     scope_note: Users are tenant-level; what they may see is decided by their role grants.
-    reqs: [FR-ADM-03, FR-STF-11, FR-CMD-119]
+    reqs: [FR-ADM-03, FR-STF-11, FR-CMD-119, FR-AUT-05, FR-AUT-06]
     pages: [AUT-01, AUT-03, ADM-04, HOM-04, CMD-104]
     events: [IAM.USER_CREATED, IAM.USER_DEACTIVATED]
     attrs:
@@ -47,7 +47,7 @@ entities:
     class: restricted
     history: lifecycle
     origin: ceda
-    reqs: [FR-ADM-03]
+    reqs: [FR-ADM-03, FR-AUT-01, FR-AUT-02, FR-AUT-03]
     pages: [AUT-02, HOM-04]
     attrs:
       - "user_id: ref(app_user)!"
@@ -56,6 +56,7 @@ entities:
       - "secret: secret restricted | TOTP seed or WebAuthn credential (public key and id)"
       - "credential_id: code(255) | WebAuthn credential id"
       - "last_used_at: ts"
+      - "last_step: bigint | TOTP time step of the last accepted code — a code is never accepted twice (FR-AUT-03)"
       - "status: enum(record_status)!"
 
   user_session:
@@ -66,7 +67,7 @@ entities:
     history: lifecycle
     origin: ceda
     retention: RS-SESSION
-    reqs: [FR-ADM-03]
+    reqs: [FR-ADM-03, FR-AUT-05, FR-AUT-07]
     pages: [AUT-01, AUT-03, HOM-04]
     events: [AUTH.SIGNED_IN, AUTH.FAILED, AUTH.LOCKED, AUTH.MFA_PASSED, AUTH.MFA_FAILED]
     attrs:
@@ -78,6 +79,7 @@ entities:
       - "ip: ip"
       - "user_agent: str(400)"
       - "mfa_at: ts"
+      - "auth_method: code(40) | password, password+totp, password+recovery, sso:<provider>, sso:<provider>+idp_mfa"
       - "started_at: ts!"
       - "last_seen_at: ts!"
       - "expires_at: ts!"
@@ -91,7 +93,7 @@ entities:
     origin: ceda
     retention: RS-SESSION
     scope_note: Belongs to one user account.
-    reqs: [FR-ADM-03]
+    reqs: [FR-ADM-03, FR-AUT-02]
     pages: [AUT-04, AUT-01]
     attrs:
       - "user_id: ref(app_user)!"
@@ -100,6 +102,28 @@ entities:
       - "requested_ip: ip"
       - "expires_at: ts!"
       - "used_at: ts"
+
+  identity_provider_config:
+    title: Federated sign-in provider of a state (OpenID Connect — government IdP, Microsoft Entra ID, Google Workspace)
+    kind: config
+    class: restricted
+    history: lifecycle
+    origin: ceda
+    scope_note: Tenant-level configuration managed by the state or platform administrator.
+    reqs: [FR-AUT-04, FR-AUT-05, FR-AUT-06]
+    pages: [AUT-01]
+    attrs:
+      - "provider: enum(identity_provider)!"
+      - "label: str(80)! | Button text, e.g. Sign in with Abia Government ID"
+      - "issuer: url! | OIDC issuer; discovery document at {issuer}/.well-known/openid-configuration"
+      - "client_id: str(255)!"
+      - "client_secret: secret restricted | Confidential-client secret (envelope-encrypted)"
+      - "scopes: str(200)! | Space-separated, always including openid and email"
+      - "allowed_domains: json! | E-mail domains whose verified addresses may sign in through this provider"
+      - "trust_idp_mfa: bool! default=false | Accept the provider's MFA (amr/acr) as the second factor"
+      - "sort_order: smallint"
+      - "status: enum(record_status)!"
+    uq: [[provider]]
 
   role:
     title: Role template (41 built-in roles plus REV, ACG, OPF; built-ins cloneable, never editable)

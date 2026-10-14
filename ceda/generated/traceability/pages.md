@@ -48,7 +48,7 @@ Every one of the 260 pages in SYN-MFS-002 v2.4 and the 14 pages added by change 
 | ATT-101 | MFS | Evacuation roll call | Attendance | P1 | `evacuation_event`, `evacuation_mark`, `staff_attendance`, `visitor_visit` |  |
 | ATT-102 | MFS | Register compliance | Attendance | P1 | `attendance_register`, `metric:REG-COMPLIANCE` |  |
 | ATT-103 | MFS | Parent-reported absences | Attendance | P1 | `absence_report` |  |
-| AUT-01 | MFS | Sign in | Access | P1 | `app_user`, `credential_reset`, `tenant_domain`, `user_session` | User, Session |
+| AUT-01 | MFS | Sign in | Access | P1 | `app_user`, `credential_reset`, `identity_provider_config`, `tenant_domain`, `user_session` | User, Session |
 | AUT-02 | MFS | Multi-factor verification | Access | P1 | `mfa_factor` |  |
 | AUT-03 | MFS | Choose workspace | Access | P1 | `app_user`, `role_grant`, `scope_node`, `user_session` | User, RoleGrant, Scope |
 | AUT-04 | MFS | Reset password | Access | P1 | `credential_reset` |  |

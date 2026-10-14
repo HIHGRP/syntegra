@@ -10,6 +10,7 @@ Module (system of record): `iam` · default zone: **registry** · default retent
 | [`mfa_factor`](#registry-mfa_factor) | registry | master | restricted | lifecycle | Multi-factor authentication factor (TOTP, FIDO2 passkey, SMS/e-mail OTP fallback) |
 | [`user_session`](#registry-user_session) | registry | transaction | confidential | lifecycle | Server-side session (idle timeout 30 min for restricted/special roles, 8 h otherwise) |
 | [`credential_reset`](#registry-credential_reset) | registry | transaction | confidential | lifecycle | Password-reset or magic-link token (hashed, single use, short expiry; generic responses) |
+| [`identity_provider_config`](#registry-identity_provider_config) | registry | config | restricted | lifecycle | Federated sign-in provider of a state (OpenID Connect — government IdP, Microsoft Entra ID, Google Workspace) |
 | [`role`](#registry-role) | registry | config | internal | lifecycle | Role template (41 built-in roles plus REV, ACG, OPF; built-ins cloneable, never editable) |
 | [`role_permission`](#registry-role_permission) | registry | config | internal | none | Permission granted by a role (resource:action with optional ABAC condition) |
 | [`role_grant`](#registry-role_grant) | registry | link | internal | effective | Role granted to a user at a scope (role-at-scope), with clearance cap and access review date |
@@ -34,7 +35,7 @@ Sign-in identity (a person may also be a learner, guardian or staff member) — 
 | Module | `iam` |
 | Origin | appj |
 | Retention | `RS-IAM` |
-| Requirements | FR-ADM-03, FR-STF-11, FR-CMD-119 |
+| Requirements | FR-ADM-03, FR-STF-11, FR-CMD-119, FR-AUT-05, FR-AUT-06 |
 | Pages | AUT-01, AUT-03, ADM-04, HOM-04, CMD-104 |
 | Events | IAM.USER_CREATED, IAM.USER_DEACTIVATED |
 
@@ -81,7 +82,7 @@ Multi-factor authentication factor (TOTP, FIDO2 passkey, SMS/e-mail OTP fallback
 | Module | `iam` |
 | Origin | ceda |
 | Retention | `RS-IAM` |
-| Requirements | FR-ADM-03 |
+| Requirements | FR-ADM-03, FR-AUT-01, FR-AUT-02, FR-AUT-03 |
 | Pages | AUT-02, HOM-04 |
 
 | Column | MySQL type | Null | Class | Description |
@@ -94,6 +95,7 @@ Multi-factor authentication factor (TOTP, FIDO2 passkey, SMS/e-mail OTP fallback
 | `secret_enc` | `VARBINARY(1024)` | yes | restricted | Envelope-encrypted secret. TOTP seed or WebAuthn credential (public key and id) |
 | `credential_id` | `VARCHAR(255)` | yes |  | WebAuthn credential id |
 | `last_used_at` | `DATETIME(6)` | yes |  |  |
+| `last_step` | `BIGINT` | yes |  | TOTP time step of the last accepted code — a code is never accepted twice (FR-AUT-03) |
 | `status` | `VARCHAR(32)` | no |  | values: active, inactive, retired |
 | `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
 | `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
@@ -116,7 +118,7 @@ Server-side session (idle timeout 30 min for restricted/special roles, 8 h other
 | Module | `iam` |
 | Origin | ceda |
 | Retention | `RS-SESSION` |
-| Requirements | FR-ADM-03 |
+| Requirements | FR-ADM-03, FR-AUT-05, FR-AUT-07 |
 | Pages | AUT-01, AUT-03, HOM-04 |
 | Events | AUTH.SIGNED_IN, AUTH.FAILED, AUTH.LOCKED, AUTH.MFA_PASSED, AUTH.MFA_FAILED |
 
@@ -132,6 +134,7 @@ Server-side session (idle timeout 30 min for restricted/special roles, 8 h other
 | `ip` | `VARBINARY(16)` | yes |  |  |
 | `user_agent` | `VARCHAR(400)` | yes |  |  |
 | `mfa_at` | `DATETIME(6)` | yes |  |  |
+| `auth_method` | `VARCHAR(40)` | yes |  | password, password+totp, password+recovery, sso:<provider>, sso:<provider>+idp_mfa |
 | `started_at` | `DATETIME(6)` | no |  |  |
 | `last_seen_at` | `DATETIME(6)` | no |  |  |
 | `expires_at` | `DATETIME(6)` | no |  |  |
@@ -159,7 +162,7 @@ Password-reset or magic-link token (hashed, single use, short expiry; generic re
 | Module | `iam` |
 | Origin | ceda |
 | Retention | `RS-SESSION` |
-| Requirements | FR-ADM-03 |
+| Requirements | FR-ADM-03, FR-AUT-02 |
 | Pages | AUT-04, AUT-01 |
 
 | Column | MySQL type | Null | Class | Description |
@@ -179,6 +182,46 @@ Password-reset or magic-link token (hashed, single use, short expiry; generic re
 | `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
 
 - Unique: (tenant_id, token_hash)
+
+<a id="registry-identity_provider_config"></a>
+## `identity_provider_config`
+
+Federated sign-in provider of a state (OpenID Connect — government IdP, Microsoft Entra ID, Google Workspace)
+
+| | |
+|---|---|
+| Zone | registry |
+| Kind | config |
+| Classification | restricted |
+| History | lifecycle |
+| Scope | none |
+| Module | `iam` |
+| Origin | ceda |
+| Retention | `RS-IAM` |
+| Requirements | FR-AUT-04, FR-AUT-05, FR-AUT-06 |
+| Pages | AUT-01 |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `id` **PK** | `BINARY(16)` | no |  | Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap |
+| `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `provider` | `VARCHAR(32)` | no |  | values: local, gov_sso, entra, google, magic_link, otp |
+| `label` | `VARCHAR(80)` | no |  | Button text, e.g. Sign in with Abia Government ID |
+| `issuer` | `VARCHAR(2048)` | no |  | OIDC issuer; discovery document at {issuer}/.well-known/openid-configuration |
+| `client_id` | `VARCHAR(255)` | no |  |  |
+| `client_secret_enc` | `VARBINARY(1024)` | yes | restricted | Envelope-encrypted client_secret. Confidential-client secret (envelope-encrypted) |
+| `scopes` | `VARCHAR(200)` | no |  | Space-separated, always including openid and email |
+| `allowed_domains` | `JSON` | no |  | E-mail domains whose verified addresses may sign in through this provider |
+| `trust_idp_mfa` | `BOOLEAN` | no |  | Accept the provider's MFA (amr/acr) as the second factor |
+| `sort_order` | `SMALLINT` | yes |  |  |
+| `status` | `VARCHAR(32)` | no |  | values: active, inactive, retired |
+| `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
+| `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+| `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
+| `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
+| `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
+
+- Unique: (tenant_id, provider)
 
 <a id="registry-role"></a>
 ## `role`

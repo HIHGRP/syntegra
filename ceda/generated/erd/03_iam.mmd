@@ -24,6 +24,7 @@ erDiagram
         VARBINARY_1024_ secret_enc
         VARCHAR_255_ credential_id
         DATETIME_6_ last_used_at
+        BIGINT last_step
         VARCHAR_32_ status
     }
     user_session {
@@ -36,6 +37,7 @@ erDiagram
         VARBINARY_16_ ip
         VARCHAR_400_ user_agent
         DATETIME_6_ mfa_at
+        VARCHAR_40_ auth_method
         DATETIME_6_ started_at
         DATETIME_6_ last_seen_at
         DATETIME_6_ expires_at
@@ -49,6 +51,19 @@ erDiagram
         VARBINARY_16_ requested_ip
         DATETIME_6_ expires_at
         DATETIME_6_ used_at
+    }
+    identity_provider_config {
+        BINARY_16_ id PK
+        VARCHAR_32_ provider
+        VARCHAR_80_ label
+        VARCHAR_2048_ issuer
+        VARCHAR_255_ client_id
+        VARBINARY_1024_ client_secret_enc
+        VARCHAR_200_ scopes
+        JSON allowed_domains
+        BOOLEAN trust_idp_mfa
+        SMALLINT sort_order
+        VARCHAR_32_ status
     }
     role {
         BINARY_16_ id PK
