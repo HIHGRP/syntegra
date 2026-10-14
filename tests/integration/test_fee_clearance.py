@@ -6,6 +6,7 @@ import uuid
 import pytest
 
 from syntegra.core.errors import Forbidden, HardValidation
+from tests.conftest import guardian
 
 pytestmark = pytest.mark.django_db(databases="__all__")
 NAIRA = 100
@@ -37,6 +38,7 @@ def enrol_at(world, as_user, school, given, level="sss_1"):  # type: ignore[no-u
     with as_user("HEAD", school.scope_node_id):
         return learners.register(
             learners.RegisterLearner(
+                guardians=[guardian()],
                 given=given,
                 family="Okonkwo",
                 date_of_birth=dt.date(2010, 2, 3),
@@ -206,6 +208,7 @@ def test_readmission_of_known_learner_runs_the_check(world, as_user, private_sch
     owe(world, as_user, private_school, lrn, 90_000)
     Enrolment.unscoped.filter(learner_id=lrn.id).update(status="withdrawn", end_on=dt.date(2026, 7, 20))
     data = learners.RegisterLearner(
+        guardians=[guardian()],
         given="Emeka",
         family="Okonkwo",
         date_of_birth=dt.date(2010, 2, 3),

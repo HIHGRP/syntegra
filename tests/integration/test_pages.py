@@ -119,10 +119,21 @@ def test_register_learner_page(world, client) -> None:  # type: ignore[no-untype
         "sex": "female",
         "nin": "70000000017",
         "nationality": "NG",
+        "g1_relationship": "mother",
+        "g1_given": "Ngozi",
+        "g1_family": "Nwosu",
+        "g1_phone": "0803 555 0101",
+        "g1_responsibility": "1",
+        "g1_lives_with": "1",
     }
     assert b"enter the date of birth" in client.post("/learners/new", {**form, "date_of_birth": ""}).content
     assert b"NIN has 11 digits" in client.post("/learners/new", {**form, "nin": "123"}).content
+    no_guardian = {k: v for k, v in form.items() if not k.startswith("g1_")}
+    assert (
+        b"need at least one guardian with parental responsibility" in client.post("/learners/new", no_guardian).content
+    )
     r = client.post("/learners/new", form)
     assert r.status_code == 200 and b"Registered" in r.content and b"LRN-" in r.content
+    assert b"Ngozi Nwosu (mother, parental responsibility)" in r.content
     r = client.post("/learners/new", form)  # the same child again: linked, never duplicated
     assert r.status_code == 200 and b"Learner already enrolled" in r.content and b"request a transfer" in r.content

@@ -6,6 +6,7 @@ import pytest
 
 from syntegra.core.errors import ConflictError, Forbidden, SoftWarning
 from syntegra.core.ids import glid_valid
+from tests.conftest import guardian
 
 pytestmark = pytest.mark.django_db(databases="__all__")
 
@@ -14,6 +15,7 @@ def reg(world, given="Chiamaka", family="Okafor", dob=dt.date(2014, 3, 9), inst=
     from syntegra.learners import services
 
     return services.RegisterLearner(
+        guardians=[guardian()],
         given=given,
         family=family,
         date_of_birth=dob,

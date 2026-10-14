@@ -250,6 +250,33 @@ LEVELS = [
 ]
 
 
+def _guardians_from_form(f: Any) -> list[Any]:
+    """Guardian blocks g1_* and g2_* of the registration form; an untouched block is ignored."""
+    from syntegra.families.services import GuardianInput
+
+    out = []
+    for n in (1, 2):
+        p = f"g{n}_"
+        if not any((f.get(p + k) or "").strip() for k in ("given", "family", "phone", "email", "nin")):
+            continue
+        out.append(
+            GuardianInput(
+                given=f.get(p + "given", ""),
+                family=f.get(p + "family", ""),
+                relationship=f.get(p + "relationship", ""),
+                title=f.get(p + "title") or None,
+                phone=f.get(p + "phone") or None,
+                email=f.get(p + "email") or None,
+                nin=f.get(p + "nin") or None,
+                has_parental_responsibility=bool(f.get(p + "responsibility")),
+                lives_with=bool(f.get(p + "lives_with")),
+                is_authorised_collector=bool(f.get(p + "collector")),
+                is_payer=bool(f.get(p + "payer")),
+            )
+        )
+    return out
+
+
 @require_http_methods(["GET", "POST"])
 @page("LRN-02")
 def learner_new(request: HttpRequest) -> HttpResponse:
@@ -257,6 +284,8 @@ def learner_new(request: HttpRequest) -> HttpResponse:
     from syntegra.clearance.models import ClearanceCheck, ClearanceDecision
     from syntegra.clearance.services import AdmissionDeferred, ClearanceDecisionRequired, DecisionInput
     from syntegra.core.errors import HardValidation, SoftWarning
+    from syntegra.families import services as families
+    from syntegra.families.domain.guardians import RELATIONSHIPS
     from syntegra.institutions.models import Institution
     from syntegra.learners import services as lrn
     from syntegra.learners.models import Enrolment
@@ -299,6 +328,7 @@ def learner_new(request: HttpRequest) -> HttpResponse:
                 education_level=f.get("education_level", ""),
                 start_on=start_on,
                 is_minimal_documentation=bool(f.get("is_minimal_documentation")),
+                guardians=_guardians_from_form(f),
             )
             decision = None
             if f.get("decision"):
@@ -327,7 +357,7 @@ def learner_new(request: HttpRequest) -> HttpResponse:
                 out["deferred"] = True
             except HardValidation as exc:
                 for e in exc.errors or [{"field": None, "message": exc.detail or exc.title}]:
-                    errors[str(e.get("field") or "form")] = str(e["message"])
+                    errors.setdefault(str(e.get("field") or "form"), str(e["message"]))
             except DomainError as exc:  # e.g. already enrolled elsewhere: shown on the form, values kept
                 errors["form"] = f"{exc.title}: {exc.detail}" if exc.detail else exc.title
     return render(
@@ -340,6 +370,8 @@ def learner_new(request: HttpRequest) -> HttpResponse:
             institutions=institutions,
             levels=LEVELS,
             states=STATES,
+            relationships=RELATIONSHIPS,
+            majority=families.majority_age(institutions[0].scope_node_id if institutions else None),
             today=dt.date.today().isoformat(),
             page=pages.page("LRN-02"),
             **out,
@@ -350,6 +382,7 @@ def learner_new(request: HttpRequest) -> HttpResponse:
 @page("LRN-04")
 def learner(request: HttpRequest, learner_id: uuid.UUID) -> HttpResponse:
     from syntegra.attendance import services as att
+    from syntegra.families import services as families
     from syntegra.institutions.models import Institution
     from syntegra.learners import services as lrn
 
@@ -372,6 +405,7 @@ def learner(request: HttpRequest, learner_id: uuid.UUID) -> HttpResponse:
             enrolments=enrolments,
             insts=insts,
             attendance=attendance,
+            guardians=families.guardians_of(learner_id),
             page=pages.page("LRN-04"),
         ),
     )

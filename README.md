@@ -76,7 +76,7 @@ Module boundaries are enforced by `import-linter`:
 |---|---|---|---|
 | Sign-in and sessions | Argon2id; lockout after 5 failures in 10 min; sessions stored as SHA-256 only; TOTP MFA; idle timeout set by clearance | `auth/sign-in`, `auth/mfa`, `auth/role`, `auth/sign-out`, `me` | `/sign-in` |
 | Institutions | Registration with duplicate detection (name similarity, distance, gov. registration number), scope node and closure | `institutions` | — |
-| Learners | Fellegi–Sunter matching (auto-link ≥ 0.98, review 0.80–0.98), GLID from leased blocks, encrypted NIN with purpose-bound reveal, one active primary enrolment, transfer | `learners`, `learners/{id}/transfer`, `learners/{id}/nin` | LRN-02 `/learners/new`, LRN-04 `/learners/{id}` |
+| Learners | Fellegi–Sunter matching (auto-link ≥ 0.98, review 0.80–0.98), GLID from leased blocks, encrypted NIN with purpose-bound reveal, one active primary enrolment, transfer; guardians at registration — a minor needs one with parental responsibility (age of majority is the state policy `LRN-AGE-OF-MAJORITY`), guardians matched by NIN, phone or e-mail with agreeing names before creation, relationship, contact priority, lives-with, collector and payer flags; contact details withheld where contact is restricted | `learners`, `learners/{id}/transfer`, `learners/{id}/nin`, `learners/{id}/guardians` | LRN-02 `/learners/new`, LRN-04 `/learners/{id}` |
 | Classes | Sessions, classes, memberships, subject plans, teacher-of-record assignments | `classes`, `classes/{id}/members` | — |
 | Attendance | Registers, idempotent offline sync (`client_op_id`), audited corrections, rates with policy thresholds | `classes/{id}/registers`, `registers/{id}`, `learners/{id}/attendance` | ATT-01 `/registers/class/{id}` |
 | Coverage | G2/G3 invariants; gaps deduplicated by the database; owner, due date in school days, escalation, events | `institutions/{id}/coverage/evaluate`, `coverage/gaps` | CUR-101 `/coverage` |
@@ -147,7 +147,8 @@ The integration tests cover:
 - schema parity for all 513 tables in every zone;
 - that tenant data cannot be queried without a context;
 - tamper detection and append-only enforcement for the audit chain;
-- learner matching, enrolment and transfer;
+- learner matching, enrolment and transfer; guardians at registration (minors need parental responsibility, age
+  of majority from policy, guardians matched not duplicated, contact restriction);
 - scope isolation;
 - purpose-bound NIN reveal;
 - offline register replay and stale-ETag rejection;

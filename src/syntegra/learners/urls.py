@@ -7,4 +7,5 @@ urlpatterns = [
     path("learners/<uuid:pk>", api.LearnerDetail.as_view()),
     path("learners/<uuid:pk>/transfer", api.LearnerTransfer.as_view()),
     path("learners/<uuid:pk>/nin", api.LearnerNin.as_view()),
+    path("learners/<uuid:pk>/guardians", api.LearnerGuardians.as_view()),
 ]

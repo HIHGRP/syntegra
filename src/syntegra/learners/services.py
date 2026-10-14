@@ -22,6 +22,8 @@ from syntegra.core import authz, context, crypto, uow
 from syntegra.core.errors import ConflictError, HardValidation, NotFound, SoftWarning
 from syntegra.core.ids import format_glid
 from syntegra.core.text import name_phonetic, phonetic_key
+from syntegra.families import services as families
+from syntegra.families.services import GuardianInput
 from syntegra.institutions.models import Institution
 from syntegra.learners.domain import matching
 from syntegra.learners.models import Enrolment, Learner, LearnerTransfer
@@ -48,6 +50,7 @@ class RegisterLearner:
     start_on: dt.date | None = None
     basis: str = "admission"
     is_minimal_documentation: bool = False
+    guardians: list[GuardianInput] = field(default_factory=list)
 
 
 @dataclass
@@ -57,6 +60,7 @@ class Registration:
     outcome: str  # created | linked
     review_id: uuid.UUID | None = None
     match: dict[str, Any] | None = None
+    guardians: list[families.LinkedGuardian] = field(default_factory=list)
 
 
 # --------------------------------------------------------------------------- visibility (derived scope)
@@ -174,6 +178,16 @@ def register(
     authz.require_scope(inst.scope_node_id, ctx)
     found = match(data)
     top = found[0] if found else None
+    start = data.start_on or dt.date.today()
+    # FR-LRN-06: a minor needs a guardian with parental responsibility (age of majority from state policy, FR-LRN-05)
+    families.check(
+        data.guardians,
+        date_of_birth=data.date_of_birth,
+        on=start,
+        scope_node_id=inst.scope_node_id,
+        learner_id=top[0].id if top and top[1].band == "auto_link" else None,
+        learner_nin=data.nin,
+    )
     if top and top[1].band == "review" and not override_reason:
         err = SoftWarning(
             "LRN-PROBABLE-MATCH",
@@ -215,8 +229,9 @@ def register(
                 )
             )
             cmd.record_id = learner.id
+            linked_guardians = families.link(cmd, learner.id, data.guardians, valid_from=start)
             enr = _enrol(cmd, learner, inst, data.education_level, data.start_on, data.basis)
-            return Registration(learner, enr, "linked", review.id, {"score": top[1].score})
+            return Registration(learner, enr, "linked", review.id, {"score": top[1].score}, linked_guardians)
         learner = Learner(
             global_learner_id=allocate_glid(cmd.alias),
             legal_given_name=data.given.strip(),
@@ -268,7 +283,14 @@ def register(
             scope_node_id=inst.scope_node_id,
             payload={"learner_id": learner.id, "global_learner_id": learner.global_learner_id},
         )
-        reg = Registration(learner, None, "created", review_id, {"score": top[1].score} if top else None)
+        reg = Registration(
+            learner,
+            None,
+            "created",
+            review_id,
+            {"score": top[1].score} if top else None,
+            families.link(cmd, learner.id, data.guardians, valid_from=start),
+        )
         if not cross_state:
             reg.enrolment = _enrol(cmd, learner, inst, data.education_level, data.start_on, data.basis)
             return reg

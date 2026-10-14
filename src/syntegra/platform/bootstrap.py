@@ -220,6 +220,14 @@ POLICIES = [
         True,
     ),
     (
+        "LRN-AGE-OF-MAJORITY",
+        "registration",
+        "Age of majority: learners below it need a guardian with parental responsibility (FR-LRN-05, FR-LRN-06)",
+        "learner_age >= age",
+        {"age": 18, "_tighten": {"age": "higher"}},
+        True,
+    ),
+    (
         "SUPPRESS",
         "alerting",
         "Small-number suppression for published statistics",

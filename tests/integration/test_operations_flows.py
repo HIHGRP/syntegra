@@ -7,6 +7,7 @@ from decimal import Decimal
 import pytest
 
 from syntegra.core.errors import ConflictError, Forbidden, HardValidation
+from tests.conftest import guardian
 
 pytestmark = pytest.mark.django_db(databases="__all__")
 
@@ -22,6 +23,7 @@ def enrol_class(world, as_user, n=6):  # type: ignore[no-untyped-def]
         for i in range(n):
             r = learners.register(
                 learners.RegisterLearner(
+                    guardians=[guardian()],
                     given=["Ada", "Bayo", "Chidi", "Dami", "Efe", "Funke", "Gbenga", "Hauwa"][i],
                     family=f"Pupil{i}x",
                     date_of_birth=dt.date(2013, 1 + i, 10 + i),
@@ -113,6 +115,7 @@ def test_certificate_issue_verify_and_four_eyes_reissue(world, as_user, client) 
     with as_user("HEAD", node):
         lrn = learners.register(
             learners.RegisterLearner(
+                guardians=[guardian()],
                 given="Amarachi",
                 family="Udeh",
                 date_of_birth=dt.date(2010, 4, 4),
@@ -173,6 +176,7 @@ def test_sdaf_census_freeze_once_per_period_and_ube_demand(world, as_user) -> No
         lids = [
             learners.register(
                 learners.RegisterLearner(
+                    guardians=[guardian()],
                     given=g,
                     family="Census",
                     date_of_birth=dt.date(2012, 1, i + 1),
@@ -230,6 +234,7 @@ def test_metrics_scope_and_small_number_suppression(world, as_user, api) -> None
 
         learners.register(
             learners.RegisterLearner(
+                guardians=[guardian()],
                 given="Solo",
                 family="Learner",
                 date_of_birth=dt.date(2016, 1, 1),

@@ -39,6 +39,15 @@ class World:
     tokens: dict[str, str] = field(default_factory=dict)
 
 
+def guardian(family: str = "Okafor", given: str = "Adaeze", **kw: Any) -> Any:
+    """A parent with parental responsibility — every minor registered in the tests needs one (FR-LRN-06)."""
+    from syntegra.families.services import GuardianInput
+
+    kw.setdefault("phone", f"0803{abs(hash((given, family))) % 10_000_000:07d}")
+    kw.setdefault("relationship", "mother")
+    return GuardianInput(given=given, family=family, **kw)
+
+
 def system_ctx() -> Any:
     from syntegra.core import context
     from syntegra.core.tenancy import SEED_STATE_TENANT

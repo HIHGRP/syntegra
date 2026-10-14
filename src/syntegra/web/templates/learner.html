@@ -9,6 +9,16 @@
     <table class="compact"><thead><tr><th scope="col">Institution</th><th scope="col">Level</th><th scope="col">From</th><th scope="col">To</th><th scope="col">Status</th></tr></thead>
       <tbody>{% for e in enrolments %}<tr><td>{{ insts[e.institution_id].name }}</td><td>{{ e.education_level }}</td><td>{{ e.start_on | date }}</td><td>{{ e.end_on | date }}</td><td>{{ e.status }}</td></tr>{% endfor %}</tbody></table>
   </article>
+  <article class="card">
+    <h2>Parents and guardians</h2>
+    {% if guardians %}
+    <ul class="people">{% for g in guardians %}
+      <li><strong>{{ g.name }}</strong> <span class="muted">· {{ g.relationship.replace("_", " ") }}</span>
+        <span class="line">{% if g.is_contact_restricted %}<strong>Contact restricted</strong>{% else %}{{ g.phone or "" }}{% if g.phone and g.email %} · {% endif %}{{ g.email or "" }}{% endif %}</span>
+        <span class="line muted">{{ ["parental responsibility" if g.has_parental_responsibility else None, "lives with" if g.lives_with else None, "may collect" if g.is_authorised_collector else None, "payer" if g.is_payer else None] | select | join(" · ") }}</span></li>{% endfor %}
+    </ul>
+    {% else %}<p class="muted">No guardian recorded.</p>{% endif %}
+  </article>
   {% if attendance %}
   <article class="card">
     <h2>Attendance (90 days)</h2>

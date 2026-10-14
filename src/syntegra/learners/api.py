@@ -10,7 +10,24 @@ from rest_framework.views import APIView
 from syntegra.clearance.api import decision_from_headers
 from syntegra.core.api import views as v
 from syntegra.core.api.pagination import UUID7CursorPagination
+from syntegra.families import services as families
+from syntegra.families.domain.guardians import RELATIONSHIPS
 from syntegra.learners import services
+
+
+class GuardianSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    given = serializers.CharField(max_length=200)
+    family = serializers.CharField(max_length=200)
+    relationship = serializers.ChoiceField(list(RELATIONSHIPS))
+    has_parental_responsibility = serializers.BooleanField(default=True)
+    phone = serializers.CharField(max_length=24, required=False, allow_null=True, allow_blank=True)
+    email = serializers.CharField(max_length=254, required=False, allow_null=True, allow_blank=True)
+    nin = serializers.CharField(max_length=13, required=False, allow_null=True, allow_blank=True)
+    title = serializers.CharField(max_length=30, required=False, allow_null=True, allow_blank=True)
+    lives_with = serializers.BooleanField(default=True)
+    is_authorised_collector = serializers.BooleanField(default=True)
+    is_payer = serializers.BooleanField(default=False)
+    preferred_language = serializers.CharField(max_length=35, required=False, allow_null=True)
 
 
 class RegisterSerializer(serializers.Serializer):  # type: ignore[type-arg]
@@ -27,6 +44,7 @@ class RegisterSerializer(serializers.Serializer):  # type: ignore[type-arg]
     state_of_origin = serializers.CharField(max_length=6, required=False, allow_null=True)
     start_on = serializers.DateField(required=False)
     is_minimal_documentation = serializers.BooleanField(default=False)
+    guardians = GuardianSerializer(many=True, required=False, default=list)
 
 
 class TransferSerializer(serializers.Serializer):  # type: ignore[type-arg]
@@ -57,8 +75,10 @@ class LearnerList(APIView):
         m = v.meta(request)
 
         def run() -> Response:
+            data = dict(s.validated_data)
+            data["guardians"] = [families.GuardianInput(**g) for g in data.get("guardians", [])]
             r = services.register(
-                services.RegisterLearner(**s.validated_data),
+                services.RegisterLearner(**data),
                 override_reason=m.override_reason,
                 clearance=decision_from_headers(request),
             )
@@ -68,6 +88,9 @@ class LearnerList(APIView):
                 "enrolment": v.row(r.enrolment) if r.enrolment else None,
                 "match_review_id": str(r.review_id) if r.review_id else None,
                 "match": r.match,
+                "guardians": [
+                    {"guardian_id": str(g.guardian.id), "created": g.created, "linked": g.linked} for g in r.guardians
+                ],
             }
             return Response(
                 body,
@@ -103,3 +126,13 @@ class LearnerNin(APIView):
 
     def get(self, request: Request, pk: uuid.UUID) -> Response:
         return Response({"nin": services.reveal_nin(pk)}, headers={"Cache-Control": "no-store"})
+
+
+class LearnerGuardians(APIView):
+    """Current guardians of a learner (FR-FAM-02); contact details are withheld where contact is restricted."""
+
+    required_permission = "learner:view"
+
+    def get(self, request: Request, pk: uuid.UUID) -> Response:
+        services.get(pk)  # derived scope: only learners the caller may see
+        return Response({"data": v.jsonable(families.guardians_of(pk))})

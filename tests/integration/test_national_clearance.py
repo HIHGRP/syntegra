@@ -18,6 +18,7 @@ import pytest
 from django.db import connections
 
 from syntegra.core.errors import HardValidation
+from tests.conftest import guardian
 
 pytestmark = pytest.mark.django_db(databases="__all__")
 NAIRA = 100
@@ -90,6 +91,7 @@ def enrol_in_lagos(la: Any, given: str = "Emeka", nin: str | None = NIN) -> Any:
     with la.as_user("HEAD", la.school.scope_node_id):
         return learners.register(
             learners.RegisterLearner(
+                guardians=[guardian()],
                 given=given,
                 family="Adeyemi",
                 date_of_birth=dt.date(2010, 6, 15),
@@ -122,6 +124,7 @@ def arrive_in_abia(world: Any, as_user: Any, given: str = "Emeka", nin: str | No
     with as_user("HEAD", world.institution.scope_node_id):
         return learners.register(
             learners.RegisterLearner(
+                guardians=[guardian()],
                 given=given,
                 family="Adeyemi",
                 date_of_birth=dt.date(2010, 6, 15),
@@ -262,6 +265,7 @@ def test_transfer_within_abia_also_asks_lagos(world: Any, as_user: Any, lagos: A
         # registered in Abia before the Lagos debt was published
         reg = learners.register(
             learners.RegisterLearner(
+                guardians=[guardian()],
                 given="Emeka",
                 family="Adeyemi",
                 date_of_birth=dt.date(2010, 6, 15),

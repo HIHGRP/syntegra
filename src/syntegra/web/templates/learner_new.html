@@ -13,6 +13,7 @@
       <dt>Global Learner ID</dt><dd><code>{{ r.learner.global_learner_id }}</code></dd>
       <dt>Record</dt><dd>{{ "new to this state — no earlier record found" if new_here else "existing learner (match score " ~ "{:.3f}".format(r.match.score) ~ ") — no duplicate created" }}</dd>
       {% if check %}<dt>Fee clearance</dt><dd>{{ check.result.replace("_", " ") }}{% if check.total_outstanding_minor %} (₦{{ "{:,.2f}".format(check.total_outstanding_minor / 100) }}){% endif %}{% if check.federation %} · {{ check.federation.covered }} of {{ check.federation.states_total }} states answered{% endif %}</dd>{% endif %}
+      {% if r.guardians %}<dt>Guardians</dt><dd>{% for lg in r.guardians %}{{ lg.guardian.given_name }} {{ lg.guardian.family_name }} ({{ lg.link.relationship.replace("_", " ") }}{% if lg.link.has_parental_responsibility %}, parental responsibility{% endif %}) — {{ "new record" if lg.created else "existing guardian, matched" }}{% if not loop.last %}; {% endif %}{% endfor %}</dd>{% endif %}
       {% if decision %}<dt>Decision</dt><dd>{{ decision.decision.replace("_", " ") }}{% if decision.payment_plan_ref %} — plan {{ decision.payment_plan_ref }}{% endif %} · {{ decision.reason }}</dd>{% endif %}
     </dl>
   </div>
@@ -91,6 +92,32 @@ national clearance network. The check informs your decision; it never refuses a 
         <select name="state_of_origin"><option value="">—</option>{% for code, name, _cap in states %}<option value="{{ code }}" {% if f.get("state_of_origin") == code %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></label>
       <label class="check"><input type="checkbox" name="is_minimal_documentation" value="1" {% if f.get("is_minimal_documentation") %}checked{% endif %}>Registered with minimal documents (displaced, no birth certificate)</label>
     </div>
+  </fieldset>
+  <fieldset aria-describedby="guardians-hint">
+    <legend>Parents and guardians</legend>
+    <p class="muted" id="guardians-hint">Learners under {{ majority }} need at least one guardian with parental responsibility — for a child in care, the
+    social worker or foster carer. Each guardian is looked up in the state register by NIN, phone and e-mail first, so a parent with
+    several children is recorded once.</p>
+    {{ err("guardians") }}
+    {% for n in [1, 2] %}{% set p = "g" ~ n ~ "_" %}{% set ix = "guardians[" ~ (n - 1) ~ "]." %}
+    <h3 class="sub">Guardian {{ n }}{% if n == 2 %} <span class="hint">optional</span>{% endif %}</h3>
+    <div class="grid2">
+      <label>Relationship to the learner
+        <select name="{{ p }}relationship"><option value="">Choose…</option>{% for r in relationships %}<option value="{{ r }}" {% if f.get(p ~ "relationship") == r %}selected{% endif %}>{{ r.replace("_", " / " if r == "aunt_uncle" else " ").capitalize() }}</option>{% endfor %}</select>{{ err(ix ~ "relationship") }}</label>
+      <label>Title <span class="hint">optional — Mr, Mrs, Dr, Chief…</span><input name="{{ p }}title" value="{{ val(p ~ 'title') }}" maxlength="30"></label>
+      <label>Given name<input name="{{ p }}given" value="{{ val(p ~ 'given') }}" autocomplete="off">{{ err(ix ~ "name") }}</label>
+      <label>Family name<input name="{{ p }}family" value="{{ val(p ~ 'family') }}" autocomplete="off"></label>
+      <label>Phone <span class="hint">e.g. 0803 123 4567</span><input name="{{ p }}phone" value="{{ val(p ~ 'phone') }}" inputmode="tel" autocomplete="off">{{ err(ix ~ "phone") }}</label>
+      <label>E-mail <span class="hint">optional</span><input name="{{ p }}email" type="email" value="{{ val(p ~ 'email') }}" autocomplete="off">{{ err(ix ~ "email") }}</label>
+      <label>NIN <span class="hint">optional — stored encrypted</span><input name="{{ p }}nin" value="{{ val(p ~ 'nin') }}" inputmode="numeric" maxlength="13" autocomplete="off" spellcheck="false">{{ err(ix ~ "nin") }}</label>
+      <div>
+        <label class="check"><input type="checkbox" name="{{ p }}responsibility" value="1" {% if not f or f.get(p ~ "responsibility") %}checked{% endif %}>Has parental responsibility</label>
+        <label class="check"><input type="checkbox" name="{{ p }}lives_with" value="1" {% if not f or f.get(p ~ "lives_with") %}checked{% endif %}>Learner lives with them</label>
+        <label class="check"><input type="checkbox" name="{{ p }}collector" value="1" {% if not f or f.get(p ~ "collector") %}checked{% endif %}>May collect the learner</label>
+        <label class="check"><input type="checkbox" name="{{ p }}payer" value="1" {% if (not f and n == 1) or f.get(p ~ "payer") %}checked{% endif %}>Pays fees and levies</label>
+      </div>
+    </div>
+    {% endfor %}
   </fieldset>
 
   {% if probable %}
