@@ -260,7 +260,7 @@ def remote_obligations(results: list[PeerResult]) -> list[rules.Obligation]:
                 rules.Obligation(
                     uuid.UUID(o["obligation_ref"]),
                     uuid.UUID(o["creditor_ref"]),
-                    f"{o['creditor']} ({r.state_code})",
+                    str(o["creditor"]),
                     o["kind"],
                     int(o["amount_minor"]),
                     o.get("currency", "NGN"),

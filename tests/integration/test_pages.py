@@ -99,3 +99,30 @@ def test_national_clearance_network_page(world, client) -> None:  # type: ignore
     client.post("/sign-out")
     client.post("/sign-in", {"username": h.username, "password": "correct-horse-battery"})
     assert client.get("/clearance/network").status_code == 403
+
+
+def test_register_learner_page(world, client) -> None:  # type: ignore[no-untyped-def]
+    from tests.conftest import make_user
+
+    u, _ = make_user(world, "HEAD", world.institution.scope_node_id)
+    client.handler.enforce_csrf_checks = False
+    client.post("/sign-in", {"username": u.username, "password": "correct-horse-battery"})
+    r = client.get("/learners/new")
+    assert r.status_code == 200 and b"Check and register" in r.content and b"Lagos State" in r.content
+    form = {
+        "institution_id": str(world.institution.id),
+        "education_level": "jss_1",
+        "given": "Ifeoma",
+        "family": "Nwosu",
+        "date_of_birth": "2014-02-11",
+        "dob_precision": "day",
+        "sex": "female",
+        "nin": "70000000017",
+        "nationality": "NG",
+    }
+    assert b"enter the date of birth" in client.post("/learners/new", {**form, "date_of_birth": ""}).content
+    assert b"NIN has 11 digits" in client.post("/learners/new", {**form, "nin": "123"}).content
+    r = client.post("/learners/new", form)
+    assert r.status_code == 200 and b"Registered" in r.content and b"LRN-" in r.content
+    r = client.post("/learners/new", form)  # the same child again: linked, never duplicated
+    assert r.status_code == 200 and b"Learner already enrolled" in r.content and b"request a transfer" in r.content

@@ -159,7 +159,7 @@ def test_lagos_debt_found_when_the_child_arrives_in_abia(world: Any, as_user: An
     body = e.value.problem()
     assert body["status"] == 409 and body["total_outstanding_minor"] == 380_000 * NAIRA
     (ob,) = body["obligations"]
-    assert ob["state"] == "NG-LA" and ob["creditor"] == "Lekki Heights Private College (NG-LA)"
+    assert ob["state"] == "NG-LA" and ob["creditor"] == "Lekki Heights Private College"
     fed = body["federation"]
     assert fed["requesting_state"] == "NG-AB" and fed["matched"] == ["NG-LA"]
     assert fed["covered"] == 2 and fed["states_total"] == 37 and fed["complete"] is False

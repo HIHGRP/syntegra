@@ -233,6 +233,120 @@ def register(request: HttpRequest, class_id: uuid.UUID) -> HttpResponse:
     )
 
 
+LEVELS = [
+    "eccde",
+    "primary_1",
+    "primary_2",
+    "primary_3",
+    "primary_4",
+    "primary_5",
+    "primary_6",
+    "jss_1",
+    "jss_2",
+    "jss_3",
+    "sss_1",
+    "sss_2",
+    "sss_3",
+]
+
+
+@require_http_methods(["GET", "POST"])
+@page("LRN-02")
+def learner_new(request: HttpRequest) -> HttpResponse:
+    """Register a learner: identity matching, then fee clearance across every state on the network, then enrolment."""
+    from syntegra.clearance.models import ClearanceCheck, ClearanceDecision
+    from syntegra.clearance.services import AdmissionDeferred, ClearanceDecisionRequired, DecisionInput
+    from syntegra.core.errors import HardValidation, SoftWarning
+    from syntegra.institutions.models import Institution
+    from syntegra.learners import services as lrn
+    from syntegra.learners.models import Enrolment
+    from syntegra.platform.states import STATES
+
+    c = context.require()
+    if not c.has("learner:register"):
+        raise Forbidden()
+    institutions = list(Institution.objects.in_scope().filter(status="active").order_by("name")[:200])
+    f = request.POST if request.method == "POST" else {}
+    errors: dict[str, str] = {}
+    out: dict[str, Any] = {}
+    if request.method == "POST":
+        dob = None
+        try:
+            dob = dt.date.fromisoformat(f.get("date_of_birth", ""))
+        except ValueError:
+            errors["date_of_birth"] = "enter the date of birth"
+        start_on = None
+        if f.get("start_on"):
+            try:
+                start_on = dt.date.fromisoformat(f["start_on"])
+            except ValueError:
+                errors["start_on"] = "enter a valid date"
+        if not f.get("institution_id"):
+            errors["institution_id"] = "choose the admitting institution"
+        if not errors and dob is not None:
+            data = lrn.RegisterLearner(
+                given=f.get("given", ""),
+                middle=f.get("middle") or None,
+                family=f.get("family", ""),
+                preferred_name=f.get("preferred_name") or None,
+                date_of_birth=dob,
+                dob_precision=f.get("dob_precision", "day"),
+                sex=f.get("sex", ""),
+                nin=f.get("nin") or None,
+                nationality=f.get("nationality") or "NG",
+                state_of_origin=f.get("state_of_origin") or None,
+                institution_id=uuid.UUID(f["institution_id"]),
+                education_level=f.get("education_level", ""),
+                start_on=start_on,
+                is_minimal_documentation=bool(f.get("is_minimal_documentation")),
+            )
+            decision = None
+            if f.get("decision"):
+                decision = DecisionInput(
+                    decision=f["decision"],
+                    reason=f.get("decision_reason", ""),
+                    check_id=uuid.UUID(f["check_id"]) if f.get("check_id") else None,
+                    protected_reason=f.get("protected_reason") or None,
+                    payment_plan_ref=f.get("payment_plan_ref") or None,
+                )
+            try:
+                reg = lrn.register(data, override_reason=f.get("override_reason") or None, clearance=decision)
+                out["registration"] = reg
+                chk = ClearanceCheck.objects.filter(learner_id=reg.learner.id).order_by("-checked_at").first()
+                out["check"] = chk
+                out["decision"] = ClearanceDecision.objects.filter(check_id=chk.id).first() if chk else None
+                # A record created moments earlier while the clearance decision was pending is new to this state.
+                out["new_here"] = (
+                    reg.outcome == "created" or Enrolment.objects.filter(learner_id=reg.learner.id).count() == 1
+                )
+            except SoftWarning as exc:
+                out["probable"] = exc.problem()
+            except ClearanceDecisionRequired as exc:
+                out["clearance"] = exc.problem()
+            except AdmissionDeferred:
+                out["deferred"] = True
+            except HardValidation as exc:
+                for e in exc.errors or [{"field": None, "message": exc.detail or exc.title}]:
+                    errors[str(e.get("field") or "form")] = str(e["message"])
+            except DomainError as exc:  # e.g. already enrolled elsewhere: shown on the form, values kept
+                errors["form"] = f"{exc.title}: {exc.detail}" if exc.detail else exc.title
+    return render(
+        request,
+        "learner_new.html",
+        _ctx(
+            request,
+            f=f,
+            errors=errors,
+            institutions=institutions,
+            levels=LEVELS,
+            states=STATES,
+            today=dt.date.today().isoformat(),
+            page=pages.page("LRN-02"),
+            **out,
+        ),
+    )
+
+
 @page("LRN-04")
 def learner(request: HttpRequest, learner_id: uuid.UUID) -> HttpResponse:
     from syntegra.attendance import services as att

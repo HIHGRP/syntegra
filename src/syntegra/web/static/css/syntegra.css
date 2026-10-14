@@ -19,7 +19,7 @@ a { color: var(--brand); }
 .topbar { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; padding: .75rem 1.25rem;
           background: var(--brand); color: var(--brand-ink); }
 .topbar a { color: var(--brand-ink); text-decoration: none; font-weight: 600; }
-.topbar nav { display: flex; gap: 1rem; flex: 1; }
+.topbar nav { display: flex; flex-wrap: wrap; gap: .25rem 1rem; flex: 1; }
 .brand span { font-weight: 400; opacity: .85; margin-left: .5rem; }
 .who { display: flex; gap: .75rem; align-items: center; }
 .who form { margin: 0; } button.link { background: none; border: 0; color: inherit; text-decoration: underline; cursor: pointer; }
@@ -28,7 +28,7 @@ h1 { font-size: 1.6rem; margin: .25rem 0 1rem; } h2 { font-size: 1.15rem; margin
 .muted { color: var(--muted); } .crumb { color: var(--muted); font-size: .875rem; margin: 0; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
 .narrow { max-width: 560px; margin-inline: auto; }
-.grid2 { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.grid2 { display: grid; gap: 0 1rem; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); }
 .tiles { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-bottom: 1rem; }
 .tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem; }
 .big { font-size: 2rem; font-weight: 700; margin: 0 0 .5rem; }
@@ -37,6 +37,13 @@ input, select { display: block; width: 100%; padding: .6rem .7rem; margin-top: .
                 border-radius: 6px; background: var(--surface); color: var(--text); font: inherit; }
 input[type=radio] { display: inline; width: auto; margin: 0; transform: scale(1.3); }
 input.num { width: 5rem; }
+input[type=checkbox] { display: inline; width: auto; margin: 0 .5rem 0 0; transform: scale(1.2); }
+fieldset { border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1.25rem .25rem; margin: 0 0 1rem; min-width: 0; }
+legend { font-weight: 700; padding: 0 .4rem; }
+.hint { display: block; font-weight: 400; font-size: .85rem; color: var(--muted); }
+.err { display: block; font-weight: 600; font-size: .85rem; color: var(--bad); }
+label.check { display: flex; align-items: center; font-weight: 400; }
+.actions { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
 button { padding: .55rem 1rem; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
 button.primary { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); font-weight: 600; }
 form.inline { display: flex; gap: .5rem; margin-bottom: 1rem; } form.inline input { margin: 0; }
@@ -58,5 +65,5 @@ tr.overdue td { background: var(--bad-bg); }
 .cls-restricted, .cls-special, .sev-critical { background: var(--bad-bg); color: var(--bad); border-color: transparent; }
 .cls-confidential, .sev-high { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
 .foot { text-align: center; color: var(--muted); font-size: .8rem; padding: 2rem 0; }
-@media (max-width: 640px) { .topbar nav { order: 3; width: 100%; } th.code, td.code { width: 2rem; padding: .3rem; } }
+@media (max-width: 640px) { .topbar nav { order: 3; width: 100%; } main { padding-inline: 1rem; } .card { padding: 1rem; } fieldset { padding-inline: .75rem; } table.compact { display: block; overflow-x: auto; } th.code, td.code { width: 2rem; padding: .3rem; } }
 @media print { .topbar, .foot, button { display: none; } body { background: #fff; } }

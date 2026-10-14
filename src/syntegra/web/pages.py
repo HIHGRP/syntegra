@@ -13,6 +13,7 @@ from syntegra.core import catalog
 IMPLEMENTED: dict[str, str] = {
     "PUB-01": "verify",
     "ATT-01": "register",
+    "LRN-02": "learner_new",
     "LRN-04": "learner",
     "CUR-101": "coverage",
     "FCL-01": "clearance",

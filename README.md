@@ -76,7 +76,7 @@ Module boundaries are enforced by `import-linter`:
 |---|---|---|---|
 | Sign-in and sessions | Argon2id; lockout after 5 failures in 10 min; sessions stored as SHA-256 only; TOTP MFA; idle timeout set by clearance | `auth/sign-in`, `auth/mfa`, `auth/role`, `auth/sign-out`, `me` | `/sign-in` |
 | Institutions | Registration with duplicate detection (name similarity, distance, gov. registration number), scope node and closure | `institutions` | — |
-| Learners | Fellegi–Sunter matching (auto-link ≥ 0.98, review 0.80–0.98), GLID from leased blocks, encrypted NIN with purpose-bound reveal, one active primary enrolment, transfer | `learners`, `learners/{id}/transfer`, `learners/{id}/nin` | LRN-04 `/learners/{id}` |
+| Learners | Fellegi–Sunter matching (auto-link ≥ 0.98, review 0.80–0.98), GLID from leased blocks, encrypted NIN with purpose-bound reveal, one active primary enrolment, transfer | `learners`, `learners/{id}/transfer`, `learners/{id}/nin` | LRN-02 `/learners/new`, LRN-04 `/learners/{id}` |
 | Classes | Sessions, classes, memberships, subject plans, teacher-of-record assignments | `classes`, `classes/{id}/members` | — |
 | Attendance | Registers, idempotent offline sync (`client_op_id`), audited corrections, rates with policy thresholds | `classes/{id}/registers`, `registers/{id}`, `learners/{id}/attendance` | ATT-01 `/registers/class/{id}` |
 | Coverage | G2/G3 invariants; gaps deduplicated by the database; owner, due date in school days, escalation, events | `institutions/{id}/coverage/evaluate`, `coverage/gaps` | CUR-101 `/coverage` |
