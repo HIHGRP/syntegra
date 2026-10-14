@@ -239,6 +239,144 @@ class Budget(CedaModel):
         verbose_name = 'Budget by cost centre and account linked to enrolment and staffing forecasts (ap'
 
 
+class BudgetCommitment(CedaModel):
+    """Commitment of a budget line by a requisition, purchase order, imprest, payroll or disbursement (released, spent or cancelled)"""
+
+    ceda_entity = 'budget_commitment'
+    ceda_zones = ('ops',)
+    ceda_domain = 'FIN'
+    ceda_kind = 'transaction'
+    ceda_class = 'internal'
+    ceda_history = 'lifecycle'
+    ceda_scope = 'owned'
+    ceda_append_only = False
+    ceda_partition = None
+    ceda_retention = 'RS-FIN'
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'scope_node_id': {'type': 'uuid', 'standard': True}, 'budget_line_id': {'type': 'ref', 'ref': 'budget_line'}, 'source_kind': {'type': 'enum', 'enum': 'commitment_source'}, 'source_id': {'type': 'uuid'}, 'description': {'type': 'str'}, 'amount_minor': {'type': 'money'}, 'spent_minor': {'type': 'money'}, 'released_minor': {'type': 'money'}, 'currency': {'type': 'currency'}, 'committed_on': {'type': 'date'}, 'committed_by': {'type': 'uuid'}, 'status': {'type': 'enum', 'enum': 'commitment_status'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
+
+    id = cf.UUID7Field(primary_key=True, default=uuid7)
+    tenant_id = cf.UUID7Field()
+    scope_node_id = cf.UUID7Field()
+    budget_line = models.ForeignKey("finance.BudgetLine", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='budget_line_id')
+    source_kind = models.CharField(max_length=32, choices=[('requisition', 'Requisition'), ('purchase_order', 'Purchase order'), ('imprest', 'Imprest'), ('payroll', 'Payroll'), ('funding_disbursement', 'Funding disbursement'), ('contract', 'Contract'), ('manual', 'Manual')])
+    source_id = cf.UUID7Field()
+    description = models.CharField(max_length=300)
+    amount_minor = models.BigIntegerField(help_text='(minor units)')
+    spent_minor = models.BigIntegerField(default=0, help_text='(minor units)')
+    released_minor = models.BigIntegerField(default=0, help_text='(minor units)')
+    currency = models.CharField(max_length=3)
+    committed_on = models.DateField()
+    committed_by = cf.UUID7Field()
+    status = models.CharField(max_length=32, choices=[('open', 'Open'), ('partly_spent', 'Partly spent'), ('spent', 'Spent'), ('released', 'Released'), ('cancelled', 'Cancelled')])
+    created_at = models.DateTimeField(default=cf.utcnow)
+    created_by = cf.UUID7Field(null=True, blank=True)
+    updated_at = models.DateTimeField(default=cf.utcnow)
+    updated_by = cf.UUID7Field(null=True, blank=True)
+    row_version = models.PositiveIntegerField(default=1)
+
+    objects = TenantScopedManager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'budget_commitment'
+        app_label = 'finance'
+        base_manager_name = 'unscoped'
+        verbose_name = 'Commitment of a budget line by a requisition, purchase order, imprest, payroll o'
+
+
+class BudgetLine(CedaModel):
+    """Approved budget line — cost centre × ledger account × economic code × funding source, with original, revised, committed and actual amounts"""
+
+    ceda_entity = 'budget_line'
+    ceda_zones = ('ops',)
+    ceda_domain = 'FIN'
+    ceda_kind = 'transaction'
+    ceda_class = 'internal'
+    ceda_history = 'lifecycle'
+    ceda_scope = 'owned'
+    ceda_append_only = False
+    ceda_partition = None
+    ceda_retention = 'RS-FIN'
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'scope_node_id': {'type': 'uuid', 'standard': True}, 'budget_id': {'type': 'ref', 'ref': 'budget'}, 'cost_centre_id': {'type': 'ref', 'ref': 'cost_centre'}, 'account_id': {'type': 'ref', 'ref': 'account'}, 'economic_code': {'type': 'code'}, 'funding_source_kind': {'type': 'enum', 'enum': 'budget_funding_kind'}, 'funding_source_id': {'type': 'ref', 'ref': 'funding_source'}, 'description': {'type': 'str'}, 'original_minor': {'type': 'money'}, 'revised_minor': {'type': 'money'}, 'committed_minor': {'type': 'money'}, 'actual_minor': {'type': 'money'}, 'currency': {'type': 'currency'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
+
+    id = cf.UUID7Field(primary_key=True, default=uuid7)
+    tenant_id = cf.UUID7Field()
+    scope_node_id = cf.UUID7Field()
+    budget = models.ForeignKey("finance.Budget", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='budget_id')
+    cost_centre = models.ForeignKey("finance.CostCentre", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='cost_centre_id')
+    account = models.ForeignKey("finance.Account", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='account_id')
+    economic_code = models.CharField(max_length=16, help_text='Economic segment of the National Chart of Accounts, e.g. 22020101')
+    funding_source_kind = models.CharField(max_length=32, choices=[('subvention', 'Subvention'), ('personnel_cost', 'Personnel cost'), ('overhead', 'Overhead'), ('capital_allocation', 'Capital allocation'), ('internally_generated_revenue', 'Internally generated revenue'), ('fees', 'Fees'), ('grant', 'Grant'), ('intervention', 'Intervention'), ('loan', 'Loan'), ('donation', 'Donation'), ('other', 'Other')])
+    funding_source = models.ForeignKey("finance.FundingSource", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='funding_source_id', null=True, blank=True)
+    description = models.CharField(max_length=300, null=True, blank=True)
+    original_minor = models.BigIntegerField(help_text='(minor units)')
+    revised_minor = models.BigIntegerField(help_text='(minor units)')
+    committed_minor = models.BigIntegerField(default=0, help_text='(minor units)')
+    actual_minor = models.BigIntegerField(default=0, help_text='(minor units)')
+    currency = models.CharField(max_length=3)
+    created_at = models.DateTimeField(default=cf.utcnow)
+    created_by = cf.UUID7Field(null=True, blank=True)
+    updated_at = models.DateTimeField(default=cf.utcnow)
+    updated_by = cf.UUID7Field(null=True, blank=True)
+    row_version = models.PositiveIntegerField(default=1)
+
+    objects = TenantScopedManager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'budget_line'
+        app_label = 'finance'
+        base_manager_name = 'unscoped'
+        verbose_name = 'Approved budget line — cost centre × ledger account × economic code × funding so'
+
+
+class BudgetVirement(CedaModel):
+    """Virement — budget moved between two lines with a reason, approved by someone other than the requester"""
+
+    ceda_entity = 'budget_virement'
+    ceda_zones = ('ops',)
+    ceda_domain = 'FIN'
+    ceda_kind = 'transaction'
+    ceda_class = 'internal'
+    ceda_history = 'lifecycle'
+    ceda_scope = 'owned'
+    ceda_append_only = False
+    ceda_partition = None
+    ceda_retention = 'RS-FIN'
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'scope_node_id': {'type': 'uuid', 'standard': True}, 'virement_number': {'type': 'code'}, 'from_line_id': {'type': 'ref', 'ref': 'budget_line'}, 'to_line_id': {'type': 'ref', 'ref': 'budget_line'}, 'amount_minor': {'type': 'money'}, 'currency': {'type': 'currency'}, 'reason': {'type': 'text'}, 'requested_by': {'type': 'uuid'}, 'decided_by': {'type': 'uuid'}, 'decided_at': {'type': 'ts'}, 'status': {'type': 'enum', 'enum': 'request_status'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
+
+    id = cf.UUID7Field(primary_key=True, default=uuid7)
+    tenant_id = cf.UUID7Field()
+    scope_node_id = cf.UUID7Field()
+    virement_number = models.CharField(max_length=32)
+    from_line = models.ForeignKey("finance.BudgetLine", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='from_line_id')
+    to_line = models.ForeignKey("finance.BudgetLine", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='to_line_id')
+    amount_minor = models.BigIntegerField(help_text='(minor units)')
+    currency = models.CharField(max_length=3)
+    reason = models.TextField()
+    requested_by = cf.UUID7Field()
+    decided_by = cf.UUID7Field(null=True, blank=True)
+    decided_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=32, choices=[('draft', 'Draft'), ('submitted', 'Submitted'), ('in_review', 'In review'), ('approved', 'Approved'), ('rejected', 'Rejected'), ('cancelled', 'Cancelled'), ('fulfilled', 'Fulfilled')])
+    created_at = models.DateTimeField(default=cf.utcnow)
+    created_by = cf.UUID7Field(null=True, blank=True)
+    updated_at = models.DateTimeField(default=cf.utcnow)
+    updated_by = cf.UUID7Field(null=True, blank=True)
+    row_version = models.PositiveIntegerField(default=1)
+
+    objects = TenantScopedManager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'budget_virement'
+        app_label = 'finance'
+        base_manager_name = 'unscoped'
+        verbose_name = 'Virement — budget moved between two lines with a reason, approved by someone oth'
+
+
 class ChargeType(CedaModel):
     """Charge type (tuition, registration, exam, accommodation, transport, meals, uniform, books, ICT, lab, clinical, trips …) with GL account and tax treatment"""
 
@@ -278,6 +416,49 @@ class ChargeType(CedaModel):
         app_label = 'finance'
         base_manager_name = 'unscoped'
         verbose_name = 'Charge type (tuition, registration, exam, accommodation, transport, meals, unifo'
+
+
+class CostCentre(CedaModel):
+    """Cost centre of an institution (administration, department, boarding, feeding, estate, ICT, transport, project, welfare) with its budget holder"""
+
+    ceda_entity = 'cost_centre'
+    ceda_zones = ('ops',)
+    ceda_domain = 'FIN'
+    ceda_kind = 'master'
+    ceda_class = 'internal'
+    ceda_history = 'lifecycle'
+    ceda_scope = 'owned'
+    ceda_append_only = False
+    ceda_partition = None
+    ceda_retention = 'RS-FIN'
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'scope_node_id': {'type': 'uuid', 'standard': True}, 'institution_id': {'type': 'ref', 'ref': 'institution'}, 'code': {'type': 'code'}, 'name': {'type': 'title'}, 'cost_centre_kind': {'type': 'enum', 'enum': 'cost_centre_kind'}, 'parent_id': {'type': 'ref', 'ref': 'cost_centre'}, 'org_unit_id': {'type': 'ref', 'ref': 'org_unit'}, 'holder_staff_id': {'type': 'ref', 'ref': 'staff'}, 'status': {'type': 'enum', 'enum': 'record_status'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
+
+    id = cf.UUID7Field(primary_key=True, default=uuid7)
+    tenant_id = cf.UUID7Field()
+    scope_node_id = cf.UUID7Field()
+    institution_id = cf.UUID7Field()
+    code = models.CharField(max_length=32)
+    name = models.CharField(max_length=300)
+    cost_centre_kind = models.CharField(max_length=32, choices=[('administration', 'Administration'), ('academic_department', 'Academic department'), ('boarding', 'Boarding'), ('feeding', 'Feeding'), ('estate', 'Estate'), ('ict', 'Ict'), ('transport', 'Transport'), ('health', 'Health'), ('library', 'Library'), ('sports', 'Sports'), ('project', 'Project'), ('welfare', 'Welfare'), ('revenue_generating', 'Revenue generating'), ('other', 'Other')])
+    parent = models.ForeignKey("finance.CostCentre", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='parent_id', null=True, blank=True)
+    org_unit_id = cf.UUID7Field(null=True, blank=True, help_text='Department or unit the cost centre belongs to')
+    holder_staff_id = cf.UUID7Field(null=True, blank=True, help_text='Budget holder')
+    status = models.CharField(max_length=32, choices=[('active', 'Active'), ('inactive', 'Inactive'), ('retired', 'Retired')])
+    created_at = models.DateTimeField(default=cf.utcnow)
+    created_by = cf.UUID7Field(null=True, blank=True)
+    updated_at = models.DateTimeField(default=cf.utcnow)
+    updated_by = cf.UUID7Field(null=True, blank=True)
+    row_version = models.PositiveIntegerField(default=1)
+
+    objects = TenantScopedManager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'cost_centre'
+        app_label = 'finance'
+        base_manager_name = 'unscoped'
+        verbose_name = 'Cost centre of an institution (administration, department, boarding, feeding, es'
 
 
 class CreditNote(CedaModel):
@@ -521,6 +702,94 @@ class GovernmentFundingReceipt(CedaModel):
         app_label = 'finance'
         base_manager_name = 'unscoped'
         verbose_name = 'Capitation or government grant tranche received, reconciled against learners fun'
+
+
+class Imprest(CedaModel):
+    """Imprest — cash advance to a named holder against a budget line, to be retired with receipts by a due date"""
+
+    ceda_entity = 'imprest'
+    ceda_zones = ('ops',)
+    ceda_domain = 'FIN'
+    ceda_kind = 'transaction'
+    ceda_class = 'confidential'
+    ceda_history = 'lifecycle'
+    ceda_scope = 'owned'
+    ceda_append_only = False
+    ceda_partition = None
+    ceda_retention = 'RS-FIN'
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'scope_node_id': {'type': 'uuid', 'standard': True}, 'imprest_number': {'type': 'code'}, 'holder_staff_id': {'type': 'ref', 'ref': 'staff'}, 'cost_centre_id': {'type': 'ref', 'ref': 'cost_centre'}, 'budget_line_id': {'type': 'ref', 'ref': 'budget_line'}, 'commitment_id': {'type': 'ref', 'ref': 'budget_commitment'}, 'purpose': {'type': 'str'}, 'amount_minor': {'type': 'money'}, 'retired_minor': {'type': 'money'}, 'refunded_minor': {'type': 'money'}, 'currency': {'type': 'currency'}, 'requested_by': {'type': 'uuid'}, 'approved_by': {'type': 'uuid'}, 'issued_on': {'type': 'date'}, 'retire_by': {'type': 'date'}, 'status': {'type': 'enum', 'enum': 'imprest_status'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
+
+    id = cf.UUID7Field(primary_key=True, default=uuid7)
+    tenant_id = cf.UUID7Field()
+    scope_node_id = cf.UUID7Field()
+    imprest_number = models.CharField(max_length=32)
+    holder_staff_id = cf.UUID7Field()
+    cost_centre = models.ForeignKey("finance.CostCentre", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='cost_centre_id')
+    budget_line = models.ForeignKey("finance.BudgetLine", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='budget_line_id')
+    commitment = models.ForeignKey("finance.BudgetCommitment", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='commitment_id', null=True, blank=True)
+    purpose = models.CharField(max_length=300)
+    amount_minor = models.BigIntegerField(help_text='(minor units)')
+    retired_minor = models.BigIntegerField(default=0, help_text='(minor units)')
+    refunded_minor = models.BigIntegerField(default=0, help_text='(minor units)')
+    currency = models.CharField(max_length=3)
+    requested_by = cf.UUID7Field()
+    approved_by = cf.UUID7Field(null=True, blank=True)
+    issued_on = models.DateField(null=True, blank=True)
+    retire_by = models.DateField()
+    status = models.CharField(max_length=32, choices=[('requested', 'Requested'), ('approved', 'Approved'), ('issued', 'Issued'), ('partly_retired', 'Partly retired'), ('retired', 'Retired'), ('overdue', 'Overdue'), ('written_off', 'Written off'), ('rejected', 'Rejected'), ('cancelled', 'Cancelled')])
+    created_at = models.DateTimeField(default=cf.utcnow)
+    created_by = cf.UUID7Field(null=True, blank=True)
+    updated_at = models.DateTimeField(default=cf.utcnow)
+    updated_by = cf.UUID7Field(null=True, blank=True)
+    row_version = models.PositiveIntegerField(default=1)
+
+    objects = TenantScopedManager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'imprest'
+        app_label = 'finance'
+        base_manager_name = 'unscoped'
+        verbose_name = 'Imprest — cash advance to a named holder against a budget line, to be retired wi'
+
+
+class ImprestRetirement(CedaModel):
+    """Retirement of an imprest — receipts, amount accounted for and cash refunded"""
+
+    ceda_entity = 'imprest_retirement'
+    ceda_zones = ('ops',)
+    ceda_domain = 'FIN'
+    ceda_kind = 'event'
+    ceda_class = 'confidential'
+    ceda_history = 'append'
+    ceda_scope = 'none'
+    ceda_append_only = True
+    ceda_partition = None
+    ceda_retention = 'RS-FIN'
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'imprest_id': {'type': 'ref', 'ref': 'imprest'}, 'receipts': {'type': 'json'}, 'amount_minor': {'type': 'money'}, 'refund_minor': {'type': 'money'}, 'currency': {'type': 'currency'}, 'retired_on': {'type': 'date'}, 'verified_by': {'type': 'uuid'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}}
+
+    id = cf.UUID7Field(primary_key=True, default=uuid7)
+    tenant_id = cf.UUID7Field()
+    imprest = models.ForeignKey("finance.Imprest", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='imprest_id')
+    receipts = models.JSONField(help_text='Receipt references, payees and amounts')
+    amount_minor = models.BigIntegerField(help_text='Amount accounted for by receipts (minor units)')
+    refund_minor = models.BigIntegerField(default=0, help_text='(minor units)')
+    currency = models.CharField(max_length=3)
+    retired_on = models.DateField()
+    verified_by = cf.UUID7Field()
+    created_at = models.DateTimeField(default=cf.utcnow)
+    created_by = cf.UUID7Field(null=True, blank=True)
+
+    objects = TenantScopedManager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'imprest_retirement'
+        app_label = 'finance'
+        base_manager_name = 'unscoped'
+        verbose_name = 'Retirement of an imprest — receipts, amount accounted for and cash refunded'
 
 
 class Invoice(CedaModel):

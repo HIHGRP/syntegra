@@ -30,6 +30,12 @@ Module (system of record): `finance` · default zone: **ops** · default retenti
 | [`supplier`](#ops-supplier) | ops | master | confidential | lifecycle | Supplier 360 master (duplicate detection; call-back verification and dual approval for bank-detail changes) |
 | [`requisition`](#ops-requisition) | ops | transaction | internal | lifecycle | Purchase requisition (delegated approval limits; split-purchase detection) |
 | [`purchase_order`](#ops-purchase_order) | ops | transaction | internal | lifecycle | Purchase order, goods receipt and three-way match to the supplier invoice |
+| [`cost_centre`](#ops-cost_centre) | ops | master | internal | lifecycle | Cost centre of an institution (administration, department, boarding, feeding, estate, ICT, transport, project, welfare) with its budget holder |
+| [`budget_line`](#ops-budget_line) | ops | transaction | internal | lifecycle | Approved budget line — cost centre × ledger account × economic code × funding source, with original, revised, committed and actual amounts |
+| [`budget_commitment`](#ops-budget_commitment) | ops | transaction | internal | lifecycle | Commitment of a budget line by a requisition, purchase order, imprest, payroll or disbursement (released, spent or cancelled) |
+| [`budget_virement`](#ops-budget_virement) | ops | transaction | internal | lifecycle | Virement — budget moved between two lines with a reason, approved by someone other than the requester |
+| [`imprest`](#ops-imprest) | ops | transaction | confidential | lifecycle | Imprest — cash advance to a named holder against a budget line, to be retired with receipts by a due date |
+| [`imprest_retirement`](#ops-imprest_retirement) | ops | event | confidential | append | Retirement of an imprest — receipts, amount accounted for and cash refunded |
 
 <a id="ops-account"></a>
 ## `account`
@@ -996,4 +1002,281 @@ Purchase order, goods receipt and three-way match to the supplier invoice
 - Unique: (tenant_id, po_number)
 
 - Soft reference `scope_node_id` → `scope_node` — owning scope (governance hierarchy is in the registry zone)
+
+<a id="ops-cost_centre"></a>
+## `cost_centre`
+
+Cost centre of an institution (administration, department, boarding, feeding, estate, ICT, transport, project, welfare) with its budget holder
+
+| | |
+|---|---|
+| Zone | ops |
+| Kind | master |
+| Classification | internal |
+| History | lifecycle |
+| Scope | owned |
+| Module | `finance` |
+| Origin | ceda |
+| Retention | `RS-FIN` |
+| Requirements | FR-ACC-01 |
+| Pages | FIN-01, FIN-02, ACC-01 |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `id` **PK** | `BINARY(16)` | no |  | Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap |
+| `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `scope_node_id` | `BINARY(16)` | no |  | Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure |
+| `institution_id` → `institution` | `BINARY(16)` | no |  |  |
+| `code` | `VARCHAR(32)` | no |  |  |
+| `name` | `VARCHAR(300)` | no |  |  |
+| `cost_centre_kind` | `VARCHAR(32)` | no |  | values: administration, academic_department, boarding, feeding, estate, ict, transport, health, library, sports, project, welfare, revenue_generating, other |
+| `parent_id` → `cost_centre` | `BINARY(16)` | yes |  |  |
+| `org_unit_id` → `org_unit` | `BINARY(16)` | yes |  | Department or unit the cost centre belongs to |
+| `holder_staff_id` → `staff` | `BINARY(16)` | yes |  | Budget holder |
+| `status` | `VARCHAR(32)` | no |  | values: active, inactive, retired |
+| `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
+| `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+| `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
+| `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
+| `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
+
+- Unique: (tenant_id, scope_node_id, code)
+- Index: (tenant_id, institution_id)
+
+- Soft reference `institution_id` → `institution` — cross-zone (ops → registry)
+- Soft reference `org_unit_id` → `org_unit` — cross-zone (ops → registry)
+- Soft reference `holder_staff_id` → `staff` — cross-zone (ops → registry)
+- Soft reference `scope_node_id` → `scope_node` — owning scope (governance hierarchy is in the registry zone)
+
+<a id="ops-budget_line"></a>
+## `budget_line`
+
+Approved budget line — cost centre × ledger account × economic code × funding source, with original, revised, committed and actual amounts  
+
+committed and actual are maintained by the commitment service under a row lock; available = revised − committed − actual is never negative (FR-ACC-03).
+
+| | |
+|---|---|
+| Zone | ops |
+| Kind | transaction |
+| Classification | internal |
+| History | lifecycle |
+| Scope | owned |
+| Module | `finance` |
+| Origin | ceda |
+| Retention | `RS-FIN` |
+| Requirements | FR-ACC-02, FR-ACC-03, FR-ACC-06 |
+| Pages | FIN-01, FIN-02 |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `id` **PK** | `BINARY(16)` | no |  | Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap |
+| `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `scope_node_id` | `BINARY(16)` | no |  | Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure |
+| `budget_id` → `budget` | `BINARY(16)` | no |  |  |
+| `cost_centre_id` → `cost_centre` | `BINARY(16)` | no |  |  |
+| `account_id` → `account` | `BINARY(16)` | no |  |  |
+| `economic_code` | `VARCHAR(16)` | no |  | Economic segment of the National Chart of Accounts, e.g. 22020101 |
+| `funding_source_kind` | `VARCHAR(32)` | no |  | values: subvention, personnel_cost, overhead, capital_allocation, internally_generated_revenue, fees, grant, intervention, loan, donation, other |
+| `funding_source_id` → `funding_source` | `BINARY(16)` | yes |  |  |
+| `description` | `VARCHAR(300)` | yes |  |  |
+| `original_minor` | `BIGINT` | no |  | (minor units) |
+| `revised_minor` | `BIGINT` | no |  | (minor units) |
+| `committed_minor` | `BIGINT` | no |  | (minor units) |
+| `actual_minor` | `BIGINT` | no |  | (minor units) |
+| `currency` | `CHAR(3)` | no |  |  |
+| `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
+| `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+| `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
+| `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
+| `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
+
+- Unique: (tenant_id, budget_id, cost_centre_id, account_id, economic_code, funding_source_kind)
+- Index: (tenant_id, cost_centre_id)
+
+- Soft reference `scope_node_id` → `scope_node` — owning scope (governance hierarchy is in the registry zone)
+
+- Check `within_budget`: `committed_minor >= 0 AND actual_minor >= 0 AND committed_minor + actual_minor <= revised_minor`
+
+<a id="ops-budget_commitment"></a>
+## `budget_commitment`
+
+Commitment of a budget line by a requisition, purchase order, imprest, payroll or disbursement (released, spent or cancelled)
+
+| | |
+|---|---|
+| Zone | ops |
+| Kind | transaction |
+| Classification | internal |
+| History | lifecycle |
+| Scope | owned |
+| Module | `finance` |
+| Origin | ceda |
+| Retention | `RS-FIN` |
+| Requirements | FR-ACC-03 |
+| Pages | FIN-02 |
+| Events | FIN.FUNDS_COMMITTED |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `id` **PK** | `BINARY(16)` | no |  | Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap |
+| `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `scope_node_id` | `BINARY(16)` | no |  | Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure |
+| `budget_line_id` → `budget_line` | `BINARY(16)` | no |  |  |
+| `source_kind` | `VARCHAR(32)` | no |  | values: requisition, purchase_order, imprest, payroll, funding_disbursement, contract, manual |
+| `source_id` | `BINARY(16)` | no |  |  |
+| `description` | `VARCHAR(300)` | no |  |  |
+| `amount_minor` | `BIGINT` | no |  | (minor units) |
+| `spent_minor` | `BIGINT` | no |  | (minor units) |
+| `released_minor` | `BIGINT` | no |  | (minor units) |
+| `currency` | `CHAR(3)` | no |  |  |
+| `committed_on` | `DATE` | no |  |  |
+| `committed_by` | `BINARY(16)` | no |  |  |
+| `status` | `VARCHAR(32)` | no |  | values: open, partly_spent, spent, released, cancelled |
+| `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
+| `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+| `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
+| `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
+| `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
+
+- Index: (tenant_id, budget_line_id, status)
+- Index: (tenant_id, source_kind, source_id)
+
+- Soft reference `scope_node_id` → `scope_node` — owning scope (governance hierarchy is in the registry zone)
+
+- Check `settles`: `spent_minor + released_minor <= amount_minor`
+
+<a id="ops-budget_virement"></a>
+## `budget_virement`
+
+Virement — budget moved between two lines with a reason, approved by someone other than the requester
+
+| | |
+|---|---|
+| Zone | ops |
+| Kind | transaction |
+| Classification | internal |
+| History | lifecycle |
+| Scope | owned |
+| Module | `finance` |
+| Origin | ceda |
+| Retention | `RS-FIN` |
+| Requirements | FR-ACC-04 |
+| Pages | FIN-01, FIN-02 |
+| Events | FIN.VIREMENT_APPROVED |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `id` **PK** | `BINARY(16)` | no |  | Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap |
+| `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `scope_node_id` | `BINARY(16)` | no |  | Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure |
+| `virement_number` | `VARCHAR(32)` | no |  |  |
+| `from_line_id` → `budget_line` | `BINARY(16)` | no |  |  |
+| `to_line_id` → `budget_line` | `BINARY(16)` | no |  |  |
+| `amount_minor` | `BIGINT` | no |  | (minor units) |
+| `currency` | `CHAR(3)` | no |  |  |
+| `reason` | `TEXT` | no |  |  |
+| `requested_by` | `BINARY(16)` | no |  |  |
+| `decided_by` | `BINARY(16)` | yes |  |  |
+| `decided_at` | `DATETIME(6)` | yes |  |  |
+| `status` | `VARCHAR(32)` | no |  | values: draft, submitted, in_review, approved, rejected, cancelled, fulfilled |
+| `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
+| `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+| `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
+| `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
+| `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
+
+- Unique: (tenant_id, virement_number)
+
+- Soft reference `scope_node_id` → `scope_node` — owning scope (governance hierarchy is in the registry zone)
+
+- Check `four_eyes`: `decided_by IS NULL OR decided_by <> requested_by`
+- Check `two_lines`: `from_line_id <> to_line_id`
+
+<a id="ops-imprest"></a>
+## `imprest`
+
+Imprest — cash advance to a named holder against a budget line, to be retired with receipts by a due date
+
+| | |
+|---|---|
+| Zone | ops |
+| Kind | transaction |
+| Classification | confidential |
+| History | lifecycle |
+| Scope | owned |
+| Module | `finance` |
+| Origin | ceda |
+| Retention | `RS-FIN` |
+| Requirements | FR-ACC-05 |
+| Pages | ACC-01 |
+| Events | FIN.IMPREST_OVERDUE |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `id` **PK** | `BINARY(16)` | no |  | Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap |
+| `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `scope_node_id` | `BINARY(16)` | no |  | Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure |
+| `imprest_number` | `VARCHAR(32)` | no |  |  |
+| `holder_staff_id` → `staff` | `BINARY(16)` | no |  |  |
+| `cost_centre_id` → `cost_centre` | `BINARY(16)` | no |  |  |
+| `budget_line_id` → `budget_line` | `BINARY(16)` | no |  |  |
+| `commitment_id` → `budget_commitment` | `BINARY(16)` | yes |  |  |
+| `purpose` | `VARCHAR(300)` | no |  |  |
+| `amount_minor` | `BIGINT` | no |  | (minor units) |
+| `retired_minor` | `BIGINT` | no |  | (minor units) |
+| `refunded_minor` | `BIGINT` | no |  | (minor units) |
+| `currency` | `CHAR(3)` | no |  |  |
+| `requested_by` | `BINARY(16)` | no |  |  |
+| `approved_by` | `BINARY(16)` | yes |  |  |
+| `issued_on` | `DATE` | yes |  |  |
+| `retire_by` | `DATE` | no |  |  |
+| `status` | `VARCHAR(32)` | no |  | values: requested, approved, issued, partly_retired, retired, overdue, written_off, rejected, cancelled |
+| `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
+| `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+| `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
+| `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
+| `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
+
+- Unique: (tenant_id, imprest_number)
+- Index: (tenant_id, holder_staff_id, status)
+- Index: (tenant_id, retire_by)
+
+- Soft reference `holder_staff_id` → `staff` — cross-zone (ops → registry)
+- Soft reference `scope_node_id` → `scope_node` — owning scope (governance hierarchy is in the registry zone)
+
+- Check `four_eyes`: `approved_by IS NULL OR approved_by <> requested_by`
+- Check `retired_within`: `retired_minor + refunded_minor <= amount_minor`
+
+<a id="ops-imprest_retirement"></a>
+## `imprest_retirement`
+
+Retirement of an imprest — receipts, amount accounted for and cash refunded
+
+| | |
+|---|---|
+| Zone | ops |
+| Kind | event |
+| Classification | confidential |
+| History | append |
+| Scope | none |
+| Module | `finance` |
+| Origin | ceda |
+| Retention | `RS-FIN` |
+| Requirements | FR-ACC-05 |
+| Pages | ACC-01 |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `id` **PK** | `BINARY(16)` | no |  | Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap |
+| `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `imprest_id` → `imprest` | `BINARY(16)` | no |  |  |
+| `receipts` | `JSON` | no |  | Receipt references, payees and amounts |
+| `amount_minor` | `BIGINT` | no |  | Amount accounted for by receipts (minor units) |
+| `refund_minor` | `BIGINT` | no |  | (minor units) |
+| `currency` | `CHAR(3)` | no |  |  |
+| `retired_on` | `DATE` | no |  |  |
+| `verified_by` | `BINARY(16)` | no |  |  |
+| `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
+| `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
 

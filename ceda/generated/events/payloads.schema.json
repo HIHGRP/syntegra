@@ -3373,6 +3373,331 @@
         "relationship"
       ],
       "additionalProperties": false
+    },
+    "FIN.FUNDS_COMMITTED": {
+      "type": "object",
+      "description": "A budget line is committed",
+      "properties": {
+        "budget_commitment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "budget_line_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "amount_minor": {
+          "type": "integer"
+        },
+        "currency": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "budget_commitment_id",
+        "budget_line_id",
+        "amount_minor",
+        "currency"
+      ],
+      "additionalProperties": false
+    },
+    "FIN.VIREMENT_APPROVED": {
+      "type": "object",
+      "description": "A virement is approved by a second person",
+      "properties": {
+        "budget_virement_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "from_line_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "to_line_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "amount_minor": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "budget_virement_id",
+        "from_line_id",
+        "to_line_id",
+        "amount_minor"
+      ],
+      "additionalProperties": false
+    },
+    "FIN.IMPREST_OVERDUE": {
+      "type": "object",
+      "description": "An imprest is not retired by its due date",
+      "properties": {
+        "imprest_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "retire_by": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "imprest_id",
+        "retire_by"
+      ],
+      "additionalProperties": false
+    },
+    "FND.APPLICATION_SUBMITTED": {
+      "type": "object",
+      "description": "An application is submitted",
+      "properties": {
+        "funding_application_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "programme_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "applicant_kind": {
+          "type": "string",
+          "enum": [
+            "institution",
+            "staff",
+            "learner"
+          ]
+        },
+        "eligible": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "funding_application_id",
+        "programme_id",
+        "applicant_kind"
+      ],
+      "additionalProperties": false
+    },
+    "FND.APPLICATION_DECIDED": {
+      "type": "object",
+      "description": "An application is approved or declined",
+      "properties": {
+        "funding_application_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "submitted",
+            "under_review",
+            "recommended",
+            "approved",
+            "declined",
+            "withdrawn",
+            "cancelled"
+          ]
+        }
+      },
+      "required": [
+        "funding_application_id",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "FND.AGREEMENT_SIGNED": {
+      "type": "object",
+      "description": "A funding agreement is signed",
+      "properties": {
+        "funding_agreement_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "instrument": {
+          "type": "string",
+          "enum": [
+            "loan",
+            "grant",
+            "scholarship",
+            "bursary",
+            "intervention",
+            "matching_grant",
+            "salary_advance",
+            "bond",
+            "guarantee",
+            "in_kind"
+          ]
+        },
+        "principal_minor": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "funding_agreement_id",
+        "instrument",
+        "principal_minor"
+      ],
+      "additionalProperties": false
+    },
+    "FND.DISBURSED": {
+      "type": "object",
+      "description": "Funds are disbursed",
+      "properties": {
+        "funding_disbursement_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "funding_agreement_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "amount_minor": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "funding_disbursement_id",
+        "funding_agreement_id",
+        "amount_minor"
+      ],
+      "additionalProperties": false
+    },
+    "FND.REPAYMENT_RECEIVED": {
+      "type": "object",
+      "description": "A repayment is received and allocated",
+      "properties": {
+        "funding_repayment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "funding_agreement_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "amount_minor": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "funding_repayment_id",
+        "funding_agreement_id",
+        "amount_minor"
+      ],
+      "additionalProperties": false
+    },
+    "FND.ARREARS_RAISED": {
+      "type": "object",
+      "description": "An instalment falls overdue",
+      "properties": {
+        "funding_agreement_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "arrears_minor": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "funding_agreement_id",
+        "arrears_minor"
+      ],
+      "additionalProperties": false
+    },
+    "EST.FACILITY_ASSESSED": {
+      "type": "object",
+      "description": "A facility's condition and usability are recorded",
+      "properties": {
+        "facility_assessment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "subject_kind": {
+          "type": "string",
+          "enum": [
+            "site",
+            "building",
+            "room",
+            "asset"
+          ]
+        },
+        "usability": {
+          "type": "string",
+          "enum": [
+            "fully_usable",
+            "usable_minor_repairs",
+            "usable_major_repairs",
+            "unsafe_restricted",
+            "unusable",
+            "condemned"
+          ]
+        }
+      },
+      "required": [
+        "facility_assessment_id",
+        "subject_kind",
+        "usability"
+      ],
+      "additionalProperties": false
+    },
+    "EST.ACTION_RAISED": {
+      "type": "object",
+      "description": "A proactive facility action is proposed to the head of institution",
+      "properties": {
+        "facility_action_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "rule": {
+          "type": "string",
+          "enum": [
+            "unsafe_in_use",
+            "assessment_overdue",
+            "never_assessed",
+            "maintenance_due",
+            "maintenance_overdue",
+            "condition_deteriorated",
+            "safety_check_overdue",
+            "predicted_failure",
+            "encroachment",
+            "no_title"
+          ]
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "moderate",
+            "info"
+          ]
+        }
+      },
+      "required": [
+        "facility_action_id",
+        "rule",
+        "priority"
+      ],
+      "additionalProperties": false
+    },
+    "EST.ACTION_ESCALATED": {
+      "type": "object",
+      "description": "A facility action passes its due date without being acted on",
+      "properties": {
+        "facility_action_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "escalation_level": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "facility_action_id",
+        "escalation_level"
+      ],
+      "additionalProperties": false
     }
   }
 }

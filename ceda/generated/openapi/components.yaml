@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Syntegra CEDA canonical component schemas
-  version: 1.6.0
+  version: 1.7.0
   description: Generated from the CEDA model. API resources compose these schemas; fields marked x-classification restricted/special
     are only serialised for callers whose grant clearance covers them and who supplied X-Syntegra-Purpose.
 paths: {}
@@ -33529,6 +33529,693 @@ components:
       - updated_at
       - row_version
       additionalProperties: false
+    CostCentre:
+      title: CostCentre
+      description: Cost centre of an institution (administration, department, boarding, feeding, estate, ICT, transport, project,
+        welfare) with its budget holder
+      type: object
+      x-ceda:
+        entity: cost_centre
+        zone: ops
+        domain: FIN
+        kind: master
+        classification: internal
+        history: lifecycle
+        module: finance
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        institution_id:
+          type: string
+          format: uuid
+          x-ref: institution
+        code:
+          type: string
+          maxLength: 32
+          pattern: ^[A-Za-z0-9_.:/-]*$
+        name:
+          type: string
+          maxLength: 300
+        cost_centre_kind:
+          type: string
+          enum:
+          - administration
+          - academic_department
+          - boarding
+          - feeding
+          - estate
+          - ict
+          - transport
+          - health
+          - library
+          - sports
+          - project
+          - welfare
+          - revenue_generating
+          - other
+        parent_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: cost_centre
+          - type: 'null'
+        org_unit_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: org_unit
+            description: Department or unit the cost centre belongs to
+          - type: 'null'
+        holder_staff_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: staff
+            description: Budget holder
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - active
+          - inactive
+          - retired
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - institution_id
+      - code
+      - name
+      - cost_centre_kind
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    BudgetLine:
+      title: BudgetLine
+      description: Approved budget line — cost centre × ledger account × economic code × funding source, with original, revised,
+        committed and actual amounts
+      type: object
+      x-ceda:
+        entity: budget_line
+        zone: ops
+        domain: FIN
+        kind: transaction
+        classification: internal
+        history: lifecycle
+        module: finance
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        budget_id:
+          type: string
+          format: uuid
+          x-ref: budget
+        cost_centre_id:
+          type: string
+          format: uuid
+          x-ref: cost_centre
+        account_id:
+          type: string
+          format: uuid
+          x-ref: account
+        economic_code:
+          type: string
+          maxLength: 16
+          pattern: ^[A-Za-z0-9_.:/-]*$
+          description: Economic segment of the National Chart of Accounts, e.g. 22020101
+        funding_source_kind:
+          type: string
+          enum:
+          - subvention
+          - personnel_cost
+          - overhead
+          - capital_allocation
+          - internally_generated_revenue
+          - fees
+          - grant
+          - intervention
+          - loan
+          - donation
+          - other
+        funding_source_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: funding_source
+          - type: 'null'
+        description:
+          anyOf:
+          - type: string
+            maxLength: 300
+          - type: 'null'
+        original_minor:
+          type: integer
+          description: (minor units)
+        revised_minor:
+          type: integer
+          description: (minor units)
+        committed_minor:
+          type: integer
+          description: (minor units)
+        actual_minor:
+          type: integer
+          description: (minor units)
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - budget_id
+      - cost_centre_id
+      - account_id
+      - economic_code
+      - funding_source_kind
+      - original_minor
+      - revised_minor
+      - committed_minor
+      - actual_minor
+      - currency
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    BudgetCommitment:
+      title: BudgetCommitment
+      description: Commitment of a budget line by a requisition, purchase order, imprest, payroll or disbursement (released,
+        spent or cancelled)
+      type: object
+      x-ceda:
+        entity: budget_commitment
+        zone: ops
+        domain: FIN
+        kind: transaction
+        classification: internal
+        history: lifecycle
+        module: finance
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        budget_line_id:
+          type: string
+          format: uuid
+          x-ref: budget_line
+        source_kind:
+          type: string
+          enum:
+          - requisition
+          - purchase_order
+          - imprest
+          - payroll
+          - funding_disbursement
+          - contract
+          - manual
+        source_id:
+          type: string
+          format: uuid
+        description:
+          type: string
+          maxLength: 300
+        amount_minor:
+          type: integer
+          description: (minor units)
+        spent_minor:
+          type: integer
+          description: (minor units)
+        released_minor:
+          type: integer
+          description: (minor units)
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        committed_on:
+          type: string
+          format: date
+        committed_by:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - open
+          - partly_spent
+          - spent
+          - released
+          - cancelled
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - budget_line_id
+      - source_kind
+      - source_id
+      - description
+      - amount_minor
+      - spent_minor
+      - released_minor
+      - currency
+      - committed_on
+      - committed_by
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    BudgetVirement:
+      title: BudgetVirement
+      description: Virement — budget moved between two lines with a reason, approved by someone other than the requester
+      type: object
+      x-ceda:
+        entity: budget_virement
+        zone: ops
+        domain: FIN
+        kind: transaction
+        classification: internal
+        history: lifecycle
+        module: finance
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        virement_number:
+          type: string
+          maxLength: 32
+          pattern: ^[A-Za-z0-9_.:/-]*$
+        from_line_id:
+          type: string
+          format: uuid
+          x-ref: budget_line
+        to_line_id:
+          type: string
+          format: uuid
+          x-ref: budget_line
+        amount_minor:
+          type: integer
+          description: (minor units)
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        reason:
+          type: string
+          maxLength: 65535
+        requested_by:
+          type: string
+          format: uuid
+        decided_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        decided_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - draft
+          - submitted
+          - in_review
+          - approved
+          - rejected
+          - cancelled
+          - fulfilled
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - virement_number
+      - from_line_id
+      - to_line_id
+      - amount_minor
+      - currency
+      - reason
+      - requested_by
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    Imprest:
+      title: Imprest
+      description: Imprest — cash advance to a named holder against a budget line, to be retired with receipts by a due date
+      type: object
+      x-ceda:
+        entity: imprest
+        zone: ops
+        domain: FIN
+        kind: transaction
+        classification: confidential
+        history: lifecycle
+        module: finance
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        imprest_number:
+          type: string
+          maxLength: 32
+          pattern: ^[A-Za-z0-9_.:/-]*$
+        holder_staff_id:
+          type: string
+          format: uuid
+          x-ref: staff
+        cost_centre_id:
+          type: string
+          format: uuid
+          x-ref: cost_centre
+        budget_line_id:
+          type: string
+          format: uuid
+          x-ref: budget_line
+        commitment_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: budget_commitment
+          - type: 'null'
+        purpose:
+          type: string
+          maxLength: 300
+        amount_minor:
+          type: integer
+          description: (minor units)
+        retired_minor:
+          type: integer
+          description: (minor units)
+        refunded_minor:
+          type: integer
+          description: (minor units)
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        requested_by:
+          type: string
+          format: uuid
+        approved_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        issued_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        retire_by:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+          - requested
+          - approved
+          - issued
+          - partly_retired
+          - retired
+          - overdue
+          - written_off
+          - rejected
+          - cancelled
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - imprest_number
+      - holder_staff_id
+      - cost_centre_id
+      - budget_line_id
+      - purpose
+      - amount_minor
+      - retired_minor
+      - refunded_minor
+      - currency
+      - requested_by
+      - retire_by
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    ImprestRetirement:
+      title: ImprestRetirement
+      description: Retirement of an imprest — receipts, amount accounted for and cash refunded
+      type: object
+      x-ceda:
+        entity: imprest_retirement
+        zone: ops
+        domain: FIN
+        kind: event
+        classification: confidential
+        history: append
+        module: finance
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        imprest_id:
+          type: string
+          format: uuid
+          x-ref: imprest
+        receipts:
+          type: object
+          description: Receipt references, payees and amounts
+        amount_minor:
+          type: integer
+          description: Amount accounted for by receipts (minor units)
+        refund_minor:
+          type: integer
+          description: (minor units)
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        retired_on:
+          type: string
+          format: date
+        verified_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - imprest_id
+      - receipts
+      - amount_minor
+      - refund_minor
+      - currency
+      - retired_on
+      - verified_by
+      - created_at
+      additionalProperties: false
     SdafRateCard:
       title: SdafRateCard
       description: Version of the state-approved SDAF rate card (propose → approve → publish)
@@ -49566,6 +50253,224 @@ components:
       - updated_at
       - row_version
       additionalProperties: false
+    SecurityCourseUnit:
+      title: SecurityCourseUnit
+      description: Unit of the agency's structure that sponsors, approves, delivers or holds quotas on a course
+      type: object
+      x-ceda:
+        entity: security_course_unit
+        zone: registry
+        domain: STI
+        kind: link
+        classification: internal
+        history: lifecycle
+        module: security_training
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        course_id:
+          type: string
+          format: uuid
+          x-ref: security_course
+        unit_id:
+          type: string
+          format: uuid
+          x-ref: agency_unit
+        role:
+          type: string
+          enum:
+          - sponsor
+          - approving_authority
+          - delivering_unit
+          - quota_holder
+          - target_formation
+        quota:
+          anyOf:
+          - type: integer
+            description: Places per intake held by the unit
+          - type: 'null'
+        note:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+        data_status:
+          type: string
+          enum:
+          - verified
+          - illustrative
+          - to_confirm
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - course_id
+      - unit_id
+      - role
+      - data_status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    SecurityCareerRequirement:
+      title: SecurityCareerRequirement
+      description: Course (or course category) an agency requires for commissioning, confirmation, promotion, appointment
+        or command at a rank
+      type: object
+      x-ceda:
+        entity: security_career_requirement
+        zone: registry
+        domain: STI
+        kind: config
+        classification: internal
+        history: lifecycle
+        module: security_training
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        agency_id:
+          type: string
+          format: uuid
+          x-ref: security_agency
+        rank_id:
+          type: string
+          format: uuid
+          x-ref: agency_rank
+          description: The rank the requirement leads to
+        requirement_kind:
+          type: string
+          enum:
+          - commissioning
+          - confirmation
+          - promotion
+          - appointment
+          - command
+        course_code:
+          anyOf:
+          - type: string
+            maxLength: 32
+            pattern: ^[A-Za-z0-9_.:/-]*$
+            description: A specific course in the agency's institutions, e.g. JSC
+          - type: 'null'
+        course_category:
+          anyOf:
+          - type: string
+            enum:
+            - initial_officer
+            - cadet_degree
+            - recruit_basic
+            - junior_leadership
+            - promotion_career
+            - specialist
+            - command_and_staff
+            - strategic_leadership
+            - academic_programme
+            - continuing_professional
+            description: Any course of this category, when no single course is named
+          - type: 'null'
+        is_mandatory:
+          type: boolean
+        note:
+          anyOf:
+          - type: string
+            maxLength: 300
+          - type: 'null'
+        data_status:
+          type: string
+          enum:
+          - verified
+          - illustrative
+          - to_confirm
+        status:
+          type: string
+          enum:
+          - active
+          - inactive
+          - retired
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - agency_id
+      - rank_id
+      - requirement_kind
+      - is_mandatory
+      - data_status
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
     FederalBody:
       title: FederalBody
       description: Federal ministry, department, parastatal or commission that owns or supervises federal institutions
@@ -50255,6 +51160,1502 @@ components:
       - source
       - data_status
       - valid_from
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    FundingProgramme:
+      title: FundingProgramme
+      description: Funding or loan programme — provider, beneficiary, purpose, instrument, terms and eligibility
+      type: object
+      x-ceda:
+        entity: funding_programme
+        zone: ops
+        domain: FND
+        kind: config
+        classification: internal
+        history: lifecycle
+        module: funding
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        code:
+          type: string
+          maxLength: 32
+          pattern: ^[A-Za-z0-9_.:/-]*$
+        name:
+          type: string
+          maxLength: 300
+        provider_name:
+          type: string
+          maxLength: 200
+        provider_kind:
+          type: string
+          enum:
+          - federal_government_agency
+          - state_government
+          - local_government
+          - development_partner
+          - bank
+          - microfinance
+          - cooperative
+          - employer
+          - institution
+          - alumni
+          - philanthropy
+          - other
+        provider_body_code:
+          anyOf:
+          - type: string
+            maxLength: 16
+            pattern: ^[A-Za-z0-9_.:/-]*$
+            description: Education body in the regulators' directory, e.g. TETFUND, UBEC, NELFUND
+          - type: 'null'
+        beneficiary_kind:
+          type: string
+          enum:
+          - institution
+          - staff
+          - learner
+        purpose:
+          type: string
+          enum:
+          - capital_works
+          - equipment
+          - ict
+          - research
+          - staff_development
+          - operations
+          - tuition_fees
+          - upkeep
+          - housing
+          - vehicle
+          - welfare_emergency
+          - salary_advance
+          - scholarship
+          - bursary
+          - special_needs
+          - other
+        instrument:
+          type: string
+          enum:
+          - loan
+          - grant
+          - scholarship
+          - bursary
+          - intervention
+          - matching_grant
+          - salary_advance
+          - bond
+          - guarantee
+          - in_kind
+        interest_rate:
+          type: string
+          format: decimal
+          description: Annual nominal rate; 0 for interest-free loans and for grants
+        tenor_months:
+          anyOf:
+          - type: integer
+          - type: 'null'
+        moratorium_months:
+          type: integer
+        repayment_basis:
+          type: string
+          enum:
+          - none
+          - fixed_instalment
+          - annuity
+          - income_contingent
+          - payroll_deduction
+          - bullet
+        max_amount_minor:
+          anyOf:
+          - type: integer
+            description: (minor units)
+          - type: 'null'
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        eligibility:
+          anyOf:
+          - type: object
+            description: 'Rules: beneficiary levels, ownership, category, minimum service years, maximum income, matching
+              contribution …'
+          - type: 'null'
+        terms:
+          anyOf:
+          - type: object
+            description: Further terms as published (e.g. repayment as a share of salary after national service)
+          - type: 'null'
+        opens_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        closes_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        data_status:
+          type: string
+          enum:
+          - verified
+          - illustrative
+          - to_confirm
+        status:
+          type: string
+          enum:
+          - draft
+          - in_review
+          - approved
+          - published
+          - superseded
+          - retired
+          - withdrawn
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - code
+      - name
+      - provider_name
+      - provider_kind
+      - beneficiary_kind
+      - purpose
+      - instrument
+      - interest_rate
+      - moratorium_months
+      - repayment_basis
+      - currency
+      - data_status
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    FundingApplication:
+      title: FundingApplication
+      description: Application to a funding programme by or for an institution, a member of staff or a learner
+      type: object
+      x-ceda:
+        entity: funding_application
+        zone: ops
+        domain: FND
+        kind: transaction
+        classification: restricted
+        history: lifecycle
+        module: funding
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        application_number:
+          type: string
+          maxLength: 32
+          pattern: ^[A-Za-z0-9_.:/-]*$
+        programme_id:
+          type: string
+          format: uuid
+          x-ref: funding_programme
+        applicant_kind:
+          type: string
+          enum:
+          - institution
+          - staff
+          - learner
+        applicant_id:
+          type: string
+          format: uuid
+          description: Institution, staff or learner id
+        institution_id:
+          type: string
+          format: uuid
+          x-ref: institution
+        amount_requested_minor:
+          type: integer
+          description: (minor units)
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        purpose_detail:
+          type: string
+          maxLength: 65535
+        capital_plan_item_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: capital_plan_item
+            description: What capital funding will pay for
+          - type: 'null'
+        documents:
+          anyOf:
+          - type: object
+            description: Supporting document references
+          - type: 'null'
+        eligibility:
+          anyOf:
+          - type: object
+            description: Each rule with its result, as evaluated at submission
+          - type: 'null'
+        eligible:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+        submitted_by:
+          type: string
+          format: uuid
+        submitted_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        recommended_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        recommendation:
+          anyOf:
+          - type: string
+            maxLength: 65535
+          - type: 'null'
+        decided_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        decided_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        decision_reason:
+          anyOf:
+          - type: string
+            maxLength: 65535
+          - type: 'null'
+        amount_approved_minor:
+          anyOf:
+          - type: integer
+            description: (minor units)
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - draft
+          - submitted
+          - under_review
+          - recommended
+          - approved
+          - declined
+          - withdrawn
+          - cancelled
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - application_number
+      - programme_id
+      - applicant_kind
+      - applicant_id
+      - institution_id
+      - amount_requested_minor
+      - currency
+      - purpose_detail
+      - submitted_by
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    FundingAgreement:
+      title: FundingAgreement
+      description: Funding agreement — principal, rate, tenor, moratorium, repayment basis, balances and arrears
+      type: object
+      x-ceda:
+        entity: funding_agreement
+        zone: ops
+        domain: FND
+        kind: transaction
+        classification: restricted
+        history: lifecycle
+        module: funding
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        agreement_number:
+          type: string
+          maxLength: 32
+          pattern: ^[A-Za-z0-9_.:/-]*$
+        application_id:
+          type: string
+          format: uuid
+          x-ref: funding_application
+        programme_id:
+          type: string
+          format: uuid
+          x-ref: funding_programme
+        beneficiary_kind:
+          type: string
+          enum:
+          - institution
+          - staff
+          - learner
+        beneficiary_id:
+          type: string
+          format: uuid
+        institution_id:
+          type: string
+          format: uuid
+          x-ref: institution
+        instrument:
+          type: string
+          enum:
+          - loan
+          - grant
+          - scholarship
+          - bursary
+          - intervention
+          - matching_grant
+          - salary_advance
+          - bond
+          - guarantee
+          - in_kind
+        principal_minor:
+          type: integer
+          description: (minor units)
+        interest_rate:
+          type: string
+          format: decimal
+        tenor_months:
+          anyOf:
+          - type: integer
+          - type: 'null'
+        moratorium_months:
+          type: integer
+        repayment_basis:
+          type: string
+          enum:
+          - none
+          - fixed_instalment
+          - annuity
+          - income_contingent
+          - payroll_deduction
+          - bullet
+        first_repayment_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        disbursed_minor:
+          type: integer
+          description: (minor units)
+        repaid_minor:
+          type: integer
+          description: (minor units)
+        outstanding_minor:
+          type: integer
+          description: (minor units)
+        arrears_minor:
+          type: integer
+          description: (minor units)
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        signed_on:
+          type: string
+          format: date
+        signed_by:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - signed
+          - disbursing
+          - in_moratorium
+          - repaying
+          - in_arrears
+          - settled
+          - completed
+          - written_off
+          - cancelled
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - agreement_number
+      - application_id
+      - programme_id
+      - beneficiary_kind
+      - beneficiary_id
+      - institution_id
+      - instrument
+      - principal_minor
+      - interest_rate
+      - moratorium_months
+      - repayment_basis
+      - disbursed_minor
+      - repaid_minor
+      - outstanding_minor
+      - arrears_minor
+      - currency
+      - signed_on
+      - signed_by
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    FundingDisbursement:
+      title: FundingDisbursement
+      description: Disbursement of an agreement to the institution, the beneficiary, a supplier or a contractor
+      type: object
+      x-ceda:
+        entity: funding_disbursement
+        zone: ops
+        domain: FND
+        kind: transaction
+        classification: restricted
+        history: lifecycle
+        module: funding
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        agreement_id:
+          type: string
+          format: uuid
+          x-ref: funding_agreement
+        amount_minor:
+          type: integer
+          description: (minor units)
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        payee_kind:
+          type: string
+          enum:
+          - institution
+          - beneficiary
+          - supplier
+          - contractor
+        payee_reference:
+          anyOf:
+          - type: string
+            maxLength: 120
+            description: Institution account, beneficiary or supplier
+          - type: 'null'
+        purpose:
+          type: string
+          maxLength: 200
+        budget_line_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: budget_line
+            description: Receiving budget line for institutional funding
+          - type: 'null'
+        capital_plan_item_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: capital_plan_item
+          - type: 'null'
+        reference:
+          type: string
+          maxLength: 64
+          pattern: ^[A-Za-z0-9_.:/-]*$
+        disbursed_on:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+          - scheduled
+          - paid
+          - failed
+          - reversed
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - agreement_id
+      - amount_minor
+      - currency
+      - payee_kind
+      - purpose
+      - reference
+      - disbursed_on
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    RepaymentInstalment:
+      title: RepaymentInstalment
+      description: Instalment of a repayment schedule — principal, interest, amount paid and status
+      type: object
+      x-ceda:
+        entity: repayment_instalment
+        zone: ops
+        domain: FND
+        kind: transaction
+        classification: restricted
+        history: lifecycle
+        module: funding
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        agreement_id:
+          type: string
+          format: uuid
+          x-ref: funding_agreement
+        sequence:
+          type: integer
+        due_on:
+          type: string
+          format: date
+        principal_minor:
+          type: integer
+          description: (minor units)
+        interest_minor:
+          type: integer
+          description: (minor units)
+        paid_minor:
+          type: integer
+          description: (minor units)
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        paid_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - due
+          - partly_paid
+          - paid
+          - overdue
+          - waived
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - agreement_id
+      - sequence
+      - due_on
+      - principal_minor
+      - interest_minor
+      - paid_minor
+      - currency
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    FundingRepayment:
+      title: FundingRepayment
+      description: Repayment received (payroll deduction, direct debit, transfer, employer remittance) and its allocation
+        to instalments
+      type: object
+      x-ceda:
+        entity: funding_repayment
+        zone: ops
+        domain: FND
+        kind: event
+        classification: restricted
+        history: append
+        module: funding
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        agreement_id:
+          type: string
+          format: uuid
+          x-ref: funding_agreement
+        amount_minor:
+          type: integer
+          description: (minor units)
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        method:
+          type: string
+          enum:
+          - payroll_deduction
+          - direct_debit
+          - bank_transfer
+          - employer_remittance
+          - cash
+          - offset
+        source_kind:
+          anyOf:
+          - type: string
+            maxLength: 40
+            pattern: ^[A-Za-z0-9_.:/-]*$
+            description: payroll_run, bank_statement_line, remittance
+          - type: 'null'
+        source_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        reference:
+          type: string
+          maxLength: 64
+          pattern: ^[A-Za-z0-9_.:/-]*$
+        received_on:
+          type: string
+          format: date
+        allocations:
+          type: object
+          description: Instalment sequence → amount
+        recorded_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - agreement_id
+      - amount_minor
+      - currency
+      - method
+      - reference
+      - received_on
+      - allocations
+      - recorded_by
+      - created_at
+      additionalProperties: false
+    PropertySite:
+      title: PropertySite
+      description: Government property site (land) used by an institution — owner, title, area, boundary, fencing, encroachment,
+        valuation
+      type: object
+      x-ceda:
+        entity: property_site
+        zone: ops
+        domain: EST
+        kind: master
+        classification: internal
+        history: lifecycle
+        module: estate
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        site_code:
+          type: string
+          maxLength: 32
+          pattern: ^[A-Za-z0-9_.:/-]*$
+        name:
+          type: string
+          maxLength: 300
+        institution_id:
+          type: string
+          format: uuid
+          x-ref: institution
+        campus_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: campus
+          - type: 'null'
+        owner:
+          type: string
+          enum:
+          - federal_government
+          - state_government
+          - local_government
+          - community
+          - mission_or_faith
+          - private
+          - leased
+        title_document:
+          type: string
+          enum:
+          - certificate_of_occupancy
+          - right_of_occupancy
+          - gazette
+          - deed_of_assignment
+          - deed_of_gift
+          - survey_plan_only
+          - customary
+          - lease
+          - none_or_unknown
+        title_reference:
+          anyOf:
+          - type: string
+            maxLength: 64
+            pattern: ^[A-Za-z0-9_.:/-]*$
+            description: C of O, gazette or survey plan number
+          - type: 'null'
+        area_sqm:
+          anyOf:
+          - type: string
+            format: decimal
+          - type: 'null'
+        location:
+          anyOf:
+          - type: object
+            x-geojson: Point
+          - type: 'null'
+        boundary:
+          anyOf:
+          - type: object
+            description: GeoJSON polygon of the surveyed boundary
+          - type: 'null'
+        fenced:
+          type: string
+          enum:
+          - fully_fenced
+          - partly_fenced
+          - not_fenced
+          - unknown
+        encroachment:
+          type: string
+          enum:
+          - none
+          - suspected
+          - confirmed
+          - in_dispute
+          - resolved
+          - unknown
+        acquired_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        valuation_minor:
+          anyOf:
+          - type: integer
+            description: (minor units)
+          - type: 'null'
+        currency:
+          anyOf:
+          - type: string
+            pattern: ^[A-Z]{3}$
+          - type: 'null'
+        valued_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        data_status:
+          type: string
+          enum:
+          - verified
+          - illustrative
+          - to_confirm
+        status:
+          type: string
+          enum:
+          - active
+          - inactive
+          - retired
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - site_code
+      - name
+      - institution_id
+      - owner
+      - title_document
+      - fenced
+      - encroachment
+      - data_status
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    FacilityAssessment:
+      title: FacilityAssessment
+      description: Dated condition and usability assessment of a site, building, room or item of equipment
+      type: object
+      x-ceda:
+        entity: facility_assessment
+        zone: ops
+        domain: EST
+        kind: event
+        classification: internal
+        history: append
+        module: estate
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        institution_id:
+          type: string
+          format: uuid
+          x-ref: institution
+        subject_kind:
+          type: string
+          enum:
+          - site
+          - building
+          - room
+          - asset
+        subject_id:
+          type: string
+          format: uuid
+        assessed_on:
+          type: string
+          format: date
+        assessor_kind:
+          type: string
+          enum:
+          - head_of_institution
+          - estate_officer
+          - engineer
+          - quality_inspector
+          - lga_officer
+          - contractor
+          - community
+        assessed_by:
+          type: string
+          format: uuid
+        condition_grade:
+          type: string
+          maxLength: 32
+          x-code-list: condition_grade
+        usability:
+          type: string
+          enum:
+          - fully_usable
+          - usable_minor_repairs
+          - usable_major_repairs
+          - unsafe_restricted
+          - unusable
+          - condemned
+        structural_risk:
+          type: string
+          enum:
+          - critical
+          - high
+          - moderate
+          - info
+        defects:
+          anyOf:
+          - type: object
+            description: Element (roof, walls, floor, doors, windows, wiring, plumbing …), defect and severity
+          - type: 'null'
+        utilities:
+          anyOf:
+          - type: object
+            description: Water, power, sanitation and internet working at the time
+          - type: 'null'
+        in_use:
+          type: boolean
+          description: Whether the facility is being used at the time of assessment
+        learners_affected:
+          anyOf:
+          - type: integer
+            minimum: 0
+          - type: 'null'
+        repair_estimate_minor:
+          anyOf:
+          - type: integer
+            description: (minor units)
+          - type: 'null'
+        currency:
+          anyOf:
+          - type: string
+            pattern: ^[A-Z]{3}$
+          - type: 'null'
+        photo_document_ids:
+          anyOf:
+          - type: object
+          - type: 'null'
+        next_due_on:
+          anyOf:
+          - type: string
+            format: date
+            description: When it should be assessed again
+          - type: 'null'
+        client_op_id:
+          anyOf:
+          - type: string
+            format: uuid
+            description: Offline capture (idempotent)
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - institution_id
+      - subject_kind
+      - subject_id
+      - assessed_on
+      - assessor_kind
+      - assessed_by
+      - condition_grade
+      - usability
+      - structural_risk
+      - in_use
+      - created_at
+      additionalProperties: false
+    MaintenanceSchedule:
+      title: MaintenanceSchedule
+      description: Planned preventive maintenance task for a site, building, room or item of equipment (frequency, next due,
+        responsible person)
+      type: object
+      x-ceda:
+        entity: maintenance_schedule
+        zone: ops
+        domain: EST
+        kind: config
+        classification: internal
+        history: lifecycle
+        module: estate
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        institution_id:
+          type: string
+          format: uuid
+          x-ref: institution
+        subject_kind:
+          type: string
+          enum:
+          - site
+          - building
+          - room
+          - asset
+        subject_id:
+          type: string
+          format: uuid
+        task:
+          type: string
+          maxLength: 200
+        task_kind:
+          type: string
+          enum:
+          - inspection
+          - servicing
+          - statutory_test
+          - cleaning
+          - pest_control
+          - roofing
+          - plumbing
+          - electrical
+          - painting
+          - generator_service
+          - solar_service
+          - borehole_service
+          - fire_safety
+          - replacement
+          - other
+        frequency_days:
+          type: integer
+        last_done_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        next_due_on:
+          type: string
+          format: date
+        responsible_staff_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: staff
+          - type: 'null'
+        estimated_cost_minor:
+          anyOf:
+          - type: integer
+            description: (minor units)
+          - type: 'null'
+        currency:
+          anyOf:
+          - type: string
+            pattern: ^[A-Z]{3}$
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - active
+          - inactive
+          - retired
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - institution_id
+      - subject_kind
+      - subject_id
+      - task
+      - task_kind
+      - frequency_days
+      - next_due_on
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    FacilityAction:
+      title: FacilityAction
+      description: Proactive action proposed to the head of institution, with owner, due date and escalation to the LGA and
+        ministry
+      type: object
+      x-ceda:
+        entity: facility_action
+        zone: ops
+        domain: EST
+        kind: transaction
+        classification: internal
+        history: lifecycle
+        module: estate
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        institution_id:
+          type: string
+          format: uuid
+          x-ref: institution
+        rule:
+          type: string
+          enum:
+          - unsafe_in_use
+          - assessment_overdue
+          - never_assessed
+          - maintenance_due
+          - maintenance_overdue
+          - condition_deteriorated
+          - safety_check_overdue
+          - predicted_failure
+          - encroachment
+          - no_title
+        subject_kind:
+          type: string
+          enum:
+          - site
+          - building
+          - room
+          - asset
+        subject_id:
+          type: string
+          format: uuid
+        dedupe_key:
+          type: string
+          maxLength: 120
+          pattern: ^[A-Za-z0-9_.:/-]*$
+          description: rule:subject while open; suffixed with the action id when closed
+        title:
+          type: string
+          maxLength: 200
+        detail:
+          anyOf:
+          - type: string
+            maxLength: 65535
+          - type: 'null'
+        priority:
+          type: string
+          enum:
+          - critical
+          - high
+          - moderate
+          - info
+        owner_role:
+          type: string
+          maxLength: 16
+          pattern: ^[A-Za-z0-9_.:/-]*$
+        due_on:
+          type: string
+          format: date
+        escalation_level:
+          type: integer
+          description: 0 institution, 1 LGA, 2 ministry
+        escalated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        maintenance_request_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: maintenance_request
+          - type: 'null'
+        resolved_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        resolved_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        resolution:
+          anyOf:
+          - type: string
+            maxLength: 65535
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - open
+          - acknowledged
+          - in_progress
+          - done
+          - dismissed
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - institution_id
+      - rule
+      - subject_kind
+      - subject_id
+      - dedupe_key
+      - title
+      - priority
+      - owner_role
+      - due_on
+      - escalation_level
+      - status
       - created_at
       - updated_at
       - row_version

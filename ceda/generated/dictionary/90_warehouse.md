@@ -44,6 +44,12 @@ Module (system of record): `analytics` · default zone: **dw** · default retent
 | [`agg_metric`](#dw-agg_metric) | dw | aggregate | internal | none | Generic metric aggregate served by the semantic layer (value, numerator, denominator, suppression) per scope and period |
 | [`live_kpi`](#dw-live_kpi) | dw | aggregate | internal | none | Live KPI read model (attendance today, registers, staff presence) refreshed by stream aggregation ≤ 5 min |
 | [`feature_learner_weekly`](#dw-feature_learner_weekly) | dw | feature | confidential | none | Point-in-time learner feature set for early-warning models (no protected characteristics) |
+| [`dim_facility`](#dw-dim_facility) | dw | dimension | internal | none | Facility dimension (SCD2) — property site, building, room or item of equipment of an institution |
+| [`fact_facility_condition`](#dw-fact_facility_condition) | dw | fact | internal | none | Facility condition snapshot per load date — latest condition and usability, learners affected, repair estimate, open actions and overdue maintenance |
+| [`fact_maintenance_work`](#dw-fact_maintenance_work) | dw | fact | internal | none | Maintenance work per institution and load date — requests opened and completed, backlog, preventive share, time to complete and cost |
+| [`agg_infrastructure_scope`](#dw-agg_infrastructure_scope) | dw | aggregate | internal | none | Infrastructure roll-up per scope node (institution, LGA, authority, state) and load date — the Commissioner's view |
+| [`fact_budget_execution`](#dw-fact_budget_execution) | dw | fact | internal | none | Budget execution per institution, cost centre and economic code — original, revised, committed, actual and available |
+| [`fact_funding`](#dw-fact_funding) | dw | fact | internal | none | Funding per institution, programme and beneficiary kind — applications, approvals, disbursements, repayments, outstanding and arrears |
 
 <a id="dw-dim_date"></a>
 ## `dim_date`
@@ -1257,6 +1263,244 @@ Point-in-time learner feature set for early-warning models (no protected charact
 | `missing_work_4w` | `SMALLINT` | yes |  |  |
 | `transitions` | `SMALLINT` | yes |  | Moves between institutions |
 | `label_dropout_next_term` | `BOOLEAN` | yes |  | Training label, filled retrospectively |
+| `loaded_at` | `DATETIME(6)` | no |  | Warehouse load time (UTC) |
+| `load_batch_id` | `BIGINT` | no |  | ETL batch that wrote the row |
+
+<a id="dw-dim_facility"></a>
+## `dim_facility`
+
+Facility dimension (SCD2) — property site, building, room or item of equipment of an institution
+
+| | |
+|---|---|
+| Zone | dw |
+| Kind | dimension |
+| Classification | internal |
+| History | none |
+| Scope | none |
+| Module | `analytics` |
+| Origin | ceda |
+| Retention | — |
+| Requirements | FR-IDW-01 |
+| Sources | `property_site`, `building`, `room`, `asset` |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `tenant_id` **PK** | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `facility_key` **PK** | `BIGINT` | no |  |  |
+| `subject_kind` | `VARCHAR(32)` | no |  | values: site, building, room, asset |
+| `subject_id` | `BINARY(16)` | no |  |  |
+| `institution_key` | `BIGINT` | no |  |  |
+| `name` | `VARCHAR(300)` | no |  |  |
+| `room_type` | `VARCHAR(32)` | yes |  | code list `room_type` |
+| `asset_category` | `VARCHAR(32)` | yes |  | code list `asset_category` |
+| `capacity` | `SMALLINT` | yes |  |  |
+| `built_year` | `SMALLINT` | yes |  |  |
+| `row_valid_from` | `DATE` | no |  |  |
+| `row_valid_to` | `DATE` | yes |  |  |
+| `is_current` | `BOOLEAN` | no |  |  |
+| `loaded_at` | `DATETIME(6)` | no |  | Warehouse load time (UTC) |
+| `load_batch_id` | `BIGINT` | no |  | ETL batch that wrote the row |
+
+- Index: (subject_id, is_current)
+- Index: (institution_key)
+
+<a id="dw-fact_facility_condition"></a>
+## `fact_facility_condition`
+
+Facility condition snapshot per load date — latest condition and usability, learners affected, repair estimate, open actions and overdue maintenance
+
+| | |
+|---|---|
+| Zone | dw |
+| Kind | fact |
+| Classification | internal |
+| History | none |
+| Scope | none |
+| Module | `analytics` |
+| Origin | ceda |
+| Retention | — |
+| Requirements | FR-IDW-01, FR-IDW-02 |
+| Sources | `facility_assessment`, `facility_action`, `maintenance_schedule`, `asset_inspection` |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `tenant_id` **PK** | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `date_key` **PK** | `INT` | no |  |  |
+| `facility_key` **PK** | `BIGINT` | no |  |  |
+| `institution_key` | `BIGINT` | no |  |  |
+| `condition_grade` | `VARCHAR(32)` | yes |  | code list `condition_grade` |
+| `usability` | `VARCHAR(32)` | yes |  | values: fully_usable, usable_minor_repairs, usable_major_repairs, unsafe_restricted, unusable, condemned |
+| `is_usable` | `BOOLEAN` | no |  | fully usable or usable with repairs |
+| `assessed_on` | `DATE` | yes |  |  |
+| `days_since_assessment` | `INT` | yes |  |  |
+| `learners_affected` | `INT UNSIGNED` | yes |  |  |
+| `repair_estimate_minor` | `BIGINT` | yes |  | (minor units) |
+| `currency` | `CHAR(3)` | yes |  |  |
+| `open_actions` | `SMALLINT` | no |  |  |
+| `open_critical_actions` | `SMALLINT` | no |  |  |
+| `overdue_maintenance` | `SMALLINT` | no |  |  |
+| `loaded_at` | `DATETIME(6)` | no |  | Warehouse load time (UTC) |
+| `load_batch_id` | `BIGINT` | no |  | ETL batch that wrote the row |
+
+- Index: (institution_key, date_key)
+
+<a id="dw-fact_maintenance_work"></a>
+## `fact_maintenance_work`
+
+Maintenance work per institution and load date — requests opened and completed, backlog, preventive share, time to complete and cost
+
+| | |
+|---|---|
+| Zone | dw |
+| Kind | fact |
+| Classification | internal |
+| History | none |
+| Scope | none |
+| Module | `analytics` |
+| Origin | ceda |
+| Retention | — |
+| Requirements | FR-IDW-01 |
+| Sources | `maintenance_request`, `maintenance_schedule`, `facility_action` |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `tenant_id` **PK** | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `date_key` **PK** | `INT` | no |  |  |
+| `institution_key` **PK** | `BIGINT` | no |  |  |
+| `requests_open` | `INT UNSIGNED` | no |  |  |
+| `requests_completed_30d` | `INT UNSIGNED` | no |  |  |
+| `preventive_completed_30d` | `INT UNSIGNED` | no |  |  |
+| `mean_days_to_complete` | `DECIMAL(8,2)` | yes |  |  |
+| `maintenance_due` | `INT UNSIGNED` | no |  |  |
+| `maintenance_overdue` | `INT UNSIGNED` | no |  |  |
+| `actions_open` | `INT UNSIGNED` | no |  |  |
+| `actions_overdue` | `INT UNSIGNED` | no |  |  |
+| `cost_30d_minor` | `BIGINT` | no |  | (minor units) |
+| `currency` | `CHAR(3)` | no |  |  |
+| `loaded_at` | `DATETIME(6)` | no |  | Warehouse load time (UTC) |
+| `load_batch_id` | `BIGINT` | no |  | ETL batch that wrote the row |
+
+<a id="dw-agg_infrastructure_scope"></a>
+## `agg_infrastructure_scope`
+
+Infrastructure roll-up per scope node (institution, LGA, authority, state) and load date — the Commissioner's view
+
+| | |
+|---|---|
+| Zone | dw |
+| Kind | aggregate |
+| Classification | internal |
+| History | none |
+| Scope | none |
+| Module | `analytics` |
+| Origin | ceda |
+| Retention | — |
+| Requirements | FR-IDW-02, FR-IDW-03 |
+| Sources | `fact_facility_condition`, `fact_maintenance_work`, `dim_facility`, `dim_institution`, `dim_scope_closure`, `fact_enrolment_census` |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `tenant_id` **PK** | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `date_key` **PK** | `INT` | no |  |  |
+| `scope_key` **PK** | `BIGINT` | no |  |  |
+| `level` | `VARCHAR(32)` | no |  | values: global, country, state, authority, lga, network, institution, campus, faculty, department, programme, class, agency, formation |
+| `institutions` | `INT UNSIGNED` | no |  |  |
+| `institutions_assessed` | `INT UNSIGNED` | no |  |  |
+| `sites` | `INT UNSIGNED` | no |  |  |
+| `sites_fenced` | `INT UNSIGNED` | no |  |  |
+| `sites_encroached` | `INT UNSIGNED` | no |  |  |
+| `buildings` | `INT UNSIGNED` | no |  |  |
+| `buildings_unsafe` | `INT UNSIGNED` | no |  | unsafe, unusable or condemned |
+| `classrooms` | `INT UNSIGNED` | no |  |  |
+| `classrooms_usable` | `INT UNSIGNED` | no |  |  |
+| `learners` | `INT UNSIGNED` | no |  |  |
+| `learners_per_usable_classroom` | `DECIMAL(8,2)` | yes |  |  |
+| `toilets_usable` | `INT UNSIGNED` | no |  |  |
+| `institutions_with_water` | `INT UNSIGNED` | no |  |  |
+| `institutions_with_power` | `INT UNSIGNED` | no |  |  |
+| `facilities_unsafe_in_use` | `INT UNSIGNED` | no |  |  |
+| `actions_open` | `INT UNSIGNED` | no |  |  |
+| `actions_critical_open` | `INT UNSIGNED` | no |  |  |
+| `actions_overdue` | `INT UNSIGNED` | no |  |  |
+| `repair_backlog_minor` | `BIGINT` | no |  | (minor units) |
+| `currency` | `CHAR(3)` | no |  |  |
+| `infrastructure_index` | `DECIMAL(7,3)` | yes |  | 0–100: usable classrooms, utilities, safety and maintenance |
+| `loaded_at` | `DATETIME(6)` | no |  | Warehouse load time (UTC) |
+| `load_batch_id` | `BIGINT` | no |  | ETL batch that wrote the row |
+
+- Index: (scope_key, date_key)
+
+<a id="dw-fact_budget_execution"></a>
+## `fact_budget_execution`
+
+Budget execution per institution, cost centre and economic code — original, revised, committed, actual and available
+
+| | |
+|---|---|
+| Zone | dw |
+| Kind | fact |
+| Classification | internal |
+| History | none |
+| Scope | none |
+| Module | `analytics` |
+| Origin | ceda |
+| Retention | — |
+| Requirements | FR-ACC-06, FR-IDW-04 |
+| Sources | `budget`, `budget_line`, `budget_commitment` |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `tenant_id` **PK** | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `date_key` **PK** | `INT` | no |  |  |
+| `institution_key` **PK** | `BIGINT` | no |  |  |
+| `cost_centre_code` **PK** | `VARCHAR(32)` | no |  |  |
+| `economic_code` **PK** | `VARCHAR(16)` | no |  |  |
+| `funding_source_kind` **PK** | `VARCHAR(32)` | no |  | values: subvention, personnel_cost, overhead, capital_allocation, internally_generated_revenue, fees, grant, intervention, loan, donation, other |
+| `fiscal_year` | `SMALLINT` | no |  |  |
+| `original_minor` | `BIGINT` | no |  | (minor units) |
+| `revised_minor` | `BIGINT` | no |  | (minor units) |
+| `committed_minor` | `BIGINT` | no |  | (minor units) |
+| `actual_minor` | `BIGINT` | no |  | (minor units) |
+| `available_minor` | `BIGINT` | no |  | (minor units) |
+| `currency` | `CHAR(3)` | no |  |  |
+| `loaded_at` | `DATETIME(6)` | no |  | Warehouse load time (UTC) |
+| `load_batch_id` | `BIGINT` | no |  | ETL batch that wrote the row |
+
+<a id="dw-fact_funding"></a>
+## `fact_funding`
+
+Funding per institution, programme and beneficiary kind — applications, approvals, disbursements, repayments, outstanding and arrears
+
+| | |
+|---|---|
+| Zone | dw |
+| Kind | fact |
+| Classification | internal |
+| History | none |
+| Scope | none |
+| Module | `analytics` |
+| Origin | ceda |
+| Retention | — |
+| Requirements | FR-IDW-04 |
+| Sources | `funding_application`, `funding_agreement`, `funding_disbursement`, `funding_repayment` |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `tenant_id` **PK** | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `date_key` **PK** | `INT` | no |  |  |
+| `institution_key` **PK** | `BIGINT` | no |  |  |
+| `programme_code` **PK** | `VARCHAR(32)` | no |  |  |
+| `beneficiary_kind` **PK** | `VARCHAR(32)` | no |  | values: institution, staff, learner |
+| `applications` | `INT UNSIGNED` | no |  |  |
+| `approved` | `INT UNSIGNED` | no |  |  |
+| `agreements_in_arrears` | `INT UNSIGNED` | no |  |  |
+| `approved_amount_minor` | `BIGINT` | no |  | (minor units) |
+| `disbursed_minor` | `BIGINT` | no |  | (minor units) |
+| `repaid_minor` | `BIGINT` | no |  | (minor units) |
+| `outstanding_minor` | `BIGINT` | no |  | (minor units) |
+| `arrears_minor` | `BIGINT` | no |  | (minor units) |
+| `currency` | `CHAR(3)` | no |  |  |
 | `loaded_at` | `DATETIME(6)` | no |  | Warehouse load time (UTC) |
 | `load_batch_id` | `BIGINT` | no |  | ETL batch that wrote the row |
 

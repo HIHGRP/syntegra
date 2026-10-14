@@ -115,8 +115,8 @@ entities:
     scope: owned
     origin: ceda
     retention: RS-CUR-PERM
-    reqs: [FR-STI-05]
-    pages: [STI-02, STI-03]
+    reqs: [FR-STI-05, FR-STI-12]
+    pages: [STI-02, STI-03, STI-05]
     events: [STI.COURSE_PUBLISHED]
     notes: scope_node_id is the institution's node. Degree-bearing courses also point to their academic programme.
     attrs:
@@ -149,7 +149,7 @@ entities:
     origin: ceda
     retention: RS-CUR-PERM
     scope_note: Inherits the course's scope.
-    reqs: [FR-STI-06]
+    reqs: [FR-STI-06, FR-STI-09, FR-STI-12]
     pages: [STI-03]
     attrs:
       - "course_id: ref(security_course)!"
@@ -206,3 +206,48 @@ entities:
       - "recorded_by: ref(app_user)"
     uq: [[learner_id, intake_id]]
     ix: [[intake_id, outcome]]
+
+  # ---------------------------------------------------------------- curricula through each agency's structure (CR-006)
+  security_course_unit:
+    title: Unit of the agency's structure that sponsors, approves, delivers or holds quotas on a course
+    kind: link
+    class: internal
+    history: lifecycle
+    origin: ceda
+    scope_note: Inherits the course's scope.
+    reqs: [FR-STI-10]
+    pages: [STI-03, STI-05]
+    attrs:
+      - "course_id: ref(security_course)!"
+      - "unit_id: ref(agency_unit)!"
+      - "role: enum(course_unit_role)!"
+      - "quota: smallint | Places per intake held by the unit"
+      - "note: str(200)"
+      - "data_status: enum(reference_data_status)!"
+    uq: [[course_id, unit_id, role]]
+    ix: [[unit_id]]
+
+  security_career_requirement:
+    title: Course (or course category) an agency requires for commissioning, confirmation, promotion, appointment or command at a rank
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-CONFIG
+    reqs: [FR-STI-11]
+    pages: [STI-05]
+    notes: scope_node_id is the agency's node.
+    attrs:
+      - "agency_id: ref(security_agency)!"
+      - "rank_id: ref(agency_rank)! | The rank the requirement leads to"
+      - "requirement_kind: enum(career_requirement_kind)!"
+      - "course_code: code(32) | A specific course in the agency's institutions, e.g. JSC"
+      - "course_category: enum(training_course_category) | Any course of this category, when no single course is named"
+      - "is_mandatory: bool! default=true"
+      - "note: str(300)"
+      - "data_status: enum(reference_data_status)!"
+      - "status: enum(record_status)!"
+    uq: [[agency_id, rank_id, requirement_kind, course_code]]
+    checks:
+      names_a_course: "course_code IS NOT NULL OR course_category IS NOT NULL"

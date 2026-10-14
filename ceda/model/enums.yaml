@@ -425,3 +425,35 @@ enums:
   regulation_relationship: {title: Institution's dependency on an education body, values: [supervision, accreditation, licensing, curriculum, examination, admission, teacher_registration, professional_regulation, funding, affiliation]}
   regulation_source: {title: Source of a regulatory link, values: [rule, institution, import]}
 
+  # ---------------------------------------------------------------- institutional accounting and budgets (CR-006)
+  cost_centre_kind: {title: Cost centre kind, values: [administration, academic_department, boarding, feeding, estate, ict, transport, health, library, sports, project, welfare, revenue_generating, other]}
+  budget_funding_kind: {title: Source of funds for a budget line, values: [subvention, personnel_cost, overhead, capital_allocation, internally_generated_revenue, fees, grant, intervention, loan, donation, other]}
+  commitment_source: {title: What committed a budget line, values: [requisition, purchase_order, imprest, payroll, funding_disbursement, contract, manual]}
+  commitment_status: {title: Commitment status, values: [open, partly_spent, spent, released, cancelled]}
+  imprest_status: {title: Imprest status, values: [requested, approved, issued, partly_retired, retired, overdue, written_off, rejected, cancelled]}
+  # ---------------------------------------------------------------- funding and loan platforms (CR-006)
+  funding_provider_kind: {title: Funding provider kind, values: [federal_government_agency, state_government, local_government, development_partner, bank, microfinance, cooperative, employer, institution, alumni, philanthropy, other]}
+  funding_beneficiary: {title: Who a funding programme supports, values: [institution, staff, learner]}
+  funding_purpose: {title: Purpose of funding, values: [capital_works, equipment, ict, research, staff_development, operations, tuition_fees, upkeep, housing, vehicle, welfare_emergency, salary_advance, scholarship, bursary, special_needs, other]}
+  funding_instrument: {title: Funding instrument, values: [loan, grant, scholarship, bursary, intervention, matching_grant, salary_advance, bond, guarantee, in_kind]}
+  repayment_basis: {title: How a facility is repaid, values: [none, fixed_instalment, annuity, income_contingent, payroll_deduction, bullet]}
+  funding_application_status: {title: Funding application status, values: [draft, submitted, under_review, recommended, approved, declined, withdrawn, cancelled]}
+  funding_agreement_status: {title: Funding agreement status, values: [signed, disbursing, in_moratorium, repaying, in_arrears, settled, completed, written_off, cancelled]}
+  disbursement_payee: {title: Who a disbursement is paid to, values: [institution, beneficiary, supplier, contractor]}
+  disbursement_status: {title: Disbursement status, values: [scheduled, paid, failed, reversed]}
+  instalment_status: {title: Repayment instalment status, values: [due, partly_paid, paid, overdue, waived]}
+  repayment_method: {title: Repayment method, values: [payroll_deduction, direct_debit, bank_transfer, employer_remittance, cash, offset]}
+  # ---------------------------------------------------------------- government property and facility management (CR-006)
+  property_owner: {title: Owner of a property site, values: [federal_government, state_government, local_government, community, mission_or_faith, private, leased]}
+  land_title: {title: Land title document, values: [certificate_of_occupancy, right_of_occupancy, gazette, deed_of_assignment, deed_of_gift, survey_plan_only, customary, lease, none_or_unknown]}
+  fence_status: {title: Perimeter fence, values: [fully_fenced, partly_fenced, not_fenced, unknown]}
+  encroachment_status: {title: Encroachment on a site, values: [none, suspected, confirmed, in_dispute, resolved, unknown]}
+  facility_subject: {title: What a facility record is about, values: [site, building, room, asset]}
+  facility_assessor: {title: Who assessed a facility, values: [head_of_institution, estate_officer, engineer, quality_inspector, lga_officer, contractor, community]}
+  usability_status: {title: Current state of usability, values: [fully_usable, usable_minor_repairs, usable_major_repairs, unsafe_restricted, unusable, condemned]}
+  maintenance_task_kind: {title: Preventive maintenance task, values: [inspection, servicing, statutory_test, cleaning, pest_control, roofing, plumbing, electrical, painting, generator_service, solar_service, borehole_service, fire_safety, replacement, other]}
+  facility_rule: {title: Proactive facility rule, values: [unsafe_in_use, assessment_overdue, never_assessed, maintenance_due, maintenance_overdue, condition_deteriorated, safety_check_overdue, predicted_failure, encroachment, no_title]}
+  facility_action_status: {title: Facility action status, values: [open, acknowledged, in_progress, done, dismissed]}
+  # ---------------------------------------------------------------- security-agency curricula through the agency's structure (CR-006)
+  course_unit_role: {title: Role of an agency unit for a course, values: [sponsor, approving_authority, delivering_unit, quota_holder, target_formation]}
+  career_requirement_kind: {title: What a course is required for, values: [commissioning, confirmation, promotion, appointment, command]}

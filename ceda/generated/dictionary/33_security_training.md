@@ -14,6 +14,8 @@ Module (system of record): `security_training` · default zone: **registry** · 
 | [`security_course_module`](#registry-security_course_module) | registry | config | internal | versioned | Module (syllabus heading) of a training course — area, contact hours, assessment |
 | [`security_course_intake`](#registry-security_course_intake) | registry | transaction | internal | lifecycle | Intake (run) of a course, e.g. 77 Regular Course, with dates and capacity |
 | [`trainee_record`](#registry-trainee_record) | registry | transaction | restricted | lifecycle | A trainee on an intake — rank at entry and outcome, on the lifelong learner record |
+| [`security_course_unit`](#registry-security_course_unit) | registry | link | internal | lifecycle | Unit of the agency's structure that sponsors, approves, delivers or holds quotas on a course |
+| [`security_career_requirement`](#registry-security_career_requirement) | registry | config | internal | lifecycle | Course (or course category) an agency requires for commissioning, confirmation, promotion, appointment or command at a rank |
 
 <a id="registry-security_agency"></a>
 ## `security_agency`
@@ -197,8 +199,8 @@ scope_node_id is the institution's node. Degree-bearing courses also point to th
 | Module | `security_training` |
 | Origin | ceda |
 | Retention | `RS-CUR-PERM` |
-| Requirements | FR-STI-05 |
-| Pages | STI-02, STI-03 |
+| Requirements | FR-STI-05, FR-STI-12 |
+| Pages | STI-02, STI-03, STI-05 |
 | Events | STI.COURSE_PUBLISHED |
 
 | Column | MySQL type | Null | Class | Description |
@@ -248,7 +250,7 @@ Module (syllabus heading) of a training course — area, contact hours, assessme
 | Module | `security_training` |
 | Origin | ceda |
 | Retention | `RS-CUR-PERM` |
-| Requirements | FR-STI-06 |
+| Requirements | FR-STI-06, FR-STI-09, FR-STI-12 |
 | Pages | STI-03 |
 
 | Column | MySQL type | Null | Class | Description |
@@ -354,4 +356,85 @@ scope_node_id is the institution's node. Service numbers are external identifier
 
 - Unique: (tenant_id, learner_id, intake_id)
 - Index: (tenant_id, intake_id, outcome)
+
+<a id="registry-security_course_unit"></a>
+## `security_course_unit`
+
+Unit of the agency's structure that sponsors, approves, delivers or holds quotas on a course
+
+| | |
+|---|---|
+| Zone | registry |
+| Kind | link |
+| Classification | internal |
+| History | lifecycle |
+| Scope | none |
+| Module | `security_training` |
+| Origin | ceda |
+| Retention | `RS-LRN-PERM` |
+| Requirements | FR-STI-10 |
+| Pages | STI-03, STI-05 |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `id` **PK** | `BINARY(16)` | no |  | Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap |
+| `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `course_id` → `security_course` | `BINARY(16)` | no |  |  |
+| `unit_id` → `agency_unit` | `BINARY(16)` | no |  |  |
+| `role` | `VARCHAR(32)` | no |  | values: sponsor, approving_authority, delivering_unit, quota_holder, target_formation |
+| `quota` | `SMALLINT` | yes |  | Places per intake held by the unit |
+| `note` | `VARCHAR(200)` | yes |  |  |
+| `data_status` | `VARCHAR(32)` | no |  | values: verified, illustrative, to_confirm |
+| `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
+| `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+| `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
+| `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
+| `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
+
+- Unique: (tenant_id, course_id, unit_id, role)
+- Index: (tenant_id, unit_id)
+
+<a id="registry-security_career_requirement"></a>
+## `security_career_requirement`
+
+Course (or course category) an agency requires for commissioning, confirmation, promotion, appointment or command at a rank  
+
+scope_node_id is the agency's node.
+
+| | |
+|---|---|
+| Zone | registry |
+| Kind | config |
+| Classification | internal |
+| History | lifecycle |
+| Scope | owned |
+| Module | `security_training` |
+| Origin | ceda |
+| Retention | `RS-CONFIG` |
+| Requirements | FR-STI-11 |
+| Pages | STI-05 |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `id` **PK** | `BINARY(16)` | no |  | Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap |
+| `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `scope_node_id` | `BINARY(16)` | no |  | Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure |
+| `agency_id` → `security_agency` | `BINARY(16)` | no |  |  |
+| `rank_id` → `agency_rank` | `BINARY(16)` | no |  | The rank the requirement leads to |
+| `requirement_kind` | `VARCHAR(32)` | no |  | values: commissioning, confirmation, promotion, appointment, command |
+| `course_code` | `VARCHAR(32)` | yes |  | A specific course in the agency's institutions, e.g. JSC |
+| `course_category` | `VARCHAR(32)` | yes |  | Any course of this category, when no single course is named · values: initial_officer, cadet_degree, recruit_basic, junior_leadership, promotion_career, specialist, command_and_staff, strategic_leadership, academic_programme, continuing_professional |
+| `is_mandatory` | `BOOLEAN` | no |  |  |
+| `note` | `VARCHAR(300)` | yes |  |  |
+| `data_status` | `VARCHAR(32)` | no |  | values: verified, illustrative, to_confirm |
+| `status` | `VARCHAR(32)` | no |  | values: active, inactive, retired |
+| `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
+| `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+| `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
+| `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
+| `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
+
+- Unique: (tenant_id, agency_id, rank_id, requirement_kind, course_code)
+
+- Check `names_a_course`: `course_code IS NOT NULL OR course_category IS NOT NULL`
 

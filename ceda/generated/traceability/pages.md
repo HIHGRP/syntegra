@@ -1,6 +1,6 @@
 # Page → data traceability
 
-Every one of the 260 pages in SYN-MFS-002 v2.4 and the 21 pages added by change requests is served by at least one CEDA entity or metric. Generated; do not edit.
+Every one of the 260 pages in SYN-MFS-002 v2.4 and the 28 pages added by change requests is served by at least one CEDA entity or metric. Generated; do not edit.
 
 | Page | Source | Title | Module | Phase | CEDA entities and metrics | MFS master objects |
 |---|---|---|---|---|---|---|
@@ -12,6 +12,7 @@ Every one of the 260 pages in SYN-MFS-002 v2.4 and the 21 pages added by change 
 | ACA-101 | MFS | Class subject plan | Academic structure | P1 | `class_group`, `class_subject_plan`, `curriculum_adoption`, `staff_qualification`, `stream_combination_rule`, `teaching_assignment` |  |
 | ACA-102 | MFS | Department 360 | Academic structure | P1 | `course`, `department`, `licence`, `metric:PTR`, `org_unit`, `programme`, `staff_post`, `subject_area` |  |
 | ACA-103 | MFS | Course allocation | Academic structure | P1 | `course_section`, `department`, `teaching_assignment` |  |
+| ACC-01 | CR-006 | Imprest and retirement | Finance | P3 | `cost_centre`, `imprest`, `imprest_retirement`, `metric:ACC-IMPREST-OVERDUE` |  |
 | ADM-01 | MFS | Tenants | Platform administration | P1 | `feature_flag`, `glid_block`, `platform_user`, `residency_region`, `tenant` | Tenant |
 | ADM-02 | MFS | Country configuration | Platform administration | P1 | `code_list`, `code_value`, `config_version`, `jurisdiction_pack` | CountryConfiguration |
 | ADM-03 | MFS | Institution setup | Platform administration | P1 | `config_version`, `onboarding_check` | InstitutionConfiguration |
@@ -121,6 +122,9 @@ Every one of the 260 pages in SYN-MFS-002 v2.4 and the 21 pages added by change 
 | DOC-104 | MFS | Records search | Records & archives | P1 | `document`, `legacy_award`, `record_request` |  |
 | DOC-105 | MFS | Document viewer | Records & archives | P1 | `document`, `document_link`, `redaction` |  |
 | DOC-106 | MFS | File plan and retention | Records & archives | P1 | `disposal`, `document_category`, `legal_hold`, `record_series` |  |
+| EST-01 | CR-006 | Government property register | Estate | P3 | `facility_assessment`, `property_site` |  |
+| EST-02 | CR-006 | Facility actions | Estate | P3 | `facility_action`, `facility_assessment`, `maintenance_schedule`, `metric:EST-ACTIONS-ON-TIME`, `metric:EST-UNSAFE-IN-USE` |  |
+| EST-03 | CR-006 | State infrastructure overview | Estate | P3 | `facility_action`, `metric:EST-ACTIONS-ON-TIME`, `metric:EST-INFRA-INDEX`, `metric:EST-LEARNERS-PER-USABLE-CLASSROOM`, `metric:EST-REPAIR-BACKLOG`, `metric:EST-UNSAFE-IN-USE`, `metric:EST-USABLE-CLASSROOMS` |  |
 | EXM-01 | MFS | Examination series | Examinations | P1 | `exam_series` | Examination 360, Qualification 360 |
 | EXM-02 | MFS | Candidate entries | Examinations | P1 | `exam_entry` | Examination 360, Learner 360 |
 | EXM-03 | MFS | Exam timetable & seating | Examinations | P1 | `exam_paper`, `exam_sitting` | Sitting |
@@ -140,12 +144,14 @@ Every one of the 260 pages in SYN-MFS-002 v2.4 and the 21 pages added by change 
 | FCL-03 | CR-001 | Clearance disputes | Fee clearance | P2 | `metric:FCL-DISPUTE-UPHELD`, `metric:FCL-OUTSTANDING-RATE`, `obligation_dispute` |  |
 | FCL-04 | CR-002 | National clearance network | Fee clearance | P3 | `clearance_exchange_query`, `exchange_peer`, `metric:FCL-NATIONAL-COVERAGE` |  |
 | FED-01 | CR-005 | Federal institutions | Federal institutions | P3 | `federal_body`, `federal_body_unit`, `federal_institution`, `metric:REG-PROFILE-COMPLETE` |  |
-| FIN-01 | MFS | Budget planning | Finance | P4 | `budget` | Budget |
-| FIN-02 | MFS | Budget vs actual | Finance | P4 | `budget`, `metric:BUDGET-EXECUTION` | Budget, Ledger |
+| FIN-01 | MFS | Budget planning | Finance | P4 | `budget`, `budget_line`, `budget_virement`, `cost_centre` | Budget |
+| FIN-02 | MFS | Budget vs actual | Finance | P4 | `budget`, `budget_commitment`, `budget_line`, `budget_virement`, `cost_centre`, `metric:ACC-BUDGET-EXECUTION`, `metric:BUDGET-EXECUTION` | Budget, Ledger |
 | FIN-03 | MFS | Procurement | Finance | P4 | `purchase_order`, `requisition`, `supplier` | Requisition, PurchaseOrder, Supplier 360 |
 | FIN-04 | MFS | Supplier 360 | Finance | P4 | `supplier` | Supplier 360 |
 | FIN-05 | MFS | General ledger | Finance | P4 | `account`, `fiscal_period`, `journal`, `ledger_entry` | Journal, Account |
 | FIN-06 | MFS | Currencies & tax | Finance | P1 | `fx_rate`, `tax_rule` | Currency |
+| FND-01 | CR-006 | Funding and loan programmes | Funding | P3 | `funding_agreement`, `funding_application`, `funding_programme`, `metric:FND-ARREARS-RATE`, `metric:FND-DISBURSED` |  |
+| FND-02 | CR-006 | Funding agreement | Funding | P3 | `funding_agreement`, `funding_application`, `funding_disbursement`, `funding_repayment`, `repayment_instalment` |  |
 | FRM-101 | MFS | Form builder | Forms | P2 | `form_definition` |  |
 | FRM-102 | MFS | Forms and Daybook | Forms | P2 | `form_response` |  |
 | HED-01 | MFS | Admissions pipeline | Admissions | P1 | `admission_application`, `admission_enquiry`, `international_student_record` | Applicant, Programme 360 |
@@ -207,9 +213,9 @@ Every one of the 260 pages in SYN-MFS-002 v2.4 and the 21 pages added by change 
 | MED-01 | MFS | Clinical placements & rotations | Medical education | P5 | `clinical_site`, `placement`, `skills_lab_session` | Placement, ClinicalSite |
 | MED-02 | MFS | Clinical logbook & sign-off | Medical education | P5 | `competency_record`, `logbook_entry` | LogbookEntry, Competency |
 | MED-03 | MFS | Clinical hours & registration readiness | Medical education | P5 | `exam_paper`, `professional_body`, `registration_readiness` | Learner 360, Qualification 360 |
-| OPS-01 | MFS | Estate & rooms | Operations | P3 | `building`, `capital_plan_item`, `metric:INFRA-CLASSROOM`, `room` | Infrastructure 360, Room |
+| OPS-01 | MFS | Estate & rooms | Operations | P3 | `building`, `capital_plan_item`, `facility_assessment`, `metric:EST-USABLE-CLASSROOMS`, `metric:INFRA-CLASSROOM`, `property_site`, `room` | Infrastructure 360, Room |
 | OPS-02 | MFS | Asset register | Operations | P3 | `asset`, `asset_inspection` | Asset |
-| OPS-03 | MFS | Maintenance | Operations | P3 | `facility_incident`, `maintenance_request`, `metric:FACILITY-INCIDENTS` | MaintenanceRequest |
+| OPS-03 | MFS | Maintenance | Operations | P3 | `facility_incident`, `maintenance_request`, `maintenance_schedule`, `metric:FACILITY-INCIDENTS` | MaintenanceRequest |
 | OPS-04 | MFS | Transport | Operations | P3 | `boarding_record`, `transport_allocation`, `transport_route`, `vehicle` | Route, Vehicle |
 | OPS-05 | MFS | Clubs & activities | Operations | P3 | `activity`, `activity_enrolment` | Activity |
 | OPS-06 | MFS | Trips & visits | Operations | P3 | `consent_record`, `consent_request`, `trip`, `trip_participant` | Trip, Consent |
@@ -263,8 +269,9 @@ Every one of the 260 pages in SYN-MFS-002 v2.4 and the 21 pages added by change 
 | STF-101 | MFS | Safeguarding training and compliance | Staff, HR and payroll | P2 | `metric:CPD-COMPLIANCE`, `staff_pulse_response`, `training_completion`, `training_course` |  |
 | STI-01 | CR-004 | Security agencies and training institutions | Security training | P3 | `agency_rank`, `agency_unit`, `security_agency`, `security_institution` |  |
 | STI-02 | CR-004 | Training institution | Security training | P3 | `metric:STI-PASS-OUT-RATE`, `security_course`, `security_institution` |  |
-| STI-03 | CR-004 | Training course curriculum | Security training | P3 | `metric:STI-INTAKE-FILL`, `security_course`, `security_course_intake`, `security_course_module` |  |
+| STI-03 | CR-004 | Training course curriculum | Security training | P3 | `metric:STI-INTAKE-FILL`, `security_course`, `security_course_intake`, `security_course_module`, `security_course_unit` |  |
 | STI-04 | CR-004 | Course intake and trainees | Security training | P3 | `agency_rank`, `metric:STI-INTAKE-FILL`, `metric:STI-PASS-OUT-RATE`, `security_course_intake`, `trainee_record` |  |
+| STI-05 | CR-006 | Agency careers and course requirements | Security training | P3 | `metric:STI-CAREER-COVERAGE`, `security_career_requirement`, `security_course`, `security_course_unit` |  |
 | SUB-101 | MFS | SDAF rate card | Billing | P1 | `sdaf_rate`, `sdaf_rate_card` |  |
 | SUB-102 | MFS | Term census and billable learners | Billing | P1 | `academic_period`, `billing_period`, `billing_period_billed`, `census_flag`, `census_learner`, `census_snapshot`, `enrolment`, `sdaf_exemption` |  |
 | SUB-103 | MFS | SDAF demand and collections | Billing | P1 | `billing_period_billed`, `inbound_webhook`, `metric:SDAF-COLLECTION`, `sdaf_collection`, `sdaf_demand`, `unmatched_collection` |  |

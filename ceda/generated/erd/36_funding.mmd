@@ -1,0 +1,135 @@
+erDiagram
+    funding_programme {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ code
+        VARCHAR_300_ name
+        VARCHAR_200_ provider_name
+        VARCHAR_32_ provider_kind
+        VARCHAR_16_ provider_body_code
+        VARCHAR_32_ beneficiary_kind
+        VARCHAR_32_ purpose
+        VARCHAR_32_ instrument
+        DECIMAL_6_3_ interest_rate
+        SMALLINT tenor_months
+        SMALLINT moratorium_months
+        VARCHAR_32_ repayment_basis
+        BIGINT max_amount_minor
+        CHAR_3_ currency
+        JSON eligibility
+        JSON terms
+        DATE opens_on
+        DATE closes_on
+        VARCHAR_32_ data_status
+        VARCHAR_32_ status
+    }
+    funding_application {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ application_number
+        BINARY_16_ programme_id FK
+        VARCHAR_32_ applicant_kind
+        BINARY_16_ applicant_id
+        BINARY_16_ institution_id FK
+        BIGINT amount_requested_minor
+        CHAR_3_ currency
+        TEXT purpose_detail
+        BINARY_16_ capital_plan_item_id FK
+        JSON documents
+        JSON eligibility
+        BOOLEAN eligible
+        BINARY_16_ submitted_by
+        DATETIME_6_ submitted_at
+        BINARY_16_ recommended_by
+        TEXT recommendation
+        BINARY_16_ decided_by
+        DATETIME_6_ decided_at
+        TEXT decision_reason
+        BIGINT amount_approved_minor
+        VARCHAR_32_ status
+    }
+    funding_agreement {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ agreement_number
+        BINARY_16_ application_id FK
+        BINARY_16_ programme_id FK
+        VARCHAR_32_ beneficiary_kind
+        BINARY_16_ beneficiary_id
+        BINARY_16_ institution_id FK
+        VARCHAR_32_ instrument
+        BIGINT principal_minor
+        DECIMAL_6_3_ interest_rate
+        SMALLINT tenor_months
+        SMALLINT moratorium_months
+        VARCHAR_32_ repayment_basis
+        DATE first_repayment_on
+        BIGINT disbursed_minor
+        BIGINT repaid_minor
+        BIGINT outstanding_minor
+        BIGINT arrears_minor
+        CHAR_3_ currency
+        DATE signed_on
+        BINARY_16_ signed_by
+        VARCHAR_32_ status
+    }
+    funding_disbursement {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ agreement_id FK
+        BIGINT amount_minor
+        CHAR_3_ currency
+        VARCHAR_32_ payee_kind
+        VARCHAR_120_ payee_reference
+        VARCHAR_200_ purpose
+        BINARY_16_ budget_line_id FK
+        BINARY_16_ capital_plan_item_id FK
+        VARCHAR_64_ reference
+        DATE disbursed_on
+        VARCHAR_32_ status
+    }
+    repayment_instalment {
+        BINARY_16_ id PK
+        BINARY_16_ agreement_id FK
+        SMALLINT sequence
+        DATE due_on
+        BIGINT principal_minor
+        BIGINT interest_minor
+        BIGINT paid_minor
+        CHAR_3_ currency
+        DATE paid_on
+        VARCHAR_32_ status
+    }
+    funding_repayment {
+        BINARY_16_ id PK
+        BINARY_16_ agreement_id FK
+        BIGINT amount_minor
+        CHAR_3_ currency
+        VARCHAR_32_ method
+        VARCHAR_40_ source_kind
+        BINARY_16_ source_id
+        VARCHAR_64_ reference
+        DATE received_on
+        JSON allocations
+        BINARY_16_ recorded_by
+    }
+    budget_line {
+        BINARY_16 id PK
+    }
+    capital_plan_item {
+        BINARY_16 id PK
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    budget_line ||--o{ funding_disbursement : "budget_line_id"
+    capital_plan_item ||--o{ funding_application : "capital_plan_item_id"
+    capital_plan_item ||--o{ funding_disbursement : "capital_plan_item_id"
+    funding_agreement ||--o{ funding_disbursement : "agreement_id"
+    funding_agreement ||--o{ funding_repayment : "agreement_id"
+    funding_agreement ||--o{ repayment_instalment : "agreement_id"
+    funding_application ||--o| funding_agreement : "application_id"
+    funding_programme ||--o{ funding_agreement : "programme_id"
+    funding_programme ||--o{ funding_application : "programme_id"
+    institution ||--o{ funding_agreement : "institution_id"
+    institution ||--o{ funding_application : "institution_id"

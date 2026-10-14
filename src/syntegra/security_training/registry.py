@@ -24,6 +24,7 @@ from syntegra.core.ids import format_institution_code
 from syntegra.core.tenancy import state_tenant_id
 from syntegra.platform import sector
 from syntegra.platform.states import BY_CODE, STATES
+from syntegra.security_training import curricula
 from syntegra.security_training import reference as ref
 
 CODE = "NG-FSE"
@@ -65,6 +66,9 @@ class Seeded:
     institutions: int = 0
     courses: int = 0
     modules: int = 0
+    agency_modules: int = 0
+    course_units: int = 0
+    career_requirements: int = 0
 
 
 def seed_reference() -> Seeded:
@@ -145,7 +149,8 @@ def _seed(cmd: uow.Command, n: Seeded) -> None:
             units[u.code], nodes[u.code] = unit, node.id
             n.units += 1
         have = set(AgencyRank.objects.filter(agency_id=agency.id).values_list("code", flat=True))
-        for i, (rcode, title, abbr, cat) in enumerate(ref.RANKS.get(a.code, []), start=1):
+        ranks = ref.RANKS.get(a.code) or curricula.MORE_RANKS.get(a.code, [])
+        for i, (rcode, title, abbr, cat) in enumerate(ranks, start=1):
             if rcode not in have:
                 cmd.add(
                     AgencyRank(
@@ -155,12 +160,92 @@ def _seed(cmd: uow.Command, n: Seeded) -> None:
                         abbreviation=abbr,
                         rank_category=cat,
                         seniority=i,
-                        data_status=ref.RANK_STATUS.get(a.code, ref.C),
+                        data_status=ref.RANK_STATUS.get(a.code, ref.C),  # CR-006 additions: to_confirm
                     )
                 )
                 n.ranks += 1
     for spec, courses in ref.INSTITUTIONS:
         _seed_institution(cmd, n, spec, courses, states)
+    seed_curricula(cmd, n)
+
+
+def seed_curricula(cmd: uow.Command, n: Seeded) -> None:
+    """CR-006: agency-specific syllabus headings, the units of each course and each rank's course requirements.
+
+    Idempotent and additive, so registries seeded before CR-006 are completed in place."""
+    from syntegra.security_training.models import (
+        AgencyRank,
+        AgencyUnit,
+        SecurityAgency,
+        SecurityCareerRequirement,
+        SecurityCourse,
+        SecurityCourseModule,
+        SecurityCourseUnit,
+        SecurityInstitution,
+    )
+
+    agencies = {a.id: a for a in SecurityAgency.objects.all()}
+    by_code = {a.code: a for a in agencies.values()}
+    units = {(u.agency_id, u.code): u for u in AgencyUnit.objects.all()}
+    owning = dict(SecurityInstitution.objects.values_list("institution_id", "unit_id"))
+    unit_code = {u.id: u.code for u in units.values()}
+    have_units = set(SecurityCourseUnit.objects.values_list("course_id", "unit_id", "role"))
+    for course in SecurityCourse.objects.filter(status="published"):
+        agency = agencies[course.agency_id]
+        if course.content_held:
+            mods = list(SecurityCourseModule.objects.filter(course_id=course.id))
+            codes, seq = {m.code for m in mods}, max((m.sequence for m in mods), default=0)
+            for mcode, title, area, assessment, _cats in curricula.modules_for(agency.code, course.category):
+                if mcode in codes:
+                    continue
+                seq += 1
+                cmd.add(
+                    SecurityCourseModule(
+                        course_id=course.id,
+                        sequence=seq,
+                        code=mcode,
+                        title=title,
+                        area=area,
+                        assessment=assessment,
+                        is_mandatory=True,
+                    )
+                )
+                n.agency_modules += 1
+        delivering = unit_code.get(owning.get(course.institution_id))
+        for acode, ucode, role in curricula.course_units(agency.code, delivering or "", course.category):
+            unit = units.get((by_code[acode].id, ucode)) if acode in by_code else None
+            if unit is None or (course.id, unit.id, role) in have_units:
+                continue
+            cmd.add(SecurityCourseUnit(course_id=course.id, unit_id=unit.id, role=role, data_status=curricula.C))
+            have_units.add((course.id, unit.id, role))
+            n.course_units += 1
+    have_reqs = set(
+        SecurityCareerRequirement.objects.values_list("agency_id", "rank_id", "requirement_kind", "course_code")
+    )
+    for acode, reqs in curricula.CAREER.items():
+        agency = by_code.get(acode)
+        if agency is None:
+            continue
+        ranks = {r.code: r for r in AgencyRank.objects.filter(agency_id=agency.id)}
+        for rcode, kind, course_code, category, mandatory in reqs:
+            rank = ranks.get(rcode)
+            if rank is None or (agency.id, rank.id, kind, course_code) in have_reqs:
+                continue
+            cmd.add(
+                SecurityCareerRequirement(
+                    scope_node_id=agency.scope_node_id,
+                    agency_id=agency.id,
+                    rank_id=rank.id,
+                    requirement_kind=kind,
+                    course_code=course_code,
+                    course_category=category,
+                    is_mandatory=mandatory,
+                    data_status=curricula.C,
+                    status="active",
+                )
+            )
+            have_reqs.add((agency.id, rank.id, kind, course_code))
+            n.career_requirements += 1
 
 
 def _seed_institution(

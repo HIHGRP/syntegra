@@ -97,6 +97,61 @@ class AggEnrolmentDaily(CedaModel):
         verbose_name = 'Daily enrolment counts by institution, level and sex'
 
 
+class AggInfrastructureScope(CedaModel):
+    """Infrastructure roll-up per scope node (institution, LGA, authority, state) and load date — the Commissioner's view"""
+
+    ceda_entity = 'agg_infrastructure_scope'
+    ceda_zones = ('dw',)
+    ceda_domain = 'DW'
+    ceda_kind = 'aggregate'
+    ceda_class = 'internal'
+    ceda_history = 'none'
+    ceda_scope = 'none'
+    ceda_append_only = False
+    ceda_partition = None
+    ceda_retention = None
+    ceda_fields = {'tenant_id': {'type': 'uuid', 'standard': True}, 'date_key': {'type': 'int'}, 'scope_key': {'type': 'bigint'}, 'level': {'type': 'enum', 'enum': 'scope_level'}, 'institutions': {'type': 'int_u'}, 'institutions_assessed': {'type': 'int_u'}, 'sites': {'type': 'int_u'}, 'sites_fenced': {'type': 'int_u'}, 'sites_encroached': {'type': 'int_u'}, 'buildings': {'type': 'int_u'}, 'buildings_unsafe': {'type': 'int_u'}, 'classrooms': {'type': 'int_u'}, 'classrooms_usable': {'type': 'int_u'}, 'learners': {'type': 'int_u'}, 'learners_per_usable_classroom': {'type': 'dec'}, 'toilets_usable': {'type': 'int_u'}, 'institutions_with_water': {'type': 'int_u'}, 'institutions_with_power': {'type': 'int_u'}, 'facilities_unsafe_in_use': {'type': 'int_u'}, 'actions_open': {'type': 'int_u'}, 'actions_critical_open': {'type': 'int_u'}, 'actions_overdue': {'type': 'int_u'}, 'repair_backlog_minor': {'type': 'money'}, 'currency': {'type': 'currency'}, 'infrastructure_index': {'type': 'score'}, 'loaded_at': {'type': 'ts', 'standard': True}, 'load_batch_id': {'type': 'bigint', 'standard': True}}
+
+    tenant_id = cf.UUID7Field()
+    date_key = models.IntegerField()
+    scope_key = models.BigIntegerField()
+    level = models.CharField(max_length=32, choices=[('global', 'Global'), ('country', 'Country'), ('state', 'State'), ('authority', 'Authority'), ('lga', 'Lga'), ('network', 'Network'), ('institution', 'Institution'), ('campus', 'Campus'), ('faculty', 'Faculty'), ('department', 'Department'), ('programme', 'Programme'), ('class', 'Class'), ('agency', 'Agency'), ('formation', 'Formation')])
+    institutions = models.PositiveIntegerField()
+    institutions_assessed = models.PositiveIntegerField()
+    sites = models.PositiveIntegerField()
+    sites_fenced = models.PositiveIntegerField()
+    sites_encroached = models.PositiveIntegerField()
+    buildings = models.PositiveIntegerField()
+    buildings_unsafe = models.PositiveIntegerField(help_text='unsafe, unusable or condemned')
+    classrooms = models.PositiveIntegerField()
+    classrooms_usable = models.PositiveIntegerField()
+    learners = models.PositiveIntegerField()
+    learners_per_usable_classroom = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    toilets_usable = models.PositiveIntegerField()
+    institutions_with_water = models.PositiveIntegerField()
+    institutions_with_power = models.PositiveIntegerField()
+    facilities_unsafe_in_use = models.PositiveIntegerField()
+    actions_open = models.PositiveIntegerField()
+    actions_critical_open = models.PositiveIntegerField()
+    actions_overdue = models.PositiveIntegerField()
+    repair_backlog_minor = models.BigIntegerField(help_text='(minor units)')
+    currency = models.CharField(max_length=3)
+    infrastructure_index = models.DecimalField(max_digits=7, decimal_places=3, null=True, blank=True, help_text='0–100: usable classrooms, utilities, safety and maintenance')
+    loaded_at = models.DateTimeField(default=cf.utcnow)
+    load_batch_id = models.BigIntegerField()
+    pk = models.CompositePrimaryKey('tenant_id', 'date_key', 'scope_key')
+
+    objects = TenantScopedManager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'agg_infrastructure_scope'
+        app_label = 'analytics'
+        base_manager_name = 'unscoped'
+        verbose_name = 'Infrastructure roll-up per scope node (institution, LGA, authority, state) and l'
+
+
 class AggLearnerAttendanceTerm(CedaModel):
     """Learner attendance rate per term (persistent < 90% and severe < 50% absence)"""
 
@@ -332,6 +387,49 @@ class DimDate(CedaModel):
         app_label = 'analytics'
         base_manager_name = 'unscoped'
         verbose_name = 'Calendar date dimension'
+
+
+class DimFacility(CedaModel):
+    """Facility dimension (SCD2) — property site, building, room or item of equipment of an institution"""
+
+    ceda_entity = 'dim_facility'
+    ceda_zones = ('dw',)
+    ceda_domain = 'DW'
+    ceda_kind = 'dimension'
+    ceda_class = 'internal'
+    ceda_history = 'none'
+    ceda_scope = 'none'
+    ceda_append_only = False
+    ceda_partition = None
+    ceda_retention = None
+    ceda_fields = {'tenant_id': {'type': 'uuid', 'standard': True}, 'facility_key': {'type': 'bigint'}, 'subject_kind': {'type': 'enum', 'enum': 'facility_subject'}, 'subject_id': {'type': 'uuid'}, 'institution_key': {'type': 'bigint'}, 'name': {'type': 'title'}, 'room_type': {'type': 'cl', 'code_list': 'room_type'}, 'asset_category': {'type': 'cl', 'code_list': 'asset_category'}, 'capacity': {'type': 'smallint'}, 'built_year': {'type': 'smallint'}, 'row_valid_from': {'type': 'date'}, 'row_valid_to': {'type': 'date'}, 'is_current': {'type': 'bool'}, 'loaded_at': {'type': 'ts', 'standard': True}, 'load_batch_id': {'type': 'bigint', 'standard': True}}
+
+    tenant_id = cf.UUID7Field()
+    facility_key = models.BigIntegerField()
+    subject_kind = models.CharField(max_length=32, choices=[('site', 'Site'), ('building', 'Building'), ('room', 'Room'), ('asset', 'Asset')])
+    subject_id = cf.UUID7Field()
+    institution_key = models.BigIntegerField()
+    name = models.CharField(max_length=300)
+    room_type = models.CharField(max_length=32, null=True, blank=True)
+    asset_category = models.CharField(max_length=32, null=True, blank=True)
+    capacity = models.SmallIntegerField(null=True, blank=True)
+    built_year = models.SmallIntegerField(null=True, blank=True)
+    row_valid_from = models.DateField()
+    row_valid_to = models.DateField(null=True, blank=True)
+    is_current = models.BooleanField()
+    loaded_at = models.DateTimeField(default=cf.utcnow)
+    load_batch_id = models.BigIntegerField()
+    pk = models.CompositePrimaryKey('tenant_id', 'facility_key')
+
+    objects = TenantScopedManager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'dim_facility'
+        app_label = 'analytics'
+        base_manager_name = 'unscoped'
+        verbose_name = 'Facility dimension (SCD2) — property site, building, room or item of equipment o'
 
 
 class DimInstitution(CedaModel):
@@ -771,6 +869,49 @@ class FactBehaviour(CedaModel):
         verbose_name = 'Behaviour event fact'
 
 
+class FactBudgetExecution(CedaModel):
+    """Budget execution per institution, cost centre and economic code — original, revised, committed, actual and available"""
+
+    ceda_entity = 'fact_budget_execution'
+    ceda_zones = ('dw',)
+    ceda_domain = 'DW'
+    ceda_kind = 'fact'
+    ceda_class = 'internal'
+    ceda_history = 'none'
+    ceda_scope = 'none'
+    ceda_append_only = False
+    ceda_partition = None
+    ceda_retention = None
+    ceda_fields = {'tenant_id': {'type': 'uuid', 'standard': True}, 'date_key': {'type': 'int'}, 'institution_key': {'type': 'bigint'}, 'cost_centre_code': {'type': 'code'}, 'economic_code': {'type': 'code'}, 'funding_source_kind': {'type': 'enum', 'enum': 'budget_funding_kind'}, 'fiscal_year': {'type': 'smallint'}, 'original_minor': {'type': 'money'}, 'revised_minor': {'type': 'money'}, 'committed_minor': {'type': 'money'}, 'actual_minor': {'type': 'money'}, 'available_minor': {'type': 'money'}, 'currency': {'type': 'currency'}, 'loaded_at': {'type': 'ts', 'standard': True}, 'load_batch_id': {'type': 'bigint', 'standard': True}}
+
+    tenant_id = cf.UUID7Field()
+    date_key = models.IntegerField()
+    institution_key = models.BigIntegerField()
+    cost_centre_code = models.CharField(max_length=32)
+    economic_code = models.CharField(max_length=16)
+    funding_source_kind = models.CharField(max_length=32, choices=[('subvention', 'Subvention'), ('personnel_cost', 'Personnel cost'), ('overhead', 'Overhead'), ('capital_allocation', 'Capital allocation'), ('internally_generated_revenue', 'Internally generated revenue'), ('fees', 'Fees'), ('grant', 'Grant'), ('intervention', 'Intervention'), ('loan', 'Loan'), ('donation', 'Donation'), ('other', 'Other')])
+    fiscal_year = models.SmallIntegerField()
+    original_minor = models.BigIntegerField(help_text='(minor units)')
+    revised_minor = models.BigIntegerField(help_text='(minor units)')
+    committed_minor = models.BigIntegerField(help_text='(minor units)')
+    actual_minor = models.BigIntegerField(help_text='(minor units)')
+    available_minor = models.BigIntegerField(help_text='(minor units)')
+    currency = models.CharField(max_length=3)
+    loaded_at = models.DateTimeField(default=cf.utcnow)
+    load_batch_id = models.BigIntegerField()
+    pk = models.CompositePrimaryKey('tenant_id', 'date_key', 'institution_key', 'cost_centre_code', 'economic_code', 'funding_source_kind')
+
+    objects = TenantScopedManager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'fact_budget_execution'
+        app_label = 'analytics'
+        base_manager_name = 'unscoped'
+        verbose_name = 'Budget execution per institution, cost centre and economic code — original, revi'
+
+
 class FactCertificateEvent(CedaModel):
     """Certificate lifecycle and verification fact"""
 
@@ -1162,6 +1303,51 @@ class FactExamResult(CedaModel):
         verbose_name = 'Examination result fact (internal and external series; credits and passes)'
 
 
+class FactFacilityCondition(CedaModel):
+    """Facility condition snapshot per load date — latest condition and usability, learners affected, repair estimate, open actions and overdue maintenance"""
+
+    ceda_entity = 'fact_facility_condition'
+    ceda_zones = ('dw',)
+    ceda_domain = 'DW'
+    ceda_kind = 'fact'
+    ceda_class = 'internal'
+    ceda_history = 'none'
+    ceda_scope = 'none'
+    ceda_append_only = False
+    ceda_partition = None
+    ceda_retention = None
+    ceda_fields = {'tenant_id': {'type': 'uuid', 'standard': True}, 'date_key': {'type': 'int'}, 'facility_key': {'type': 'bigint'}, 'institution_key': {'type': 'bigint'}, 'condition_grade': {'type': 'cl', 'code_list': 'condition_grade'}, 'usability': {'type': 'enum', 'enum': 'usability_status'}, 'is_usable': {'type': 'bool'}, 'assessed_on': {'type': 'date'}, 'days_since_assessment': {'type': 'int'}, 'learners_affected': {'type': 'int_u'}, 'repair_estimate_minor': {'type': 'money'}, 'currency': {'type': 'currency'}, 'open_actions': {'type': 'smallint'}, 'open_critical_actions': {'type': 'smallint'}, 'overdue_maintenance': {'type': 'smallint'}, 'loaded_at': {'type': 'ts', 'standard': True}, 'load_batch_id': {'type': 'bigint', 'standard': True}}
+
+    tenant_id = cf.UUID7Field()
+    date_key = models.IntegerField()
+    facility_key = models.BigIntegerField()
+    institution_key = models.BigIntegerField()
+    condition_grade = models.CharField(max_length=32, null=True, blank=True)
+    usability = models.CharField(max_length=32, choices=[('fully_usable', 'Fully usable'), ('usable_minor_repairs', 'Usable minor repairs'), ('usable_major_repairs', 'Usable major repairs'), ('unsafe_restricted', 'Unsafe restricted'), ('unusable', 'Unusable'), ('condemned', 'Condemned')], null=True, blank=True)
+    is_usable = models.BooleanField(help_text='fully usable or usable with repairs')
+    assessed_on = models.DateField(null=True, blank=True)
+    days_since_assessment = models.IntegerField(null=True, blank=True)
+    learners_affected = models.PositiveIntegerField(null=True, blank=True)
+    repair_estimate_minor = models.BigIntegerField(null=True, blank=True, help_text='(minor units)')
+    currency = models.CharField(max_length=3, null=True, blank=True)
+    open_actions = models.SmallIntegerField()
+    open_critical_actions = models.SmallIntegerField()
+    overdue_maintenance = models.SmallIntegerField()
+    loaded_at = models.DateTimeField(default=cf.utcnow)
+    load_batch_id = models.BigIntegerField()
+    pk = models.CompositePrimaryKey('tenant_id', 'date_key', 'facility_key')
+
+    objects = TenantScopedManager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'fact_facility_condition'
+        app_label = 'analytics'
+        base_manager_name = 'unscoped'
+        verbose_name = 'Facility condition snapshot per load date — latest condition and usability, lear'
+
+
 class FactFinance(CedaModel):
     """Finance fact (invoiced, collected, outstanding by charge type; budget vs actual)"""
 
@@ -1197,6 +1383,50 @@ class FactFinance(CedaModel):
         app_label = 'analytics'
         base_manager_name = 'unscoped'
         verbose_name = 'Finance fact (invoiced, collected, outstanding by charge type; budget vs actual)'
+
+
+class FactFunding(CedaModel):
+    """Funding per institution, programme and beneficiary kind — applications, approvals, disbursements, repayments, outstanding and arrears"""
+
+    ceda_entity = 'fact_funding'
+    ceda_zones = ('dw',)
+    ceda_domain = 'DW'
+    ceda_kind = 'fact'
+    ceda_class = 'internal'
+    ceda_history = 'none'
+    ceda_scope = 'none'
+    ceda_append_only = False
+    ceda_partition = None
+    ceda_retention = None
+    ceda_fields = {'tenant_id': {'type': 'uuid', 'standard': True}, 'date_key': {'type': 'int'}, 'institution_key': {'type': 'bigint'}, 'programme_code': {'type': 'code'}, 'beneficiary_kind': {'type': 'enum', 'enum': 'funding_beneficiary'}, 'applications': {'type': 'int_u'}, 'approved': {'type': 'int_u'}, 'agreements_in_arrears': {'type': 'int_u'}, 'approved_amount_minor': {'type': 'money'}, 'disbursed_minor': {'type': 'money'}, 'repaid_minor': {'type': 'money'}, 'outstanding_minor': {'type': 'money'}, 'arrears_minor': {'type': 'money'}, 'currency': {'type': 'currency'}, 'loaded_at': {'type': 'ts', 'standard': True}, 'load_batch_id': {'type': 'bigint', 'standard': True}}
+
+    tenant_id = cf.UUID7Field()
+    date_key = models.IntegerField()
+    institution_key = models.BigIntegerField()
+    programme_code = models.CharField(max_length=32)
+    beneficiary_kind = models.CharField(max_length=32, choices=[('institution', 'Institution'), ('staff', 'Staff'), ('learner', 'Learner')])
+    applications = models.PositiveIntegerField()
+    approved = models.PositiveIntegerField()
+    agreements_in_arrears = models.PositiveIntegerField()
+    approved_amount_minor = models.BigIntegerField(help_text='(minor units)')
+    disbursed_minor = models.BigIntegerField(help_text='(minor units)')
+    repaid_minor = models.BigIntegerField(help_text='(minor units)')
+    outstanding_minor = models.BigIntegerField(help_text='(minor units)')
+    arrears_minor = models.BigIntegerField(help_text='(minor units)')
+    currency = models.CharField(max_length=3)
+    loaded_at = models.DateTimeField(default=cf.utcnow)
+    load_batch_id = models.BigIntegerField()
+    pk = models.CompositePrimaryKey('tenant_id', 'date_key', 'institution_key', 'programme_code', 'beneficiary_kind')
+
+    objects = TenantScopedManager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'fact_funding'
+        app_label = 'analytics'
+        base_manager_name = 'unscoped'
+        verbose_name = 'Funding per institution, programme and beneficiary kind — applications, approval'
 
 
 class FactHealthIndex(CedaModel):
@@ -1321,6 +1551,49 @@ class FactLmsActivity(CedaModel):
         app_label = 'analytics'
         base_manager_name = 'unscoped'
         verbose_name = 'LMS activity fact per assignment (set, submitted, on time, late, missing, marked'
+
+
+class FactMaintenanceWork(CedaModel):
+    """Maintenance work per institution and load date — requests opened and completed, backlog, preventive share, time to complete and cost"""
+
+    ceda_entity = 'fact_maintenance_work'
+    ceda_zones = ('dw',)
+    ceda_domain = 'DW'
+    ceda_kind = 'fact'
+    ceda_class = 'internal'
+    ceda_history = 'none'
+    ceda_scope = 'none'
+    ceda_append_only = False
+    ceda_partition = None
+    ceda_retention = None
+    ceda_fields = {'tenant_id': {'type': 'uuid', 'standard': True}, 'date_key': {'type': 'int'}, 'institution_key': {'type': 'bigint'}, 'requests_open': {'type': 'int_u'}, 'requests_completed_30d': {'type': 'int_u'}, 'preventive_completed_30d': {'type': 'int_u'}, 'mean_days_to_complete': {'type': 'dec'}, 'maintenance_due': {'type': 'int_u'}, 'maintenance_overdue': {'type': 'int_u'}, 'actions_open': {'type': 'int_u'}, 'actions_overdue': {'type': 'int_u'}, 'cost_30d_minor': {'type': 'money'}, 'currency': {'type': 'currency'}, 'loaded_at': {'type': 'ts', 'standard': True}, 'load_batch_id': {'type': 'bigint', 'standard': True}}
+
+    tenant_id = cf.UUID7Field()
+    date_key = models.IntegerField()
+    institution_key = models.BigIntegerField()
+    requests_open = models.PositiveIntegerField()
+    requests_completed_30d = models.PositiveIntegerField()
+    preventive_completed_30d = models.PositiveIntegerField()
+    mean_days_to_complete = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    maintenance_due = models.PositiveIntegerField()
+    maintenance_overdue = models.PositiveIntegerField()
+    actions_open = models.PositiveIntegerField()
+    actions_overdue = models.PositiveIntegerField()
+    cost_30d_minor = models.BigIntegerField(help_text='(minor units)')
+    currency = models.CharField(max_length=3)
+    loaded_at = models.DateTimeField(default=cf.utcnow)
+    load_batch_id = models.BigIntegerField()
+    pk = models.CompositePrimaryKey('tenant_id', 'date_key', 'institution_key')
+
+    objects = TenantScopedManager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'fact_maintenance_work'
+        app_label = 'analytics'
+        base_manager_name = 'unscoped'
+        verbose_name = 'Maintenance work per institution and load date — requests opened and completed, '
 
 
 class FactMessage(CedaModel):

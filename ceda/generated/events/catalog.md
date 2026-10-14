@@ -157,3 +157,15 @@ Generated from `ceda/model/events.yaml`. Events are named `<DOMAIN>.<PAST_TENSE_
 | `STI.COURSE_PUBLISHED` | `security_training` | `security_course` | `syn.{region}.sti.v1` | `security_course_id`, `institution_id` | search, analytics | A course version of a security training institution was published |
 | `STI.TRAINEE_OUTCOME_RECORDED` | `security_training` | `trainee_record` | `syn.{region}.sti.v1` | `trainee_record_id`, `outcome` | records, analytics | A trainee passed out, was commissioned, failed, relegated or withdrew |
 | `REG.PROFILE_CHANGED` | `regulation` | `institution_regulation` | `syn.{region}.reg.v1` | `institution_id`, `body_code`, `relationship` | search, analytics | An institution's regulatory profile gained, changed or ended a link |
+| `FIN.FUNDS_COMMITTED` | `finance` | `budget_commitment` | `syn.{region}.fin.v1` | `budget_commitment_id`, `budget_line_id`, `amount_minor`, `currency` | analytics | A budget line is committed |
+| `FIN.VIREMENT_APPROVED` | `finance` | `budget_virement` | `syn.{region}.fin.v1` | `budget_virement_id`, `from_line_id`, `to_line_id`, `amount_minor` | analytics, comms | A virement is approved by a second person |
+| `FIN.IMPREST_OVERDUE` | `finance` | `imprest` | `syn.{region}.fin.v1` | `imprest_id`, `retire_by` | comms, analytics | An imprest is not retired by its due date |
+| `FND.APPLICATION_SUBMITTED` | `funding` | `funding_application` | `syn.{region}.fnd.v1` | `funding_application_id`, `programme_id`, `applicant_kind`, `eligible` | comms, analytics | An application is submitted |
+| `FND.APPLICATION_DECIDED` | `funding` | `funding_application` | `syn.{region}.fnd.v1` | `funding_application_id`, `status` | comms, analytics | An application is approved or declined |
+| `FND.AGREEMENT_SIGNED` | `funding` | `funding_agreement` | `syn.{region}.fnd.v1` | `funding_agreement_id`, `instrument`, `principal_minor` | finance, analytics | A funding agreement is signed |
+| `FND.DISBURSED` | `funding` | `funding_disbursement` | `syn.{region}.fnd.v1` | `funding_disbursement_id`, `funding_agreement_id`, `amount_minor` | finance, analytics | Funds are disbursed |
+| `FND.REPAYMENT_RECEIVED` | `funding` | `funding_repayment` | `syn.{region}.fnd.v1` | `funding_repayment_id`, `funding_agreement_id`, `amount_minor` | finance, analytics | A repayment is received and allocated |
+| `FND.ARREARS_RAISED` | `funding` | `funding_agreement` | `syn.{region}.fnd.v1` | `funding_agreement_id`, `arrears_minor` | comms, analytics | An instalment falls overdue |
+| `EST.FACILITY_ASSESSED` | `estate` | `facility_assessment` | `syn.{region}.est.v1` | `facility_assessment_id`, `subject_kind`, `usability` | analytics | A facility's condition and usability are recorded |
+| `EST.ACTION_RAISED` | `estate` | `facility_action` | `syn.{region}.est.v1` | `facility_action_id`, `rule`, `priority` | comms, analytics | A proactive facility action is proposed to the head of institution |
+| `EST.ACTION_ESCALATED` | `estate` | `facility_action` | `syn.{region}.est.v1` | `facility_action_id`, `escalation_level` | comms, analytics | A facility action passes its due date without being acted on |

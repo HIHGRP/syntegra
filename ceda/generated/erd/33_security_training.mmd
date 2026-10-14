@@ -104,6 +104,28 @@ erDiagram
         TEXT outcome_reason
         BINARY_16_ recorded_by FK
     }
+    security_course_unit {
+        BINARY_16_ id PK
+        BINARY_16_ course_id FK
+        BINARY_16_ unit_id FK
+        VARCHAR_32_ role
+        SMALLINT quota
+        VARCHAR_200_ note
+        VARCHAR_32_ data_status
+    }
+    security_career_requirement {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ agency_id FK
+        BINARY_16_ rank_id FK
+        VARCHAR_32_ requirement_kind
+        VARCHAR_32_ course_code
+        VARCHAR_32_ course_category
+        BOOLEAN is_mandatory
+        VARCHAR_300_ note
+        VARCHAR_32_ data_status
+        VARCHAR_32_ status
+    }
     app_user {
         BINARY_16 id PK
     }
@@ -122,8 +144,10 @@ erDiagram
     programme {
         BINARY_16 id PK
     }
+    agency_rank ||--o{ security_career_requirement : "rank_id"
     agency_rank ||--o{ trainee_record : "rank_at_entry_id"
     agency_unit ||--o{ agency_unit : "parent_unit_id"
+    agency_unit ||--o{ security_course_unit : "unit_id"
     agency_unit ||--o{ security_institution : "unit_id"
     app_user ||--o{ trainee_record : "recorded_by"
     curriculum ||--o{ security_course : "curriculum_id"
@@ -134,8 +158,10 @@ erDiagram
     programme ||--o{ security_course : "programme_id"
     security_agency ||--o{ agency_rank : "agency_id"
     security_agency ||--o{ agency_unit : "agency_id"
+    security_agency ||--o{ security_career_requirement : "agency_id"
     security_agency ||--o{ security_course : "agency_id"
     security_agency ||--o{ security_institution : "agency_id"
     security_course ||--o{ security_course_intake : "course_id"
     security_course ||--o{ security_course_module : "course_id"
+    security_course ||--o{ security_course_unit : "course_id"
     security_course_intake ||--o{ trainee_record : "intake_id"

@@ -402,3 +402,102 @@ erDiagram
         SMALLINT transitions
         BOOLEAN label_dropout_next_term
     }
+    dim_facility {
+        BIGINT facility_key PK
+        VARCHAR_32_ subject_kind
+        BINARY_16_ subject_id
+        BIGINT institution_key
+        VARCHAR_300_ name
+        VARCHAR_32_ room_type
+        VARCHAR_32_ asset_category
+        SMALLINT capacity
+        SMALLINT built_year
+        DATE row_valid_from
+        DATE row_valid_to
+        BOOLEAN is_current
+    }
+    fact_facility_condition {
+        INT date_key PK
+        BIGINT facility_key PK
+        BIGINT institution_key
+        VARCHAR_32_ condition_grade
+        VARCHAR_32_ usability
+        BOOLEAN is_usable
+        DATE assessed_on
+        INT days_since_assessment
+        INT learners_affected
+        BIGINT repair_estimate_minor
+        CHAR_3_ currency
+        SMALLINT open_actions
+        SMALLINT open_critical_actions
+        SMALLINT overdue_maintenance
+    }
+    fact_maintenance_work {
+        INT date_key PK
+        BIGINT institution_key PK
+        INT requests_open
+        INT requests_completed_30d
+        INT preventive_completed_30d
+        DECIMAL_8_2_ mean_days_to_complete
+        INT maintenance_due
+        INT maintenance_overdue
+        INT actions_open
+        INT actions_overdue
+        BIGINT cost_30d_minor
+        CHAR_3_ currency
+    }
+    agg_infrastructure_scope {
+        INT date_key PK
+        BIGINT scope_key PK
+        VARCHAR_32_ level
+        INT institutions
+        INT institutions_assessed
+        INT sites
+        INT sites_fenced
+        INT sites_encroached
+        INT buildings
+        INT buildings_unsafe
+        INT classrooms
+        INT classrooms_usable
+        INT learners
+        DECIMAL_8_2_ learners_per_usable_classroom
+        INT toilets_usable
+        INT institutions_with_water
+        INT institutions_with_power
+        INT facilities_unsafe_in_use
+        INT actions_open
+        INT actions_critical_open
+        INT actions_overdue
+        BIGINT repair_backlog_minor
+        CHAR_3_ currency
+        DECIMAL_7_3_ infrastructure_index
+    }
+    fact_budget_execution {
+        INT date_key PK
+        BIGINT institution_key PK
+        VARCHAR_32_ cost_centre_code PK
+        VARCHAR_16_ economic_code PK
+        VARCHAR_32_ funding_source_kind PK
+        SMALLINT fiscal_year
+        BIGINT original_minor
+        BIGINT revised_minor
+        BIGINT committed_minor
+        BIGINT actual_minor
+        BIGINT available_minor
+        CHAR_3_ currency
+    }
+    fact_funding {
+        INT date_key PK
+        BIGINT institution_key PK
+        VARCHAR_32_ programme_code PK
+        VARCHAR_32_ beneficiary_kind PK
+        INT applications
+        INT approved
+        INT agreements_in_arrears
+        BIGINT approved_amount_minor
+        BIGINT disbursed_minor
+        BIGINT repaid_minor
+        BIGINT outstanding_minor
+        BIGINT arrears_minor
+        CHAR_3_ currency
+    }

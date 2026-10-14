@@ -1,6 +1,6 @@
 # CEDA data dictionary
 
-Generated from the CEDA model (SYN-CEDA-001 v1.6.0). Do not edit by hand.
+Generated from the CEDA model (SYN-CEDA-001 v1.7.0). Do not edit by hand.
 
 | Domain | Code | Module (Django app) | Default zone | Entities |
 |---|---|---|---|---|
@@ -25,7 +25,7 @@ Generated from the CEDA model (SYN-CEDA-001 v1.6.0). Do not edit by hand.
 | [Sector extensions — early years, post-16 and careers, TVET, higher education and medical/health education](19_sectors.md) | SEC | `sectors` | ops | 29 |
 | [Online coursework — course spaces, content, assignments, submissions, marking, quizzes, live classes and digital skills](20_lms.md) | LMS | `lms` | ops | 19 |
 | [Communication — messaging gateway, WhatsApp and Zenzap, templates, conversations, broadcasts, notifications, announcements and consent requests](21_comms.md) | COM | `comms` | ops | 14 |
-| [Billing, payments, funding, ledger, budgets, procurement and suppliers](22_finance.md) | FIN | `finance` | ops | 24 |
+| [Billing, payments, funding, ledger, budgets, procurement and suppliers](22_finance.md) | FIN | `finance` | ops | 30 |
 | [Programme financing — Student Digital Access Fee (SDAF) rates, census, payers, exemptions, demand, collection, remittance and reconciliation](23_financing.md) | SUB | `financing` | registry | 18 |
 | [Operations — estate, rooms, assets, maintenance, safety incidents, capital plan, transport, clubs, trips, meals, library and learning resources](24_operations.md) | OPS | `operations` | ops | 21 |
 | [Forms and Daybook engine and parents' meetings](25_forms_meetings.md) | FRM | `forms` | ops | 4 |
@@ -36,7 +36,9 @@ Generated from the CEDA model (SYN-CEDA-001 v1.6.0). Do not edit by hand.
 | [Audit trail, chain anchors and the transactional outbox](30_audit.md) | AUD | `core` | ops | 20 |
 | [Enterprise Human Resource Management Suite — establishment, employment, postings, leave, promotion, employee relations, separation, payroll elements and payroll integrity](31_hrms.md) | HRM | `hr` | registry | 18 |
 | [Fee-clearance due diligence — learner obligations register, clearance checks, admission decisions and disputes](32_fee_clearance.md) | FCL | `clearance` | registry | 5 |
-| [Education and training institutions of the security agencies — agency structures, ranks, courses, intakes](33_security_training.md) | STI | `security_training` | registry | 8 |
+| [Education and training institutions of the security agencies — agency structures, ranks, courses, intakes](33_security_training.md) | STI | `security_training` | registry | 10 |
 | [Federal unity colleges and federal special training institutions — owning bodies, their structures, institutions](34_federal_institutions.md) | FED | `federal_institutions` | registry | 3 |
 | [Education watchdogs, regulators and examination bodies — their dependencies and every institution's regulatory profile](35_regulation.md) | REG | `regulation` | platform | 3 |
-| [Analytics warehouse — conformed dimensions, facts, aggregates, live KPI read model and feature store](90_warehouse.md) | DW | `analytics` | dw | 38 |
+| [Funding and loan platforms — capital for institutions, staff welfare and student support](36_funding.md) | FND | `funding` | ops | 6 |
+| [Government property register, facility condition and usability, preventive maintenance and proactive actions](37_estate.md) | EST | `estate` | ops | 4 |
+| [Analytics warehouse — conformed dimensions, facts, aggregates, live KPI read model and feature store](90_warehouse.md) | DW | `analytics` | dw | 44 |

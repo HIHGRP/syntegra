@@ -63,7 +63,8 @@ ignore = ["S101", "RUF012", "DJ001", "S608", "RUF001", "RUF002", "RUF003"]  # en
 "tests/**" = ["S105", "S106", "S311", "PT018"]
 "src/syntegra/security_training/reference.py" = ["E501"]
 "src/syntegra/regulation/reference.py" = ["E501"]
-"src/syntegra/federal_institutions/reference.py" = ["E501"]  # reference tables read best one record per line
+"src/syntegra/federal_institutions/reference.py" = ["E501"]
+"src/syntegra/security_training/curricula.py" = ["E501"]  # reference tables read best one record per line
 
 # --------------------------------------------------------------------- typing (strict on the kernel and domain packages)
 [tool.mypy]
@@ -103,6 +104,7 @@ forbidden_modules = [
   "syntegra.certificates", "syntegra.success", "syntegra.safeguarding", "syntegra.sectors", "syntegra.lms",
   "syntegra.comms", "syntegra.finance", "syntegra.financing", "syntegra.operations", "syntegra.forms",
   "syntegra.records", "syntegra.intelligence", "syntegra.reporting", "syntegra.integration", "syntegra.analytics",
+  "syntegra.funding", "syntegra.estate",
 ]
 
 [[tool.importlinter.contracts]]
@@ -111,7 +113,8 @@ type = "forbidden"
 source_modules = [
   "syntegra.learners.domain", "syntegra.attendance.domain", "syntegra.certificates.domain",
   "syntegra.curriculum.domain", "syntegra.financing.domain", "syntegra.institutions.domain",
-  "syntegra.hr.domain", "syntegra.clearance.domain", "syntegra.families.domain",
+  "syntegra.hr.domain", "syntegra.clearance.domain", "syntegra.families.domain", "syntegra.funding.domain",
+  "syntegra.estate.domain",
 ]
 forbidden_modules = ["django", "rest_framework"]
 allow_indirect_imports = true
@@ -120,14 +123,14 @@ allow_indirect_imports = true
 name = "Education services never read payment or subscription state (P9, FR-SUB-116)"
 type = "forbidden"
 source_modules = ["syntegra.attendance", "syntegra.assessment", "syntegra.certificates", "syntegra.lms", "syntegra.learners"]
-forbidden_modules = ["syntegra.finance", "syntegra.financing", "syntegra.platform.services"]
+forbidden_modules = ["syntegra.finance", "syntegra.financing", "syntegra.funding", "syntegra.platform.services"]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
 name = "Fee clearance sees published obligation summaries only, never ledgers or SDAF (CR-001, P9)"
 type = "forbidden"
 source_modules = ["syntegra.clearance"]
-forbidden_modules = ["syntegra.finance", "syntegra.financing"]
+forbidden_modules = ["syntegra.finance", "syntegra.financing", "syntegra.funding"]
 
 [[tool.importlinter.contracts]]
 name = "Only the safeguarding and success modules touch the special-category vault models"
@@ -135,7 +138,7 @@ type = "forbidden"
 source_modules = [
   "syntegra.learners", "syntegra.attendance", "syntegra.assessment", "syntegra.certificates", "syntegra.lms",
   "syntegra.comms", "syntegra.finance", "syntegra.financing", "syntegra.reporting", "syntegra.analytics",
-  "syntegra.hr", "syntegra.clearance",
+  "syntegra.hr", "syntegra.clearance", "syntegra.funding", "syntegra.estate",
 ]
 forbidden_modules = ["syntegra.safeguarding.models"]
 allow_indirect_imports = true

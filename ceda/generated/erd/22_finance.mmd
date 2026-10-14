@@ -289,12 +289,108 @@ erDiagram
         BINARY_16_ paid_journal_id FK
         VARCHAR_32_ status
     }
+    cost_centre {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        VARCHAR_32_ code
+        VARCHAR_300_ name
+        VARCHAR_32_ cost_centre_kind
+        BINARY_16_ parent_id FK
+        BINARY_16_ org_unit_id FK
+        BINARY_16_ holder_staff_id FK
+        VARCHAR_32_ status
+    }
+    budget_line {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ budget_id FK
+        BINARY_16_ cost_centre_id FK
+        BINARY_16_ account_id FK
+        VARCHAR_16_ economic_code
+        VARCHAR_32_ funding_source_kind
+        BINARY_16_ funding_source_id FK
+        VARCHAR_300_ description
+        BIGINT original_minor
+        BIGINT revised_minor
+        BIGINT committed_minor
+        BIGINT actual_minor
+        CHAR_3_ currency
+    }
+    budget_commitment {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ budget_line_id FK
+        VARCHAR_32_ source_kind
+        BINARY_16_ source_id
+        VARCHAR_300_ description
+        BIGINT amount_minor
+        BIGINT spent_minor
+        BIGINT released_minor
+        CHAR_3_ currency
+        DATE committed_on
+        BINARY_16_ committed_by
+        VARCHAR_32_ status
+    }
+    budget_virement {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ virement_number
+        BINARY_16_ from_line_id FK
+        BINARY_16_ to_line_id FK
+        BIGINT amount_minor
+        CHAR_3_ currency
+        TEXT reason
+        BINARY_16_ requested_by
+        BINARY_16_ decided_by
+        DATETIME_6_ decided_at
+        VARCHAR_32_ status
+    }
+    imprest {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ imprest_number
+        BINARY_16_ holder_staff_id FK
+        BINARY_16_ cost_centre_id FK
+        BINARY_16_ budget_line_id FK
+        BINARY_16_ commitment_id FK
+        VARCHAR_300_ purpose
+        BIGINT amount_minor
+        BIGINT retired_minor
+        BIGINT refunded_minor
+        CHAR_3_ currency
+        BINARY_16_ requested_by
+        BINARY_16_ approved_by
+        DATE issued_on
+        DATE retire_by
+        VARCHAR_32_ status
+    }
+    imprest_retirement {
+        BINARY_16_ id PK
+        BINARY_16_ imprest_id FK
+        JSON receipts
+        BIGINT amount_minor
+        BIGINT refund_minor
+        CHAR_3_ currency
+        DATE retired_on
+        BINARY_16_ verified_by
+    }
+    institution {
+        BINARY_16 id PK
+    }
     learner {
+        BINARY_16 id PK
+    }
+    org_unit {
+        BINARY_16 id PK
+    }
+    staff {
         BINARY_16 id PK
     }
     workflow_instance {
         BINARY_16 id PK
     }
+    account ||--o{ budget_line : "account_id"
     account ||--o{ charge_type : "income_account_id"
     account ||--o{ funding_source : "funder_account_id"
     account ||--o{ invoice : "account_id"
@@ -302,11 +398,23 @@ erDiagram
     account ||--o{ payment_plan : "account_id"
     billing_rule ||--o{ invoice_line : "billing_rule_id"
     billing_run ||--o{ invoice : "billing_run_id"
+    budget ||--o{ budget_line : "budget_id"
+    budget_commitment ||--o{ imprest : "commitment_id"
+    budget_line ||--o{ budget_commitment : "budget_line_id"
+    budget_line ||--o{ budget_virement : "from_line_id"
+    budget_line ||--o{ budget_virement : "to_line_id"
+    budget_line ||--o{ imprest : "budget_line_id"
     charge_type ||--o{ billing_rule : "charge_type_id"
     charge_type ||--o{ invoice_line : "charge_type_id"
+    cost_centre ||--o{ budget_line : "cost_centre_id"
+    cost_centre ||--o{ cost_centre : "parent_id"
+    cost_centre ||--o{ imprest : "cost_centre_id"
     fiscal_period ||--o{ journal : "fiscal_period_id"
+    funding_source ||--o{ budget_line : "funding_source_id"
     funding_source ||--o{ funding_award : "funding_source_id"
     funding_source ||--o{ government_funding_receipt : "funding_source_id"
+    imprest ||--o{ imprest_retirement : "imprest_id"
+    institution ||--o{ cost_centre : "institution_id"
     invoice ||--o{ credit_note : "invoice_id"
     invoice ||--o{ invoice_line : "invoice_id"
     invoice ||--o{ payment_allocation : "invoice_id"
@@ -314,8 +422,11 @@ erDiagram
     journal ||--o{ purchase_order : "paid_journal_id"
     learner ||--o{ funding_award : "learner_id"
     learner ||--o{ invoice : "learner_id"
+    org_unit ||--o{ cost_centre : "org_unit_id"
     payment ||--o{ payment : "possible_duplicate_of_id"
     payment ||--o{ payment_allocation : "payment_id"
     requisition ||--o{ purchase_order : "requisition_id"
+    staff ||--o{ cost_centre : "holder_staff_id"
+    staff ||--o{ imprest : "holder_staff_id"
     supplier ||--o{ purchase_order : "supplier_id"
     workflow_instance ||--o{ requisition : "workflow_instance_id"

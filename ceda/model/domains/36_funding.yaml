@@ -1,0 +1,196 @@
+domain: funding
+code: FND
+title: Funding and loan platforms — capital for institutions, staff welfare and student support
+module: funding
+zone: ops
+retention: RS-FUND
+summary: >
+  Funding and loan platforms (change request CR-006): programmes offered by government agencies (TETFund, UBEC,
+  the Nigerian Education Loan Fund, state scholarship boards), development partners, banks, co-operatives,
+  employers, alumni and philanthropy, for institutions (capital works, equipment, ICT, research, operations),
+  staff (welfare, housing, vehicle, salary advance) and learners (student loans, scholarships, bursaries).
+  Applications are evaluated against the programme's eligibility rules and decided by two different people;
+  agreements carry the terms and a generated repayment schedule; disbursements go to the institution, the
+  beneficiary or a supplier; repayments (payroll deduction, direct debit, transfer, employer remittance) are
+  allocated oldest instalment first. Loans never restrict a learner's education (P9) and payroll deductions never
+  take net pay below the policy floor.
+
+entities:
+  funding_programme:
+    title: Funding or loan programme — provider, beneficiary, purpose, instrument, terms and eligibility
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-CONFIG
+    reqs: [FR-FND-01]
+    pages: [FND-01]
+    notes: >
+      Programmes are seeded per registry from the national list (NELFUND student loans, TETFund and UBEC
+      interventions …) and added by states and institutions (scholarship boards, staff co-operatives, bank facilities).
+    attrs:
+      - "code: code(32)!"
+      - "name: title!"
+      - "provider_name: str(200)!"
+      - "provider_kind: enum(funding_provider_kind)!"
+      - "provider_body_code: code(16) | Education body in the regulators' directory, e.g. TETFUND, UBEC, NELFUND"
+      - "beneficiary_kind: enum(funding_beneficiary)!"
+      - "purpose: enum(funding_purpose)!"
+      - "instrument: enum(funding_instrument)!"
+      - "interest_rate: pct! default=0 | Annual nominal rate; 0 for interest-free loans and for grants"
+      - "tenor_months: smallint"
+      - "moratorium_months: smallint! default=0"
+      - "repayment_basis: enum(repayment_basis)!"
+      - "max_amount: money"
+      - "currency: currency!"
+      - "eligibility: json | Rules: beneficiary levels, ownership, category, minimum service years, maximum income, matching contribution …"
+      - "terms: json | Further terms as published (e.g. repayment as a share of salary after national service)"
+      - "opens_on: date"
+      - "closes_on: date"
+      - "data_status: enum(reference_data_status)!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, code]]
+
+  funding_application:
+    title: Application to a funding programme by or for an institution, a member of staff or a learner
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-FND-02, FR-FND-07]
+    pages: [FND-01, FND-02]
+    events: [FND.APPLICATION_SUBMITTED, FND.APPLICATION_DECIDED]
+    attrs:
+      - "application_number: code(32)! uq"
+      - "programme_id: ref(funding_programme)!"
+      - "applicant_kind: enum(funding_beneficiary)!"
+      - "applicant_id: uuid! | Institution, staff or learner id"
+      - "institution_id: ref(institution)!"
+      - "amount_requested: money!"
+      - "currency: currency!"
+      - "purpose_detail: text!"
+      - "capital_plan_item_id: ref(capital_plan_item) | What capital funding will pay for"
+      - "documents: json | Supporting document references"
+      - "eligibility: json | Each rule with its result, as evaluated at submission"
+      - "eligible: bool"
+      - "submitted_by: uuid!"
+      - "submitted_at: ts"
+      - "recommended_by: uuid"
+      - "recommendation: text"
+      - "decided_by: uuid"
+      - "decided_at: ts"
+      - "decision_reason: text"
+      - "amount_approved: money"
+      - "status: enum(funding_application_status)!"
+    ix: [[programme_id, status], [applicant_kind, applicant_id]]
+    checks:
+      four_eyes: "decided_by IS NULL OR recommended_by IS NULL OR decided_by <> recommended_by"
+
+  funding_agreement:
+    title: Funding agreement — principal, rate, tenor, moratorium, repayment basis, balances and arrears
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-FND-03, FR-FND-05, FR-FND-06]
+    pages: [FND-01, FND-02]
+    events: [FND.AGREEMENT_SIGNED, FND.ARREARS_RAISED]
+    attrs:
+      - "agreement_number: code(32)! uq"
+      - "application_id: ref(funding_application)! uq"
+      - "programme_id: ref(funding_programme)!"
+      - "beneficiary_kind: enum(funding_beneficiary)!"
+      - "beneficiary_id: uuid!"
+      - "institution_id: ref(institution)!"
+      - "instrument: enum(funding_instrument)!"
+      - "principal: money!"
+      - "interest_rate: pct! default=0"
+      - "tenor_months: smallint"
+      - "moratorium_months: smallint! default=0"
+      - "repayment_basis: enum(repayment_basis)!"
+      - "first_repayment_on: date"
+      - "disbursed: money! default=0"
+      - "repaid: money! default=0"
+      - "outstanding: money! default=0"
+      - "arrears: money! default=0"
+      - "currency: currency!"
+      - "signed_on: date!"
+      - "signed_by: uuid!"
+      - "status: enum(funding_agreement_status)!"
+    ix: [[beneficiary_kind, beneficiary_id], [programme_id, status]]
+    checks:
+      disbursed_within: "disbursed_minor <= principal_minor"
+
+  funding_disbursement:
+    title: Disbursement of an agreement to the institution, the beneficiary, a supplier or a contractor
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-FND-04, FR-FND-07]
+    pages: [FND-02]
+    events: [FND.DISBURSED]
+    attrs:
+      - "agreement_id: ref(funding_agreement)!"
+      - "amount: money!"
+      - "currency: currency!"
+      - "payee_kind: enum(disbursement_payee)!"
+      - "payee_reference: str(120) | Institution account, beneficiary or supplier"
+      - "purpose: str(200)!"
+      - "budget_line_id: ref(budget_line) | Receiving budget line for institutional funding"
+      - "capital_plan_item_id: ref(capital_plan_item)"
+      - "reference: code(64)!"
+      - "disbursed_on: date!"
+      - "status: enum(disbursement_status)!"
+    uq: [[agreement_id, reference]]
+
+  repayment_instalment:
+    title: Instalment of a repayment schedule — principal, interest, amount paid and status
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    origin: ceda
+    scope_note: Inherits the agreement's scope.
+    reqs: [FR-FND-03, FR-FND-05]
+    pages: [FND-02]
+    attrs:
+      - "agreement_id: ref(funding_agreement)!"
+      - "sequence: smallint!"
+      - "due_on: date!"
+      - "principal: money!"
+      - "interest: money!"
+      - "paid: money! default=0"
+      - "currency: currency!"
+      - "paid_on: date"
+      - "status: enum(instalment_status)!"
+    uq: [[agreement_id, sequence]]
+    ix: [[due_on, status]]
+    checks:
+      paid_within: "paid_minor <= principal_minor + interest_minor"
+
+  funding_repayment:
+    title: Repayment received (payroll deduction, direct debit, transfer, employer remittance) and its allocation to instalments
+    kind: event
+    class: restricted
+    history: append
+    origin: ceda
+    scope_note: Inherits the agreement's scope.
+    reqs: [FR-FND-05, FR-FND-06]
+    pages: [FND-02]
+    events: [FND.REPAYMENT_RECEIVED]
+    attrs:
+      - "agreement_id: ref(funding_agreement)!"
+      - "amount: money!"
+      - "currency: currency!"
+      - "method: enum(repayment_method)!"
+      - "source_kind: code(40) | payroll_run, bank_statement_line, remittance"
+      - "source_id: uuid"
+      - "reference: code(64)!"
+      - "received_on: date!"
+      - "allocations: json! | Instalment sequence → amount"
+      - "recorded_by: uuid!"
+    uq: [[agreement_id, reference]]

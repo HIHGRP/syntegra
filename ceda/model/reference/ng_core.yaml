@@ -97,13 +97,13 @@ code_lists:
     values: [core, science, arts, commercial, technical, vocational, language, religious, creative]
   - code: room_type
     title: Room types
-    values: [classroom, laboratory, workshop, ict_suite, library, hall, sports, office, hostel_room, skills_lab, clinic, store]
+    values: [classroom, laboratory, workshop, ict_suite, library, hall, sports, office, hostel_room, skills_lab, clinic, store, toilet, kitchen_dining, staff_room, staff_quarters, nursery_play, chapel_mosque, guard_house, generator_house, water_point]
   - code: condition_grade
     title: Condition grades
     values: [good, fair, poor, unsafe]
   - code: asset_category
     title: Asset categories
-    values: [ict_device, furniture, lab_equipment, workshop_equipment, vehicle, generator, water_system, sports_equipment, other]
+    values: [ict_device, furniture, lab_equipment, workshop_equipment, vehicle, generator, water_system, sports_equipment, other, solar_system, transformer, borehole, fire_safety_equipment, security_system, kitchen_equipment, medical_equipment, playground_equipment, musical_instrument, office_equipment]
   - code: staff_category
     title: Staff categories
     values: [teaching, non_teaching, lecturer, graduate_assistant, technician, administrative, support]

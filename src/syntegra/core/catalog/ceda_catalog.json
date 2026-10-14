@@ -7,7 +7,7 @@
   "id": "SYN-CEDA-001",
   "platform": "Red Hat Enterprise Linux 10 / OpenShift",
   "status": "Baseline for build",
-  "version": "1.6.0"
+  "version": "1.7.0"
  },
  "code_lists": {
   "absence_reason": [
@@ -83,7 +83,17 @@
    "generator",
    "water_system",
    "sports_equipment",
-   "other"
+   "other",
+   "solar_system",
+   "transformer",
+   "borehole",
+   "fire_safety_equipment",
+   "security_system",
+   "kitchen_equipment",
+   "medical_equipment",
+   "playground_equipment",
+   "musical_instrument",
+   "office_equipment"
   ],
   "attendance_code": [
    "P",
@@ -507,7 +517,16 @@
    "hostel_room",
    "skills_lab",
    "clinic",
-   "store"
+   "store",
+   "toilet",
+   "kitchen_dining",
+   "staff_room",
+   "staff_quarters",
+   "nursery_play",
+   "chapel_mosque",
+   "guard_house",
+   "generator_house",
+   "water_point"
   ],
   "send_need_area": [
    "cognition_learning",
@@ -1028,6 +1047,19 @@
    "p3",
    "information"
   ],
+  "budget_funding_kind": [
+   "subvention",
+   "personnel_cost",
+   "overhead",
+   "capital_allocation",
+   "internally_generated_revenue",
+   "fees",
+   "grant",
+   "intervention",
+   "loan",
+   "donation",
+   "other"
+  ],
   "calendar_event_kind": [
    "holiday",
    "closure",
@@ -1058,6 +1090,13 @@
    "medication_given",
    "incident",
    "note"
+  ],
+  "career_requirement_kind": [
+   "commissioning",
+   "confirmation",
+   "promotion",
+   "appointment",
+   "command"
   ],
   "case_status": [
    "open",
@@ -1209,6 +1248,22 @@
    "learner",
    "staff"
   ],
+  "commitment_source": [
+   "requisition",
+   "purchase_order",
+   "imprest",
+   "payroll",
+   "funding_disbursement",
+   "contract",
+   "manual"
+  ],
+  "commitment_status": [
+   "open",
+   "partly_spent",
+   "spent",
+   "released",
+   "cancelled"
+  ],
   "competency_framework_kind": [
    "nsq",
    "trade_syllabus",
@@ -1303,9 +1358,32 @@
    "resolved",
    "closed"
   ],
+  "cost_centre_kind": [
+   "administration",
+   "academic_department",
+   "boarding",
+   "feeding",
+   "estate",
+   "ict",
+   "transport",
+   "health",
+   "library",
+   "sports",
+   "project",
+   "welfare",
+   "revenue_generating",
+   "other"
+  ],
   "course_member_kind": [
    "learner",
    "staff"
+  ],
+  "course_unit_role": [
+   "sponsor",
+   "approving_authority",
+   "delivering_unit",
+   "quota_holder",
+   "target_formation"
   ],
   "cover_alternative": [
    "supervised_study_with_lms_work",
@@ -1448,6 +1526,18 @@
    "escalated",
    "cancelled"
   ],
+  "disbursement_payee": [
+   "institution",
+   "beneficiary",
+   "supplier",
+   "contractor"
+  ],
+  "disbursement_status": [
+   "scheduled",
+   "paid",
+   "failed",
+   "reversed"
+  ],
   "disposal_status": [
    "proposed",
    "approved",
@@ -1517,6 +1607,14 @@
    "suspended",
    "seconded",
    "separated"
+  ],
+  "encroachment_status": [
+   "none",
+   "suspected",
+   "confirmed",
+   "in_dispute",
+   "resolved",
+   "unknown"
   ],
   "enquiry_source": [
    "website_widget",
@@ -1641,6 +1739,40 @@
    "pdf",
    "json"
   ],
+  "facility_action_status": [
+   "open",
+   "acknowledged",
+   "in_progress",
+   "done",
+   "dismissed"
+  ],
+  "facility_assessor": [
+   "head_of_institution",
+   "estate_officer",
+   "engineer",
+   "quality_inspector",
+   "lga_officer",
+   "contractor",
+   "community"
+  ],
+  "facility_rule": [
+   "unsafe_in_use",
+   "assessment_overdue",
+   "never_assessed",
+   "maintenance_due",
+   "maintenance_overdue",
+   "condition_deteriorated",
+   "safety_check_overdue",
+   "predicted_failure",
+   "encroachment",
+   "no_title"
+  ],
+  "facility_subject": [
+   "site",
+   "building",
+   "room",
+   "asset"
+  ],
   "family_member_kind": [
    "learner",
    "guardian"
@@ -1697,6 +1829,12 @@
    "waived",
    "refunded"
   ],
+  "fence_status": [
+   "fully_fenced",
+   "partly_fenced",
+   "not_fenced",
+   "unknown"
+  ],
   "financing_channel": [
    "sdaf",
    "direct_subscription"
@@ -1722,6 +1860,44 @@
    "rejected",
    "filed"
   ],
+  "funding_agreement_status": [
+   "signed",
+   "disbursing",
+   "in_moratorium",
+   "repaying",
+   "in_arrears",
+   "settled",
+   "completed",
+   "written_off",
+   "cancelled"
+  ],
+  "funding_application_status": [
+   "draft",
+   "submitted",
+   "under_review",
+   "recommended",
+   "approved",
+   "declined",
+   "withdrawn",
+   "cancelled"
+  ],
+  "funding_beneficiary": [
+   "institution",
+   "staff",
+   "learner"
+  ],
+  "funding_instrument": [
+   "loan",
+   "grant",
+   "scholarship",
+   "bursary",
+   "intervention",
+   "matching_grant",
+   "salary_advance",
+   "bond",
+   "guarantee",
+   "in_kind"
+  ],
   "funding_kind": [
    "government",
    "capitation",
@@ -1732,6 +1908,38 @@
    "employer",
    "loan",
    "instalment"
+  ],
+  "funding_provider_kind": [
+   "federal_government_agency",
+   "state_government",
+   "local_government",
+   "development_partner",
+   "bank",
+   "microfinance",
+   "cooperative",
+   "employer",
+   "institution",
+   "alumni",
+   "philanthropy",
+   "other"
+  ],
+  "funding_purpose": [
+   "capital_works",
+   "equipment",
+   "ict",
+   "research",
+   "staff_development",
+   "operations",
+   "tuition_fees",
+   "upkeep",
+   "housing",
+   "vehicle",
+   "welfare_emergency",
+   "salary_advance",
+   "scholarship",
+   "bursary",
+   "special_needs",
+   "other"
   ],
   "gap_event_kind": [
    "opened",
@@ -1857,6 +2065,17 @@
    "assessments",
    "curriculum"
   ],
+  "imprest_status": [
+   "requested",
+   "approved",
+   "issued",
+   "partly_retired",
+   "retired",
+   "overdue",
+   "written_off",
+   "rejected",
+   "cancelled"
+  ],
   "indicator_label": [
    "verified",
    "calculated",
@@ -1877,6 +2096,13 @@
    "report_draft",
    "report_approved",
    "cancelled"
+  ],
+  "instalment_status": [
+   "due",
+   "partly_paid",
+   "paid",
+   "overdue",
+   "waived"
   ],
   "institution_status": [
    "proposed",
@@ -1944,6 +2170,17 @@
    "active",
    "retired",
    "compromised"
+  ],
+  "land_title": [
+   "certificate_of_occupancy",
+   "right_of_occupancy",
+   "gazette",
+   "deed_of_assignment",
+   "deed_of_gift",
+   "survey_plan_only",
+   "customary",
+   "lease",
+   "none_or_unknown"
   ],
   "late_policy": [
    "accept_flag",
@@ -2016,6 +2253,23 @@
    "urban",
    "peri_urban",
    "rural"
+  ],
+  "maintenance_task_kind": [
+   "inspection",
+   "servicing",
+   "statutory_test",
+   "cleaning",
+   "pest_control",
+   "roofing",
+   "plumbing",
+   "electrical",
+   "painting",
+   "generator_service",
+   "solar_service",
+   "borehole_service",
+   "fire_safety",
+   "replacement",
+   "other"
   ],
   "mark_source": [
    "teacher",
@@ -2426,6 +2680,15 @@
    "withdraw",
    "graduate"
   ],
+  "property_owner": [
+   "federal_government",
+   "state_government",
+   "local_government",
+   "community",
+   "mission_or_faith",
+   "private",
+   "leased"
+  ],
   "protected_reason": [
    "public_basic_education",
    "send",
@@ -2669,6 +2932,22 @@
    "delivered",
    "rejected",
    "withdrawn"
+  ],
+  "repayment_basis": [
+   "none",
+   "fixed_instalment",
+   "annuity",
+   "income_contingent",
+   "payroll_deduction",
+   "bullet"
+  ],
+  "repayment_method": [
+   "payroll_deduction",
+   "direct_debit",
+   "bank_transfer",
+   "employer_remittance",
+   "cash",
+   "offset"
   ],
   "report_kind": [
    "standard",
@@ -3171,6 +3450,14 @@
   "urgency": [
    "standard",
    "express"
+  ],
+  "usability_status": [
+   "fully_usable",
+   "usable_minor_repairs",
+   "usable_major_repairs",
+   "unsafe_restricted",
+   "unusable",
+   "condemned"
   ],
   "ussd_action": [
    "list_due",
@@ -3988,6 +4275,46 @@
    "producer": "learners",
    "trigger": "Enrolment became active"
   },
+  "EST.ACTION_ESCALATED": {
+   "aggregate": "facility_action",
+   "consumers": [
+    "comms",
+    "analytics"
+   ],
+   "payload": {
+    "escalation_level": "smallint!",
+    "facility_action_id": "uuid!"
+   },
+   "producer": "estate",
+   "trigger": "A facility action passes its due date without being acted on"
+  },
+  "EST.ACTION_RAISED": {
+   "aggregate": "facility_action",
+   "consumers": [
+    "comms",
+    "analytics"
+   ],
+   "payload": {
+    "facility_action_id": "uuid!",
+    "priority": "enum(severity)!",
+    "rule": "enum(facility_rule)!"
+   },
+   "producer": "estate",
+   "trigger": "A proactive facility action is proposed to the head of institution"
+  },
+  "EST.FACILITY_ASSESSED": {
+   "aggregate": "facility_assessment",
+   "consumers": [
+    "analytics"
+   ],
+   "payload": {
+    "facility_assessment_id": "uuid!",
+    "subject_kind": "enum(facility_subject)!",
+    "usability": "enum(usability_status)!"
+   },
+   "producer": "estate",
+   "trigger": "A facility's condition and usability are recorded"
+  },
   "EXAM.RESULTS_COMMITTED": {
    "aggregate": "exam_result",
    "consumers": [
@@ -4121,6 +4448,131 @@
    },
    "producer": "clearance",
    "trigger": "Obligation settled, waived, written off, withdrawn or expired"
+  },
+  "FIN.FUNDS_COMMITTED": {
+   "aggregate": "budget_commitment",
+   "consumers": [
+    "analytics"
+   ],
+   "payload": {
+    "amount_minor": "bigint!",
+    "budget_commitment_id": "uuid!",
+    "budget_line_id": "uuid!",
+    "currency": "currency!"
+   },
+   "producer": "finance",
+   "trigger": "A budget line is committed"
+  },
+  "FIN.IMPREST_OVERDUE": {
+   "aggregate": "imprest",
+   "consumers": [
+    "comms",
+    "analytics"
+   ],
+   "payload": {
+    "imprest_id": "uuid!",
+    "retire_by": "date!"
+   },
+   "producer": "finance",
+   "trigger": "An imprest is not retired by its due date"
+  },
+  "FIN.VIREMENT_APPROVED": {
+   "aggregate": "budget_virement",
+   "consumers": [
+    "analytics",
+    "comms"
+   ],
+   "payload": {
+    "amount_minor": "bigint!",
+    "budget_virement_id": "uuid!",
+    "from_line_id": "uuid!",
+    "to_line_id": "uuid!"
+   },
+   "producer": "finance",
+   "trigger": "A virement is approved by a second person"
+  },
+  "FND.AGREEMENT_SIGNED": {
+   "aggregate": "funding_agreement",
+   "consumers": [
+    "finance",
+    "analytics"
+   ],
+   "payload": {
+    "funding_agreement_id": "uuid!",
+    "instrument": "enum(funding_instrument)!",
+    "principal_minor": "bigint!"
+   },
+   "producer": "funding",
+   "trigger": "A funding agreement is signed"
+  },
+  "FND.APPLICATION_DECIDED": {
+   "aggregate": "funding_application",
+   "consumers": [
+    "comms",
+    "analytics"
+   ],
+   "payload": {
+    "funding_application_id": "uuid!",
+    "status": "enum(funding_application_status)!"
+   },
+   "producer": "funding",
+   "trigger": "An application is approved or declined"
+  },
+  "FND.APPLICATION_SUBMITTED": {
+   "aggregate": "funding_application",
+   "consumers": [
+    "comms",
+    "analytics"
+   ],
+   "payload": {
+    "applicant_kind": "enum(funding_beneficiary)!",
+    "eligible": "bool",
+    "funding_application_id": "uuid!",
+    "programme_id": "uuid!"
+   },
+   "producer": "funding",
+   "trigger": "An application is submitted"
+  },
+  "FND.ARREARS_RAISED": {
+   "aggregate": "funding_agreement",
+   "consumers": [
+    "comms",
+    "analytics"
+   ],
+   "payload": {
+    "arrears_minor": "bigint!",
+    "funding_agreement_id": "uuid!"
+   },
+   "producer": "funding",
+   "trigger": "An instalment falls overdue"
+  },
+  "FND.DISBURSED": {
+   "aggregate": "funding_disbursement",
+   "consumers": [
+    "finance",
+    "analytics"
+   ],
+   "payload": {
+    "amount_minor": "bigint!",
+    "funding_agreement_id": "uuid!",
+    "funding_disbursement_id": "uuid!"
+   },
+   "producer": "funding",
+   "trigger": "Funds are disbursed"
+  },
+  "FND.REPAYMENT_RECEIVED": {
+   "aggregate": "funding_repayment",
+   "consumers": [
+    "finance",
+    "analytics"
+   ],
+   "payload": {
+    "amount_minor": "bigint!",
+    "funding_agreement_id": "uuid!",
+    "funding_repayment_id": "uuid!"
+   },
+   "producer": "funding",
+   "trigger": "A repayment is received and allocated"
   },
   "FRM.SUBMITTED": {
    "aggregate": "form_response",
@@ -6646,6 +7098,210 @@
    "sources": [
     "institution_regulation",
     "institution"
+   ]
+  },
+  {
+   "direction": "neutral",
+   "formula": "actual ÷ revised budget, and (actual + committed) ÷ revised budget",
+   "grain": "fiscal year × institution × cost centre × economic code",
+   "group": "Finance",
+   "id": "ACC-BUDGET-EXECUTION",
+   "name": "Budget execution rate",
+   "pages": [
+    "FIN-02"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-ACC-06"
+   ],
+   "sources": [
+    "fact_budget_execution"
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "formula": "imprest not retired by its due date ÷ imprest issued",
+   "grain": "month × institution",
+   "group": "Finance",
+   "id": "ACC-IMPREST-OVERDUE",
+   "name": "Overdue imprest",
+   "pages": [
+    "ACC-01"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-ACC-05"
+   ],
+   "sources": [
+    "imprest"
+   ]
+  },
+  {
+   "direction": "neutral",
+   "formula": "sum of disbursements by programme and beneficiary kind",
+   "grain": "month × institution × programme",
+   "group": "Funding",
+   "id": "FND-DISBURSED",
+   "name": "Funding disbursed",
+   "pages": [
+    "FND-01"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-IDW-04"
+   ],
+   "sources": [
+    "fact_funding"
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "formula": "agreements in arrears ÷ agreements repaying or in arrears",
+   "grain": "month × programme × institution",
+   "group": "Funding",
+   "id": "FND-ARREARS-RATE",
+   "name": "Loans in arrears",
+   "pages": [
+    "FND-01"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-FND-05"
+   ],
+   "sources": [
+    "fact_funding"
+   ]
+  },
+  {
+   "direction": "higher_is_better",
+   "formula": "classrooms whose latest assessment is fully usable or usable with repairs ÷ classrooms",
+   "grain": "day × institution/LGA/state",
+   "group": "Infrastructure",
+   "id": "EST-USABLE-CLASSROOMS",
+   "name": "Usable classrooms",
+   "pages": [
+    "EST-03",
+    "OPS-01"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-IDW-02"
+   ],
+   "sources": [
+    "agg_infrastructure_scope"
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "formula": "enrolled learners ÷ usable classrooms",
+   "grain": "day × institution/LGA/state",
+   "group": "Infrastructure",
+   "id": "EST-LEARNERS-PER-USABLE-CLASSROOM",
+   "name": "Learners per usable classroom",
+   "pages": [
+    "EST-03"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-IDW-02"
+   ],
+   "sources": [
+    "agg_infrastructure_scope"
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "formula": "facilities assessed unsafe, unusable or condemned and recorded in use",
+   "grain": "day × institution/LGA/state",
+   "group": "Infrastructure",
+   "id": "EST-UNSAFE-IN-USE",
+   "name": "Unsafe facilities still in use",
+   "pages": [
+    "EST-02",
+    "EST-03"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-EST-04",
+    "FR-IDW-02"
+   ],
+   "sources": [
+    "agg_infrastructure_scope"
+   ]
+  },
+  {
+   "direction": "higher_is_better",
+   "formula": "facility actions done by their due date ÷ facility actions due",
+   "grain": "month × institution/LGA",
+   "group": "Infrastructure",
+   "id": "EST-ACTIONS-ON-TIME",
+   "name": "Facility actions on time",
+   "pages": [
+    "EST-02",
+    "EST-03"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-EST-04"
+   ],
+   "sources": [
+    "facility_action"
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "formula": "sum of the latest repair estimates of facilities not fully usable",
+   "grain": "day × institution/LGA/state",
+   "group": "Infrastructure",
+   "id": "EST-REPAIR-BACKLOG",
+   "name": "Repair backlog",
+   "pages": [
+    "EST-03"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-IDW-02"
+   ],
+   "sources": [
+    "agg_infrastructure_scope"
+   ]
+  },
+  {
+   "direction": "higher_is_better",
+   "formula": "0–100 from usable classrooms (40), water and power (20), safety — no unsafe facility in use (20) and maintenance on time (20)",
+   "grain": "day × institution/LGA/state",
+   "group": "Infrastructure",
+   "id": "EST-INFRA-INDEX",
+   "name": "Infrastructure index",
+   "pages": [
+    "EST-03"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-IDW-02",
+    "FR-IDW-03"
+   ],
+   "sources": [
+    "agg_infrastructure_scope"
+   ]
+  },
+  {
+   "direction": "higher_is_better",
+   "formula": "ranks with at least one career requirement ÷ ranks above entry",
+   "grain": "agency",
+   "group": "Security training",
+   "id": "STI-CAREER-COVERAGE",
+   "name": "Ranks with defined course requirements",
+   "pages": [
+    "STI-05"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-STI-11"
+   ],
+   "sources": [
+    "security_career_requirement",
+    "agency_rank"
    ]
   }
  ],
@@ -11352,6 +12008,122 @@
    ],
    "route": "/institutions/{id}/regulation",
    "title": "Institution regulatory profile"
+  },
+  {
+   "change_request": "CR-006",
+   "classification": "internal",
+   "id": "ACC-01",
+   "module": "Finance",
+   "pattern": "Register / list",
+   "phase": "P3",
+   "purpose": "Cash advances by holder and cost centre, retirement with receipts and refunds, and overdue imprest.",
+   "roles": [
+    "FINO",
+    "HEAD",
+    "STA"
+   ],
+   "route": "/finance/imprest",
+   "title": "Imprest and retirement"
+  },
+  {
+   "change_request": "CR-006",
+   "classification": "internal",
+   "id": "FND-01",
+   "module": "Funding",
+   "pattern": "Register / list",
+   "phase": "P3",
+   "purpose": "Programmes for capital, staff welfare and student support, applications and their status, and agreements with balances and arrears.",
+   "roles": [
+    "FINO",
+    "HEAD",
+    "STA",
+    "COMM",
+    "All"
+   ],
+   "route": "/funding",
+   "title": "Funding and loan programmes"
+  },
+  {
+   "change_request": "CR-006",
+   "classification": "restricted",
+   "id": "FND-02",
+   "module": "Funding",
+   "pattern": "Record 360",
+   "phase": "P3",
+   "purpose": "Terms, disbursements, repayment schedule, repayments and arrears of one agreement; borrowers see their own.",
+   "roles": [
+    "FINO",
+    "STA",
+    "All"
+   ],
+   "route": "/funding/agreements/{id}",
+   "title": "Funding agreement"
+  },
+  {
+   "change_request": "CR-006",
+   "classification": "internal",
+   "id": "EST-01",
+   "module": "Estate",
+   "pattern": "Register / list",
+   "phase": "P3",
+   "purpose": "Every government property site with title, area, fencing and encroachment, its buildings, and their latest condition and usability.",
+   "roles": [
+    "OPSM",
+    "HEAD",
+    "LGA",
+    "STA",
+    "COMM"
+   ],
+   "route": "/estate/property",
+   "title": "Government property register"
+  },
+  {
+   "change_request": "CR-006",
+   "classification": "internal",
+   "id": "EST-02",
+   "module": "Estate",
+   "pattern": "Workspace",
+   "phase": "P3",
+   "purpose": "Proactive actions for the head of institution — unsafe facilities, overdue assessments and maintenance, deteriorating condition — with owners, due dates and escalation.",
+   "roles": [
+    "HEAD",
+    "OPSM",
+    "LGA",
+    "STA"
+   ],
+   "route": "/estate/actions",
+   "title": "Facility actions"
+  },
+  {
+   "change_request": "CR-006",
+   "classification": "internal",
+   "id": "EST-03",
+   "module": "Estate",
+   "pattern": "Dashboard",
+   "phase": "P3",
+   "purpose": "The Commissioner's view of school infrastructure across the state from the warehouse: usable classrooms, learners per usable classroom, unsafe and condemned facilities, utilities, open critical actions and the repair backlog by LGA and institution.",
+   "roles": [
+    "COMM",
+    "STA",
+    "LGA"
+   ],
+   "route": "/estate/state",
+   "title": "State infrastructure overview"
+  },
+  {
+   "change_request": "CR-006",
+   "classification": "internal",
+   "id": "STI-05",
+   "module": "Security training",
+   "pattern": "Record 360",
+   "phase": "P3",
+   "purpose": "The courses each rank of an agency requires, and which commands sponsor, approve, deliver and hold quotas on each course.",
+   "roles": [
+    "SADM",
+    "STO"
+   ],
+   "route": "/security-training/agencies/{id}/careers",
+   "title": "Agency careers and course requirements"
   }
  ],
  "retention": {
@@ -11456,6 +12228,18 @@
    "procurement)": null,
    "title": "Financial records (ledger",
    "trigger": "end of financial year",
+   "years": 7
+  },
+  "RS-FUND": {
+   "action": "dispose",
+   "agreements": null,
+   "basis": "proposed",
+   "code": "RS-FUND",
+   "disbursements and repayments": null,
+   "note": "Kept 7 years after the last repayment or write-off; declined applications 2 years (review under D10).",
+   "schedules": null,
+   "title": "Funding and loan applications",
+   "trigger": "agreement completed or written off",
    "years": 7
   },
   "RS-HEALTH": {

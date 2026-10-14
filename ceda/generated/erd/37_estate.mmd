@@ -1,0 +1,101 @@
+erDiagram
+    property_site {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ site_code
+        VARCHAR_300_ name
+        BINARY_16_ institution_id FK
+        BINARY_16_ campus_id FK
+        VARCHAR_32_ owner
+        VARCHAR_32_ title_document
+        VARCHAR_64_ title_reference
+        DECIMAL_14_2_ area_sqm
+        POINT location
+        JSON boundary
+        VARCHAR_32_ fenced
+        VARCHAR_32_ encroachment
+        DATE acquired_on
+        BIGINT valuation_minor
+        CHAR_3_ currency
+        DATE valued_on
+        VARCHAR_32_ data_status
+        VARCHAR_32_ status
+    }
+    facility_assessment {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        VARCHAR_32_ subject_kind
+        BINARY_16_ subject_id
+        DATE assessed_on
+        VARCHAR_32_ assessor_kind
+        BINARY_16_ assessed_by
+        VARCHAR_32_ condition_grade
+        VARCHAR_32_ usability
+        VARCHAR_32_ structural_risk
+        JSON defects
+        JSON utilities
+        BOOLEAN in_use
+        INT learners_affected
+        BIGINT repair_estimate_minor
+        CHAR_3_ currency
+        JSON photo_document_ids
+        DATE next_due_on
+        BINARY_16_ client_op_id
+    }
+    maintenance_schedule {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        VARCHAR_32_ subject_kind
+        BINARY_16_ subject_id
+        VARCHAR_200_ task
+        VARCHAR_32_ task_kind
+        SMALLINT frequency_days
+        DATE last_done_on
+        DATE next_due_on
+        BINARY_16_ responsible_staff_id FK
+        BIGINT estimated_cost_minor
+        CHAR_3_ currency
+        VARCHAR_32_ status
+    }
+    facility_action {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        VARCHAR_32_ rule
+        VARCHAR_32_ subject_kind
+        BINARY_16_ subject_id
+        VARCHAR_120_ dedupe_key
+        VARCHAR_200_ title
+        TEXT detail
+        VARCHAR_32_ priority
+        VARCHAR_16_ owner_role
+        DATE due_on
+        SMALLINT escalation_level
+        DATETIME_6_ escalated_at
+        BINARY_16_ maintenance_request_id FK
+        BINARY_16_ resolved_by
+        DATETIME_6_ resolved_at
+        TEXT resolution
+        VARCHAR_32_ status
+    }
+    campus {
+        BINARY_16 id PK
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    maintenance_request {
+        BINARY_16 id PK
+    }
+    staff {
+        BINARY_16 id PK
+    }
+    campus ||--o{ property_site : "campus_id"
+    institution ||--o{ facility_action : "institution_id"
+    institution ||--o{ facility_assessment : "institution_id"
+    institution ||--o{ maintenance_schedule : "institution_id"
+    institution ||--o{ property_site : "institution_id"
+    maintenance_request ||--o{ facility_action : "maintenance_request_id"
+    staff ||--o{ maintenance_schedule : "responsible_staff_id"

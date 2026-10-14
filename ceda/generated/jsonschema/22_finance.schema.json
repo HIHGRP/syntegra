@@ -3224,6 +3224,878 @@
         "row_version"
       ],
       "additionalProperties": false
+    },
+    "CostCentre": {
+      "title": "CostCentre",
+      "description": "Cost centre of an institution (administration, department, boarding, feeding, estate, ICT, transport, project, welfare) with its budget holder",
+      "type": "object",
+      "x-ceda": {
+        "entity": "cost_centre",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "master",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "cost_centre_kind": {
+          "type": "string",
+          "enum": [
+            "administration",
+            "academic_department",
+            "boarding",
+            "feeding",
+            "estate",
+            "ict",
+            "transport",
+            "health",
+            "library",
+            "sports",
+            "project",
+            "welfare",
+            "revenue_generating",
+            "other"
+          ]
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "cost_centre"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "org_unit_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "org_unit",
+              "description": "Department or unit the cost centre belongs to"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "holder_staff_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "staff",
+              "description": "Budget holder"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "institution_id",
+        "code",
+        "name",
+        "cost_centre_kind",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "BudgetLine": {
+      "title": "BudgetLine",
+      "description": "Approved budget line — cost centre × ledger account × economic code × funding source, with original, revised, committed and actual amounts",
+      "type": "object",
+      "x-ceda": {
+        "entity": "budget_line",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "budget_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "budget"
+        },
+        "cost_centre_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "cost_centre"
+        },
+        "account_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "account"
+        },
+        "economic_code": {
+          "type": "string",
+          "maxLength": 16,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "Economic segment of the National Chart of Accounts, e.g. 22020101"
+        },
+        "funding_source_kind": {
+          "type": "string",
+          "enum": [
+            "subvention",
+            "personnel_cost",
+            "overhead",
+            "capital_allocation",
+            "internally_generated_revenue",
+            "fees",
+            "grant",
+            "intervention",
+            "loan",
+            "donation",
+            "other"
+          ]
+        },
+        "funding_source_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "funding_source"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 300
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "original_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "revised_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "committed_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "actual_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "budget_id",
+        "cost_centre_id",
+        "account_id",
+        "economic_code",
+        "funding_source_kind",
+        "original_minor",
+        "revised_minor",
+        "committed_minor",
+        "actual_minor",
+        "currency",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "BudgetCommitment": {
+      "title": "BudgetCommitment",
+      "description": "Commitment of a budget line by a requisition, purchase order, imprest, payroll or disbursement (released, spent or cancelled)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "budget_commitment",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "budget_line_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "budget_line"
+        },
+        "source_kind": {
+          "type": "string",
+          "enum": [
+            "requisition",
+            "purchase_order",
+            "imprest",
+            "payroll",
+            "funding_disbursement",
+            "contract",
+            "manual"
+          ]
+        },
+        "source_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "spent_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "released_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "committed_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "committed_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "partly_spent",
+            "spent",
+            "released",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "budget_line_id",
+        "source_kind",
+        "source_id",
+        "description",
+        "amount_minor",
+        "spent_minor",
+        "released_minor",
+        "currency",
+        "committed_on",
+        "committed_by",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "BudgetVirement": {
+      "title": "BudgetVirement",
+      "description": "Virement — budget moved between two lines with a reason, approved by someone other than the requester",
+      "type": "object",
+      "x-ceda": {
+        "entity": "budget_virement",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "virement_number": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "from_line_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "budget_line"
+        },
+        "to_line_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "budget_line"
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 65535
+        },
+        "requested_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "decided_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "decided_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "submitted",
+            "in_review",
+            "approved",
+            "rejected",
+            "cancelled",
+            "fulfilled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "virement_number",
+        "from_line_id",
+        "to_line_id",
+        "amount_minor",
+        "currency",
+        "reason",
+        "requested_by",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Imprest": {
+      "title": "Imprest",
+      "description": "Imprest — cash advance to a named holder against a budget line, to be retired with receipts by a due date",
+      "type": "object",
+      "x-ceda": {
+        "entity": "imprest",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "imprest_number": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "holder_staff_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff"
+        },
+        "cost_centre_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "cost_centre"
+        },
+        "budget_line_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "budget_line"
+        },
+        "commitment_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "budget_commitment"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "purpose": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "retired_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "refunded_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "requested_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "approved_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "issued_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retire_by": {
+          "type": "string",
+          "format": "date"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "requested",
+            "approved",
+            "issued",
+            "partly_retired",
+            "retired",
+            "overdue",
+            "written_off",
+            "rejected",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "imprest_number",
+        "holder_staff_id",
+        "cost_centre_id",
+        "budget_line_id",
+        "purpose",
+        "amount_minor",
+        "retired_minor",
+        "refunded_minor",
+        "currency",
+        "requested_by",
+        "retire_by",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ImprestRetirement": {
+      "title": "ImprestRetirement",
+      "description": "Retirement of an imprest — receipts, amount accounted for and cash refunded",
+      "type": "object",
+      "x-ceda": {
+        "entity": "imprest_retirement",
+        "zone": "ops",
+        "domain": "FIN",
+        "kind": "event",
+        "classification": "confidential",
+        "history": "append",
+        "module": "finance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "imprest_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "imprest"
+        },
+        "receipts": {
+          "type": "object",
+          "description": "Receipt references, payees and amounts"
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "Amount accounted for by receipts (minor units)"
+        },
+        "refund_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "retired_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "verified_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "imprest_id",
+        "receipts",
+        "amount_minor",
+        "refund_minor",
+        "currency",
+        "retired_on",
+        "verified_by",
+        "created_at"
+      ],
+      "additionalProperties": false
     }
   }
 }

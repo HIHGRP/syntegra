@@ -725,3 +725,160 @@ entities:
       - "missing_work_4w: smallint"
       - "transitions: smallint | Moves between institutions"
       - "label_dropout_next_term: bool | Training label, filled retrospectively"
+
+  # ---------------------------------------------------------------- infrastructure, budget and funding marts (CR-006)
+  dim_facility:
+    title: Facility dimension (SCD2) — property site, building, room or item of equipment of an institution
+    kind: dimension
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, facility_key]
+    sources: [property_site, building, room, asset]
+    reqs: [FR-IDW-01]
+    attrs:
+      - "facility_key: bigint!"
+      - "subject_kind: enum(facility_subject)!"
+      - "subject_id: uuid!"
+      - "institution_key: bigint!"
+      - "name: title!"
+      - "room_type: cl(room_type)"
+      - "asset_category: cl(asset_category)"
+      - "capacity: smallint"
+      - "built_year: smallint"
+      - "row_valid_from: date!"
+      - "row_valid_to: date"
+      - "is_current: bool!"
+    ix: [[subject_id, is_current], [institution_key]]
+
+  fact_facility_condition:
+    title: Facility condition snapshot per load date — latest condition and usability, learners affected, repair estimate, open actions and overdue maintenance
+    kind: fact
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, date_key, facility_key]
+    sources: [facility_assessment, facility_action, maintenance_schedule, asset_inspection]
+    reqs: [FR-IDW-01, FR-IDW-02]
+    attrs:
+      - "date_key: int!"
+      - "facility_key: bigint!"
+      - "institution_key: bigint!"
+      - "condition_grade: cl(condition_grade)"
+      - "usability: enum(usability_status)"
+      - "is_usable: bool! | fully usable or usable with repairs"
+      - "assessed_on: date"
+      - "days_since_assessment: int"
+      - "learners_affected: int_u"
+      - "repair_estimate: money"
+      - "currency: currency"
+      - "open_actions: smallint!"
+      - "open_critical_actions: smallint!"
+      - "overdue_maintenance: smallint!"
+    ix: [[institution_key, date_key]]
+
+  fact_maintenance_work:
+    title: Maintenance work per institution and load date — requests opened and completed, backlog, preventive share, time to complete and cost
+    kind: fact
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, date_key, institution_key]
+    sources: [maintenance_request, maintenance_schedule, facility_action]
+    reqs: [FR-IDW-01]
+    attrs:
+      - "date_key: int!"
+      - "institution_key: bigint!"
+      - "requests_open: int_u!"
+      - "requests_completed_30d: int_u!"
+      - "preventive_completed_30d: int_u!"
+      - "mean_days_to_complete: dec(8,2)"
+      - "maintenance_due: int_u!"
+      - "maintenance_overdue: int_u!"
+      - "actions_open: int_u!"
+      - "actions_overdue: int_u!"
+      - "cost_30d: money!"
+      - "currency: currency!"
+
+  agg_infrastructure_scope:
+    title: Infrastructure roll-up per scope node (institution, LGA, authority, state) and load date — the Commissioner's view
+    kind: aggregate
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, date_key, scope_key]
+    sources: [fact_facility_condition, fact_maintenance_work, dim_facility, dim_institution, dim_scope_closure, fact_enrolment_census]
+    reqs: [FR-IDW-02, FR-IDW-03]
+    attrs:
+      - "date_key: int!"
+      - "scope_key: bigint!"
+      - "level: enum(scope_level)!"
+      - "institutions: int_u!"
+      - "institutions_assessed: int_u!"
+      - "sites: int_u!"
+      - "sites_fenced: int_u!"
+      - "sites_encroached: int_u!"
+      - "buildings: int_u!"
+      - "buildings_unsafe: int_u! | unsafe, unusable or condemned"
+      - "classrooms: int_u!"
+      - "classrooms_usable: int_u!"
+      - "learners: int_u!"
+      - "learners_per_usable_classroom: dec(8,2)"
+      - "toilets_usable: int_u!"
+      - "institutions_with_water: int_u!"
+      - "institutions_with_power: int_u!"
+      - "facilities_unsafe_in_use: int_u!"
+      - "actions_open: int_u!"
+      - "actions_critical_open: int_u!"
+      - "actions_overdue: int_u!"
+      - "repair_backlog: money!"
+      - "currency: currency!"
+      - "infrastructure_index: score | 0–100: usable classrooms, utilities, safety and maintenance"
+    ix: [[scope_key, date_key]]
+
+  fact_budget_execution:
+    title: Budget execution per institution, cost centre and economic code — original, revised, committed, actual and available
+    kind: fact
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, date_key, institution_key, cost_centre_code, economic_code, funding_source_kind]
+    sources: [budget, budget_line, budget_commitment]
+    reqs: [FR-ACC-06, FR-IDW-04]
+    attrs:
+      - "date_key: int!"
+      - "institution_key: bigint!"
+      - "cost_centre_code: code(32)!"
+      - "economic_code: code(16)!"
+      - "funding_source_kind: enum(budget_funding_kind)!"
+      - "fiscal_year: smallint!"
+      - "original: money!"
+      - "revised: money!"
+      - "committed: money!"
+      - "actual: money!"
+      - "available: money!"
+      - "currency: currency!"
+
+  fact_funding:
+    title: Funding per institution, programme and beneficiary kind — applications, approvals, disbursements, repayments, outstanding and arrears
+    kind: fact
+    class: internal
+    history: none
+    origin: ceda
+    pk: [tenant_id, date_key, institution_key, programme_code, beneficiary_kind]
+    sources: [funding_application, funding_agreement, funding_disbursement, funding_repayment]
+    reqs: [FR-IDW-04]
+    attrs:
+      - "date_key: int!"
+      - "institution_key: bigint!"
+      - "programme_code: code(32)!"
+      - "beneficiary_kind: enum(funding_beneficiary)!"
+      - "applications: int_u!"
+      - "approved: int_u!"
+      - "agreements_in_arrears: int_u!"
+      - "approved_amount: money!"
+      - "disbursed: money!"
+      - "repaid: money!"
+      - "outstanding: money!"
+      - "arrears: money!"
+      - "currency: currency!"

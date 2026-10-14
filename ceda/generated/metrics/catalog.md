@@ -64,6 +64,12 @@ Generated from `ceda/model/metrics.yaml`. Every indicator shown on a dashboard, 
 | `INFRA-CLASSROOM` | Learners per classroom | enrolled ÷ classrooms in use | term × institution/LGA | termly | lower_is_better | `fact_infrastructure` | CMD-101, CMD-13, OPS-01 |
 | `INFRA-TEXTBOOK` | Textbook-to-learner ratio | textbooks issued for subject and level ÷ learners at level | term × institution/LGA × subject × level | termly | higher_is_better | `fact_infrastructure`, `resource_issue` | OPS-08, CMD-13 |
 | `INFRA-BASICS` | Water | share of institutions with each facility; toilets per learner by sex | term × LGA | termly | higher_is_better | `fact_infrastructure` | CMD-101, CMD-03 |
+| `EST-USABLE-CLASSROOMS` | Usable classrooms | classrooms whose latest assessment is fully usable or usable with repairs ÷ classrooms | day × institution/LGA/state | daily | higher_is_better | `agg_infrastructure_scope` | EST-03, OPS-01 |
+| `EST-LEARNERS-PER-USABLE-CLASSROOM` | Learners per usable classroom | enrolled learners ÷ usable classrooms | day × institution/LGA/state | daily | lower_is_better | `agg_infrastructure_scope` | EST-03 |
+| `EST-UNSAFE-IN-USE` | Unsafe facilities still in use | facilities assessed unsafe, unusable or condemned and recorded in use | day × institution/LGA/state | daily | lower_is_better | `agg_infrastructure_scope` | EST-02, EST-03 |
+| `EST-ACTIONS-ON-TIME` | Facility actions on time | facility actions done by their due date ÷ facility actions due | month × institution/LGA | daily | higher_is_better | `facility_action` | EST-02, EST-03 |
+| `EST-REPAIR-BACKLOG` | Repair backlog | sum of the latest repair estimates of facilities not fully usable | day × institution/LGA/state | daily | lower_is_better | `agg_infrastructure_scope` | EST-03 |
+| `EST-INFRA-INDEX` | Infrastructure index | 0–100 from usable classrooms (40), water and power (20), safety — no unsafe facility in use (20) and maintenance on time (20) | day × institution/LGA/state | daily | higher_is_better | `agg_infrastructure_scope` | EST-03 |
 
 ## Finance
 
@@ -77,6 +83,8 @@ Generated from `ceda/model/metrics.yaml`. Every indicator shown on a dashboard, 
 | `FCL-OUTSTANDING-RATE` | Incoming learners with outstanding obligations | clearance checks with result outstanding ÷ clearance checks | month × LGA × institution type | daily | lower_is_better | `clearance_check` | FCL-01, FCL-02, FCL-03 |
 | `FCL-DISPUTE-UPHELD` | Obligation disputes upheld | disputes upheld or partly upheld ÷ disputes resolved, by creditor institution (unsupported claims) | term × creditor institution | daily | lower_is_better | `obligation_dispute` | FCL-03 |
 | `FCL-NATIONAL-COVERAGE` | National clearance coverage | states that answered ÷ 37 (36 states and the FCT) per clearance check; states on the network ÷ 37 | day × requesting state | daily | higher_is_better | `clearance_exchange_query`, `exchange_peer` | FCL-04 |
+| `ACC-BUDGET-EXECUTION` | Budget execution rate | actual ÷ revised budget, and (actual + committed) ÷ revised budget | fiscal year × institution × cost centre × economic code | daily | neutral | `fact_budget_execution` | FIN-02 |
+| `ACC-IMPREST-OVERDUE` | Overdue imprest | imprest not retired by its due date ÷ imprest issued | month × institution | daily | lower_is_better | `imprest` | ACC-01 |
 
 ## Integrity and data
 
@@ -123,10 +131,18 @@ Generated from `ceda/model/metrics.yaml`. Every indicator shown on a dashboard, 
 |---|---|---|---|---|---|---|---|
 | `STI-INTAKE-FILL` | Course intake fill rate | trainees on intake ÷ intake capacity | intake × course × institution × agency | daily | higher_is_better | `trainee_record`, `security_course_intake` | STI-03, STI-04 |
 | `STI-PASS-OUT-RATE` | Trainee pass-out rate | trainees passed out or commissioned ÷ trainees with a final outcome | intake × course × institution × agency | daily | higher_is_better | `trainee_record` | STI-02, STI-04 |
+| `STI-CAREER-COVERAGE` | Ranks with defined course requirements | ranks with at least one career requirement ÷ ranks above entry | agency | daily | higher_is_better | `security_career_requirement`, `agency_rank` | STI-05 |
 
 ## Regulation
 
 | ID | Metric | Definition / formula | Grain | Refresh | Direction | Sources | Pages |
 |---|---|---|---|---|---|---|---|
 | `REG-PROFILE-COMPLETE` | Institutions with a complete regulatory profile | institutions with a supervising body, an accreditor where required and an examination body for examined levels ÷ institutions | registry × category × ownership | daily | higher_is_better | `institution_regulation`, `institution` | REG-02, FED-01 |
+
+## Funding
+
+| ID | Metric | Definition / formula | Grain | Refresh | Direction | Sources | Pages |
+|---|---|---|---|---|---|---|---|
+| `FND-DISBURSED` | Funding disbursed | sum of disbursements by programme and beneficiary kind | month × institution × programme | daily | neutral | `fact_funding` | FND-01 |
+| `FND-ARREARS-RATE` | Loans in arrears | agreements in arrears ÷ agreements repaying or in arrears | month × programme × institution | daily | lower_is_better | `fact_funding` | FND-01 |
 

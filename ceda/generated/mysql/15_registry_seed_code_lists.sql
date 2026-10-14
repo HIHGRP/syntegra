@@ -278,7 +278,16 @@ INSERT INTO `code_value` (`id`, `tenant_id`, `code_list_id`, `code`, `label`, `s
   (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'room_type'), 'hostel_room', 'Hostel room', 9, '2026-01-01'),
   (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'room_type'), 'skills_lab', 'Skills lab', 10, '2026-01-01'),
   (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'room_type'), 'clinic', 'Clinic', 11, '2026-01-01'),
-  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'room_type'), 'store', 'Store', 12, '2026-01-01');
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'room_type'), 'store', 'Store', 12, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'room_type'), 'toilet', 'Toilet', 13, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'room_type'), 'kitchen_dining', 'Kitchen dining', 14, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'room_type'), 'staff_room', 'Staff room', 15, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'room_type'), 'staff_quarters', 'Staff quarters', 16, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'room_type'), 'nursery_play', 'Nursery play', 17, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'room_type'), 'chapel_mosque', 'Chapel mosque', 18, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'room_type'), 'guard_house', 'Guard house', 19, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'room_type'), 'generator_house', 'Generator house', 20, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'room_type'), 'water_point', 'Water point', 21, '2026-01-01');
 
 -- condition_grade: Condition grades
 INSERT INTO `code_list` (`id`, `tenant_id`, `code`, `title`, `pack`, `is_extensible`) VALUES (UUID_TO_BIN(UUID()), @tenant, 'condition_grade', 'Condition grades', 'ng-core', FALSE);
@@ -299,7 +308,17 @@ INSERT INTO `code_value` (`id`, `tenant_id`, `code_list_id`, `code`, `label`, `s
   (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'asset_category'), 'generator', 'Generator', 6, '2026-01-01'),
   (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'asset_category'), 'water_system', 'Water system', 7, '2026-01-01'),
   (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'asset_category'), 'sports_equipment', 'Sports equipment', 8, '2026-01-01'),
-  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'asset_category'), 'other', 'Other', 9, '2026-01-01');
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'asset_category'), 'other', 'Other', 9, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'asset_category'), 'solar_system', 'Solar system', 10, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'asset_category'), 'transformer', 'Transformer', 11, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'asset_category'), 'borehole', 'Borehole', 12, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'asset_category'), 'fire_safety_equipment', 'Fire safety equipment', 13, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'asset_category'), 'security_system', 'Security system', 14, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'asset_category'), 'kitchen_equipment', 'Kitchen equipment', 15, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'asset_category'), 'medical_equipment', 'Medical equipment', 16, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'asset_category'), 'playground_equipment', 'Playground equipment', 17, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'asset_category'), 'musical_instrument', 'Musical instrument', 18, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'asset_category'), 'office_equipment', 'Office equipment', 19, '2026-01-01');
 
 -- staff_category: Staff categories
 INSERT INTO `code_list` (`id`, `tenant_id`, `code`, `title`, `pack`, `is_extensible`) VALUES (UUID_TO_BIN(UUID()), @tenant, 'staff_category', 'Staff categories', 'ng-core', FALSE);

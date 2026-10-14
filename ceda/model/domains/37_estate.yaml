@@ -1,0 +1,134 @@
+domain: estate
+code: EST
+title: Government property register, facility condition and usability, preventive maintenance and proactive actions
+module: estate
+zone: ops
+retention: RS-INS-PERM
+summary: >
+  Every government property an institution occupies (change request CR-006): the land (site) with owner, title,
+  area, boundary, fencing and encroachment; the buildings, rooms and equipment already held in operations (OPS);
+  dated condition and usability assessments of each; planned preventive maintenance; and proactive actions the
+  platform proposes to the head of institution — unsafe facilities in use, assessments overdue, maintenance due,
+  deteriorating condition, equipment past its safety check — escalated to the LGA and the ministry when not acted
+  on. The warehouse (DW) loads all of it for the state-wide infrastructure view of the Commissioner for Education.
+
+entities:
+  property_site:
+    title: Government property site (land) used by an institution — owner, title, area, boundary, fencing, encroachment, valuation
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-EST-01]
+    pages: [EST-01, OPS-01]
+    attrs:
+      - "site_code: code(32)!"
+      - "name: title!"
+      - "institution_id: ref(institution)!"
+      - "campus_id: ref(campus)"
+      - "owner: enum(property_owner)!"
+      - "title_document: enum(land_title)!"
+      - "title_reference: code(64) | C of O, gazette or survey plan number"
+      - "area_sqm: dec(14,2)"
+      - "location: point"
+      - "boundary: json | GeoJSON polygon of the surveyed boundary"
+      - "fenced: enum(fence_status)!"
+      - "encroachment: enum(encroachment_status)!"
+      - "acquired_on: date"
+      - "valuation: money"
+      - "currency: currency"
+      - "valued_on: date"
+      - "data_status: enum(reference_data_status)!"
+      - "status: enum(record_status)!"
+    uq: [[scope_node_id, site_code]]
+    ix: [[institution_id]]
+
+  facility_assessment:
+    title: Dated condition and usability assessment of a site, building, room or item of equipment
+    kind: event
+    class: internal
+    history: append
+    origin: ceda
+    scope: owned
+    reqs: [FR-EST-02]
+    pages: [EST-01, EST-02, OPS-01]
+    events: [EST.FACILITY_ASSESSED]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "subject_kind: enum(facility_subject)!"
+      - "subject_id: uuid!"
+      - "assessed_on: date!"
+      - "assessor_kind: enum(facility_assessor)!"
+      - "assessed_by: uuid!"
+      - "condition_grade: cl(condition_grade)!"
+      - "usability: enum(usability_status)!"
+      - "structural_risk: enum(severity)!"
+      - "defects: json | Element (roof, walls, floor, doors, windows, wiring, plumbing …), defect and severity"
+      - "utilities: json | Water, power, sanitation and internet working at the time"
+      - "in_use: bool! | Whether the facility is being used at the time of assessment"
+      - "learners_affected: int_u"
+      - "repair_estimate: money"
+      - "currency: currency"
+      - "photo_document_ids: json"
+      - "next_due_on: date | When it should be assessed again"
+      - "client_op_id: uuid | Offline capture (idempotent)"
+    ix: [[subject_kind, subject_id, assessed_on], [institution_id, assessed_on]]
+
+  maintenance_schedule:
+    title: Planned preventive maintenance task for a site, building, room or item of equipment (frequency, next due, responsible person)
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-EST-03]
+    pages: [EST-02, OPS-03]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "subject_kind: enum(facility_subject)!"
+      - "subject_id: uuid!"
+      - "task: str(200)!"
+      - "task_kind: enum(maintenance_task_kind)!"
+      - "frequency_days: smallint!"
+      - "last_done_on: date"
+      - "next_due_on: date!"
+      - "responsible_staff_id: ref(staff)"
+      - "estimated_cost: money"
+      - "currency: currency"
+      - "status: enum(record_status)!"
+    ix: [[institution_id, next_due_on]]
+
+  facility_action:
+    title: Proactive action proposed to the head of institution, with owner, due date and escalation to the LGA and ministry
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-EST-04, FR-EST-05]
+    pages: [EST-02, EST-03]
+    events: [EST.ACTION_RAISED, EST.ACTION_ESCALATED]
+    notes: >
+      One open action per rule and subject (dedupe_key); closed actions are kept. The platform proposes and
+      escalates; the head decides what to do (FR-EST-04).
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "rule: enum(facility_rule)!"
+      - "subject_kind: enum(facility_subject)!"
+      - "subject_id: uuid!"
+      - "dedupe_key: code(120)! | rule:subject while open; suffixed with the action id when closed"
+      - "title: str(200)!"
+      - "detail: text"
+      - "priority: enum(severity)!"
+      - "owner_role: code(16)!"
+      - "due_on: date!"
+      - "escalation_level: smallint! default=0 | 0 institution, 1 LGA, 2 ministry"
+      - "escalated_at: ts"
+      - "maintenance_request_id: ref(maintenance_request)"
+      - "resolved_by: uuid"
+      - "resolved_at: ts"
+      - "resolution: text"
+      - "status: enum(facility_action_status)!"
+    uq: [[dedupe_key]]
+    ix: [[institution_id, status], [status, due_on]]

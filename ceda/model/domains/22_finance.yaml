@@ -504,3 +504,155 @@ entities:
       - "match_status: enum(match_status_3way)!"
       - "paid_journal_id: ref(journal)"
       - "status: enum(po_status)!"
+
+  # ---------------------------------------------------------------- institutional accounting and budget control (CR-006)
+  cost_centre:
+    title: Cost centre of an institution (administration, department, boarding, feeding, estate, ICT, transport, project, welfare) with its budget holder
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-ACC-01]
+    pages: [FIN-01, FIN-02, ACC-01]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "code: code(32)!"
+      - "name: title!"
+      - "cost_centre_kind: enum(cost_centre_kind)!"
+      - "parent_id: ref(cost_centre)"
+      - "org_unit_id: ref(org_unit) | Department or unit the cost centre belongs to"
+      - "holder_staff_id: ref(staff) | Budget holder"
+      - "status: enum(record_status)!"
+    uq: [[scope_node_id, code]]
+    ix: [[institution_id]]
+
+  budget_line:
+    title: Approved budget line — cost centre × ledger account × economic code × funding source, with original, revised, committed and actual amounts
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-ACC-02, FR-ACC-03, FR-ACC-06]
+    pages: [FIN-01, FIN-02]
+    notes: >
+      committed and actual are maintained by the commitment service under a row lock; available = revised −
+      committed − actual is never negative (FR-ACC-03).
+    attrs:
+      - "budget_id: ref(budget)!"
+      - "cost_centre_id: ref(cost_centre)!"
+      - "account_id: ref(account)!"
+      - "economic_code: code(16)! | Economic segment of the National Chart of Accounts, e.g. 22020101"
+      - "funding_source_kind: enum(budget_funding_kind)!"
+      - "funding_source_id: ref(funding_source)"
+      - "description: str(300)"
+      - "original: money!"
+      - "revised: money!"
+      - "committed: money! default=0"
+      - "actual: money! default=0"
+      - "currency: currency!"
+    uq: [[budget_id, cost_centre_id, account_id, economic_code, funding_source_kind]]
+    ix: [[cost_centre_id]]
+    checks:
+      within_budget: "committed_minor >= 0 AND actual_minor >= 0 AND committed_minor + actual_minor <= revised_minor"
+
+  budget_commitment:
+    title: Commitment of a budget line by a requisition, purchase order, imprest, payroll or disbursement (released, spent or cancelled)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-ACC-03]
+    pages: [FIN-02]
+    events: [FIN.FUNDS_COMMITTED]
+    attrs:
+      - "budget_line_id: ref(budget_line)!"
+      - "source_kind: enum(commitment_source)!"
+      - "source_id: uuid!"
+      - "description: str(300)!"
+      - "amount: money!"
+      - "spent: money! default=0"
+      - "released: money! default=0"
+      - "currency: currency!"
+      - "committed_on: date!"
+      - "committed_by: uuid!"
+      - "status: enum(commitment_status)!"
+    ix: [[budget_line_id, status], [source_kind, source_id]]
+    checks:
+      settles: "spent_minor + released_minor <= amount_minor"
+
+  budget_virement:
+    title: Virement — budget moved between two lines with a reason, approved by someone other than the requester
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-ACC-04]
+    pages: [FIN-01, FIN-02]
+    events: [FIN.VIREMENT_APPROVED]
+    attrs:
+      - "virement_number: code(32)! uq"
+      - "from_line_id: ref(budget_line)!"
+      - "to_line_id: ref(budget_line)!"
+      - "amount: money!"
+      - "currency: currency!"
+      - "reason: text!"
+      - "requested_by: uuid!"
+      - "decided_by: uuid"
+      - "decided_at: ts"
+      - "status: enum(request_status)!"
+    checks:
+      four_eyes: "decided_by IS NULL OR decided_by <> requested_by"
+      two_lines: "from_line_id <> to_line_id"
+
+  imprest:
+    title: Imprest — cash advance to a named holder against a budget line, to be retired with receipts by a due date
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-ACC-05]
+    pages: [ACC-01]
+    events: [FIN.IMPREST_OVERDUE]
+    attrs:
+      - "imprest_number: code(32)! uq"
+      - "holder_staff_id: ref(staff)!"
+      - "cost_centre_id: ref(cost_centre)!"
+      - "budget_line_id: ref(budget_line)!"
+      - "commitment_id: ref(budget_commitment)"
+      - "purpose: str(300)!"
+      - "amount: money!"
+      - "retired: money! default=0"
+      - "refunded: money! default=0"
+      - "currency: currency!"
+      - "requested_by: uuid!"
+      - "approved_by: uuid"
+      - "issued_on: date"
+      - "retire_by: date!"
+      - "status: enum(imprest_status)!"
+    ix: [[holder_staff_id, status], [retire_by]]
+    checks:
+      four_eyes: "approved_by IS NULL OR approved_by <> requested_by"
+      retired_within: "retired_minor + refunded_minor <= amount_minor"
+
+  imprest_retirement:
+    title: Retirement of an imprest — receipts, amount accounted for and cash refunded
+    kind: event
+    class: confidential
+    history: append
+    origin: ceda
+    scope_note: Inherits the imprest's scope.
+    reqs: [FR-ACC-05]
+    pages: [ACC-01]
+    attrs:
+      - "imprest_id: ref(imprest)!"
+      - "receipts: json! | Receipt references, payees and amounts"
+      - "amount: money! | Amount accounted for by receipts"
+      - "refund: money! default=0"
+      - "currency: currency!"
+      - "retired_on: date!"
+      - "verified_by: uuid!"

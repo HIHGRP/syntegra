@@ -1283,6 +1283,292 @@
         "row_version"
       ],
       "additionalProperties": false
+    },
+    "SecurityCourseUnit": {
+      "title": "SecurityCourseUnit",
+      "description": "Unit of the agency's structure that sponsors, approves, delivers or holds quotas on a course",
+      "type": "object",
+      "x-ceda": {
+        "entity": "security_course_unit",
+        "zone": "registry",
+        "domain": "STI",
+        "kind": "link",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "security_training"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "course_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "security_course"
+        },
+        "unit_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "agency_unit"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "sponsor",
+            "approving_authority",
+            "delivering_unit",
+            "quota_holder",
+            "target_formation"
+          ]
+        },
+        "quota": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "description": "Places per intake held by the unit"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "data_status": {
+          "type": "string",
+          "enum": [
+            "verified",
+            "illustrative",
+            "to_confirm"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "course_id",
+        "unit_id",
+        "role",
+        "data_status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "SecurityCareerRequirement": {
+      "title": "SecurityCareerRequirement",
+      "description": "Course (or course category) an agency requires for commissioning, confirmation, promotion, appointment or command at a rank",
+      "type": "object",
+      "x-ceda": {
+        "entity": "security_career_requirement",
+        "zone": "registry",
+        "domain": "STI",
+        "kind": "config",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "security_training"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "agency_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "security_agency"
+        },
+        "rank_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "agency_rank",
+          "description": "The rank the requirement leads to"
+        },
+        "requirement_kind": {
+          "type": "string",
+          "enum": [
+            "commissioning",
+            "confirmation",
+            "promotion",
+            "appointment",
+            "command"
+          ]
+        },
+        "course_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "A specific course in the agency's institutions, e.g. JSC"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "course_category": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "initial_officer",
+                "cadet_degree",
+                "recruit_basic",
+                "junior_leadership",
+                "promotion_career",
+                "specialist",
+                "command_and_staff",
+                "strategic_leadership",
+                "academic_programme",
+                "continuing_professional"
+              ],
+              "description": "Any course of this category, when no single course is named"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_mandatory": {
+          "type": "boolean"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 300
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "data_status": {
+          "type": "string",
+          "enum": [
+            "verified",
+            "illustrative",
+            "to_confirm"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "agency_id",
+        "rank_id",
+        "requirement_kind",
+        "is_mandatory",
+        "data_status",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
     }
   }
 }

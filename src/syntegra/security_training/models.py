@@ -144,6 +144,50 @@ class SecurityAgency(CedaModel):
         verbose_name = 'Security agency (armed service, police, paramilitary, law-enforcement, emergency'
 
 
+class SecurityCareerRequirement(CedaModel):
+    """Course (or course category) an agency requires for commissioning, confirmation, promotion, appointment or command at a rank"""
+
+    ceda_entity = 'security_career_requirement'
+    ceda_zones = ('registry',)
+    ceda_domain = 'STI'
+    ceda_kind = 'config'
+    ceda_class = 'internal'
+    ceda_history = 'lifecycle'
+    ceda_scope = 'owned'
+    ceda_append_only = False
+    ceda_partition = None
+    ceda_retention = 'RS-CONFIG'
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'scope_node_id': {'type': 'uuid', 'standard': True}, 'agency_id': {'type': 'ref', 'ref': 'security_agency'}, 'rank_id': {'type': 'ref', 'ref': 'agency_rank'}, 'requirement_kind': {'type': 'enum', 'enum': 'career_requirement_kind'}, 'course_code': {'type': 'code'}, 'course_category': {'type': 'enum', 'enum': 'training_course_category'}, 'is_mandatory': {'type': 'bool'}, 'note': {'type': 'str'}, 'data_status': {'type': 'enum', 'enum': 'reference_data_status'}, 'status': {'type': 'enum', 'enum': 'record_status'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
+
+    id = cf.UUID7Field(primary_key=True, default=uuid7)
+    tenant_id = cf.UUID7Field()
+    scope_node_id = cf.UUID7Field()
+    agency = models.ForeignKey("security_training.SecurityAgency", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='agency_id')
+    rank = models.ForeignKey("security_training.AgencyRank", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='rank_id')
+    requirement_kind = models.CharField(max_length=32, choices=[('commissioning', 'Commissioning'), ('confirmation', 'Confirmation'), ('promotion', 'Promotion'), ('appointment', 'Appointment'), ('command', 'Command')])
+    course_code = models.CharField(max_length=32, null=True, blank=True, help_text="A specific course in the agency's institutions, e.g. JSC")
+    course_category = models.CharField(max_length=32, choices=[('initial_officer', 'Initial officer'), ('cadet_degree', 'Cadet degree'), ('recruit_basic', 'Recruit basic'), ('junior_leadership', 'Junior leadership'), ('promotion_career', 'Promotion career'), ('specialist', 'Specialist'), ('command_and_staff', 'Command and staff'), ('strategic_leadership', 'Strategic leadership'), ('academic_programme', 'Academic programme'), ('continuing_professional', 'Continuing professional')], null=True, blank=True, help_text='Any course of this category, when no single course is named')
+    is_mandatory = models.BooleanField(default=True)
+    note = models.CharField(max_length=300, null=True, blank=True)
+    data_status = models.CharField(max_length=32, choices=[('verified', 'Verified'), ('illustrative', 'Illustrative'), ('to_confirm', 'To confirm')])
+    status = models.CharField(max_length=32, choices=[('active', 'Active'), ('inactive', 'Inactive'), ('retired', 'Retired')])
+    created_at = models.DateTimeField(default=cf.utcnow)
+    created_by = cf.UUID7Field(null=True, blank=True)
+    updated_at = models.DateTimeField(default=cf.utcnow)
+    updated_by = cf.UUID7Field(null=True, blank=True)
+    row_version = models.PositiveIntegerField(default=1)
+
+    objects = TenantScopedManager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'security_career_requirement'
+        app_label = 'security_training'
+        base_manager_name = 'unscoped'
+        verbose_name = 'Course (or course category) an agency requires for commissioning, confirmation, '
+
+
 class SecurityCourse(CedaModel):
     """Course in an institution's catalogue — its curriculum (versioned; award, duration, entry, target ranks)"""
 
@@ -279,6 +323,46 @@ class SecurityCourseModule(CedaModel):
         app_label = 'security_training'
         base_manager_name = 'unscoped'
         verbose_name = 'Module (syllabus heading) of a training course — area, contact hours, assessment'
+
+
+class SecurityCourseUnit(CedaModel):
+    """Unit of the agency's structure that sponsors, approves, delivers or holds quotas on a course"""
+
+    ceda_entity = 'security_course_unit'
+    ceda_zones = ('registry',)
+    ceda_domain = 'STI'
+    ceda_kind = 'link'
+    ceda_class = 'internal'
+    ceda_history = 'lifecycle'
+    ceda_scope = 'none'
+    ceda_append_only = False
+    ceda_partition = None
+    ceda_retention = 'RS-LRN-PERM'
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'course_id': {'type': 'ref', 'ref': 'security_course'}, 'unit_id': {'type': 'ref', 'ref': 'agency_unit'}, 'role': {'type': 'enum', 'enum': 'course_unit_role'}, 'quota': {'type': 'smallint'}, 'note': {'type': 'str'}, 'data_status': {'type': 'enum', 'enum': 'reference_data_status'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
+
+    id = cf.UUID7Field(primary_key=True, default=uuid7)
+    tenant_id = cf.UUID7Field()
+    course = models.ForeignKey("security_training.SecurityCourse", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='course_id')
+    unit = models.ForeignKey("security_training.AgencyUnit", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='unit_id')
+    role = models.CharField(max_length=32, choices=[('sponsor', 'Sponsor'), ('approving_authority', 'Approving authority'), ('delivering_unit', 'Delivering unit'), ('quota_holder', 'Quota holder'), ('target_formation', 'Target formation')])
+    quota = models.SmallIntegerField(null=True, blank=True, help_text='Places per intake held by the unit')
+    note = models.CharField(max_length=200, null=True, blank=True)
+    data_status = models.CharField(max_length=32, choices=[('verified', 'Verified'), ('illustrative', 'Illustrative'), ('to_confirm', 'To confirm')])
+    created_at = models.DateTimeField(default=cf.utcnow)
+    created_by = cf.UUID7Field(null=True, blank=True)
+    updated_at = models.DateTimeField(default=cf.utcnow)
+    updated_by = cf.UUID7Field(null=True, blank=True)
+    row_version = models.PositiveIntegerField(default=1)
+
+    objects = TenantScopedManager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'security_course_unit'
+        app_label = 'security_training'
+        base_manager_name = 'unscoped'
+        verbose_name = "Unit of the agency's structure that sponsors, approves, delivers or holds quotas"
 
 
 class SecurityInstitution(CedaModel):

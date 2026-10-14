@@ -37,6 +37,8 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "metric:view",
             "ceda:view",
             "user:*",
+            "estate:*",
+            "warehouse:view",
         ],
     ),
     # federal unity colleges and special training institutions (CR-005) — granted in the Federal Institutions registry
@@ -52,6 +54,10 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "metric:view",
             "ceda:view",
             "user:*",
+            "estate:*",
+            "warehouse:view",
+            "budget:view",
+            "funding:view",
         ],
     ),
     "STO": (
@@ -92,6 +98,11 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "clearance:*",
             "regulation:*",
             "admission:decide",
+            "budget:*",
+            "imprest:*",
+            "funding:*",
+            "estate:*",
+            "warehouse:*",
         ],
     ),
     "LGA": (
@@ -110,6 +121,11 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "hr:view",
             "hr:posting_request",
             "clearance:resolve",
+            "estate:view",
+            "estate:act",
+            "warehouse:view",
+            "budget:view",
+            "funding:view",
         ],
     ),
     "HEAD": (
@@ -135,12 +151,21 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "hr:leave_approve",
             "hr:posting_request",
             "hr:relations",
+            "budget:view",
+            "budget:approve",
+            "budget:commit",
+            "imprest:approve",
+            "funding:view",
+            "funding:apply",
+            "funding:review",
+            "estate:*",
+            "warehouse:view",
         ],
     ),
     "TCH": (
         "Teacher",
         "confidential",
-        ["attendance:mark", "attendance:view", "learner:view", "class:view", "hr:leave_request"],
+        ["attendance:mark", "attendance:view", "learner:view", "class:view", "hr:leave_request", "funding:apply_own"],
     ),
     "REG": (
         "Registrar / admissions officer",
@@ -174,12 +199,15 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "staff:*",
             "institution:view",
             "metric:view",
+            "funding:view",
+            "funding:apply",
+            "funding:review",
         ],
     ),
     "PAYR": (
         "Payroll officer",
         "restricted",
-        ["hr:view", "hr:payroll_prepare", "hr:bank_approve", "institution:view"],
+        ["hr:view", "hr:payroll_prepare", "hr:bank_approve", "institution:view", "funding:collect"],
     ),
     "CERT": (
         "Certification registrar",
@@ -209,6 +237,38 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "clearance:publish",
             "clearance:dispute",
             "hr:payroll_approve",
+            "budget:prepare",
+            "budget:commit",
+            "budget:virement",
+            "budget:view",
+            "imprest:request",
+            "imprest:retire",
+            "funding:view",
+            "funding:apply",
+            "funding:disburse",
+            "funding:collect",
+            "funding:decide",
+        ],
+    ),
+    # CR-006: facilities and the Commissioner's view
+    "OPSM": (
+        "Operations and facilities manager",
+        "confidential",
+        ["estate:*", "institution:view", "metric:view", "warehouse:view", "budget:view", "imprest:request"],
+    ),
+    "COMM": (
+        "Commissioner for Education",
+        "restricted",
+        [
+            "warehouse:view",
+            "estate:view",
+            "budget:view",
+            "funding:view",
+            "metric:view",
+            "institution:view",
+            "coverage:view",
+            "hr:view",
+            "ceda:view",
         ],
     ),
 }
@@ -224,6 +284,14 @@ PURPOSES = [
 
 POLICIES = [
     # rule_key, domain, title, expression, parameters, mandatory_below
+    (
+        "FND-NET-PAY-FLOOR",
+        "financing",
+        "Net pay floor for loan repayments deducted from pay (CR-006)",
+        "net_pay >= gross_pay * fraction",
+        {"fraction": "0.3333333333", "_tighten": {"fraction": "higher"}},
+        True,
+    ),
     (
         "ATT-PERSISTENT",
         "attendance",
@@ -569,6 +637,9 @@ def provision_state(
         from syntegra.hr import defaults as hr_defaults
 
         hr_defaults.seed(out.state_scope_id)
+        from syntegra.funding import services as funding
+
+        funding.seed_programmes(out.state_scope_id)
         if admin_username:
             admin = AppUser.objects.filter(username=admin_username).first()
             if admin is None:
