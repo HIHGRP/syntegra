@@ -233,8 +233,15 @@ def register(request: HttpRequest, class_id: uuid.UUID) -> HttpResponse:
     )
 
 
-POST_SECONDARY = ("technical_college", "college_of_education", "polytechnic", "monotechnic", "university",
-                  "school_of_nursing", "school_of_health_technology")  # fmt: skip
+POST_SECONDARY = (
+    "technical_college",
+    "college_of_education",
+    "polytechnic",
+    "monotechnic",
+    "university",
+    "school_of_nursing",
+    "school_of_health_technology",
+)
 LEVELS = catalog.code_list("education_level")
 
 
@@ -513,3 +520,56 @@ def establishment(request: HttpRequest) -> HttpResponse:
         "establishment.html",
         _ctx(request, institutions=institutions, chosen=chosen, data=data, page=pages.page("HRM-01")),
     )
+
+
+# --------------------------------------------------------------------------- security agencies' training (CR-004)
+@page("STI-01")
+def security_training(request: HttpRequest) -> HttpResponse:
+    from syntegra.security_training import services as sti
+
+    data = sti.directory()
+    q = request.GET.get("category", "")
+    shown = [a for a in data if not q or a["category"] == q]
+    return render(
+        request,
+        "security_training.html",
+        _ctx(
+            request,
+            agencies=shown,
+            categories=sorted({a["category"] for a in data}),
+            category=q,
+            page=pages.page("STI-01"),
+        ),
+    )
+
+
+@page("STI-01")
+def security_agency(request: HttpRequest, agency_id: uuid.UUID) -> HttpResponse:
+    from syntegra.security_training import services as sti
+
+    return render(request, "security_agency.html", _ctx(request, a=sti.agency(agency_id), page=pages.page("STI-01")))
+
+
+@page("STI-02")
+def security_institution(request: HttpRequest, institution_id: uuid.UUID) -> HttpResponse:
+    from syntegra.security_training import services as sti
+
+    return render(
+        request,
+        "security_institution.html",
+        _ctx(request, i=sti.institution(institution_id), page=pages.page("STI-02")),
+    )
+
+
+@page("STI-03")
+def security_course(request: HttpRequest, course_id: uuid.UUID) -> HttpResponse:
+    from syntegra.security_training import services as sti
+
+    return render(request, "security_course.html", _ctx(request, c=sti.course(course_id), page=pages.page("STI-03")))
+
+
+@page("STI-04")
+def security_intake(request: HttpRequest, intake_id: uuid.UUID) -> HttpResponse:
+    from syntegra.security_training import services as sti
+
+    return render(request, "security_intake.html", _ctx(request, t=sti.intake(intake_id), page=pages.page("STI-04")))

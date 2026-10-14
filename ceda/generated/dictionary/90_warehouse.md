@@ -100,7 +100,7 @@ Governance scope dimension (SCD2) — country, state, LGA, network, institution,
 | `tenant_id` **PK** | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
 | `scope_key` **PK** | `BIGINT` | no |  |  |
 | `scope_node_id` | `BINARY(16)` | no |  |  |
-| `level` | `VARCHAR(32)` | no |  | values: global, country, state, authority, lga, network, institution, campus, faculty, department, programme, class |
+| `level` | `VARCHAR(32)` | no |  | values: global, country, state, authority, lga, network, institution, campus, faculty, department, programme, class, agency, formation |
 | `code` | `VARCHAR(40)` | no |  |  |
 | `name` | `VARCHAR(300)` | no |  |  |
 | `path` | `VARCHAR(512)` | no |  |  |

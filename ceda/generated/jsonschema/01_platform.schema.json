@@ -149,7 +149,8 @@
             "network",
             "private_provider",
             "institution",
-            "department"
+            "department",
+            "sector_registry"
           ]
         },
         "code": {

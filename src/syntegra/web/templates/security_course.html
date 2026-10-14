@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ c.title }}{% endblock %}
+{% block content %}
+<p><a href="/security-training/institutions/{{ c.institution.institution_id }}">← {{ c.institution.name }}</a></p>
+<h1>{{ c.title }}</h1>
+<p class="muted"><code>{{ c.code }}</code> · version {{ c.version }} · {{ c.status }} · {{ c.category.replace("_", " ") }}{% if c.data_status != "verified" %} · reference data {{ c.data_status.replace("_", " ") }}{% endif %}</p>
+<section class="grid2">
+  <article class="card"><h2>Award and entry</h2>
+    <dl class="facts"><dt>Award</dt><dd>{{ c.award_title or c.award }}</dd>
+      <dt>Accrediting body</dt><dd>{{ c.accrediting_body or "—" }}</dd>
+      <dt>Duration</dt><dd>{{ (c.duration_weeks ~ " weeks") if c.duration_weeks else "as published by the institution" }}</dd>
+      <dt>For</dt><dd>{{ c.target_ranks|map(attribute="title")|join(", ") or "—" }}</dd>
+      <dt>Entry requirements</dt><dd>{{ (c.entry_requirements or ["as advertised by the agency"])|join("; ") }}</dd></dl>
+  </article>
+  <article class="card"><h2>Intakes</h2>
+    {% if c.intakes %}<ul class="people">{% for i in c.intakes %}<li><a href="/security-training/intakes/{{ i.id }}"><strong>{{ i.name }}</strong></a><span class="line muted">{{ i.intake_code }} · from {{ i.starts_on }} · {{ i.trainees }}{% if i.capacity %} / {{ i.capacity }}{% endif %} trainees · {{ i.status.replace("_", " ") }}</span></li>{% endfor %}</ul>
+    {% else %}<p class="muted">No intake recorded.</p>{% endif %}
+  </article>
+</section>
+<section class="card">
+  <h2>Curriculum — modules</h2>
+  {% if not c.content_held %}<p class="muted">The agency does not release this course's module detail; Syntegra records the course, intakes and outcomes only.</p>
+  {% else %}
+  <table class="compact"><thead><tr><th scope="col" class="num">#</th><th scope="col">Module (syllabus heading)</th><th scope="col">Area</th><th scope="col">Assessment</th><th scope="col" class="num">Hours</th></tr></thead>
+  <tbody>{% for m in c.modules %}<tr><td class="num">{{ m.sequence }}</td><td>{{ m.title }}</td><td>{{ m.area.replace("_", " ") }}</td><td>{{ m.assessment }}</td><td class="num">{{ m.contact_hours or "—" }}</td></tr>{% endfor %}</tbody></table>
+  <p class="muted">Syllabus headings only. Operational, weapons and tactical content is never held in Syntegra.</p>
+  {% endif %}
+</section>
+{% endblock %}

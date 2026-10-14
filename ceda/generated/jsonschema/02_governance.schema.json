@@ -55,7 +55,9 @@
             "faculty",
             "department",
             "programme",
-            "class"
+            "class",
+            "agency",
+            "formation"
           ]
         },
         "code": {
@@ -88,7 +90,9 @@
                 "class_group",
                 "course_section",
                 "programme",
-                "network"
+                "network",
+                "security_agency",
+                "agency_unit"
               ],
               "description": "Entity the node represents"
             },

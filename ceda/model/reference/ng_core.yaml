@@ -41,7 +41,7 @@ code_lists:
       - {code: ADULT, label: Adult and non-formal education}
   - code: institution_category
     title: Institution categories
-    values: [eccde_centre, nursery_primary, primary, junior_secondary, senior_secondary, combined_secondary, technical_college, college_of_education, polytechnic, monotechnic, university, school_of_nursing, school_of_health_technology, special_school, non_formal_centre, tutorial_centre, international_school]
+    values: [eccde_centre, nursery_primary, primary, junior_secondary, senior_secondary, combined_secondary, technical_college, college_of_education, polytechnic, monotechnic, university, school_of_nursing, school_of_health_technology, special_school, non_formal_centre, tutorial_centre, international_school, military_academy, police_academy, paramilitary_academy, defence_university, staff_college, defence_college, security_training_school]
   - code: ownership
     title: Ownership
     values: [federal, state, lga, private, faith, community, ngo]
@@ -55,7 +55,7 @@ code_lists:
   - code: identifier_scheme
     title: External identifier schemes
     extensible: true
-    values: [NG-NIN, WAEC-CAND, NECO-CAND, NABTEB-CAND, JAMB-REG, BECE-CAND, TRCN, MDCN, NMCN, CAC-RC, TIN, UPN, INST-ID, PREV-LRN-ID, NG-BVN, PENCOM-RSA, NHF, IPPIS]
+    values: [NG-NIN, WAEC-CAND, NECO-CAND, NABTEB-CAND, JAMB-REG, BECE-CAND, TRCN, MDCN, NMCN, CAC-RC, TIN, UPN, INST-ID, PREV-LRN-ID, NG-BVN, PENCOM-RSA, NHF, IPPIS, {code: SVC-NO, label: Service number}]
   - code: regulator
     title: Regulators, examination and awarding bodies
     extensible: true

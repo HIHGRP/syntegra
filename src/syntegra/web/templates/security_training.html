@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Security agencies and training institutions{% endblock %}
+{% block content %}
+<h1>Security agencies and training institutions</h1>
+<p class="muted">Education and training institutions of the Armed Forces, the Police and the paramilitary, law-enforcement, emergency and
+security services, each under its own agency structure. Syntegra holds training administration only — courses, syllabus headings, intakes
+and outcomes — never operational or tactical content. Reference data marked <em>illustrative</em> or <em>to confirm</em> awaits each agency's confirmation.</p>
+<form method="get" class="inline"><label class="sr" for="cat">Category</label>
+  <select id="cat" name="category"><option value="">All categories</option>{% for c in categories %}<option value="{{ c }}" {% if c == category %}selected{% endif %}>{{ c.replace("_", " ").capitalize() }}</option>{% endfor %}</select>
+  <button>Show</button></form>
+{% for a in agencies %}
+<section class="card">
+  <h2><a href="/security-training/agencies/{{ a.id }}">{{ a.name }}</a> <code>{{ a.code }}</code></h2>
+  <p class="muted">{{ a.category.replace("_", " ").capitalize() }} · {{ a.supervising_ministry or "" }} · {{ a.establishing_law or "" }} · {{ a.units }} units in its structure{% if a.data_status != "verified" %} · <span class="pill">{{ a.data_status.replace("_", " ") }}</span>{% endif %}</p>
+  {% if a.institutions %}
+  <table class="compact"><thead><tr><th scope="col">Institution</th><th scope="col">Type</th><th scope="col">Command</th><th scope="col">Location</th><th scope="col" class="num">Courses</th></tr></thead>
+  <tbody>{% for i in a.institutions %}<tr><td><a href="/security-training/institutions/{{ i.institution_id }}">{{ i.name }}</a>{% if i.data_status == "to_confirm" %} <span class="pill">to confirm</span>{% endif %}</td>
+    <td>{{ i.institution_type.replace("_", " ") }}</td><td>{{ i.unit }}</td><td>{{ i.town }}, {{ i.state }}</td><td class="num">{{ i.courses }}</td></tr>{% endfor %}</tbody></table>
+  {% else %}<p class="muted">No training institution recorded yet.</p>{% endif %}
+</section>
+{% else %}<p class="muted">No agency is visible with your current role.</p>{% endfor %}
+{% endblock %}

@@ -84,7 +84,7 @@ Tenants nest (country → state → private provider / network). Every row in th
 |---|---|---|---|---|
 | `id` **PK** | `BINARY(16)` | no |  | Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap |
 | `parent_id` → `tenant` | `BINARY(16)` | yes |  | Parent tenant (state for a private provider, country for a state) |
-| `kind` | `VARCHAR(32)` | no |  | values: global, country, state, network, private_provider, institution, department |
+| `kind` | `VARCHAR(32)` | no |  | values: global, country, state, network, private_provider, institution, department, sector_registry |
 | `code` | `VARCHAR(40)` | no |  | Stable tenant code, e.g. ng, ng-ab, pvt-ng-ab-000123 |
 | `name` | `VARCHAR(300)` | no |  |  |
 | `residency_region_id` → `residency_region` | `BINARY(16)` | no |  |  |

@@ -55,7 +55,14 @@ INSERT INTO `code_value` (`id`, `tenant_id`, `code_list_id`, `code`, `label`, `s
   (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'institution_category'), 'special_school', 'Special school', 14, '2026-01-01'),
   (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'institution_category'), 'non_formal_centre', 'Non formal centre', 15, '2026-01-01'),
   (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'institution_category'), 'tutorial_centre', 'Tutorial centre', 16, '2026-01-01'),
-  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'institution_category'), 'international_school', 'International school', 17, '2026-01-01');
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'institution_category'), 'international_school', 'International school', 17, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'institution_category'), 'military_academy', 'Military academy', 18, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'institution_category'), 'police_academy', 'Police academy', 19, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'institution_category'), 'paramilitary_academy', 'Paramilitary academy', 20, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'institution_category'), 'defence_university', 'Defence university', 21, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'institution_category'), 'staff_college', 'Staff college', 22, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'institution_category'), 'defence_college', 'Defence college', 23, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'institution_category'), 'security_training_school', 'Security training school', 24, '2026-01-01');
 
 -- ownership: Ownership
 INSERT INTO `code_list` (`id`, `tenant_id`, `code`, `title`, `pack`, `is_extensible`) VALUES (UUID_TO_BIN(UUID()), @tenant, 'ownership', 'Ownership', 'ng-core', FALSE);
@@ -110,7 +117,8 @@ INSERT INTO `code_value` (`id`, `tenant_id`, `code_list_id`, `code`, `label`, `s
   (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'identifier_scheme'), 'NG-BVN', 'Ng-bvn', 15, '2026-01-01'),
   (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'identifier_scheme'), 'PENCOM-RSA', 'Pencom-rsa', 16, '2026-01-01'),
   (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'identifier_scheme'), 'NHF', 'Nhf', 17, '2026-01-01'),
-  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'identifier_scheme'), 'IPPIS', 'Ippis', 18, '2026-01-01');
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'identifier_scheme'), 'IPPIS', 'Ippis', 18, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'identifier_scheme'), 'SVC-NO', 'Service number', 19, '2026-01-01');
 
 -- regulator: Regulators, examination and awarding bodies
 INSERT INTO `code_list` (`id`, `tenant_id`, `code`, `title`, `pack`, `is_extensible`) VALUES (UUID_TO_BIN(UUID()), @tenant, 'regulator', 'Regulators, examination and awarding bodies', 'ng-core', TRUE);

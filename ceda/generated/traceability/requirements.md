@@ -1,6 +1,6 @@
 # Requirement → data traceability
 
-553 functional requirements (SYN-MFS-002 v2.4 and change requests CR-001, CR-002, CR-003): 546 are realised by CEDA entities or metrics; 7 are behavioural (UI, workflow or engine behaviour over data already modelled) and name the entity they operate on. Generated; do not edit.
+561 functional requirements (SYN-MFS-002 v2.4 and change requests CR-001, CR-002, CR-003, CR-004): 554 are realised by CEDA entities or metrics; 7 are behavioural (UI, workflow or engine behaviour over data already modelled) and name the entity they operate on. Generated; do not edit.
 
 | Requirement | Source | Priority | Phase | Realised by | Text |
 |---|---|---|---|---|---|
@@ -506,6 +506,14 @@
 | FR-STF-105 | MFS | SHALL | P2 | `course_space`, `metric:CPD-COMPLIANCE`, `training_completion`, `training_course` | Deliver safeguarding and statutory training in native LMS staff course spaces (with optional SCORM or xAPI content), with role-based assignment, assessments, pass marks, certificates, renewal cycles, compliance by instit |
 | FR-STF-106 | MFS | SHOULD | P2 | `role_grant`, `training_completion`, `trip` | Optionally prevent an adult without valid safeguarding training from being named DSL, trip leader or on-call responder. |
 | FR-STF-11 | MFS | SHALL | P1 | `app_user`, `staff_post` | Deactivate system access automatically from the HR leaving date. |
+| FR-STI-01 | CR-004 | SHALL | P3 | `security_agency` | Maintain a directory of Nigeria's security agencies (armed forces, police, paramilitary, law-enforcement, emergency and security services) with supervising ministry and establishing law. |
+| FR-STI-02 | CR-004 | SHALL | P3 | `agency_unit` | Model each agency's own organisational structure as a tree (headquarters, services, directorates, commands, training commands, formations, zones and state commands) that is also its access hierarchy. |
+| FR-STI-03 | CR-004 | SHALL | P3 | `agency_rank` | Hold each agency's rank structure (officer, warrant, non-commissioned, senior and junior staff, cadet and recruit ranks) in seniority order. |
+| FR-STI-04 | CR-004 | SHALL | P3 | `security_institution` | Register every education and training institution of an agency (academy, defence university, staff, war and defence colleges, depot, training school, specialist school) with its owning command, location, type, accreditat |
+| FR-STI-05 | CR-004 | SHALL | P3 | `security_course` | Hold each institution's own course catalogue — initial officer, cadet degree, recruit, junior leadership, promotion, specialist, command and staff, strategic and academic programmes — with award, duration, entry requirem |
+| FR-STI-06 | CR-004 | SHALL | P3 | `security_course_module` | Break each course into modules (syllabus headings) by area, contact hours, assessment and whether mandatory; never hold operational or tactical content. |
+| FR-STI-07 | CR-004 | SHALL | P3 | `metric:STI-INTAKE-FILL`, `metric:STI-PASS-OUT-RATE`, `security_course_intake`, `trainee_record` | Run course intakes and record each trainee's enrolment, rank at entry and outcome (passed out, commissioned, failed, relegated, withdrawn) on the trainee's lifelong learner record. |
+| FR-STI-08 | CR-004 | SHALL | P3 | `agency_unit`, `security_institution` | Hold security-sector training in a national sector registry isolated from state registries, with access granted at agency, command or institution level. |
 | FR-SUB-101 | MFS | SHALL | P1 | `billing_period_billed`, `census_learner`, `institution`, `subscription` | Assign every institution a financing channel from its ownership in Institution 360: SDAF for public institutions, direct subscription for private providers; apply an ownership change from the next billing period; never b |
 | FR-SUB-102 | MFS | SHALL | P1 | `sdaf_rate`, `sdaf_rate_card` | Maintain a state-approved SDAF rate card in naira by institution type and level, per term or per semester, versioned and effective-dated, with propose, approve and publish steps; refuse any charge without an approved rat |
 | FR-SUB-103 | MFS | SHALL | P1 | `academic_period`, `billing_period` | Derive billing periods from each institution type's academic calendar, with a configurable census date per period (default end of week 3 of a term, week 4 of a semester). |

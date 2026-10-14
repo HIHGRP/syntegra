@@ -1,12 +1,12 @@
 {
   "ceda": "SYN-CEDA-001",
-  "version": "1.4.0",
-  "domains": 33,
-  "entities": 484,
-  "tables": 514,
+  "version": "1.5.0",
+  "domains": 34,
+  "entities": 492,
+  "tables": 522,
   "tables_by_zone": {
     "platform": 24,
-    "registry": 184,
+    "registry": 192,
     "ops": 223,
     "vault": 26,
     "records": 19,
@@ -14,27 +14,28 @@
   },
   "origin": {
     "appj": 174,
-    "ceda": 310
+    "ceda": 318
   },
-  "columns": 7813,
-  "foreign_keys": 663,
+  "columns": 7950,
+  "foreign_keys": 686,
   "soft_references": 340,
   "append_only_tables": 96,
   "partitioned_tables": 21,
-  "enums": 338,
+  "enums": 350,
   "code_lists": 51,
-  "events": 150,
-  "metrics": 60,
+  "events": 152,
+  "metrics": 62,
   "retention_series": 32,
-  "pages_covered": 274,
-  "pages_total": 274,
-  "fr_total": 553,
-  "fr_data_mapped": 546,
+  "pages_covered": 278,
+  "pages_total": 278,
+  "fr_total": 561,
+  "fr_data_mapped": 554,
   "appj_tables_mapped": 174,
   "appj_tables_total": 174,
   "change_requests": [
     "CR-001",
     "CR-002",
-    "CR-003"
+    "CR-003",
+    "CR-004"
   ]
 }

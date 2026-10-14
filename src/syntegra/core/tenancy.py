@@ -50,7 +50,7 @@ def _load(tenant_id: uuid.UUID) -> TenantInfo:
         raise NotFound("tenant", str(tenant_id))
     node, state = t, None
     for _ in range(8):  # global → country → state → provider → institution → department
-        if node.kind == "state":
+        if node.kind in ("state", "sector_registry"):  # registry roots: a state, or a national sector registry
             state = node
             break
         if node.parent_id is None:

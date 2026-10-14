@@ -32,7 +32,7 @@ def test_every_model_matches_its_table_in_every_zone() -> None:
                 model_cols |= {"tenant_id"}
             assert cols == model_cols, (zone, m.ceda_entity, cols ^ model_cols)
             checked += 1
-    assert checked == 514
+    assert checked == 522
 
 
 def test_tenant_data_cannot_be_queried_without_context() -> None:

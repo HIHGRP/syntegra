@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ i.name }}{% endblock %}
+{% block content %}
+<p><a href="/security-training/agencies/{{ i.agency.id }}">← {{ i.agency.name }}</a></p>
+<h1>{{ i.name }}</h1>
+<p class="muted"><code>{{ i.institution_code }}</code> · {{ i.institution_type.replace("_", " ") }} · {{ i.unit.name }} · {{ i.address.town }}, {{ i.address.state }}{% if i.established_year %} · established {{ i.established_year }}{% endif %}</p>
+<section class="tiles">
+  <article class="tile"><h2>Agency</h2><p>{{ i.agency.name }}</p></article>
+  <article class="tile"><h2>Head</h2><p>{{ i.commandant_title or "—" }}</p></article>
+  <article class="tile"><h2>Accreditation</h2><p>{{ (i.accreditation or ["—"])|join(", ") }}</p></article>
+  <article class="tile"><h2>Access regime</h2><p>{{ i.access_regime.replace("_", " ") }}</p>{% if i.data_status != "verified" %}<p class="muted">Reference data {{ i.data_status.replace("_", " ") }}</p>{% endif %}</article>
+</section>
+<section class="card">
+  <h2>Course catalogue</h2>
+  <table class="compact"><thead><tr><th scope="col">Course</th><th scope="col">Category</th><th scope="col">Award</th><th scope="col">Accrediting body</th><th scope="col">Version</th></tr></thead>
+  <tbody>{% for c in i.courses %}<tr><td><a href="/security-training/courses/{{ c.id }}">{{ c.title }}</a>{% if not c.content_held %} <span class="pill">detail held by the agency</span>{% endif %}</td>
+    <td>{{ c.category.replace("_", " ") }}</td><td>{{ c.award_title or c.award }}</td><td>{{ c.accrediting_body or "—" }}</td><td>{{ c.version }} · {{ c.status }}</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endblock %}

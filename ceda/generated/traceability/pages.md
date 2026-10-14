@@ -1,6 +1,6 @@
 # Page → data traceability
 
-Every one of the 260 pages in SYN-MFS-002 v2.4 and the 14 pages added by change requests is served by at least one CEDA entity or metric. Generated; do not edit.
+Every one of the 260 pages in SYN-MFS-002 v2.4 and the 18 pages added by change requests is served by at least one CEDA entity or metric. Generated; do not edit.
 
 | Page | Source | Title | Module | Phase | CEDA entities and metrics | MFS master objects |
 |---|---|---|---|---|---|---|
@@ -197,7 +197,7 @@ Every one of the 260 pages in SYN-MFS-002 v2.4 and the 14 pages added by change 
 | LRN-01 | MFS | Learners | Learners | P1 | `learner` | Learner 360 |
 | LRN-02 | MFS | Register a learner | Learners | P1 | `external_identifier`, `identity_verification`, `learner` | Learner 360, Parent/Guardian 360, Identity |
 | LRN-03 | MFS | Duplicate review | Learners | P1 | `match_pair_decision`, `match_review` | Learner 360, MatchReview |
-| LRN-04 | MFS | Learner 360 | Learners | P2 | `assessment_result`, `attendance_mark`, `document_link`, `exam_result`, `external_exam_record`, `external_identifier`, `international_student_record`, `learner`, `learner_guardian`, `purpose_code`, `target_grade` | Learner 360, Attendance 360, Assessment 360, SEND 360, Safeguarding 360, Finance 360 |
+| LRN-04 | MFS | Learner 360 | Learners | P2 | `assessment_result`, `attendance_mark`, `document_link`, `exam_result`, `external_exam_record`, `external_identifier`, `international_student_record`, `learner`, `learner_guardian`, `purpose_code`, `target_grade`, `trainee_record` | Learner 360, Attendance 360, Assessment 360, SEND 360, Safeguarding 360, Finance 360 |
 | LRN-05 | MFS | Transfer a learner | Learners | P1 | `enrolment`, `exchange_transfer`, `historical_record_import`, `learner_transfer` | Learner 360, Enrolment |
 | LRN-06 | MFS | Education passport | Learners | P7 | `badge_award`, `digital_skill_level`, `passport_entry`, `passport_share`, `passport_view` | Education Passport 360, Certificate 360 |
 | LRN-07 | MFS | Enrolment & placement | Learners | P1 | `enrolment`, `historical_record_import` | Enrolment, Learner 360, Programme 360 |
@@ -258,6 +258,10 @@ Every one of the 260 pages in SYN-MFS-002 v2.4 and the 14 pages added by change 
 | STF-09 | MFS | Performance review | People | P4 | `appraisal` | Appraisal, Staff 360 |
 | STF-10 | MFS | Teacher deployment | People | P6 | `metric:HR-VACANCIES`, `metric:PTR`, `metric:TCH-DEMAND-SUPPLY`, `planning_scenario`, `staff_post` | Teacher 360, Curriculum 360 |
 | STF-101 | MFS | Safeguarding training and compliance | Staff, HR and payroll | P2 | `metric:CPD-COMPLIANCE`, `staff_pulse_response`, `training_completion`, `training_course` |  |
+| STI-01 | CR-004 | Security agencies and training institutions | Security training | P3 | `agency_rank`, `agency_unit`, `security_agency`, `security_institution` |  |
+| STI-02 | CR-004 | Training institution | Security training | P3 | `metric:STI-PASS-OUT-RATE`, `security_course`, `security_institution` |  |
+| STI-03 | CR-004 | Training course curriculum | Security training | P3 | `metric:STI-INTAKE-FILL`, `security_course`, `security_course_intake`, `security_course_module` |  |
+| STI-04 | CR-004 | Course intake and trainees | Security training | P3 | `agency_rank`, `metric:STI-INTAKE-FILL`, `metric:STI-PASS-OUT-RATE`, `security_course_intake`, `trainee_record` |  |
 | SUB-101 | MFS | SDAF rate card | Billing | P1 | `sdaf_rate`, `sdaf_rate_card` |  |
 | SUB-102 | MFS | Term census and billable learners | Billing | P1 | `academic_period`, `billing_period`, `billing_period_billed`, `census_flag`, `census_learner`, `census_snapshot`, `enrolment`, `sdaf_exemption` |  |
 | SUB-103 | MFS | SDAF demand and collections | Billing | P1 | `billing_period_billed`, `inbound_webhook`, `metric:SDAF-COLLECTION`, `sdaf_collection`, `sdaf_demand`, `unmatched_collection` |  |

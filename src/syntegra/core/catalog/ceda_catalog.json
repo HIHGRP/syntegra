@@ -7,7 +7,7 @@
   "id": "SYN-CEDA-001",
   "platform": "Red Hat Enterprise Linux 10 / OpenShift",
   "status": "Baseline for build",
-  "version": "1.4.0"
+  "version": "1.5.0"
  },
  "code_lists": {
   "absence_reason": [
@@ -312,7 +312,8 @@
    "NG-BVN",
    "PENCOM-RSA",
    "NHF",
-   "IPPIS"
+   "IPPIS",
+   "SVC-NO"
   ],
   "industry_sector": [
    "agriculture",
@@ -363,7 +364,14 @@
    "special_school",
    "non_formal_centre",
    "tutorial_centre",
-   "international_school"
+   "international_school",
+   "military_academy",
+   "police_academy",
+   "paramilitary_academy",
+   "defence_university",
+   "staff_college",
+   "defence_college",
+   "security_training_school"
   ],
   "intervention_kind": [
    "attendance",
@@ -682,6 +690,27 @@
    "state_adaptation",
    "institution_addition",
    "exception"
+  ],
+  "agency_category": [
+   "armed_forces",
+   "police",
+   "paramilitary",
+   "law_enforcement",
+   "intelligence_security",
+   "emergency_service"
+  ],
+  "agency_unit_type": [
+   "headquarters",
+   "service",
+   "directorate",
+   "department",
+   "command",
+   "training_command",
+   "formation",
+   "zone",
+   "state_command",
+   "area_command",
+   "sector_command"
   ],
   "agent_outcome": [
    "proposed",
@@ -1794,6 +1823,12 @@
    "closed",
    "merged"
   ],
+  "intake_status": [
+   "planned",
+   "in_progress",
+   "completed",
+   "cancelled"
+  ],
   "intel_source": [
    "behaviour",
    "attendance",
@@ -2399,6 +2434,16 @@
    "amber",
    "green"
   ],
+  "rank_category": [
+   "commissioned_officer",
+   "warrant_officer",
+   "non_commissioned",
+   "other_rank",
+   "senior_staff",
+   "junior_staff",
+   "cadet",
+   "recruit"
+  ],
   "reason_source": [
    "teacher",
    "parent",
@@ -2447,6 +2492,11 @@
    "appointed",
    "rejected",
    "withdrawn"
+  ],
+  "reference_data_status": [
+   "verified",
+   "illustrative",
+   "to_confirm"
   ],
   "referral_status": [
    "drafted",
@@ -2703,7 +2753,9 @@
    "faculty",
    "department",
    "programme",
-   "class"
+   "class",
+   "agency",
+   "formation"
   ],
   "scope_ref_kind": [
    "tenant",
@@ -2713,7 +2765,9 @@
    "class_group",
    "course_section",
    "programme",
-   "network"
+   "network",
+   "security_agency",
+   "agency_unit"
   ],
   "sdaf_payer": [
    "government",
@@ -2729,6 +2783,27 @@
    "alphabetical",
    "random",
    "separate_negative_influences"
+  ],
+  "security_access_regime": [
+   "standard",
+   "restricted",
+   "content_not_held"
+  ],
+  "security_institution_type": [
+   "military_academy",
+   "police_academy",
+   "service_academy",
+   "defence_university",
+   "staff_college",
+   "war_college",
+   "defence_college",
+   "depot",
+   "training_school",
+   "specialist_school",
+   "training_college",
+   "technical_institute",
+   "health_sciences_school",
+   "strategic_institute"
   ],
   "separation_kind": [
    "resignation",
@@ -2882,7 +2957,8 @@
    "network",
    "private_provider",
    "institution",
-   "department"
+   "department",
+   "sector_registry"
   ],
   "tenant_status": [
    "proposed",
@@ -2895,6 +2971,59 @@
    "pass",
    "fail",
    "error"
+  ],
+  "trainee_outcome": [
+   "in_training",
+   "passed",
+   "passed_out",
+   "commissioned",
+   "failed",
+   "relegated",
+   "withdrawn",
+   "discharged"
+  ],
+  "training_assessment": [
+   "written",
+   "practical",
+   "continuous",
+   "project",
+   "oral",
+   "mixed",
+   "none"
+  ],
+  "training_award": [
+   "degree",
+   "postgraduate",
+   "diploma",
+   "nce",
+   "certificate",
+   "staff_qualification",
+   "attendance"
+  ],
+  "training_course_category": [
+   "initial_officer",
+   "cadet_degree",
+   "recruit_basic",
+   "junior_leadership",
+   "promotion_career",
+   "specialist",
+   "command_and_staff",
+   "strategic_leadership",
+   "academic_programme",
+   "continuing_professional"
+  ],
+  "training_module_area": [
+   "academic",
+   "professional_core",
+   "leadership_ethics",
+   "law_human_rights",
+   "physical_fitness",
+   "field_practical",
+   "ict_cyber",
+   "health_first_aid",
+   "management_administration",
+   "community_relations",
+   "research"
   ],
   "training_status": [
    "assigned",
@@ -4841,6 +4970,32 @@
    "producer": "people",
    "trigger": "Statutory training completed"
   },
+  "STI.COURSE_PUBLISHED": {
+   "aggregate": "security_course",
+   "consumers": [
+    "search",
+    "analytics"
+   ],
+   "payload": {
+    "institution_id": "uuid!",
+    "security_course_id": "uuid!"
+   },
+   "producer": "security_training",
+   "trigger": "A course version of a security training institution was published"
+  },
+  "STI.TRAINEE_OUTCOME_RECORDED": {
+   "aggregate": "trainee_record",
+   "consumers": [
+    "records",
+    "analytics"
+   ],
+   "payload": {
+    "outcome": "enum(trainee_outcome)!",
+    "trainee_record_id": "uuid!"
+   },
+   "producer": "security_training",
+   "trigger": "A trainee passed out, was commissioned, failed, relegated or withdrew"
+  },
   "SUB.CENSUS_FROZEN": {
    "aggregate": "census_snapshot",
    "consumers": [
@@ -6321,6 +6476,45 @@
    "sources": [
     "clearance_exchange_query",
     "exchange_peer"
+   ]
+  },
+  {
+   "direction": "higher_is_better",
+   "formula": "trainees on intake ÷ intake capacity",
+   "grain": "intake × course × institution × agency",
+   "group": "Security training",
+   "id": "STI-INTAKE-FILL",
+   "name": "Course intake fill rate",
+   "pages": [
+    "STI-03",
+    "STI-04"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-STI-07"
+   ],
+   "sources": [
+    "trainee_record",
+    "security_course_intake"
+   ]
+  },
+  {
+   "direction": "higher_is_better",
+   "formula": "trainees passed out or commissioned ÷ trainees with a final outcome",
+   "grain": "intake × course × institution × agency",
+   "group": "Security training",
+   "id": "STI-PASS-OUT-RATE",
+   "name": "Trainee pass-out rate",
+   "pages": [
+    "STI-02",
+    "STI-04"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-STI-07"
+   ],
+   "sources": [
+    "trainee_record"
    ]
   }
  ],
@@ -10921,6 +11115,68 @@
    ],
    "route": "/clearance/network",
    "title": "National clearance network"
+  },
+  {
+   "change_request": "CR-004",
+   "classification": "internal",
+   "id": "STI-01",
+   "module": "Security training",
+   "pattern": "Register / list",
+   "phase": "P3",
+   "purpose": "Directory of the security agencies, each agency's structure, and the education and training institutions under each command.",
+   "roles": [
+    "PLAT",
+    "FED",
+    "SADM",
+    "STO"
+   ],
+   "route": "/security-training",
+   "title": "Security agencies and training institutions"
+  },
+  {
+   "change_request": "CR-004",
+   "classification": "internal",
+   "id": "STI-02",
+   "module": "Security training",
+   "pattern": "Record 360",
+   "phase": "P3",
+   "purpose": "Institution profile — agency, command, type, accreditation, access regime — and its course catalogue.",
+   "roles": [
+    "SADM",
+    "STO"
+   ],
+   "route": "/security-training/institutions/{id}",
+   "title": "Training institution"
+  },
+  {
+   "change_request": "CR-004",
+   "classification": "internal",
+   "id": "STI-03",
+   "module": "Security training",
+   "pattern": "Record 360",
+   "phase": "P3",
+   "purpose": "One course's curriculum: award, duration, entry requirements, target ranks, modules with hours and assessment, and its intakes.",
+   "roles": [
+    "SADM",
+    "STO"
+   ],
+   "route": "/security-training/courses/{id}",
+   "title": "Training course curriculum"
+  },
+  {
+   "change_request": "CR-004",
+   "classification": "restricted",
+   "id": "STI-04",
+   "module": "Security training",
+   "pattern": "Register / list",
+   "phase": "P3",
+   "purpose": "Trainees of one intake with rank at entry and outcome; records passing out and commissioning.",
+   "roles": [
+    "SADM",
+    "STO"
+   ],
+   "route": "/security-training/intakes/{id}",
+   "title": "Course intake and trainees"
   }
  ],
  "retention": {

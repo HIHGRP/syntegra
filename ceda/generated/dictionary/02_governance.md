@@ -51,12 +51,12 @@ Effective-dated so that LGA boundary changes keep history (MFS §4.4). The path 
 | `id` **PK** | `BINARY(16)` | no |  | Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap |
 | `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
 | `parent_id` → `scope_node` | `BINARY(16)` | yes |  |  |
-| `level` | `VARCHAR(32)` | no |  | values: global, country, state, authority, lga, network, institution, campus, faculty, department, programme, class |
+| `level` | `VARCHAR(32)` | no |  | values: global, country, state, authority, lga, network, institution, campus, faculty, department, programme, class, agency, formation |
 | `code` | `VARCHAR(40)` | no |  | Official code, e.g. NG, NG-AB, AB-ABS, AB/SS/0412 |
 | `name` | `VARCHAR(300)` | no |  |  |
 | `path` | `VARCHAR(512)` | no |  | Materialised path of codes, e.g. NG.AB.ABS.0412 |
 | `depth` | `SMALLINT` | no |  |  |
-| `ref_kind` | `VARCHAR(32)` | yes |  | Entity the node represents · values: tenant, institution, campus, org_unit, class_group, course_section, programme, network |
+| `ref_kind` | `VARCHAR(32)` | yes |  | Entity the node represents · values: tenant, institution, campus, org_unit, class_group, course_section, programme, network, security_agency, agency_unit |
 | `ref_id` | `BINARY(16)` | yes |  | Institution, campus, org unit, class group or course section id (soft) |
 | `ownership` | `VARCHAR(32)` | yes |  | Denormalised for oversight filters (public/private) · code list `ownership` |
 | `valid_from` | `DATE` | no |  | Effective from (inclusive) — history: effective |

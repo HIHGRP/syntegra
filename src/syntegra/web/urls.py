@@ -14,5 +14,12 @@ urlpatterns = [
     path("coverage", views.coverage, name="coverage"),
     path("admissions/clearance", views.clearance, name="clearance"),
     path("clearance/network", views.clearance_network, name="clearance_network"),
+    path("security-training", views.security_training, name="security_training"),
+    path("security-training/agencies/<uuid:agency_id>", views.security_agency, name="security_agency"),
+    path(
+        "security-training/institutions/<uuid:institution_id>", views.security_institution, name="security_institution"
+    ),
+    path("security-training/courses/<uuid:course_id>", views.security_course, name="security_course"),
+    path("security-training/intakes/<uuid:intake_id>", views.security_intake, name="security_intake"),
     path("hr/establishment", views.establishment, name="establishment"),
 ]

@@ -27,7 +27,7 @@ enums:
   urgency: {title: Service urgency, values: [standard, express]}
 
   # ---------------------------------------------------------------- platform & tenancy
-  tenant_kind: {title: Tenant kind, values: [global, country, state, network, private_provider, institution, department]}
+  tenant_kind: {title: Tenant kind, values: [global, country, state, network, private_provider, institution, department, sector_registry]}
   tenant_status: {title: Tenant status, values: [proposed, provisioning, active, suspended, closed]}
   isolation_mode: {title: Tenant isolation, values: [dedicated_schema, pooled_schema]}
   plan_tier: {title: Operator plan tier, values: [starter, standard, advanced, tertiary, group, state_enterprise]}
@@ -43,8 +43,8 @@ enums:
   account_status: {title: Account status, values: [invited, active, locked, suspended, deactivated]}
 
   # ---------------------------------------------------------------- governance, policy, workflow
-  scope_level: {title: Governance hierarchy level, values: [global, country, state, authority, lga, network, institution, campus, faculty, department, programme, class]}
-  scope_ref_kind: {title: Entity a scope node represents, values: [tenant, institution, campus, org_unit, class_group, course_section, programme, network]}
+  scope_level: {title: Governance hierarchy level, values: [global, country, state, authority, lga, network, institution, campus, faculty, department, programme, class, agency, formation]}
+  scope_ref_kind: {title: Entity a scope node represents, values: [tenant, institution, campus, org_unit, class_group, course_section, programme, network, security_agency, agency_unit]}
   config_layer: {title: Configuration layer, values: [global, country, state, network, institution, department]}
   rule_domain: {title: Policy rule domain, values: [attendance, curriculum, coverage, teacher_qualification, examination, progression, certification, accreditation, registration, alerting, billing, behaviour, safeguarding, financing, identity, messaging, agents]}
   exception_status: {title: Policy exception status, values: [requested, approved, rejected, active, expired, renewed, revoked]}
@@ -398,4 +398,18 @@ enums:
   peer_hosting: {title: Where a state registry is hosted, values: [co_hosted, remote]}
   peer_status: {title: National clearance network status of a state registry, values: [not_on_network, onboarding, active, suspended]}
   exchange_match: {title: Outcome of a cross-state clearance query, values: [matched, possible_match, not_found, refused, unavailable, not_on_network]}
+
+  # ---------------------------------------------------------------- security agencies' education and training (CR-004)
+  agency_category: {title: Security agency category, values: [armed_forces, police, paramilitary, law_enforcement, intelligence_security, emergency_service]}
+  agency_unit_type: {title: Unit of an agency structure, values: [headquarters, service, directorate, department, command, training_command, formation, zone, state_command, area_command, sector_command]}
+  rank_category: {title: Rank category, values: [commissioned_officer, warrant_officer, non_commissioned, other_rank, senior_staff, junior_staff, cadet, recruit]}
+  security_institution_type: {title: Security education and training institution type, values: [military_academy, police_academy, service_academy, defence_university, staff_college, war_college, defence_college, depot, training_school, specialist_school, training_college, technical_institute, health_sciences_school, strategic_institute]}
+  security_access_regime: {title: What CEDA may hold about an institution's training, values: [standard, restricted, content_not_held]}
+  training_course_category: {title: Training course category, values: [initial_officer, cadet_degree, recruit_basic, junior_leadership, promotion_career, specialist, command_and_staff, strategic_leadership, academic_programme, continuing_professional]}
+  training_award: {title: Training award, values: [degree, postgraduate, diploma, nce, certificate, staff_qualification, attendance]}
+  training_module_area: {title: Training module area, values: [academic, professional_core, leadership_ethics, law_human_rights, physical_fitness, field_practical, ict_cyber, health_first_aid, management_administration, community_relations, research]}
+  training_assessment: {title: Module assessment, values: [written, practical, continuous, project, oral, mixed, none]}
+  intake_status: {title: Course intake status, values: [planned, in_progress, completed, cancelled]}
+  trainee_outcome: {title: Trainee outcome, values: [in_training, passed, passed_out, commissioned, failed, relegated, withdrawn, discharged]}
+  reference_data_status: {title: Reference data status, values: [verified, illustrative, to_confirm]}
 

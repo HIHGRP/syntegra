@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **Document** | SYN-CEDA-001 — Canonical Enterprise Data Architecture |
-| **Version** | 1.3.0 — adds the national clearance network: fee-clearance checks that cover all 36 states and the FCT (change request CR-002; §25). 1.2.0 added the enterprise HRMS and fee-clearance due diligence (CR-001; §23, §24). Change log in §22 |
+| **Version** | 1.5.0 — adds the education and training institutions of Nigeria's security agencies, each under its own agency structure with its own curricula (change request CR-004; §26). 1.4.0 modelled two-factor authentication and single sign-on (CR-003); 1.3.0 the national clearance network (CR-002; §25); 1.2.0 the HRMS and fee-clearance due diligence (CR-001; §23, §24). Change log in §22 |
 | **Date** | 14 October 2026 (1.0.0 and 1.1.0: 13–14 October 2026) |
-| **Derived from** | SYN-MFS-002 v2.4, Master Functional Specification (consolidated single volume: Books 1–3, 517 functional requirements, 260 pages, Appendix J MySQL schema of 174 tables), extended by change requests CR-001 (23 requirements, 13 pages) and CR-002 (6 requirements, 1 page) |
+| **Derived from** | SYN-MFS-002 v2.4, Master Functional Specification (consolidated single volume: Books 1–3, 517 functional requirements, 260 pages, Appendix J MySQL schema of 174 tables), extended by change requests CR-001 (23 requirements, 13 pages), CR-002 (6 requirements, 1 page), CR-003 (7 requirements) and CR-004 (8 requirements, 4 pages) |
 | **Platform** | Python 3.12 · Django 5.2 LTS (+ FastAPI for high-throughput services) · MySQL 9.7 LTS · Red Hat Enterprise Linux 10 / OpenShift |
 | **Machine-readable model** | `ceda/model/` (single source of truth) → `ceda/generated/` (DDL, dictionary, ERDs, JSON Schema, OpenAPI components, event schemas, metric catalogue, traceability) |
 | **Status of artefacts** | Model validates with 0 errors, 0 warnings; every zone's DDL loads into MySQL 9.7.2; 12 database-level guarantees verified on MySQL 9.7 (§18) |
@@ -45,14 +45,14 @@ CEDA is the **authoritative data blueprint** for Syntegra. The MFS says *what* t
 
 | Measure | Value |
 |---|---|
-| Domains (subject areas) | 32 operational + 1 warehouse |
-| Canonical entities | 483 (174 re-specified from Appendix J, 309 added to give MFS and change-request requirements a home) |
-| Physical tables | 513 across 6 data zones (platform 24, registry 183, ops 223, vault 26, records 19, warehouse 38) — 18 cross-cutting entities are replicated per zone |
-| Columns · enforced foreign keys · soft references | 7,794 · 663 · 340 |
+| Domains (subject areas) | 33 operational + 1 warehouse |
+| Canonical entities | 492 (174 re-specified from Appendix J, 318 added to give MFS and change-request requirements a home) |
+| Physical tables | 522 across 6 data zones (platform 24, registry 192, ops 223, vault 26, records 19, warehouse 38) — 18 cross-cutting entities are replicated per zone |
+| Columns · enforced foreign keys · soft references | 7,950 · 686 · 340 |
 | Append-only tables · partitioned tables | 96 · 21 |
-| Fixed enumerations · jurisdiction code lists | 338 · 51 (Nigerian pack) |
-| Domain events · semantic-layer metrics · retention series | 150 · 60 · 32 |
-| Coverage | 274/274 pages (260 MFS + 13 CR-001 + 1 CR-002); 546/546 functional requirements accounted for (517 MFS + 23 CR-001 + 6 CR-002; 539 realised in data, 7 behavioural); 174/174 Appendix J tables mapped |
+| Fixed enumerations · jurisdiction code lists | 350 · 51 (Nigerian pack) |
+| Domain events · semantic-layer metrics · retention series | 152 · 62 · 32 |
+| Coverage | 278/278 pages (260 MFS + 13 CR-001 + 1 CR-002 + 4 CR-004); 561/561 functional requirements accounted for (517 MFS + 23 CR-001 + 6 CR-002 + 7 CR-003 + 8 CR-004; 554 realised in data, 7 behavioural); 174/174 Appendix J tables mapped |
 
 ---
 
@@ -124,6 +124,7 @@ Decisions CEDA had to take to make the MFS buildable. Status **Adopted** means t
 | CD-20 | **Fee clearance informs a human admission decision; it never refuses.** The check is mandatory before re-admission or transfer, is purpose-bound, logged and visible to the family; outstanding obligations require a recorded decision (admit, admit with payment plan, defer pending settlement, admit as protected); learners entering public basic education are always admitted; SDAF is never an obligation; ledgers never reach the admission decision (import contract). | MFS P9 (education is never withheld for money), admission refusal is human-only (A1), UBE Act 2004, MFS §20.9 (SDAF via state revenue only), NDPA 2023. | Adopted (CR-001, §24) — **confirm** with the State Ministry's legal adviser |
 | CD-21 | **Releases are frozen; upgrades are expand-only deltas.** `ceda/releases/<version>/` holds the full baseline DDL (1.1.0) and, for each later release, the derived delta plus any hand-written expand script; one Django migration per release; `release.py check --mysql` proves the replayed releases are structurally identical to the current DDL. | A live state database is upgraded, never rebuilt (§17.4). | Adopted |
 | CD-22 | **Cross-state clearance is a federation of state registries, not a national register.** Each state keeps its own obligations register; a national directory (`exchange_peer`) lists all 36 states and the FCT with their hosting, endpoint and verification key. A check asks every other state with a signed (ES256), expiring, single-use message; the subject is identified by Global Learner ID, a national NIN lookup token and demographics, never the NIN; a state answers with obligations only for a confident match (≥ 0.98); states that are not on the network or do not answer are recorded as coverage gaps and never block the admission. Both states log the message. | NDPA 2023 data minimisation and state data sovereignty (each state controls its register); a single national copy of family debts would be a new, larger target. Completeness is reported, not assumed, on every check. | Adopted (CR-002, §25) |
+| CD-23 | **Sector registries.** Education and training that belongs to a national body rather than a state is held in a national *sector registry* — a registry tenant of kind `sector_registry` beside the 37 state registries, with its own GLID block, roles and scope hierarchy. The first is the Federal Security Education registry (`ng-fse`) for the security agencies' institutions; each agency's own structure is its scope tree, so access is granted at agency, command or institution level and no state ministry sees it. | The agencies are national, their institutions span many states, and their trainees' records need stronger isolation than a state registry gives; a sector registry reuses every registry capability (learners, institutions, programmes, enrolment, audit) unchanged. | Adopted (CR-004, §26) |
 
 ---
 
@@ -731,6 +732,7 @@ The Appendix J DDL (174 tables) was extracted from the MFS and loaded into MySQL
 | D29 | Cross-state clearance through the national exchange | Federal Ministry + states | **Built** in 1.3.0 (CD-22, §25). States on the platform join automatically; a state hosted elsewhere joins when it signs the exchange agreement (`agreement_ref`, default `NG-NCX-2026-001`) and the platform operator onboards its endpoint and key. Until every state has joined, each check reports which states were not covered |
 | D30 | Statutory payroll tables and the state's approved salary scales | State Head of Service, payroll and tax advisers | Versioned tables seeded with the 2026 values (Nigeria Tax Act 2025 PAYE bands; pension 8%/10%; NHF 2.5%); salary scale `AB-TSS-ILLUSTRATIVE` is a placeholder that must be replaced before a live pay run |
 | D31 | Retirement rules per cadre (teachers 65 years / 40 years of service; others 60 / 35) | Head of Service | Cadre attributes (`retirement_age`, `max_years_service`), not code |
+| D32 | Security agencies' reference data: agencies, structures, ranks, institutions and course catalogues | Each agency's training directorate + Office of the National Security Adviser | Seeded from public sources and marked `illustrative` or `to_confirm`; nothing is `verified` until the agency confirms it. Course detail is syllabus headings only, and courses whose detail an agency withholds are `content_held = false` |
 
 ---
 
@@ -757,10 +759,25 @@ The Appendix J DDL (174 tables) was extracted from the MFS and loaded into MySQL
 | `ceda/generated/traceability/` | Page, requirement and Appendix J traceability |
 | `ceda/generated/summary.json` | Counts |
 | `ceda/model/change_requests/CR-*.yaml` | Change requests: requirements and pages beyond the MFS (CD-18) |
-| `ceda/releases/<version>/` | Frozen release DDL: 1.1.0 baseline; 1.2.0 and 1.3.0 deltas and expand scripts (CD-21) |
+| `ceda/releases/<version>/` | Frozen release DDL: 1.1.0 baseline; 1.2.0 to 1.5.0 deltas and expand scripts (CD-21) |
 | `ceda/tools/gen_django.py` → `src/syntegra/*/models.py`, `src/syntegra/core/catalog/ceda_catalog.json` | Django models (`managed = False`) and the runtime catalogue (events, metrics, enums, code lists, pages) for the application |
 
 ## 22. Change log
+
+### 1.5.0 — 14 October 2026 (change request CR-004)
+
+| Change | Reason |
+|---|---|
+| Domain **STI** (module `security_training`, 8 entities, §26): `security_agency`, `agency_unit`, `agency_rank`, `security_institution`, `security_course`, `security_course_module`, `security_course_intake`, `trainee_record` | CR-004: the security agencies' education and training institutions, each agency with its own structure, ranks and curricula |
+| Tenant kind `sector_registry`; scope levels `agency` and `formation`; scope reference kinds `security_agency` and `agency_unit` (CD-23) | Agency structures are scope trees in a national registry isolated from the state registries |
+| 12 enums, 2 events (`STI.COURSE_PUBLISHED`, `STI.TRAINEE_OUTCOME_RECORDED`), 2 metrics (`STI-INTAKE-FILL`, `STI-PASS-OUT-RATE`); code-list values for security institution categories and the service-number identifier scheme `SVC-NO` | Needed by the new domain |
+| Release 1.5.0: expand scripts that re-create three widened CHECK constraints (tenant kind; scope node level and reference kind; warehouse scope level), plus the derived delta | Upgrading a live 1.4.0 database in place |
+
+### 1.4.0 — 14 October 2026 (change request CR-003)
+
+| Change | Reason |
+|---|---|
+| Entity `identity_provider_config` (per-state OpenID Connect providers; client secret envelope-encrypted); `mfa_factor.last_step`; `user_session.auth_method` | Data model for second-factor enforcement and single sign-on (FR-AUT-01..07). The application code for these is not yet built |
 
 ### 1.3.0 — 14 October 2026 (change request CR-002)
 
@@ -1054,3 +1071,67 @@ replayed, expired, forged, out-of-purpose and unknown-state messages are refused
 HTTPS endpoint; an unreachable state is recorded as unavailable and the child is admitted; the family sees the
 cross-state query; and, with all 36 states and the FCT provisioned, a check sends 36 signed queries and reports
 complete national coverage (37 of 37).
+
+---
+
+## 26. Security agencies' education and training institutions
+
+### 26.1 Scope
+
+Change request CR-004 brings into CEDA the education and training institutions of Nigeria's security agencies: the
+tri-service institutions of Defence Headquarters, the Nigerian Army, Navy and Air Force, the Nigeria Police Force,
+and the paramilitary, law-enforcement, emergency and security services. Each agency is modelled **individually**:
+
+| Entity | Holds |
+|---|---|
+| `security_agency` | The agency, its category (armed forces, police, paramilitary, law enforcement, intelligence and security, emergency service), supervising ministry and establishing law |
+| `agency_unit` | The agency's own structure as a tree: headquarters, services, directorates, departments, commands, training commands, formations, zones, state, area and sector commands |
+| `agency_rank` | The agency's ranks in seniority order (commissioned, warrant, non-commissioned, other ranks, senior and junior staff, cadet, recruit) |
+| `security_institution` | One profile per institution — agency, owning unit, type (academy, defence university, staff, war and defence colleges, depot, training school, specialist school, technical institute …), accreditation, access regime. The institution master (domain INS) keeps name, location, levels and status |
+| `security_course` | Each institution's own course catalogue — its curricula: category (initial officer, cadet degree, recruit, junior leadership, promotion, specialist, command and staff, strategic, academic), award, accrediting body, duration, entry requirements, target ranks; versioned and published. Degree courses also point to their academic programme and Curriculum 360 |
+| `security_course_module` | The course's syllabus headings by area (academic, professional core, leadership and ethics, law and human rights, physical fitness, field practicals, ICT, health, management, community relations, research), hours and assessment |
+| `security_course_intake` | A run of a course (e.g. *78 Regular Course*) with dates and capacity |
+| `trainee_record` | A trainee on an intake — rank at entry and outcome (passed out, commissioned, failed, relegated, withdrawn, discharged) — on the lifelong learner record; restricted |
+
+### 26.2 Where the data lives and who sees it (CD-23)
+
+The institutions are held in the **Federal Security Education registry** (`ng-fse`), a national *sector registry*
+beside the 37 state registries:
+
+```
+NG (country)
+├── NG-FSE (the registry)
+│   └── agency ── headquarters ── commands / training commands / formations (nested) ── institution
+└── NG-KD, NG-LA … (state location references; nothing is granted there)
+```
+
+Every agency, unit and institution is a scope node, so a grant at an agency sees the whole agency, a grant at a training
+command (e.g. the Army's TRADOC) sees only the schools under it, and a grant at an institution sees only that institution.
+Two roles are added: **SADM** (security training administrator, granted at the registry, an agency or a command) and
+**STO** (security training officer, granted at an institution). State ministries do not see the registry at all.
+Trainees are registered through the single registration path (LRN-02) with their service number as an identifier
+(`SVC-NO`); the national clearance network does not apply to sector registries.
+
+### 26.3 What is never held
+
+CEDA holds education and training **administration** only: institutions, courses, syllabus headings, intakes,
+enrolment and outcomes. Operational, deployment, intelligence, weapons and tactical content is never stored. Module
+titles are headings (e.g. *Field practicals — detail held by the agency*), and a course whose detail the agency does
+not release is recorded with `content_held = false` and no modules (e.g. the National Institute for Security Studies'
+executive course). Institutions carry an access regime: `standard`, `restricted` or `content_not_held`.
+
+### 26.4 Reference data
+
+`security_training/reference.py` seeds 14 agencies, 262 units (including a state command in all 36 states and the FCT
+for the Police, Civil Defence, Correctional Service, Immigration and NDLEA, and a sector command for the FRSC), the rank
+structures of the Army, Navy (officers), Air Force and Police, 33 institutions and 38 courses with their syllabus
+headings. Everything is public, high-level and marked `illustrative` or `to_confirm`; nothing is `verified` until the
+agency confirms it (D32). Durations and contact hours are left for the agencies to supply.
+`manage.py syntegra_security_registry --admin <e-mail>` provisions the registry and loads the data (idempotent).
+
+### 26.5 Pages, API and metrics
+
+STI-01 directory of agencies and institutions, with each agency's structure and ranks; STI-02 institution and its course
+catalogue; STI-03 course curriculum with modules and intakes; STI-04 intake and trainees. The API is under
+`/api/v1/security-training/…`. Metrics `STI-INTAKE-FILL` and `STI-PASS-OUT-RATE`.
+

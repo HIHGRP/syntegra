@@ -648,7 +648,7 @@ class Tenant(CedaModel):
 
     id = cf.UUID7Field(primary_key=True, default=uuid7)
     parent = models.ForeignKey("platform.Tenant", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='parent_id', null=True, blank=True)
-    kind = models.CharField(max_length=32, choices=[('global', 'Global'), ('country', 'Country'), ('state', 'State'), ('network', 'Network'), ('private_provider', 'Private provider'), ('institution', 'Institution'), ('department', 'Department')])
+    kind = models.CharField(max_length=32, choices=[('global', 'Global'), ('country', 'Country'), ('state', 'State'), ('network', 'Network'), ('private_provider', 'Private provider'), ('institution', 'Institution'), ('department', 'Department'), ('sector_registry', 'Sector registry')])
     code = models.CharField(max_length=40, help_text='Stable tenant code, e.g. ng, ng-ab, pvt-ng-ab-000123')
     name = models.CharField(max_length=300)
     residency_region = models.ForeignKey("platform.ResidencyRegion", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='residency_region_id')

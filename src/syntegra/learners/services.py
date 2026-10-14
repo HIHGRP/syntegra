@@ -34,7 +34,7 @@ from syntegra.mdm.models import ExternalIdentifier, MatchReview
 SEXES = {"female", "male"}
 # Identifiers captured at registration besides the NIN (post-secondary: JAMB registration and matriculation number)
 _IDENTIFIER = re.compile(r"[A-Z0-9][A-Z0-9/-]{2,22}[A-Z0-9]")
-REGISTRATION_SCHEMES = ("JAMB-REG", "INST-ID", "WAEC-CAND", "NECO-CAND", "NABTEB-CAND", "PREV-LRN-ID")
+REGISTRATION_SCHEMES = ("JAMB-REG", "INST-ID", "WAEC-CAND", "NECO-CAND", "NABTEB-CAND", "PREV-LRN-ID", "SVC-NO")
 
 
 @dataclass

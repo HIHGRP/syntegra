@@ -117,3 +117,10 @@ Generated from `ceda/model/metrics.yaml`. Every indicator shown on a dashboard, 
 | `HR-LEAVE-LIABILITY` | Leave liability | Σ (entitled + carried over − taken) annual-leave days across staff | leave year × employer × institution | daily | target_band | `leave_balance` | HRM-10, HRM-04 |
 | `HR-INTEGRITY-OPEN` | Open payroll integrity flags | open flags by kind; pay held by decision | day × employer × flag kind | daily | lower_is_better | `hr_integrity_flag` | HRM-08, HRM-10 |
 
+## Security training
+
+| ID | Metric | Definition / formula | Grain | Refresh | Direction | Sources | Pages |
+|---|---|---|---|---|---|---|---|
+| `STI-INTAKE-FILL` | Course intake fill rate | trainees on intake ÷ intake capacity | intake × course × institution × agency | daily | higher_is_better | `trainee_record`, `security_course_intake` | STI-03, STI-04 |
+| `STI-PASS-OUT-RATE` | Trainee pass-out rate | trainees passed out or commissioned ÷ trainees with a final outcome | intake × course × institution × agency | daily | higher_is_better | `trainee_record` | STI-02, STI-04 |
+

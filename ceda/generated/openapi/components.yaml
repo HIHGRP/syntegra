@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Syntegra CEDA canonical component schemas
-  version: 1.4.0
+  version: 1.5.0
   description: Generated from the CEDA model. API resources compose these schemas; fields marked x-classification restricted/special
     are only serialised for callers whose grant clearance covers them and who supplied X-Syntegra-Purpose.
 paths: {}
@@ -124,6 +124,7 @@ components:
           - private_provider
           - institution
           - department
+          - sector_registry
         code:
           type: string
           maxLength: 40
@@ -1626,6 +1627,8 @@ components:
           - department
           - programme
           - class
+          - agency
+          - formation
         code:
           type: string
           maxLength: 40
@@ -1652,6 +1655,8 @@ components:
             - course_section
             - programme
             - network
+            - security_agency
+            - agency_unit
             description: Entity the node represents
           - type: 'null'
         ref_id:
@@ -48601,4 +48606,962 @@ components:
       - currency
       - occurred_at
       - created_at
+      additionalProperties: false
+    SecurityAgency:
+      title: SecurityAgency
+      description: Security agency (armed service, police, paramilitary, law-enforcement, emergency or security service)
+      type: object
+      x-ceda:
+        entity: security_agency
+        zone: registry
+        domain: STI
+        kind: master
+        classification: internal
+        history: lifecycle
+        module: security_training
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        code:
+          type: string
+          maxLength: 16
+          pattern: ^[A-Za-z0-9_.:/-]*$
+          description: e.g. NA, NN, NAF, DHQ, NPF, NSCDC, NCoS, NIS, NCS, FFS, FRSC, NDLEA, DSS, EFCC
+        name:
+          type: string
+          maxLength: 300
+        category:
+          type: string
+          enum:
+          - armed_forces
+          - police
+          - paramilitary
+          - law_enforcement
+          - intelligence_security
+          - emergency_service
+        supervising_ministry:
+          anyOf:
+          - type: string
+            maxLength: 200
+            description: Ministry or office the agency reports to
+          - type: 'null'
+        establishing_law:
+          anyOf:
+          - type: string
+            maxLength: 300
+            description: Act establishing the agency
+          - type: 'null'
+        website:
+          anyOf:
+          - type: string
+            format: uri
+            maxLength: 2048
+          - type: 'null'
+        data_status:
+          type: string
+          enum:
+          - verified
+          - illustrative
+          - to_confirm
+          description: verified by the agency, illustrative, or to be confirmed
+        status:
+          type: string
+          enum:
+          - active
+          - inactive
+          - retired
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - code
+      - name
+      - category
+      - data_status
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    AgencyUnit:
+      title: AgencyUnit
+      description: Unit of an agency's own structure (headquarters, service, directorate, command, formation, state command)
+      type: object
+      x-ceda:
+        entity: agency_unit
+        zone: registry
+        domain: STI
+        kind: master
+        classification: internal
+        history: lifecycle
+        module: security_training
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        agency_id:
+          type: string
+          format: uuid
+          x-ref: security_agency
+        parent_unit_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: agency_unit
+          - type: 'null'
+        unit_type:
+          type: string
+          enum:
+          - headquarters
+          - service
+          - directorate
+          - department
+          - command
+          - training_command
+          - formation
+          - zone
+          - state_command
+          - area_command
+          - sector_command
+        code:
+          type: string
+          maxLength: 40
+          pattern: ^[A-Za-z0-9_.:/-]*$
+          description: Unique within the agency, e.g. TRADOC, NAVTRAC, ATC, LA-CMD
+        name:
+          type: string
+          maxLength: 300
+        headquarters_state:
+          anyOf:
+          - type: string
+            pattern: ^[A-Z]{2}-[A-Z0-9]{1,3}$
+            description: ISO 3166-2 state of the unit's headquarters
+          - type: 'null'
+        headquarters_town:
+          anyOf:
+          - type: string
+            maxLength: 120
+          - type: 'null'
+        data_status:
+          type: string
+          enum:
+          - verified
+          - illustrative
+          - to_confirm
+        status:
+          type: string
+          enum:
+          - active
+          - inactive
+          - retired
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - agency_id
+      - unit_type
+      - code
+      - name
+      - data_status
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    AgencyRank:
+      title: AgencyRank
+      description: Rank of an agency in seniority order (officer, warrant, non-commissioned, senior and junior staff, cadet,
+        recruit)
+      type: object
+      x-ceda:
+        entity: agency_rank
+        zone: registry
+        domain: STI
+        kind: reference
+        classification: public
+        history: versioned
+        module: security_training
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        agency_id:
+          type: string
+          format: uuid
+          x-ref: security_agency
+        code:
+          type: string
+          maxLength: 24
+          pattern: ^[A-Za-z0-9_.:/-]*$
+          description: e.g. LT, CAPT, ASP, CPL
+        title:
+          type: string
+          maxLength: 80
+        abbreviation:
+          anyOf:
+          - type: string
+            maxLength: 16
+          - type: 'null'
+        rank_category:
+          type: string
+          enum:
+          - commissioned_officer
+          - warrant_officer
+          - non_commissioned
+          - other_rank
+          - senior_staff
+          - junior_staff
+          - cadet
+          - recruit
+        seniority:
+          type: integer
+          description: 1 = most junior
+        data_status:
+          type: string
+          enum:
+          - verified
+          - illustrative
+          - to_confirm
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - agency_id
+      - code
+      - title
+      - rank_category
+      - seniority
+      - data_status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    SecurityInstitution:
+      title: SecurityInstitution
+      description: Security-agency profile of an education or training institution (agency, owning command, type, access regime)
+      type: object
+      x-ceda:
+        entity: security_institution
+        zone: registry
+        domain: STI
+        kind: master
+        classification: internal
+        history: lifecycle
+        module: security_training
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        institution_id:
+          type: string
+          format: uuid
+          x-ref: institution
+        agency_id:
+          type: string
+          format: uuid
+          x-ref: security_agency
+        unit_id:
+          type: string
+          format: uuid
+          x-ref: agency_unit
+          description: Owning command, training command or directorate
+        institution_type:
+          type: string
+          enum:
+          - military_academy
+          - police_academy
+          - service_academy
+          - defence_university
+          - staff_college
+          - war_college
+          - defence_college
+          - depot
+          - training_school
+          - specialist_school
+          - training_college
+          - technical_institute
+          - health_sciences_school
+          - strategic_institute
+        access_regime:
+          type: string
+          enum:
+          - standard
+          - restricted
+          - content_not_held
+          description: 'content_not_held: CEDA holds administration only'
+        accreditation:
+          anyOf:
+          - type: object
+            description: Academic regulators and affiliations, e.g. NUC, NBTE, affiliated university
+          - type: 'null'
+        commandant_title:
+          anyOf:
+          - type: string
+            maxLength: 80
+            description: Commandant, Rector, Vice-Chancellor, Director, Principal
+          - type: 'null'
+        established_year:
+          anyOf:
+          - type: integer
+          - type: 'null'
+        data_status:
+          type: string
+          enum:
+          - verified
+          - illustrative
+          - to_confirm
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - institution_id
+      - agency_id
+      - unit_id
+      - institution_type
+      - access_regime
+      - data_status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    SecurityCourse:
+      title: SecurityCourse
+      description: Course in an institution's catalogue — its curriculum (versioned; award, duration, entry, target ranks)
+      type: object
+      x-ceda:
+        entity: security_course
+        zone: registry
+        domain: STI
+        kind: master
+        classification: internal
+        history: lifecycle
+        module: security_training
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        institution_id:
+          type: string
+          format: uuid
+          x-ref: institution
+        agency_id:
+          type: string
+          format: uuid
+          x-ref: security_agency
+        code:
+          type: string
+          maxLength: 32
+          pattern: ^[A-Za-z0-9_.:/-]*$
+          description: Unique within the institution
+        title:
+          type: string
+          maxLength: 300
+        category:
+          type: string
+          enum:
+          - initial_officer
+          - cadet_degree
+          - recruit_basic
+          - junior_leadership
+          - promotion_career
+          - specialist
+          - command_and_staff
+          - strategic_leadership
+          - academic_programme
+          - continuing_professional
+        award:
+          type: string
+          enum:
+          - degree
+          - postgraduate
+          - diploma
+          - nce
+          - certificate
+          - staff_qualification
+          - attendance
+        award_title:
+          anyOf:
+          - type: string
+            maxLength: 120
+            description: e.g. B.Sc., psc, fdc, Certificate of Basic Training
+          - type: 'null'
+        programme_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: programme
+            description: Academic programme for degree, diploma and NCE courses
+          - type: 'null'
+        curriculum_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: curriculum
+            description: Curriculum 360 of the academic component, when held
+          - type: 'null'
+        accrediting_body:
+          anyOf:
+          - type: string
+            maxLength: 32
+            x-code-list: regulator
+          - type: 'null'
+        duration_weeks:
+          anyOf:
+          - type: integer
+          - type: 'null'
+        entry_requirements:
+          anyOf:
+          - type: object
+            description: Entry qualifications, age limits, medical and other conditions (as published)
+          - type: 'null'
+        target_ranks:
+          anyOf:
+          - type: object
+            description: Rank codes the course is for (e.g. officer cadets, CAPT–MAJ)
+          - type: 'null'
+        description:
+          anyOf:
+          - type: string
+            maxLength: 65535
+          - type: 'null'
+        version:
+          type: string
+          maxLength: 32
+        content_held:
+          type: boolean
+          description: 'false: the agency does not release module detail (access regime)'
+        data_status:
+          type: string
+          enum:
+          - verified
+          - illustrative
+          - to_confirm
+        status:
+          type: string
+          enum:
+          - draft
+          - in_review
+          - approved
+          - published
+          - superseded
+          - retired
+          - withdrawn
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - institution_id
+      - agency_id
+      - code
+      - title
+      - category
+      - award
+      - version
+      - content_held
+      - data_status
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    SecurityCourseModule:
+      title: SecurityCourseModule
+      description: Module (syllabus heading) of a training course — area, contact hours, assessment
+      type: object
+      x-ceda:
+        entity: security_course_module
+        zone: registry
+        domain: STI
+        kind: config
+        classification: internal
+        history: versioned
+        module: security_training
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        course_id:
+          type: string
+          format: uuid
+          x-ref: security_course
+        sequence:
+          type: integer
+        code:
+          type: string
+          maxLength: 32
+          pattern: ^[A-Za-z0-9_.:/-]*$
+        title:
+          type: string
+          maxLength: 200
+          description: Syllabus heading only — never operational or tactical content
+        area:
+          type: string
+          enum:
+          - academic
+          - professional_core
+          - leadership_ethics
+          - law_human_rights
+          - physical_fitness
+          - field_practical
+          - ict_cyber
+          - health_first_aid
+          - management_administration
+          - community_relations
+          - research
+        contact_hours:
+          anyOf:
+          - type: integer
+          - type: 'null'
+        assessment:
+          type: string
+          enum:
+          - written
+          - practical
+          - continuous
+          - project
+          - oral
+          - mixed
+          - none
+        is_mandatory:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - course_id
+      - sequence
+      - code
+      - title
+      - area
+      - assessment
+      - is_mandatory
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    SecurityCourseIntake:
+      title: SecurityCourseIntake
+      description: Intake (run) of a course, e.g. 77 Regular Course, with dates and capacity
+      type: object
+      x-ceda:
+        entity: security_course_intake
+        zone: registry
+        domain: STI
+        kind: transaction
+        classification: internal
+        history: lifecycle
+        module: security_training
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        course_id:
+          type: string
+          format: uuid
+          x-ref: security_course
+        intake_code:
+          type: string
+          maxLength: 40
+          pattern: ^[A-Za-z0-9_.:/-]*$
+          description: e.g. RC77, SC-2026-1
+        name:
+          type: string
+          maxLength: 300
+        starts_on:
+          type: string
+          format: date
+        ends_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        capacity:
+          anyOf:
+          - type: integer
+            minimum: 0
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - planned
+          - in_progress
+          - completed
+          - cancelled
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - course_id
+      - intake_code
+      - name
+      - starts_on
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    TraineeRecord:
+      title: TraineeRecord
+      description: A trainee on an intake — rank at entry and outcome, on the lifelong learner record
+      type: object
+      x-ceda:
+        entity: trainee_record
+        zone: registry
+        domain: STI
+        kind: transaction
+        classification: restricted
+        history: lifecycle
+        module: security_training
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        learner_id:
+          type: string
+          format: uuid
+          x-ref: learner
+        intake_id:
+          type: string
+          format: uuid
+          x-ref: security_course_intake
+        enrolment_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: enrolment
+          - type: 'null'
+        rank_at_entry_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: agency_rank
+          - type: 'null'
+        outcome:
+          type: string
+          enum:
+          - in_training
+          - passed
+          - passed_out
+          - commissioned
+          - failed
+          - relegated
+          - withdrawn
+          - discharged
+        result:
+          anyOf:
+          - type: string
+            maxLength: 120
+            description: Grade, class of degree or order of merit, as awarded
+          - type: 'null'
+        outcome_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        outcome_reason:
+          anyOf:
+          - type: string
+            maxLength: 65535
+          - type: 'null'
+        recorded_by:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: app_user
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - learner_id
+      - intake_id
+      - outcome
+      - created_at
+      - updated_at
+      - row_version
       additionalProperties: false

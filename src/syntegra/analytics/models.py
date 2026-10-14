@@ -474,7 +474,7 @@ class DimScope(CedaModel):
     tenant_id = cf.UUID7Field()
     scope_key = models.BigIntegerField()
     scope_node_id = cf.UUID7Field()
-    level = models.CharField(max_length=32, choices=[('global', 'Global'), ('country', 'Country'), ('state', 'State'), ('authority', 'Authority'), ('lga', 'Lga'), ('network', 'Network'), ('institution', 'Institution'), ('campus', 'Campus'), ('faculty', 'Faculty'), ('department', 'Department'), ('programme', 'Programme'), ('class', 'Class')])
+    level = models.CharField(max_length=32, choices=[('global', 'Global'), ('country', 'Country'), ('state', 'State'), ('authority', 'Authority'), ('lga', 'Lga'), ('network', 'Network'), ('institution', 'Institution'), ('campus', 'Campus'), ('faculty', 'Faculty'), ('department', 'Department'), ('programme', 'Programme'), ('class', 'Class'), ('agency', 'Agency'), ('formation', 'Formation')])
     code = models.CharField(max_length=40)
     name = models.CharField(max_length=300)
     path = models.CharField(max_length=512)

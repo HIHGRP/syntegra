@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ t.name }}{% endblock %}
+{% block content %}
+<p><a href="/security-training/courses/{{ t.course.id }}">← {{ t.course.title }}</a></p>
+<h1>{{ t.name }}</h1>
+<p class="muted"><code>{{ t.intake_code }}</code> · {{ t.course.institution.name }} · from {{ t.starts_on }}{% if t.ends_on %} to {{ t.ends_on }}{% endif %} · {{ t.status.replace("_", " ") }}{% if t.capacity %} · capacity {{ t.capacity }}{% endif %}</p>
+<section class="card">
+  <h2>Trainees ({{ t.trainees|length }})</h2>
+  {% if t.trainees %}
+  <table class="compact"><thead><tr><th scope="col">Trainee</th><th scope="col">Global Learner ID</th><th scope="col">Rank at entry</th><th scope="col">Outcome</th><th scope="col">Result</th></tr></thead>
+  <tbody>{% for r in t.trainees %}<tr><td><a href="/learners/{{ r.learner_id }}">{{ r.name }}</a></td><td><code>{{ r.global_learner_id }}</code></td><td>{{ r.rank_at_entry or "—" }}</td><td>{{ r.outcome.replace("_", " ") }}</td><td>{{ r.result or "" }}</td></tr>{% endfor %}</tbody></table>
+  {% else %}<p class="muted">No trainee on this intake yet.</p>{% endif %}
+</section>
+{% endblock %}

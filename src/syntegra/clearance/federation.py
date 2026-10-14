@@ -66,8 +66,15 @@ def kid_for(state_code: str) -> str:
 
 
 def network_active() -> bool:
-    """True when at least one other state is an active member of the clearance network."""
-    return ExchangePeer.objects.using("platform").filter(status="active").exclude(state_code=my_state_code()).exists()
+    """True when at least one other state is an active member of the clearance network.
+
+    Sector registries (e.g. the Federal Security Education registry) are not states and are not on the network.
+    """
+    ctx = context.require()
+    me = tenant_info(ctx.state_tenant_id).state_code if ctx.state_tenant_id else None
+    if not me:
+        return False
+    return ExchangePeer.objects.using("platform").filter(status="active").exclude(state_code=me).exists()
 
 
 def my_state_code() -> str:

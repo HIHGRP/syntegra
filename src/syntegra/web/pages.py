@@ -19,6 +19,10 @@ IMPLEMENTED: dict[str, str] = {
     "FCL-01": "clearance",
     "FCL-04": "clearance_network",
     "HRM-01": "establishment",
+    "STI-01": "security_training",
+    "STI-02": "security_institution",
+    "STI-03": "security_course",
+    "STI-04": "security_intake",
 }
 # Pages served for any signed-in user, independent of role lists
 UNIVERSAL = {"home", "catalogue"}

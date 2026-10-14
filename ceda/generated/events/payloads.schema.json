@@ -20,7 +20,8 @@
             "network",
             "private_provider",
             "institution",
-            "department"
+            "department",
+            "sector_registry"
           ]
         },
         "parent_id": {
@@ -85,7 +86,9 @@
             "faculty",
             "department",
             "programme",
-            "class"
+            "class",
+            "agency",
+            "formation"
           ]
         },
         "valid_from": {
@@ -3286,6 +3289,53 @@
       "required": [
         "clearance_exchange_query_id",
         "match_outcome"
+      ],
+      "additionalProperties": false
+    },
+    "STI.COURSE_PUBLISHED": {
+      "type": "object",
+      "description": "A course version of a security training institution was published",
+      "properties": {
+        "security_course_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "security_course_id",
+        "institution_id"
+      ],
+      "additionalProperties": false
+    },
+    "STI.TRAINEE_OUTCOME_RECORDED": {
+      "type": "object",
+      "description": "A trainee passed out, was commissioned, failed, relegated or withdrew",
+      "properties": {
+        "trainee_record_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "in_training",
+            "passed",
+            "passed_out",
+            "commissioned",
+            "failed",
+            "relegated",
+            "withdrawn",
+            "discharged"
+          ]
+        }
+      },
+      "required": [
+        "trainee_record_id",
+        "outcome"
       ],
       "additionalProperties": false
     }

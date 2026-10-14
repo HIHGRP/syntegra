@@ -24,6 +24,34 @@ COUNTRY_TENANT = uuid.UUID("00000000-0000-7000-8000-0000000000a0")
 # Built-in roles (MFS §5.2). Permissions are resource:action; '*' is all.
 ROLES: dict[str, tuple[str, str, list[str]]] = {
     "PLAT": ("Platform administrator", "special", ["*"]),
+    # security agencies' education and training (CR-004) — granted in the Federal Security Education registry
+    "SADM": (
+        "Security training administrator (agency, command or registry)",
+        "restricted",
+        [
+            "security_training:*",
+            "institution:view",
+            "learner:*",
+            "enrolment:*",
+            "metric:view",
+            "ceda:view",
+            "user:*",
+        ],
+    ),
+    "STO": (
+        "Security training officer (institution)",
+        "restricted",
+        [
+            "security_training:view",
+            "security_training:intake",
+            "security_training:record",
+            "institution:view",
+            "learner:register",
+            "learner:view",
+            "enrolment:view",
+            "ceda:view",
+        ],
+    ),
     "STA": (
         "State education administrator",
         "restricted",
@@ -304,19 +332,24 @@ def _platform_base() -> uuid.UUID:
 
 
 def _state_tenant(state_code: str, hosts: list[str]) -> uuid.UUID:
+    name, _ = BY_CODE[state_code]
+    return registry_tenant(state_code, name, "state", hosts, state_code=state_code)
+
+
+def registry_tenant(code_upper: str, name: str, kind: str, hosts: list[str], *, state_code: str | None) -> uuid.UUID:
+    """Create (idempotently) a registry tenant — a state, or a national sector registry — its hosts and GLID block."""
     from syntegra.platform.models import GlidBlock, Tenant, TenantDomain
 
     alias = "platform"
     region_id = _platform_base()
-    tid = state_tenant_id(state_code)
-    name, _ = BY_CODE[state_code]
+    tid = state_tenant_id(code_upper)
     with transaction.atomic(using=alias):
         if not Tenant.objects.using(alias).filter(pk=tid).exists():
-            code = state_code.lower()
+            code = code_upper.lower()
             Tenant(
                 id=tid,
                 parent_id=COUNTRY_TENANT,
-                kind="state",
+                kind=kind,
                 code=code,
                 name=name,
                 residency_region_id=region_id,
@@ -408,6 +441,55 @@ def _copy_code_lists(tid: uuid.UUID) -> None:
         )
 
 
+def seed_registry_config(cmd: Any, root: Any) -> dict[str, uuid.UUID]:
+    """Roles, purposes, policies and workflows of a registry (state or sector), idempotent; returns role ids."""
+    from syntegra.governance.models import PolicyRule, WorkflowDefinition
+    from syntegra.iam.models import PurposeCode, Role, RolePermission
+
+    role_ids: dict[str, uuid.UUID] = {}
+    for code, (role_name, clearance, perms) in ROLES.items():
+        role = Role.objects.filter(code=code).first()
+        if role is None:
+            role = cmd.add(Role(code=code, name=role_name, clearance=clearance, is_builtin=True, status="active"))
+        have = set(RolePermission.objects.filter(role_id=role.id).values_list("permission", flat=True))
+        for p in perms:  # built-in roles gain permissions added by later releases
+            if p not in have:
+                cmd.add(RolePermission(role_id=role.id, permission=p))
+        role_ids[code] = role.id
+    for code, label, reason, roles in PURPOSES:
+        if not PurposeCode.objects.filter(code=code).exists():
+            cmd.add(PurposeCode(code=code, label=label, requires_reason_text=reason, allowed_roles=roles))
+    for key, domain, title, expr, params, mandatory in POLICIES:
+        if not PolicyRule.objects.filter(rule_key=key, scope_node_id=root.id).exists():
+            cmd.add(
+                PolicyRule(
+                    scope_node_id=root.id,
+                    rule_key=key,
+                    rule_domain=domain,
+                    title=title,
+                    version=1,
+                    is_mandatory_below=mandatory,
+                    expression=expr,
+                    parameters=params,
+                    status="published",
+                    effective_from=dt.date(2020, 1, 1),
+                )
+            )
+    for key, spec in WORKFLOWS.items():
+        if not WorkflowDefinition.objects.filter(workflow_key=key).exists():
+            cmd.add(
+                WorkflowDefinition(
+                    scope_node_id=root.id,
+                    workflow_key=key,
+                    version=1,
+                    title=spec["title"],
+                    definition=spec["definition"],
+                    status="published",
+                )
+            )
+    return role_ids
+
+
 def bootstrap(
     *,
     admin_username: str = "admin@abia.gov.ng",
@@ -435,9 +517,9 @@ def provision_state(
     """Provision any of the 36 states or the FCT on this platform (idempotent) and join the clearance network."""
     from syntegra.core import uow
     from syntegra.governance import services as gov
-    from syntegra.governance.models import PolicyRule, ScopeNode, WorkflowDefinition
+    from syntegra.governance.models import ScopeNode
     from syntegra.iam import services as iam
-    from syntegra.iam.models import AppUser, PurposeCode, Role, RolePermission
+    from syntegra.iam.models import AppUser
 
     state_code = state_code.upper()
     if state_code not in BY_CODE:
@@ -464,48 +546,7 @@ def provision_state(
                     cmd, parent=st, level="lga", code=code, name=lga_name
                 )
                 out.lga_scope_ids[code] = lga.id
-            for code, (role_name, clearance, perms) in ROLES.items():
-                role = Role.objects.filter(code=code).first()
-                if role is None:
-                    role = cmd.add(
-                        Role(code=code, name=role_name, clearance=clearance, is_builtin=True, status="active")
-                    )
-                have = set(RolePermission.objects.filter(role_id=role.id).values_list("permission", flat=True))
-                for p in perms:  # built-in roles gain permissions added by later releases
-                    if p not in have:
-                        cmd.add(RolePermission(role_id=role.id, permission=p))
-                out.role_ids[code] = role.id
-            for code, label, reason, roles in PURPOSES:
-                if not PurposeCode.objects.filter(code=code).exists():
-                    cmd.add(PurposeCode(code=code, label=label, requires_reason_text=reason, allowed_roles=roles))
-            for key, domain, title, expr, params, mandatory in POLICIES:
-                if not PolicyRule.objects.filter(rule_key=key, scope_node_id=st.id).exists():
-                    cmd.add(
-                        PolicyRule(
-                            scope_node_id=st.id,
-                            rule_key=key,
-                            rule_domain=domain,
-                            title=title,
-                            version=1,
-                            is_mandatory_below=mandatory,
-                            expression=expr,
-                            parameters=params,
-                            status="published",
-                            effective_from=dt.date(2020, 1, 1),
-                        )
-                    )
-            for key, spec in WORKFLOWS.items():
-                if not WorkflowDefinition.objects.filter(workflow_key=key).exists():
-                    cmd.add(
-                        WorkflowDefinition(
-                            scope_node_id=st.id,
-                            workflow_key=key,
-                            version=1,
-                            title=spec["title"],
-                            definition=spec["definition"],
-                            status="published",
-                        )
-                    )
+            out.role_ids = seed_registry_config(cmd, st)
         from syntegra.hr import defaults as hr_defaults
 
         hr_defaults.seed(out.state_scope_id)
