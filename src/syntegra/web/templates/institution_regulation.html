@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ p.name }} — regulators{% endblock %}
+{% block content %}
+<h1>{{ p.name }}</h1>
+<p class="muted">{{ p.category.replace("_", " ") }} · {{ p.ownership }} · levels {{ p.levels|join(", ") or "—" }}</p>
+{% if p.gaps %}<div class="alert" role="status"><strong>Incomplete profile:</strong> {{ p.gaps|join("; ") }}.</div>
+{% else %}<div class="alert alert-ok" role="status">Complete profile: supervising body, curriculum, examinations and accreditation are all defined.</div>{% endif %}
+<section class="card">
+  <h2>Depends on</h2>
+  <table class="compact"><thead><tr><th scope="col">Relationship</th><th scope="col">Body</th><th scope="col">Covers</th><th scope="col">Levels</th><th scope="col">Since</th></tr></thead>
+  <tbody>{% for l in p.links %}<tr><td>{{ l.relationship.replace("_", " ") }}</td><td><a href="/regulators#{{ l.body_code }}">{{ l.body_name }}</a> <code>{{ l.body_code }}</code></td>
+    <td>{{ l.covers or "" }}{% if not l.is_mandatory %} <span class="muted">(where applicable)</span>{% endif %}</td><td>{{ l.levels|join(", ") }}</td><td>{{ l.valid_from }}{% if l.source != "rule" %} · {{ l.source }}{% endif %}</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endblock %}

@@ -189,4 +189,5 @@ events:
   FCL.EXCHANGE_QUERY_RECEIVED: {producer: clearance, aggregate: clearance_exchange_query, payload: {clearance_exchange_query_id: uuid!, match_outcome: enum(exchange_match)!}, consumers: [comms, analytics], trigger: "Another state queried this registry; creditor institutions of a matched learner are notified"}
   STI.COURSE_PUBLISHED: {producer: security_training, aggregate: security_course, payload: {security_course_id: uuid!, institution_id: uuid!}, consumers: [search, analytics], trigger: "A course version of a security training institution was published"}
   STI.TRAINEE_OUTCOME_RECORDED: {producer: security_training, aggregate: trainee_record, payload: {trainee_record_id: uuid!, outcome: enum(trainee_outcome)!}, consumers: [records, analytics], trigger: "A trainee passed out, was commissioned, failed, relegated or withdrew"}
+  REG.PROFILE_CHANGED: {producer: regulation, aggregate: institution_regulation, payload: {institution_id: uuid!, body_code: code(16)!, relationship: enum(regulation_relationship)!}, consumers: [search, analytics], trigger: "An institution's regulatory profile gained, changed or ended a link"}
 

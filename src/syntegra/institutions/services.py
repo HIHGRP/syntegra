@@ -15,6 +15,7 @@ from syntegra.governance import services as gov
 from syntegra.governance.models import ScopeNode
 from syntegra.institutions.domain import duplicates
 from syntegra.institutions.models import Institution
+from syntegra.regulation import services as regulation
 
 PUBLIC_OWNERSHIP = {"federal", "state", "lga"}
 
@@ -130,6 +131,8 @@ def register(data: RegisterInstitution, *, override_reason: str | None = None) -
                     )
                 cmd.add(inst)
                 cmd.record_id = inst.id
+                # its regulatory profile: supervisor, curriculum, examinations, accreditation (CR-005)
+                regulation.apply_rules(cmd, inst)
                 cmd.emit(
                     "INS.REGISTERED",
                     aggregate_id=inst.id,

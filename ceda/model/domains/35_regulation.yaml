@@ -1,0 +1,80 @@
+domain: regulation
+code: REG
+title: Education watchdogs, regulators and examination bodies — their dependencies and every institution's regulatory profile
+module: regulation
+zone: platform
+retention: RS-INS-PERM
+summary: >
+  A national directory of the bodies Nigerian education depends on (change request CR-005): the Federal Ministry of
+  Education, regulators and accreditors (NUC, NBTE, NCCE, UBEC), curriculum (NERDC), examination (WAEC, NECO,
+  NABTEB, NBAIS), admission (JAMB), teacher registration (TRCN), funding (TETFund) and professional councils (NMCN,
+  MDCN, PCN, MLSCN, COREN …), with the dependencies between them. The directory lives in the platform zone (one copy,
+  national). Each institution's regulatory profile — which body supervises, accredits or licenses it, sets its
+  curriculum, examines its learners, admits its graduates, registers its teachers, regulates its professions and
+  funds it — lives in the registry of the institution (state, federal or security sector registry).
+
+entities:
+  regulatory_body:
+    title: Education watchdog — ministry, regulator, examination, admission, curriculum, teacher, funding or professional body
+    kind: reference
+    class: public
+    history: lifecycle
+    origin: ceda
+    scope_note: National reference data (platform zone).
+    reqs: [FR-REG-01]
+    pages: [REG-01, REG-02]
+    attrs:
+      - "code: code(16)! uq | Matches the regulator code list where one exists, e.g. NUC, WAEC, JAMB"
+      - "name: title!"
+      - "body_type: enum(regulatory_body_type)!"
+      - "statutory_basis: str(300) | Establishing law"
+      - "jurisdiction: enum(regulatory_jurisdiction)!"
+      - "levels: json | Education levels the body covers (education_level codes)"
+      - "functions: text | What the body does for institutions"
+      - "website: url"
+      - "data_status: enum(reference_data_status)!"
+      - "status: enum(record_status)!"
+
+  body_dependency:
+    title: Dependency between two watchdogs (supervised by, recognises the results of, accredits with, funded by, member of)
+    kind: reference
+    class: public
+    history: lifecycle
+    origin: ceda
+    scope_note: National reference data (platform zone).
+    reqs: [FR-REG-02]
+    pages: [REG-01]
+    attrs:
+      - "from_body_id: ref(regulatory_body)!"
+      - "to_body_id: ref(regulatory_body)!"
+      - "dependency_type: enum(body_dependency_type)!"
+      - "note: str(300)"
+      - "data_status: enum(reference_data_status)!"
+    uq: [[from_body_id, to_body_id, dependency_type]]
+
+  institution_regulation:
+    title: Link from an institution to a watchdog it depends on — relationship, what it covers, effective dates
+    kind: link
+    zone: registry
+    class: internal
+    history: effective
+    scope: owned
+    origin: ceda
+    reqs: [FR-REG-03, FR-REG-04]
+    pages: [REG-02]
+    events: [REG.PROFILE_CHANGED]
+    notes: >
+      scope_node_id is the institution's node. regulatory_body_id refers to the national directory in the platform zone
+      (soft reference across zones). source records whether the link came from the rules or was set for the institution.
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "regulatory_body_id: uuid! | Soft reference to regulatory_body (platform zone)"
+      - "body_code: code(16)! | Denormalised code of the body, e.g. NECO"
+      - "relationship: enum(regulation_relationship)!"
+      - "covers: str(200) | e.g. BECE and SSCE, UTME admissions, ND/HND programmes, teacher registration"
+      - "levels: json | Education levels the link applies to"
+      - "is_mandatory: bool! default=true"
+      - "source: enum(regulation_source)!"
+      - "data_status: enum(reference_data_status)!"
+    uq: [[institution_id, body_code, relationship, valid_from]]
+    ix: [[body_code, relationship]]

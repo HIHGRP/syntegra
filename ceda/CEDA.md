@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **Document** | SYN-CEDA-001 — Canonical Enterprise Data Architecture |
-| **Version** | 1.5.0 — adds the education and training institutions of Nigeria's security agencies, each under its own agency structure with its own curricula (change request CR-004; §26). 1.4.0 modelled two-factor authentication and single sign-on (CR-003); 1.3.0 the national clearance network (CR-002; §25); 1.2.0 the HRMS and fee-clearance due diligence (CR-001; §23, §24). Change log in §22 |
+| **Version** | 1.6.0 — adds the federal unity colleges and federal special training institutions, extends the security agencies' institutions, and links every institution to the education watchdogs and examination bodies it depends on (change request CR-005; §27). 1.5.0 added the security agencies' education and training institutions, each under its own agency structure with its own curricula (CR-004; §26). 1.4.0 modelled two-factor authentication and single sign-on (CR-003); 1.3.0 the national clearance network (CR-002; §25); 1.2.0 the HRMS and fee-clearance due diligence (CR-001; §23, §24). Change log in §22 |
 | **Date** | 14 October 2026 (1.0.0 and 1.1.0: 13–14 October 2026) |
-| **Derived from** | SYN-MFS-002 v2.4, Master Functional Specification (consolidated single volume: Books 1–3, 517 functional requirements, 260 pages, Appendix J MySQL schema of 174 tables), extended by change requests CR-001 (23 requirements, 13 pages), CR-002 (6 requirements, 1 page), CR-003 (7 requirements) and CR-004 (8 requirements, 4 pages) |
+| **Derived from** | SYN-MFS-002 v2.4, Master Functional Specification (consolidated single volume: Books 1–3, 517 functional requirements, 260 pages, Appendix J MySQL schema of 174 tables), extended by change requests CR-001 (23 requirements, 13 pages), CR-002 (6 requirements, 1 page), CR-003 (7 requirements), CR-004 (8 requirements, 4 pages) and CR-005 (8 requirements, 3 pages) |
 | **Platform** | Python 3.12 · Django 5.2 LTS (+ FastAPI for high-throughput services) · MySQL 9.7 LTS · Red Hat Enterprise Linux 10 / OpenShift |
 | **Machine-readable model** | `ceda/model/` (single source of truth) → `ceda/generated/` (DDL, dictionary, ERDs, JSON Schema, OpenAPI components, event schemas, metric catalogue, traceability) |
 | **Status of artefacts** | Model validates with 0 errors, 0 warnings; every zone's DDL loads into MySQL 9.7.2; 12 database-level guarantees verified on MySQL 9.7 (§18) |
@@ -45,14 +45,14 @@ CEDA is the **authoritative data blueprint** for Syntegra. The MFS says *what* t
 
 | Measure | Value |
 |---|---|
-| Domains (subject areas) | 33 operational + 1 warehouse |
-| Canonical entities | 492 (174 re-specified from Appendix J, 318 added to give MFS and change-request requirements a home) |
-| Physical tables | 522 across 6 data zones (platform 24, registry 192, ops 223, vault 26, records 19, warehouse 38) — 18 cross-cutting entities are replicated per zone |
-| Columns · enforced foreign keys · soft references | 7,950 · 686 · 340 |
+| Domains (subject areas) | 35 operational + 1 warehouse |
+| Canonical entities | 498 (174 re-specified from Appendix J, 324 added to give MFS and change-request requirements a home) |
+| Physical tables | 528 across 6 data zones (platform 26, registry 196, ops 223, vault 26, records 19, warehouse 38) — 18 cross-cutting entities are replicated per zone |
+| Columns · enforced foreign keys · soft references | 8,044 · 699 · 340 |
 | Append-only tables · partitioned tables | 96 · 21 |
-| Fixed enumerations · jurisdiction code lists | 350 · 51 (Nigerian pack) |
-| Domain events · semantic-layer metrics · retention series | 152 · 62 · 32 |
-| Coverage | 278/278 pages (260 MFS + 13 CR-001 + 1 CR-002 + 4 CR-004); 561/561 functional requirements accounted for (517 MFS + 23 CR-001 + 6 CR-002 + 7 CR-003 + 8 CR-004; 554 realised in data, 7 behavioural); 174/174 Appendix J tables mapped |
+| Fixed enumerations · jurisdiction code lists | 360 · 51 (Nigerian pack) |
+| Domain events · semantic-layer metrics · retention series | 153 · 63 · 32 |
+| Coverage | 281/281 pages (260 MFS + 13 CR-001 + 1 CR-002 + 4 CR-004 + 3 CR-005); 569/569 functional requirements accounted for (517 MFS + 23 CR-001 + 6 CR-002 + 7 CR-003 + 8 CR-004 + 8 CR-005; 562 realised in data, 7 behavioural); 174/174 Appendix J tables mapped |
 
 ---
 
@@ -125,6 +125,7 @@ Decisions CEDA had to take to make the MFS buildable. Status **Adopted** means t
 | CD-21 | **Releases are frozen; upgrades are expand-only deltas.** `ceda/releases/<version>/` holds the full baseline DDL (1.1.0) and, for each later release, the derived delta plus any hand-written expand script; one Django migration per release; `release.py check --mysql` proves the replayed releases are structurally identical to the current DDL. | A live state database is upgraded, never rebuilt (§17.4). | Adopted |
 | CD-22 | **Cross-state clearance is a federation of state registries, not a national register.** Each state keeps its own obligations register; a national directory (`exchange_peer`) lists all 36 states and the FCT with their hosting, endpoint and verification key. A check asks every other state with a signed (ES256), expiring, single-use message; the subject is identified by Global Learner ID, a national NIN lookup token and demographics, never the NIN; a state answers with obligations only for a confident match (≥ 0.98); states that are not on the network or do not answer are recorded as coverage gaps and never block the admission. Both states log the message. | NDPA 2023 data minimisation and state data sovereignty (each state controls its register); a single national copy of family debts would be a new, larger target. Completeness is reported, not assumed, on every check. | Adopted (CR-002, §25) |
 | CD-23 | **Sector registries.** Education and training that belongs to a national body rather than a state is held in a national *sector registry* — a registry tenant of kind `sector_registry` beside the 37 state registries, with its own GLID block, roles and scope hierarchy. The first is the Federal Security Education registry (`ng-fse`) for the security agencies' institutions; each agency's own structure is its scope tree, so access is granted at agency, command or institution level and no state ministry sees it. | The agencies are national, their institutions span many states, and their trainees' records need stronger isolation than a state registry gives; a sector registry reuses every registry capability (learners, institutions, programmes, enrolment, audit) unchanged. | Adopted (CR-004, §26) |
+| CD-24 | **Every institution has an explicit regulatory profile.** The education watchdogs — ministries, regulators and accreditors, examination, admission, curriculum, teacher, funding and professional bodies — form one national directory (platform zone) with their dependencies; each institution, in whichever registry it lives, has links to the bodies it depends on (supervision, accreditation or licensing, curriculum, examination, admission, teacher registration, professional regulation, funding), derived from rules on category, ownership and levels when it is registered, adjustable per institution, and checked for gaps. | "Who supervises, accredits and examines this institution?" must have one answer per institution, not be inferred by each consumer; gaps (no supervisor, no accreditor, no examination body) become visible. | Adopted (CR-005, §27) |
 
 ---
 
@@ -733,6 +734,7 @@ The Appendix J DDL (174 tables) was extracted from the MFS and loaded into MySQL
 | D30 | Statutory payroll tables and the state's approved salary scales | State Head of Service, payroll and tax advisers | Versioned tables seeded with the 2026 values (Nigeria Tax Act 2025 PAYE bands; pension 8%/10%; NHF 2.5%); salary scale `AB-TSS-ILLUSTRATIVE` is a placeholder that must be replaced before a live pay run |
 | D31 | Retirement rules per cadre (teachers 65 years / 40 years of service; others 60 / 35) | Head of Service | Cadre attributes (`retirement_age`, `max_years_service`), not code |
 | D32 | Security agencies' reference data: agencies, structures, ranks, institutions and course catalogues | Each agency's training directorate + Office of the National Security Adviser | Seeded from public sources and marked `illustrative` or `to_confirm`; nothing is `verified` until the agency confirms it. Course detail is syllabus headings only, and courses whose detail an agency withholds are `content_held = false` |
+| D33 | Official lists of federal unity colleges and federal special training institutions; supervising ministries of NBS, OSGOF, FRSC, NDLEA, EFCC and DSS institutions | Federal Ministry of Education and each owning body | Seeded lists marked `to_confirm`; the reference import (`syntegra_federal_registry import`, template `ceda/templates/federal_institutions.csv`) completes and corrects them; missing supervisors stay visible as profile gaps |
 
 ---
 
@@ -759,10 +761,21 @@ The Appendix J DDL (174 tables) was extracted from the MFS and loaded into MySQL
 | `ceda/generated/traceability/` | Page, requirement and Appendix J traceability |
 | `ceda/generated/summary.json` | Counts |
 | `ceda/model/change_requests/CR-*.yaml` | Change requests: requirements and pages beyond the MFS (CD-18) |
-| `ceda/releases/<version>/` | Frozen release DDL: 1.1.0 baseline; 1.2.0 to 1.5.0 deltas and expand scripts (CD-21) |
+| `ceda/releases/<version>/` | Frozen release DDL: 1.1.0 baseline; 1.2.0 to 1.6.0 deltas and expand scripts (CD-21) |
+| `ceda/templates/federal_institutions.csv` | Column layout of the federal institutions reference import (FR-FED-04) |
 | `ceda/tools/gen_django.py` → `src/syntegra/*/models.py`, `src/syntegra/core/catalog/ceda_catalog.json` | Django models (`managed = False`) and the runtime catalogue (events, metrics, enums, code lists, pages) for the application |
 
 ## 22. Change log
+
+### 1.6.0 — 14 October 2026 (change request CR-005)
+
+| Change | Reason |
+|---|---|
+| Domain **FED** (module `federal_institutions`, 3 entities): `federal_body`, `federal_body_unit`, `federal_institution`; Federal Institutions registry `ng-fed` (CD-23) | Federal unity colleges and federal special training institutions under their owning bodies and structures |
+| Domain **REG** (module `regulation`, 3 entities): `regulatory_body` and `body_dependency` (platform zone), `institution_regulation` (registry zone) (CD-24) | Education watchdogs, their dependencies and every institution's regulatory profile |
+| Security institution type `secondary_school`; 17 further security-agency institutions | The agencies' secondary schools and further specialist schools (CR-005 extends CR-004) |
+| 10 enums, event `REG.PROFILE_CHANGED`, metric `REG-PROFILE-COMPLETE` | Needed by the new domains |
+| Release 1.6.0: expand script widening the security institution type check, plus the derived delta | Upgrading a live 1.5.0 database in place |
 
 ### 1.5.0 — 14 October 2026 (change request CR-004)
 
@@ -1134,4 +1147,84 @@ agency confirms it (D32). Durations and contact hours are left for the agencies 
 STI-01 directory of agencies and institutions, with each agency's structure and ranks; STI-02 institution and its course
 catalogue; STI-03 course curriculum with modules and intakes; STI-04 intake and trainees. The API is under
 `/api/v1/security-training/…`. Metrics `STI-INTAKE-FILL` and `STI-PASS-OUT-RATE`.
+
+---
+
+## 27. Federal institutions and the education watchdogs
+
+### 27.1 Federal unity colleges and federal special training institutions
+
+Change request CR-005 brings into CEDA the federal institutions that are not state schools. They are held in the
+**Federal Institutions registry** (`ng-fed`), a sector registry (CD-23), under their owning body and that body's own
+structure:
+
+| Owning body | Structure (examples) | Institutions |
+|---|---|---|
+| Federal Ministry of Education | Department of Senior Secondary Education → Federal Unity Colleges → six geopolitical zones; Department of Technology and Science Education → Federal Science and Technical Colleges; Department of Tertiary Education → Federal Colleges of Education | Federal Government Colleges, Federal Government Girls' and Boys' Colleges, King's College and Queen's College; Federal Science and Technical Colleges; federal colleges of education, including technical and special |
+| National Teachers' Institute (FME parastatal) | Headquarters | NTI Kaduna |
+| Ministries of agriculture, environment, aviation, marine and blue economy, petroleum; NBS; Office of the Surveyor-General | Training departments | Colleges of agriculture, animal health, land resources, horticulture, fisheries, co-operatives, forestry and wildlife; schools of statistics and surveying; the College of Aviation Technology, the Maritime Academy and the Petroleum Training Institute |
+
+`federal_institution` records the type, geopolitical zone, gender intake, boarding and admission basis (the
+National Common Entrance Examination for unity colleges, UTME for tertiary colleges). Access follows the structure:
+a grant at the South West zone of the unity colleges sees only those colleges.
+
+The security agencies' registry (§26) gains the agencies' secondary schools — the Nigerian Military School, Command
+Secondary Schools, the Air Force Military School and Navy Secondary Schools — and further institutions: the Army College
+of Nursing, the Army schools of military police, finance and administration and education, the peacekeeping centre,
+three more police colleges and the Defence Intelligence College (administration only, `content_not_held`).
+
+### 27.2 The watchdog directory
+
+`regulatory_body` (platform zone) holds the bodies Nigerian education depends on, each with type, jurisdiction,
+statutory basis, functions and the levels it covers:
+
+| Type | Bodies |
+|---|---|
+| Ministries | FME; Health; Defence; Police Affairs; Interior; Finance; Agriculture; Environment; Aviation; Marine and Blue Economy; Petroleum; each state's ministry of education |
+| Regulators and accreditors | NUC, NBTE, NCCE, UBEC, each state's SUBEB, NMEC, NCNE |
+| Curriculum, teachers, funding | NERDC, TRCN, TETFund, NTI |
+| Examination and admission | WAEC, NECO, NABTEB, NBAIS, each state's examinations board; JAMB |
+| Professional councils and sector regulators | NMCN, MDCN, PCN, MLSCN, CHPRBN, COREN, VCN, SURCON; NCAA, NIMASA |
+
+`body_dependency` records how they depend on each other: the FME parastatals are *supervised by* the FME; SUBEBs are
+*funded by* UBEC; JAMB *recognises the results of* WAEC, NECO and NABTEB; NUC *accredits with* MDCN, PCN, NMCN, MLSCN
+and COREN; the health councils are supervised by the Federal Ministry of Health.
+
+### 27.3 Every institution's regulatory profile (CD-24)
+
+`institution_regulation` links an institution to each body it depends on, with the relationship, what the link covers,
+the levels and effective dates. The rules (`regulation.reference.profile`) derive the links when an institution is
+registered in any registry:
+
+| Institution | Depends on |
+|---|---|
+| State public primary or junior secondary | State ministry (supervision), SUBEB (supervision), UBEC (funding), NERDC (curriculum), TRCN (teachers), state examinations board (BECE) |
+| Private school | State ministry (approval and licensing), NERDC, TRCN, and the examinations of its levels |
+| Senior secondary (any owner) | WAEC (WASSCE) and NECO (SSCE) in addition to the above |
+| Federal unity college | FME (supervision), NECO (National Common Entrance, BECE and SSCE), WAEC, NERDC, TRCN |
+| Federal Science and Technical College | as a unity college, plus NABTEB (NTC/NBC) and NBTE (accreditation) |
+| University, polytechnic, college of education | NUC, NBTE or NCCE (accreditation), JAMB (admissions), TETFund (public institutions), the owning ministry |
+| Nursing and health schools | NMCN or CHPRBN (professional regulation) |
+| Security institutions | the supervising ministry (Defence, Police Affairs, Interior, Finance) and their academic accreditors (e.g. NDA and POLAC: NUC and JAMB) |
+
+Sector regulators are added for special institutions (NCAA for the College of Aviation Technology, NIMASA for the
+Maritime Academy). A state or federal administrator can add or end a link for one institution (`regulation:manage`).
+Each profile is checked for **gaps** — no supervising or licensing body, no accreditor where one is required, no
+examination body for examined levels, no curriculum authority — and the metric `REG-PROFILE-COMPLETE` reports the share
+of complete profiles. Gaps that remain in the seeded data are deliberate: where a supervising ministry is not
+confirmed (statistics and surveying schools; FRSC, NDLEA, EFCC and DSS institutions) the profile says so (D33).
+
+### 27.4 Reference data, import and pages
+
+The seed holds 132 federal institutions (76 unity colleges, 10 Federal Science and Technical Colleges, 19 federal
+colleges of education and 27 other special training institutions) and 50 security-agency institutions. Lists are from
+public sources and marked `to_confirm` unless well established; the **official lists complete and correct them**:
+`manage.py syntegra_federal_registry import <file.csv> [--dry-run]` (or `POST /api/v1/federal-institutions/import`)
+validates every row before anything is written, adds new institutions with their regulatory profiles, corrects names,
+categories and levels of existing ones, and reports what changed. `manage.py syntegra_regulation` loads the directory
+and applies the rules to every institution in every registry.
+
+Pages: FED-01 `/federal-institutions` (by body, zone and type, with each institution's dependencies); REG-01
+`/regulators` (public directory with dependencies); REG-02 `/institutions/{id}/regulation` (an institution's profile and
+gaps). API: `/api/v1/regulators`, `/api/v1/institutions/{id}/regulation`, `/api/v1/federal-institutions`.
 

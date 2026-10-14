@@ -490,6 +490,7 @@
         "institution_type": {
           "type": "string",
           "enum": [
+            "secondary_school",
             "military_academy",
             "police_academy",
             "service_academy",

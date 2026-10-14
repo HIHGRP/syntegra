@@ -21,5 +21,8 @@ urlpatterns = [
     ),
     path("security-training/courses/<uuid:course_id>", views.security_course, name="security_course"),
     path("security-training/intakes/<uuid:intake_id>", views.security_intake, name="security_intake"),
+    path("federal-institutions", views.federal_institutions, name="federal_institutions"),
+    path("regulators", views.regulators, name="regulators"),
+    path("institutions/<uuid:institution_id>/regulation", views.institution_regulation, name="institution_regulation"),
     path("hr/establishment", views.establishment, name="establishment"),
 ]

@@ -1,0 +1,43 @@
+erDiagram
+    regulatory_body {
+        BINARY_16_ id PK
+        VARCHAR_16_ code
+        VARCHAR_300_ name
+        VARCHAR_32_ body_type
+        VARCHAR_300_ statutory_basis
+        VARCHAR_32_ jurisdiction
+        JSON levels
+        TEXT functions
+        VARCHAR_2048_ website
+        VARCHAR_32_ data_status
+        VARCHAR_32_ status
+    }
+    body_dependency {
+        BINARY_16_ id PK
+        BINARY_16_ from_body_id FK
+        BINARY_16_ to_body_id FK
+        VARCHAR_32_ dependency_type
+        VARCHAR_300_ note
+        VARCHAR_32_ data_status
+    }
+    institution_regulation {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        BINARY_16_ regulatory_body_id
+        VARCHAR_16_ body_code
+        VARCHAR_32_ relationship
+        VARCHAR_200_ covers
+        JSON levels
+        BOOLEAN is_mandatory
+        VARCHAR_32_ source
+        VARCHAR_32_ data_status
+        DATE valid_from
+        DATE valid_to
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    institution ||--o{ institution_regulation : "institution_id"
+    regulatory_body ||--o{ body_dependency : "from_body_id"
+    regulatory_body ||--o{ body_dependency : "to_body_id"

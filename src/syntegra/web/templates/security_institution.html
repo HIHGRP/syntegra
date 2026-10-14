@@ -4,6 +4,7 @@
 <p><a href="/security-training/agencies/{{ i.agency.id }}">← {{ i.agency.name }}</a></p>
 <h1>{{ i.name }}</h1>
 <p class="muted"><code>{{ i.institution_code }}</code> · {{ i.institution_type.replace("_", " ") }} · {{ i.unit.name }} · {{ i.address.town }}, {{ i.address.state }}{% if i.established_year %} · established {{ i.established_year }}{% endif %}</p>
+<p><a href="/institutions/{{ i.institution_id }}/regulation">Regulators and examination bodies this institution depends on →</a></p>
 <section class="tiles">
   <article class="tile"><h2>Agency</h2><p>{{ i.agency.name }}</p></article>
   <article class="tile"><h2>Head</h2><p>{{ i.commandant_title or "—" }}</p></article>

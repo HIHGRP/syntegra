@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Syntegra CEDA canonical component schemas
-  version: 1.5.0
+  version: 1.6.0
   description: Generated from the CEDA model. API resources compose these schemas; fields marked x-classification restricted/special
     are only serialised for callers whose grant clearance covers them and who supplied X-Syntegra-Purpose.
 paths: {}
@@ -48986,6 +48986,7 @@ components:
         institution_type:
           type: string
           enum:
+          - secondary_school
           - military_academy
           - police_academy
           - service_academy
@@ -49561,6 +49562,699 @@ components:
       - learner_id
       - intake_id
       - outcome
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    FederalBody:
+      title: FederalBody
+      description: Federal ministry, department, parastatal or commission that owns or supervises federal institutions
+      type: object
+      x-ceda:
+        entity: federal_body
+        zone: registry
+        domain: FED
+        kind: master
+        classification: internal
+        history: lifecycle
+        module: federal_institutions
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        code:
+          type: string
+          maxLength: 16
+          pattern: ^[A-Za-z0-9_.:/-]*$
+          description: e.g. FME, FMAFS, FMOH, FMAV, FMT
+        name:
+          type: string
+          maxLength: 300
+        category:
+          type: string
+          enum:
+          - ministry
+          - department
+          - parastatal
+          - commission
+          - agency
+        parent_body_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: federal_body
+            description: e.g. a parastatal's supervising ministry
+          - type: 'null'
+        website:
+          anyOf:
+          - type: string
+            format: uri
+            maxLength: 2048
+          - type: 'null'
+        data_status:
+          type: string
+          enum:
+          - verified
+          - illustrative
+          - to_confirm
+        status:
+          type: string
+          enum:
+          - active
+          - inactive
+          - retired
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - code
+      - name
+      - category
+      - data_status
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    FederalBodyUnit:
+      title: FederalBodyUnit
+      description: Unit of a federal body's own structure (department, directorate, division, geopolitical zone)
+      type: object
+      x-ceda:
+        entity: federal_body_unit
+        zone: registry
+        domain: FED
+        kind: master
+        classification: internal
+        history: lifecycle
+        module: federal_institutions
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        body_id:
+          type: string
+          format: uuid
+          x-ref: federal_body
+        parent_unit_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: federal_body_unit
+          - type: 'null'
+        unit_type:
+          type: string
+          enum:
+          - department
+          - directorate
+          - division
+          - unit
+          - zone
+        code:
+          type: string
+          maxLength: 40
+          pattern: ^[A-Za-z0-9_.:/-]*$
+          description: Unique within the body
+        name:
+          type: string
+          maxLength: 300
+        data_status:
+          type: string
+          enum:
+          - verified
+          - illustrative
+          - to_confirm
+        status:
+          type: string
+          enum:
+          - active
+          - inactive
+          - retired
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - body_id
+      - unit_type
+      - code
+      - name
+      - data_status
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    FederalInstitution:
+      title: FederalInstitution
+      description: Federal profile of a unity college or federal special training institution
+      type: object
+      x-ceda:
+        entity: federal_institution
+        zone: registry
+        domain: FED
+        kind: master
+        classification: internal
+        history: lifecycle
+        module: federal_institutions
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        institution_id:
+          type: string
+          format: uuid
+          x-ref: institution
+        body_id:
+          type: string
+          format: uuid
+          x-ref: federal_body
+        unit_id:
+          type: string
+          format: uuid
+          x-ref: federal_body_unit
+        institution_type:
+          type: string
+          enum:
+          - unity_college
+          - unity_college_girls
+          - unity_college_boys
+          - science_technical_college
+          - special_needs_college
+          - college_of_education
+          - college_of_education_technical
+          - college_of_education_special
+          - college_of_agriculture
+          - college_of_forestry
+          - college_of_fisheries
+          - college_of_animal_health
+          - college_of_land_resources
+          - college_of_veterinary_laboratory
+          - cooperative_college
+          - school_of_statistics
+          - school_of_surveying
+          - aviation_college
+          - maritime_academy
+          - petroleum_training_institute
+          - policy_institute
+          - teacher_training_institute
+          - other_special
+        geopolitical_zone:
+          type: string
+          enum:
+          - north_central
+          - north_east
+          - north_west
+          - south_east
+          - south_south
+          - south_west
+        gender_intake:
+          anyOf:
+          - type: string
+            enum:
+            - mixed
+            - boys
+            - girls
+          - type: 'null'
+        day_boarding:
+          anyOf:
+          - type: string
+            enum:
+            - day
+            - boarding
+            - mixed
+          - type: 'null'
+        admission_basis:
+          anyOf:
+          - type: string
+            enum:
+            - national_common_entrance
+            - utme
+            - direct_entry
+            - merit_and_quota
+            - agency_recruitment
+            - other
+            description: e.g. national_common_entrance for unity colleges
+          - type: 'null'
+        established_year:
+          anyOf:
+          - type: integer
+          - type: 'null'
+        data_status:
+          type: string
+          enum:
+          - verified
+          - illustrative
+          - to_confirm
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - institution_id
+      - body_id
+      - unit_id
+      - institution_type
+      - geopolitical_zone
+      - data_status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    RegulatoryBody:
+      title: RegulatoryBody
+      description: Education watchdog — ministry, regulator, examination, admission, curriculum, teacher, funding or professional
+        body
+      type: object
+      x-ceda:
+        entity: regulatory_body
+        zone: platform
+        domain: REG
+        kind: reference
+        classification: public
+        history: lifecycle
+        module: regulation
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        code:
+          type: string
+          maxLength: 16
+          pattern: ^[A-Za-z0-9_.:/-]*$
+          description: Matches the regulator code list where one exists, e.g. NUC, WAEC, JAMB
+        name:
+          type: string
+          maxLength: 300
+        body_type:
+          type: string
+          enum:
+          - ministry
+          - regulator_accreditor
+          - examination_body
+          - admissions_body
+          - curriculum_authority
+          - teacher_regulator
+          - professional_council
+          - funding_agency
+          - sector_regulator
+          - training_institute
+        statutory_basis:
+          anyOf:
+          - type: string
+            maxLength: 300
+            description: Establishing law
+          - type: 'null'
+        jurisdiction:
+          type: string
+          enum:
+          - federal
+          - regional
+          - state
+        levels:
+          anyOf:
+          - type: object
+            description: Education levels the body covers (education_level codes)
+          - type: 'null'
+        functions:
+          anyOf:
+          - type: string
+            maxLength: 65535
+            description: What the body does for institutions
+          - type: 'null'
+        website:
+          anyOf:
+          - type: string
+            format: uri
+            maxLength: 2048
+          - type: 'null'
+        data_status:
+          type: string
+          enum:
+          - verified
+          - illustrative
+          - to_confirm
+        status:
+          type: string
+          enum:
+          - active
+          - inactive
+          - retired
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - code
+      - name
+      - body_type
+      - jurisdiction
+      - data_status
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    BodyDependency:
+      title: BodyDependency
+      description: Dependency between two watchdogs (supervised by, recognises the results of, accredits with, funded by,
+        member of)
+      type: object
+      x-ceda:
+        entity: body_dependency
+        zone: platform
+        domain: REG
+        kind: reference
+        classification: public
+        history: lifecycle
+        module: regulation
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        from_body_id:
+          type: string
+          format: uuid
+          x-ref: regulatory_body
+        to_body_id:
+          type: string
+          format: uuid
+          x-ref: regulatory_body
+        dependency_type:
+          type: string
+          enum:
+          - supervised_by
+          - recognises_results_of
+          - accredits_with
+          - funded_by
+          - member_of
+        note:
+          anyOf:
+          - type: string
+            maxLength: 300
+          - type: 'null'
+        data_status:
+          type: string
+          enum:
+          - verified
+          - illustrative
+          - to_confirm
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - from_body_id
+      - to_body_id
+      - dependency_type
+      - data_status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    InstitutionRegulation:
+      title: InstitutionRegulation
+      description: Link from an institution to a watchdog it depends on — relationship, what it covers, effective dates
+      type: object
+      x-ceda:
+        entity: institution_regulation
+        zone: registry
+        domain: REG
+        kind: link
+        classification: internal
+        history: effective
+        module: regulation
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        institution_id:
+          type: string
+          format: uuid
+          x-ref: institution
+        regulatory_body_id:
+          type: string
+          format: uuid
+          description: Soft reference to regulatory_body (platform zone)
+        body_code:
+          type: string
+          maxLength: 16
+          pattern: ^[A-Za-z0-9_.:/-]*$
+          description: Denormalised code of the body, e.g. NECO
+        relationship:
+          type: string
+          enum:
+          - supervision
+          - accreditation
+          - licensing
+          - curriculum
+          - examination
+          - admission
+          - teacher_registration
+          - professional_regulation
+          - funding
+          - affiliation
+        covers:
+          anyOf:
+          - type: string
+            maxLength: 200
+            description: e.g. BECE and SSCE, UTME admissions, ND/HND programmes, teacher registration
+          - type: 'null'
+        levels:
+          anyOf:
+          - type: object
+            description: Education levels the link applies to
+          - type: 'null'
+        is_mandatory:
+          type: boolean
+        source:
+          type: string
+          enum:
+          - rule
+          - institution
+          - import
+        data_status:
+          type: string
+          enum:
+          - verified
+          - illustrative
+          - to_confirm
+        valid_from:
+          type: string
+          format: date
+          description: 'Effective from (inclusive) — history: effective'
+          readOnly: true
+        valid_to:
+          type: string
+          format: date
+          description: 'Effective to (inclusive); NULL = open-ended — history: effective'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - institution_id
+      - regulatory_body_id
+      - body_code
+      - relationship
+      - is_mandatory
+      - source
+      - data_status
+      - valid_from
       - created_at
       - updated_at
       - row_version

@@ -7,7 +7,7 @@
   "id": "SYN-CEDA-001",
   "platform": "Red Hat Enterprise Linux 10 / OpenShift",
   "status": "Baseline for build",
-  "version": "1.5.0"
+  "version": "1.6.0"
  },
  "code_lists": {
   "absence_reason": [
@@ -668,6 +668,14 @@
    "system",
    "platform_operator"
   ],
+  "admission_basis": [
+   "national_common_entrance",
+   "utme",
+   "direct_entry",
+   "merit_and_quota",
+   "agency_recruitment",
+   "other"
+  ],
   "admission_decision": [
    "offer",
    "conditional_offer",
@@ -999,6 +1007,13 @@
    "boarded",
    "alighted",
    "no_show"
+  ],
+  "body_dependency_type": [
+   "supervised_by",
+   "recognises_results_of",
+   "accredits_with",
+   "funded_by",
+   "member_of"
   ],
   "booking_status": [
    "requested",
@@ -1630,6 +1645,45 @@
    "learner",
    "guardian"
   ],
+  "federal_body_category": [
+   "ministry",
+   "department",
+   "parastatal",
+   "commission",
+   "agency"
+  ],
+  "federal_institution_type": [
+   "unity_college",
+   "unity_college_girls",
+   "unity_college_boys",
+   "science_technical_college",
+   "special_needs_college",
+   "college_of_education",
+   "college_of_education_technical",
+   "college_of_education_special",
+   "college_of_agriculture",
+   "college_of_forestry",
+   "college_of_fisheries",
+   "college_of_animal_health",
+   "college_of_land_resources",
+   "college_of_veterinary_laboratory",
+   "cooperative_college",
+   "school_of_statistics",
+   "school_of_surveying",
+   "aviation_college",
+   "maritime_academy",
+   "petroleum_training_institute",
+   "policy_institute",
+   "teacher_training_institute",
+   "other_special"
+  ],
+  "federal_unit_type": [
+   "department",
+   "directorate",
+   "division",
+   "unit",
+   "zone"
+  ],
   "fee_service": [
    "certificate_reissue",
    "certified_copy",
@@ -1700,6 +1754,14 @@
    "mixed",
    "boys",
    "girls"
+  ],
+  "geopolitical_zone": [
+   "north_central",
+   "north_east",
+   "north_west",
+   "south_east",
+   "south_south",
+   "south_west"
   ],
   "gl_type": [
    "asset",
@@ -2538,12 +2600,46 @@
    "registered",
    "dropped"
   ],
+  "regulation_relationship": [
+   "supervision",
+   "accreditation",
+   "licensing",
+   "curriculum",
+   "examination",
+   "admission",
+   "teacher_registration",
+   "professional_regulation",
+   "funding",
+   "affiliation"
+  ],
+  "regulation_source": [
+   "rule",
+   "institution",
+   "import"
+  ],
+  "regulatory_body_type": [
+   "ministry",
+   "regulator_accreditor",
+   "examination_body",
+   "admissions_body",
+   "curriculum_authority",
+   "teacher_regulator",
+   "professional_council",
+   "funding_agency",
+   "sector_regulator",
+   "training_institute"
+  ],
   "regulatory_fee_kind": [
    "application",
    "inspection",
    "approval",
    "renewal",
    "late_renewal"
+  ],
+  "regulatory_jurisdiction": [
+   "federal",
+   "regional",
+   "state"
   ],
   "regulatory_status": [
    "approved",
@@ -2790,6 +2886,7 @@
    "content_not_held"
   ],
   "security_institution_type": [
+   "secondary_school",
    "military_academy",
    "police_academy",
    "service_academy",
@@ -4801,6 +4898,20 @@
    "producer": "providers",
    "trigger": "Sanction step takes effect (admissions/exam entries blocked)"
   },
+  "REG.PROFILE_CHANGED": {
+   "aggregate": "institution_regulation",
+   "consumers": [
+    "search",
+    "analytics"
+   ],
+   "payload": {
+    "body_code": "code(16)!",
+    "institution_id": "uuid!",
+    "relationship": "enum(regulation_relationship)!"
+   },
+   "producer": "regulation",
+   "trigger": "An institution's regulatory profile gained, changed or ended a link"
+  },
   "RPT.RETURN_SUBMITTED": {
    "aggregate": "return_submission",
    "consumers": [
@@ -6515,6 +6626,26 @@
    ],
    "sources": [
     "trainee_record"
+   ]
+  },
+  {
+   "direction": "higher_is_better",
+   "formula": "institutions with a supervising body, an accreditor where required and an examination body for examined levels ÷ institutions",
+   "grain": "registry × category × ownership",
+   "group": "Regulation",
+   "id": "REG-PROFILE-COMPLETE",
+   "name": "Institutions with a complete regulatory profile",
+   "pages": [
+    "REG-02",
+    "FED-01"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-REG-04"
+   ],
+   "sources": [
+    "institution_regulation",
+    "institution"
    ]
   }
  ],
@@ -11177,6 +11308,50 @@
    ],
    "route": "/security-training/intakes/{id}",
    "title": "Course intake and trainees"
+  },
+  {
+   "change_request": "CR-005",
+   "classification": "internal",
+   "id": "FED-01",
+   "module": "Federal institutions",
+   "pattern": "Register / list",
+   "phase": "P3",
+   "purpose": "Federal unity colleges and federal special training institutions by owning body, unit, type and geopolitical zone.",
+   "roles": [
+    "PLAT",
+    "FED",
+    "FADM"
+   ],
+   "route": "/federal-institutions",
+   "title": "Federal institutions"
+  },
+  {
+   "change_request": "CR-005",
+   "classification": "public",
+   "id": "REG-01",
+   "module": "Regulation",
+   "pattern": "Register / list",
+   "phase": "P3",
+   "purpose": "Directory of regulators, examination, admission, curriculum, teacher and professional bodies, what each covers and how they depend on each other.",
+   "roles": [
+    "All"
+   ],
+   "route": "/regulators",
+   "title": "Education watchdogs and examination bodies"
+  },
+  {
+   "change_request": "CR-005",
+   "classification": "internal",
+   "id": "REG-02",
+   "module": "Regulation",
+   "pattern": "Record 360",
+   "phase": "P3",
+   "purpose": "Every body an institution depends on — who supervises, accredits, sets the curriculum, examines, admits, registers teachers and funds — and any gaps.",
+   "roles": [
+    "All"
+   ],
+   "route": "/institutions/{id}/regulation",
+   "title": "Institution regulatory profile"
   }
  ],
  "retention": {

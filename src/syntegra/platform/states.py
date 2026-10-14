@@ -48,3 +48,14 @@ STATES: list[tuple[str, str, tuple[str, str]]] = [
 ]
 BY_CODE = {code: (name, capital) for code, name, capital in STATES}
 assert len(STATES) == 37  # 36 states and the FCT
+
+# Geopolitical zones (used by federal institutions, CR-005)
+ZONES: dict[str, str] = {
+    **dict.fromkeys(("NG-BE", "NG-KO", "NG-KW", "NG-NA", "NG-NI", "NG-PL", "NG-FC"), "north_central"),
+    **dict.fromkeys(("NG-AD", "NG-BA", "NG-BO", "NG-GO", "NG-TA", "NG-YO"), "north_east"),
+    **dict.fromkeys(("NG-JI", "NG-KD", "NG-KN", "NG-KT", "NG-KE", "NG-SO", "NG-ZA"), "north_west"),
+    **dict.fromkeys(("NG-AB", "NG-AN", "NG-EB", "NG-EN", "NG-IM"), "south_east"),
+    **dict.fromkeys(("NG-AK", "NG-BY", "NG-CR", "NG-DE", "NG-ED", "NG-RI"), "south_south"),
+    **dict.fromkeys(("NG-EK", "NG-LA", "NG-OG", "NG-ON", "NG-OS", "NG-OY"), "south_west"),
+}
+assert len(ZONES) == 37

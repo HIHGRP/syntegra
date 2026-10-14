@@ -164,7 +164,7 @@ One profile per institution; the institution master (domain INS) keeps name, loc
 | `institution_id` → `institution` | `BINARY(16)` | no |  |  |
 | `agency_id` → `security_agency` | `BINARY(16)` | no |  |  |
 | `unit_id` → `agency_unit` | `BINARY(16)` | no |  | Owning command, training command or directorate |
-| `institution_type` | `VARCHAR(32)` | no |  | values: military_academy, police_academy, service_academy, defence_university, staff_college, war_college, defence_college, depot, training_school, specialist_school, training_college, technical_institute, health_sciences_school, strategic_institute |
+| `institution_type` | `VARCHAR(32)` | no |  | values: secondary_school, military_academy, police_academy, service_academy, defence_university, staff_college, war_college, defence_college, depot, training_school, specialist_school, training_college, technical_institute, health_sciences_school, strategic_institute |
 | `access_regime` | `VARCHAR(32)` | no |  | content_not_held: CEDA holds administration only · values: standard, restricted, content_not_held |
 | `accreditation` | `JSON` | yes |  | Academic regulators and affiliations, e.g. NUC, NBTE, affiliated university |
 | `commandant_title` | `VARCHAR(80)` | yes |  | Commandant, Rector, Vice-Chancellor, Director, Principal |

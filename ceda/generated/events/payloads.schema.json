@@ -3338,6 +3338,41 @@
         "outcome"
       ],
       "additionalProperties": false
+    },
+    "REG.PROFILE_CHANGED": {
+      "type": "object",
+      "description": "An institution's regulatory profile gained, changed or ended a link",
+      "properties": {
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "body_code": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "relationship": {
+          "type": "string",
+          "enum": [
+            "supervision",
+            "accreditation",
+            "licensing",
+            "curriculum",
+            "examination",
+            "admission",
+            "teacher_registration",
+            "professional_regulation",
+            "funding",
+            "affiliation"
+          ]
+        }
+      },
+      "required": [
+        "institution_id",
+        "body_code",
+        "relationship"
+      ],
+      "additionalProperties": false
     }
   }
 }

@@ -48,6 +48,8 @@ CEDA_APPS = [
     "syntegra.financing",
     "syntegra.clearance",
     "syntegra.security_training",
+    "syntegra.federal_institutions",
+    "syntegra.regulation",
     "syntegra.operations",
     "syntegra.forms",
     "syntegra.records",

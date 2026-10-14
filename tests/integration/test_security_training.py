@@ -5,7 +5,6 @@ from __future__ import annotations
 import datetime as dt
 import re
 import uuid
-from collections.abc import Iterator
 from typing import Any
 
 import pytest
@@ -14,20 +13,6 @@ from syntegra.core.errors import ConflictError, Forbidden, HardValidation, NotFo
 
 pytestmark = pytest.mark.django_db(databases="__all__")
 HOST = "fse.testserver"
-
-
-@pytest.fixture(scope="session")
-def fse(django_db_setup: Any, django_db_blocker: Any) -> Iterator[Any]:
-    """Provision the Federal Security Education registry once and load the reference data."""
-    from syntegra.core import tenancy
-    from syntegra.security_training import registry
-
-    with django_db_blocker.unblock():
-        p = registry.provision(hosts=[HOST])
-        seeded = registry.seed_reference()
-    tenancy.clear_caches()
-    yield p, seeded
-    tenancy.clear_caches()
 
 
 def use(ctx: Any) -> Any:
@@ -97,7 +82,7 @@ def test_every_agency_is_modelled_with_its_own_structure_ranks_institutions_and_
             AgencyRank.objects.filter(agency_id=agencies["NA"].id, rank_category="commissioned_officer").count() == 10
         )
         profiles = list(SecurityInstitution.objects.all())
-        assert len(profiles) == 33 and {p.agency_id for p in profiles} == {a.id for a in agencies.values()}
+        assert len(profiles) == 50 and {p.agency_id for p in profiles} == {a.id for a in agencies.values()}
         for p in profiles:  # every institution has its own catalogue
             assert SecurityCourse.objects.filter(institution_id=p.institution_id).exists()
         for c in SecurityCourse.objects.all():

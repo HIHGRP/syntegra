@@ -403,7 +403,7 @@ enums:
   agency_category: {title: Security agency category, values: [armed_forces, police, paramilitary, law_enforcement, intelligence_security, emergency_service]}
   agency_unit_type: {title: Unit of an agency structure, values: [headquarters, service, directorate, department, command, training_command, formation, zone, state_command, area_command, sector_command]}
   rank_category: {title: Rank category, values: [commissioned_officer, warrant_officer, non_commissioned, other_rank, senior_staff, junior_staff, cadet, recruit]}
-  security_institution_type: {title: Security education and training institution type, values: [military_academy, police_academy, service_academy, defence_university, staff_college, war_college, defence_college, depot, training_school, specialist_school, training_college, technical_institute, health_sciences_school, strategic_institute]}
+  security_institution_type: {title: Security education and training institution type, values: [secondary_school, military_academy, police_academy, service_academy, defence_university, staff_college, war_college, defence_college, depot, training_school, specialist_school, training_college, technical_institute, health_sciences_school, strategic_institute]}
   security_access_regime: {title: What CEDA may hold about an institution's training, values: [standard, restricted, content_not_held]}
   training_course_category: {title: Training course category, values: [initial_officer, cadet_degree, recruit_basic, junior_leadership, promotion_career, specialist, command_and_staff, strategic_leadership, academic_programme, continuing_professional]}
   training_award: {title: Training award, values: [degree, postgraduate, diploma, nce, certificate, staff_qualification, attendance]}
@@ -412,4 +412,16 @@ enums:
   intake_status: {title: Course intake status, values: [planned, in_progress, completed, cancelled]}
   trainee_outcome: {title: Trainee outcome, values: [in_training, passed, passed_out, commissioned, failed, relegated, withdrawn, discharged]}
   reference_data_status: {title: Reference data status, values: [verified, illustrative, to_confirm]}
+
+  # ---------------------------------------------------------------- federal institutions and education watchdogs (CR-005)
+  federal_body_category: {title: Federal body category, values: [ministry, department, parastatal, commission, agency]}
+  federal_unit_type: {title: Unit of a federal body's structure, values: [department, directorate, division, unit, zone]}
+  federal_institution_type: {title: Federal institution type, values: [unity_college, unity_college_girls, unity_college_boys, science_technical_college, special_needs_college, college_of_education, college_of_education_technical, college_of_education_special, college_of_agriculture, college_of_forestry, college_of_fisheries, college_of_animal_health, college_of_land_resources, college_of_veterinary_laboratory, cooperative_college, school_of_statistics, school_of_surveying, aviation_college, maritime_academy, petroleum_training_institute, policy_institute, teacher_training_institute, other_special]}
+  geopolitical_zone: {title: Geopolitical zone, values: [north_central, north_east, north_west, south_east, south_south, south_west]}
+  admission_basis: {title: Admission basis, values: [national_common_entrance, utme, direct_entry, merit_and_quota, agency_recruitment, other]}
+  regulatory_body_type: {title: Education body type, values: [ministry, regulator_accreditor, examination_body, admissions_body, curriculum_authority, teacher_regulator, professional_council, funding_agency, sector_regulator, training_institute]}
+  regulatory_jurisdiction: {title: Jurisdiction of an education body, values: [federal, regional, state]}
+  body_dependency_type: {title: Dependency between education bodies, values: [supervised_by, recognises_results_of, accredits_with, funded_by, member_of]}
+  regulation_relationship: {title: Institution's dependency on an education body, values: [supervision, accreditation, licensing, curriculum, examination, admission, teacher_registration, professional_regulation, funding, affiliation]}
+  regulation_source: {title: Source of a regulatory link, values: [rule, institution, import]}
 

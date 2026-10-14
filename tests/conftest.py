@@ -180,3 +180,35 @@ def api(world: World, client: Any) -> Any:
         return Caller()
 
     return _api
+
+
+FSE_HOST = "fse.testserver"
+FED_HOST = "fed.testserver"
+
+
+@pytest.fixture(scope="session")
+def fse(django_db_setup: Any, django_db_blocker: Any) -> Iterator[Any]:
+    """Provision the Federal Security Education registry once and load the reference data (CR-004/CR-005)."""
+    from syntegra.core import tenancy
+    from syntegra.security_training import registry
+
+    with django_db_blocker.unblock():
+        p = registry.provision(hosts=[FSE_HOST])
+        seeded = registry.seed_reference()
+    tenancy.clear_caches()
+    yield p, seeded
+    tenancy.clear_caches()
+
+
+@pytest.fixture(scope="session")
+def fed(django_db_setup: Any, django_db_blocker: Any) -> Iterator[Any]:
+    """Provision the Federal Institutions registry once and load the reference data (CR-005)."""
+    from syntegra.core import tenancy
+    from syntegra.federal_institutions import registry
+
+    with django_db_blocker.unblock():
+        p = registry.provision(hosts=[FED_HOST])
+        seeded = registry.seed_reference()
+    tenancy.clear_caches()
+    yield p, seeded
+    tenancy.clear_caches()

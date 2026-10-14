@@ -86,10 +86,12 @@ Module boundaries are enforced by `import-linter`:
 | Fee clearance (CR-001) | Obligations published from each institution's ledger (never SDAF); mandatory, purpose-bound check before transfer and re-admission across every public and private institution in the state; human admission decision — admit, payment plan, defer, protected — never a refusal and never blocking records or attendance (P9); UBE protection; disputes resolved by the LGA; debt-hopping flags; families see every check | `clearance/checks`, `clearance/checks/{id}/decision`, `clearance/obligations`, `clearance/obligations/{id}/disputes`, `clearance/disputes/{id}/resolution`, `learners/{id}/clearance-checks`; `X-Syntegra-Clearance-*` headers on transfer and registration | FCL-01 `/admissions/clearance` |
 | National clearance network (CR-002) | Every check also asks the other 36 states and the FCT: a directory of all 37 registries; signed (ES256), expiring, single-use queries; matching by Global Learner ID, a national NIN token (never the NIN) or demographics; data returned only for a confident match; states not on the network or not answering are reported as coverage gaps and never block (P9); new arrivals checked before enrolment; both states log; families see checks from other states | `exchange/clearance` (state-to-state, signed messages), `exchange/keys` | FCL-04 `/clearance/network` |
 | Security agencies' training (CR-004) | A national sector registry (`ng-fse`) for the education and training institutions of the Armed Forces, Police and paramilitary, law-enforcement, emergency and security services: each agency with its own structure (the access hierarchy), ranks, institutions and per-institution course catalogues with syllabus headings, intakes and trainee outcomes; administration only — never operational or tactical content; reference data illustrative until each agency confirms it | `security-training/agencies`, `…/agencies/{id}`, `…/institutions/{id}`, `…/courses/{id}`, `…/courses/{id}/intakes`, `…/intakes/{id}`, `…/intakes/{id}/trainees`, `…/trainees/{id}/outcome` | STI-01 `/security-training`, STI-02, STI-03, STI-04 |
+| Federal institutions (CR-005) | A national sector registry (`ng-fed`) for the federal unity colleges (FGCs, FGGCs, King's and Queen's College, Federal Science and Technical Colleges) and federal special training institutions (colleges of education, agriculture, forestry, fisheries, co-operatives, statistics, surveying, aviation, maritime, petroleum, NTI) under their owning ministries and structures (FME zones and departments); official lists imported and validated row by row | `federal-institutions`, `federal-institutions/import` | FED-01 `/federal-institutions` |
+| Education watchdogs (CR-005) | National directory of regulators, examination, admission, curriculum, teacher, funding and professional bodies (FME, NUC, NBTE, NCCE, UBEC, NERDC, TRCN, WAEC, NECO, NABTEB, NBAIS, JAMB, TETFund, NMCN …) with their dependencies; every institution in every registry gets its regulatory profile on registration (supervision, accreditation, curriculum, examination, admission, teachers, funding) with gaps reported | `regulators` (public), `institutions/{id}/regulation`, `regulation-links/{id}` | REG-01 `/regulators`, REG-02 `/institutions/{id}/regulation` |
 | Metrics | Semantic layer (`ENR-COUNT`, `ATT-RATE`, `CUR-GAPS-OPEN`) limited to the caller's scope; small-number suppression set by policy | `metrics/{id}` | Home tiles |
 | Any CEDA entity | Read-only, scoped and clearance-trimmed. Vault, warehouse and special-category data are excluded. | `ceda`, `ceda/{entity}`, `ceda/{entity}/{id}` | `/pages` (the 260-page catalogue with live and planned status) |
 
-The models for all 522 tables exist and are tested against MySQL. Pages and services for the other MFS modules are
+The models for all 528 tables exist and are tested against MySQL. Pages and services for the other MFS modules are
 **planned**, and are listed by phase at `/pages`.
 
 ## API conventions (Book 3 §26)
@@ -118,6 +120,9 @@ python manage.py syntegra_bootstrap       # Abia State seed tenant, hierarchy, r
 python manage.py syntegra_state NG-LA     # provision another state on this platform (or --all: 36 states and the FCT)
 python manage.py syntegra_exchange directory   # national clearance network; also onboard | suspend | backfill
 python manage.py syntegra_security_registry --admin you@example.ng   # Federal Security Education registry + reference data
+python manage.py syntegra_federal_registry --admin you@example.ng    # Federal Institutions registry + reference data
+python manage.py syntegra_federal_registry import list.csv --dry-run  # validate an official list (template: ceda/templates/)
+python manage.py syntegra_regulation      # watchdog directory + regulatory profile of every institution in every registry
 python manage.py runserver                # http://localhost:8000 (host → tenant through tenant_domain)
 ```
 
@@ -146,7 +151,7 @@ python ceda/tools/release.py check --mysql # releases replay to the current DDL 
 
 The integration tests cover:
 
-- schema parity for all 522 tables in every zone;
+- schema parity for all 528 tables in every zone;
 - that tenant data cannot be queried without a context;
 - tamper detection and append-only enforcement for the audit chain;
 - learner matching, enrolment and transfer; guardians at registration (minors need parental responsibility, age
@@ -169,7 +174,10 @@ The integration tests cover:
   with every state provisioned;
 - security agencies' training: every agency with its own structure, ranks, institutions and course catalogue; access
   following the agency structure (police cannot open an army institution; a training command sees only its schools);
-  state registries cannot see the sector registry; intakes, trainees and outcomes; syllabus headings only; the pages.
+  state registries cannot see the sector registry; intakes, trainees and outcomes; syllabus headings only; the pages;
+- federal institutions and watchdogs: the directory and its dependencies; every institution's regulatory profile
+  (state schools on registration, unity colleges, tertiary, technical, nursing, security institutions) and its gaps;
+  zone-level access to unity colleges; the official-list import (validation, additions, corrections); the pages.
 
 ## Layout
 

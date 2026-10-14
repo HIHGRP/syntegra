@@ -1,6 +1,6 @@
 # Requirement → data traceability
 
-561 functional requirements (SYN-MFS-002 v2.4 and change requests CR-001, CR-002, CR-003, CR-004): 554 are realised by CEDA entities or metrics; 7 are behavioural (UI, workflow or engine behaviour over data already modelled) and name the entity they operate on. Generated; do not edit.
+569 functional requirements (SYN-MFS-002 v2.4 and change requests CR-001, CR-002, CR-003, CR-004, CR-005): 562 are realised by CEDA entities or metrics; 7 are behavioural (UI, workflow or engine behaviour over data already modelled) and name the entity they operate on. Generated; do not edit.
 
 | Requirement | Source | Priority | Phase | Realised by | Text |
 |---|---|---|---|---|---|
@@ -283,6 +283,10 @@
 | FR-FCL-12 | CR-002 | SHALL | P3 | `clearance_exchange_query` | Log every outbound and inbound exchange query in both states with purpose, identifiers used, outcome and latency; notify creditor institutions in the answering state that their debtor is seeking admission elsewhere. |
 | FR-FCL-13 | CR-002 | SHALL | P3 | `clearance_check`, `clearance_exchange_query`, `metric:FCL-NATIONAL-COVERAGE` | Never let an unavailable or not-onboarded state block or delay an admission; record the coverage gap on the clearance check. |
 | FR-FCL-14 | CR-002 | SHALL | P3 | `external_identifier` | Hold a national lookup token for the NIN (federation key shared by all state registries) so states match without exchanging NINs; backfill tokens for existing identifiers. |
+| FR-FED-01 | CR-005 | SHALL | P3 | `federal_body`, `federal_body_unit` | Maintain the federal bodies (ministries, departments, parastatals, commissions) that own or supervise federal institutions, each with its own structure (departments, divisions, geopolitical zones). |
+| FR-FED-02 | CR-005 | SHALL | P3 | `federal_institution` | Register every federal unity secondary school and every federal special training institution with its owning body and unit, type, geopolitical zone, gender intake, boarding and admission basis (e.g. the National Common E |
+| FR-FED-03 | CR-005 | SHALL | P3 | `federal_body_unit`, `federal_institution` | Hold federal institutions in a national Federal Institutions registry isolated from the state registries, with access by owning body, unit or institution. |
+| FR-FED-04 | CR-005 | SHALL | P3 | `federal_institution` | Import or correct federal and security-agency reference lists from official files, reporting what was added, changed and left unconfirmed. |
 | FR-FIN-01 | MFS | SHALL | P4 | `budget` | Prepare budgets by cost centre and account linked to enrolment and staffing forecasts; approve via workflow. |
 | FR-FIN-02 | MFS | SHALL | P4 | `budget`, `metric:BUDGET-EXECUTION` | Monitor budget vs actual with variance explanations and forecast outturn. |
 | FR-FIN-03 | MFS | SHALL | P4 | `purchase_order`, `requisition` | Run procurement: requisition → approval (delegated limits) → PO → receipt → three-way match → payment; detect split purchases. |
@@ -455,6 +459,10 @@
 | FR-PVT-115 | MFS | SHALL | P2 | `closure_case`, `cme_referral` | Protect learners on closure: keep records, list alternative institutions, and track re-enrolment by the LGA. |
 | FR-PVT-116 | MFS | SHALL | P2 | `approval`, `institution` | Publish the approved private institution directory with approval status and verification QR. |
 | FR-PVT-117 | MFS | SHALL | P1 | `identity_verification`, `licence`, `provider_application` | Onboard private tertiary and medical institutions with evidence of federal regulator approval (NUC, NBTE, NCCE, MDCN or NMCN) captured and checked. |
+| FR-REG-01 | CR-005 | SHALL | P3 | `regulatory_body` | Maintain a national directory of education watchdogs and bodies — ministries, regulators and accreditors, examination bodies, admission, curriculum, teacher-registration, funding and professional bodies — with statutory  |
+| FR-REG-02 | CR-005 | SHALL | P3 | `body_dependency` | Record the dependencies between bodies: supervised by, recognises the results of, accredits with, funded by, member of. |
+| FR-REG-03 | CR-005 | SHALL | P3 | `institution_regulation` | Give every institution in every registry an explicit regulatory profile — supervision, accreditation or licensing, curriculum, examinations, admission, teacher registration, professional regulation and funding — with wha |
+| FR-REG-04 | CR-005 | SHALL | P3 | `institution_regulation`, `metric:REG-PROFILE-COMPLETE` | Report institutions whose regulatory profile is incomplete (no supervising body, no accreditor where one is required, no examination body for examined levels). |
 | FR-RPT-01 | MFS | SHALL | P1 | `report_definition` | Provide a report library with standard, statutory and saved reports by scope. |
 | FR-RPT-02 | MFS | SHALL | P6 | `metric_definition`, `report_definition` | Provide a self-service report builder over a governed semantic layer (metrics, dimensions) with permission trimming and small-number suppression. |
 | FR-RPT-03 | MFS | SHALL | P6 | `return_definition`, `return_submission` | Generate government returns from live master records; institutions review, explain anomalies and certify; corrections are made in source records. |

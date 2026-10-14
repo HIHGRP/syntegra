@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Education watchdogs and examination bodies{% endblock %}
+{% block content %}
+<h1>Education watchdogs and examination bodies</h1>
+<p class="muted">The bodies Nigerian schools, colleges and training institutions depend on, what each does and how they depend on
+each other. Every institution in Syntegra has a profile of which of these supervise, accredit, examine, admit, register and fund it.</p>
+{% for t, rows in data.by_type.items() %}
+<section class="card">
+  <h2>{{ t.replace("_", " ").capitalize() }}{{ "s" if not t.endswith("s") else "" }}</h2>
+  <table class="compact"><thead><tr><th scope="col">Body</th><th scope="col">Functions</th><th scope="col">Depends on</th></tr></thead>
+  <tbody>{% for b in rows %}<tr id="{{ b.code }}"><td><strong>{{ b.name }}</strong> <code>{{ b.code }}</code>{% if b.statutory_basis %}<span class="hint">{{ b.statutory_basis }}</span>{% endif %}{% if b.data_status == "to_confirm" %} <span class="pill">to confirm</span>{% endif %}</td>
+    <td>{{ b.functions or "" }}</td>
+    <td>{% for d in b.depends_on %}{{ d.type.replace("_", " ") }} <a href="#{{ d.code }}">{{ d.code }}</a>{% if not loop.last %}; {% endif %}{% else %}—{% endfor %}</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endfor %}
+{% endblock %}

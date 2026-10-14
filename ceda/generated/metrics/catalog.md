@@ -124,3 +124,9 @@ Generated from `ceda/model/metrics.yaml`. Every indicator shown on a dashboard, 
 | `STI-INTAKE-FILL` | Course intake fill rate | trainees on intake ÷ intake capacity | intake × course × institution × agency | daily | higher_is_better | `trainee_record`, `security_course_intake` | STI-03, STI-04 |
 | `STI-PASS-OUT-RATE` | Trainee pass-out rate | trainees passed out or commissioned ÷ trainees with a final outcome | intake × course × institution × agency | daily | higher_is_better | `trainee_record` | STI-02, STI-04 |
 
+## Regulation
+
+| ID | Metric | Definition / formula | Grain | Refresh | Direction | Sources | Pages |
+|---|---|---|---|---|---|---|---|
+| `REG-PROFILE-COMPLETE` | Institutions with a complete regulatory profile | institutions with a supervising body, an accreditor where required and an examination body for examined levels ÷ institutions | registry × category × ownership | daily | higher_is_better | `institution_regulation`, `institution` | REG-02, FED-01 |
+

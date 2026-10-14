@@ -1,0 +1,37 @@
+# CEDA change request register entry (see CR-001.yaml for the format).
+
+id: CR-005
+title: Federal unity colleges and federal special training institutions; education watchdogs and examination bodies for every institution
+received: 2026-10-14
+status: adopted
+ceda_version: 1.6.0
+summary: >
+  Extends CR-004. (1) Every federal unity secondary school (Federal Government Colleges, Federal Government Girls'
+  Colleges, Federal Science and Technical Colleges) and every federal special training institution (federal colleges
+  of education, agriculture, forestry, fisheries, animal health, land resources, co-operatives, statistics, surveying,
+  aviation, maritime and petroleum training, policy and teacher-training institutes) is held in a national Federal
+  Institutions registry under its owning ministry or parastatal and that body's own structure. (2) The security
+  agencies' registry is extended A–Z with the agencies' secondary schools and further specialist schools. (3) A national
+  directory of education watchdogs, regulators, examination, admission, curriculum, teacher and professional bodies is
+  added, with the dependencies between the bodies, and every institution in every registry — state, federal and
+  security — has its own explicit regulatory profile: which body supervises, accredits or licenses it, sets its
+  curriculum, examines its learners, admits its graduates, registers its teachers and regulates its professions.
+constraints:
+  - "Reference lists are seeded from public sources, marked illustrative or to_confirm, and completed or corrected from the Federal Ministry of Education's and each agency's official lists through the reference import; completeness is reported, not assumed."
+  - "A regulatory profile is derived from rules (category, ownership, levels) and may be adjusted per institution; every link records the relationship, what it covers and its effective dates."
+  - "All CR-004 constraints apply to security-agency institutions: administration only, never operational or tactical content."
+
+requirements:
+  - {id: FR-FED-01, module: FED, priority: SHALL, phase: P3, text: "Maintain the federal bodies (ministries, departments, parastatals, commissions) that own or supervise federal institutions, each with its own structure (departments, divisions, geopolitical zones)."}
+  - {id: FR-FED-02, module: FED, priority: SHALL, phase: P3, text: "Register every federal unity secondary school and every federal special training institution with its owning body and unit, type, geopolitical zone, gender intake, boarding and admission basis (e.g. the National Common Entrance Examination)."}
+  - {id: FR-FED-03, module: FED, priority: SHALL, phase: P3, text: "Hold federal institutions in a national Federal Institutions registry isolated from the state registries, with access by owning body, unit or institution."}
+  - {id: FR-FED-04, module: FED, priority: SHALL, phase: P3, text: "Import or correct federal and security-agency reference lists from official files, reporting what was added, changed and left unconfirmed."}
+  - {id: FR-REG-01, module: REG, priority: SHALL, phase: P3, text: "Maintain a national directory of education watchdogs and bodies — ministries, regulators and accreditors, examination bodies, admission, curriculum, teacher-registration, funding and professional bodies — with statutory basis and the levels each covers."}
+  - {id: FR-REG-02, module: REG, priority: SHALL, phase: P3, text: "Record the dependencies between bodies: supervised by, recognises the results of, accredits with, funded by, member of."}
+  - {id: FR-REG-03, module: REG, priority: SHALL, phase: P3, text: "Give every institution in every registry an explicit regulatory profile — supervision, accreditation or licensing, curriculum, examinations, admission, teacher registration, professional regulation and funding — with what each link covers and its effective dates, derived from rules and adjustable per institution."}
+  - {id: FR-REG-04, module: REG, priority: SHALL, phase: P3, text: "Report institutions whose regulatory profile is incomplete (no supervising body, no accreditor where one is required, no examination body for examined levels)."}
+
+pages:
+  - {id: FED-01, title: Federal institutions, module: Federal institutions, pattern: Register / list, route: "/federal-institutions", classification: Internal, phase: P3, roles: [PLAT (Platform Administrator), FED (Federal Ministry Administrator), FADM (Federal Institutions Administrator)], purpose: "Federal unity colleges and federal special training institutions by owning body, unit, type and geopolitical zone."}
+  - {id: REG-01, title: Education watchdogs and examination bodies, module: Regulation, pattern: Register / list, route: "/regulators", classification: Public, phase: P3, roles: [All], purpose: "Directory of regulators, examination, admission, curriculum, teacher and professional bodies, what each covers and how they depend on each other."}
+  - {id: REG-02, title: Institution regulatory profile, module: Regulation, pattern: Record 360, route: "/institutions/{id}/regulation", classification: Internal, phase: P3, roles: [All], purpose: "Every body an institution depends on — who supervises, accredits, sets the curriculum, examines, admits, registers teachers and funds — and any gaps."}

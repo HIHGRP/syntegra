@@ -61,7 +61,9 @@ ignore = ["S101", "RUF012", "DJ001", "S608", "RUF001", "RUF002", "RUF003"]  # en
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S105", "S106", "S311", "PT018"]
-"src/syntegra/security_training/reference.py" = ["E501"]  # reference tables read best one record per line
+"src/syntegra/security_training/reference.py" = ["E501"]
+"src/syntegra/regulation/reference.py" = ["E501"]
+"src/syntegra/federal_institutions/reference.py" = ["E501"]  # reference tables read best one record per line
 
 # --------------------------------------------------------------------- typing (strict on the kernel and domain packages)
 [tool.mypy]

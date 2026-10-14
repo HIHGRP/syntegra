@@ -16,12 +16,13 @@ Scope hierarchy::
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
-from syntegra.core import context, tenancy, uow
+from syntegra.core import context, uow
 from syntegra.core.ids import format_institution_code
 from syntegra.core.tenancy import state_tenant_id
+from syntegra.platform import sector
 from syntegra.platform.states import BY_CODE, STATES
 from syntegra.security_training import reference as ref
 
@@ -35,52 +36,24 @@ def tenant_id() -> uuid.UUID:
 
 
 def system_context() -> context.Context:
-    tid = tenant_id()
-    return context.system(tid, tid, correlation_id="fse-provision")
+    return sector.system_context(CODE)
 
 
-@dataclass
-class Provisioned:
-    tenant_id: uuid.UUID
-    root_scope_id: uuid.UUID
-    admin_user_id: uuid.UUID | None = None
-    role_ids: dict[str, uuid.UUID] = field(default_factory=dict)
+Provisioned = sector.Provisioned
 
 
 def provision(
     *, admin_username: str | None = None, admin_password: str | None = None, hosts: list[str] | None = None
-) -> Provisioned:
+) -> sector.Provisioned:
     """Create the registry tenant, scope root and configuration; grant SADM at the root to the administrator."""
-    from syntegra.governance import services as gov
-    from syntegra.governance.models import ScopeNode
-    from syntegra.iam import services as iam
-    from syntegra.iam.models import AppUser
-    from syntegra.platform.bootstrap import _copy_code_lists, registry_tenant, seed_registry_config
-
-    tid = registry_tenant(CODE, NAME, "sector_registry", hosts or DEFAULT_HOSTS, state_code=None)
-    tenancy.clear_caches()
-    ctx = system_context()
-    with context.use(ctx):
-        _copy_code_lists(tid)
-        with uow.command("registry", None, action="provision", record_kind="tenant") as cmd:
-            cmd.record_id = tid
-            ng = ScopeNode.objects.filter(code="NG").first() or gov.add_node(
-                cmd, parent=None, level="country", code="NG", name="Nigeria"
-            )
-            root = ScopeNode.objects.filter(code=CODE).first() or gov.add_node(
-                cmd, parent=ng, level="authority", code=CODE, name=NAME, ref_kind="tenant", ref_id=tid
-            )
-            out = Provisioned(tid, root.id)
-            out.role_ids = seed_registry_config(cmd, root)
-        if admin_username:
-            admin = AppUser.objects.filter(username=admin_username).first()
-            if admin is None:
-                admin = iam.create_user(
-                    ctx, username=admin_username, display_name=f"{NAME} Administrator", password=admin_password
-                )
-                iam.grant_role(ctx, user=admin, role_code="SADM", scope_id=root.id)
-            out.admin_user_id = admin.id
-    return out
+    return sector.provision(
+        CODE,
+        NAME,
+        hosts=hosts or DEFAULT_HOSTS,
+        admin_role="SADM",
+        admin_username=admin_username,
+        admin_password=admin_password,
+    )
 
 
 # --------------------------------------------------------------------------- reference data
@@ -109,12 +82,8 @@ def _seed(cmd: uow.Command, n: Seeded) -> None:
     from syntegra.governance.models import ScopeNode
     from syntegra.security_training.models import AgencyRank, AgencyUnit, SecurityAgency
 
-    ng = ScopeNode.objects.get(code="NG")
     root = ScopeNode.objects.get(code=CODE)
-    states = {s.code: s for s in ScopeNode.objects.filter(level="state")}
-    for code, name, _cap in STATES:  # location references for institutions
-        if code not in states:
-            states[code] = gov.add_node(cmd, parent=ng, level="state", code=code, name=name)
+    states = sector.location_nodes()
     for a in ref.AGENCIES:
         agency = SecurityAgency.objects.filter(code=a.code).first()
         if agency is None:
@@ -251,6 +220,9 @@ def _seed_institution(
             )
         )
         n.institutions += 1
+        from syntegra.regulation import services as regulation
+
+        regulation.apply_rules(cmd, inst, data_status=spec.status, **regulation._extras(inst))
     for c in courses:
         _seed_course(cmd, n, prof, agency, c)
 

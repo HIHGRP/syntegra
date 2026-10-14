@@ -1,0 +1,79 @@
+domain: federal_institutions
+code: FED
+title: Federal unity colleges and federal special training institutions — owning bodies, their structures, institutions
+module: federal_institutions
+zone: registry
+retention: RS-INS-PERM
+summary: >
+  Federal institutions that are not state schools (change request CR-005): the Federal Government Colleges, Federal
+  Government Girls' Colleges and Federal Science and Technical Colleges (the unity schools), and the federal special
+  training institutions owned by ministries and parastatals — colleges of education, agriculture, forestry, fisheries,
+  animal health and land resources; co-operative, statistics and surveying schools; aviation, maritime and petroleum
+  training; policy and teacher-training institutes. They are held in a national sector registry (ng-fed, decision
+  CD-23) under their owning body and that body's own structure, which is also the access hierarchy. Learners are
+  registered on the single registration path; the institution master (domain INS) keeps name, location and levels.
+
+entities:
+  federal_body:
+    title: Federal ministry, department, parastatal or commission that owns or supervises federal institutions
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-FED-01]
+    pages: [FED-01]
+    notes: scope_node_id is the body's own node (level agency) under the registry root.
+    attrs:
+      - "code: code(16)! | e.g. FME, FMAFS, FMOH, FMAV, FMT"
+      - "name: title!"
+      - "category: enum(federal_body_category)!"
+      - "parent_body_id: ref(federal_body) | e.g. a parastatal's supervising ministry"
+      - "website: url"
+      - "data_status: enum(reference_data_status)!"
+      - "status: enum(record_status)!"
+    uq: [[code]]
+
+  federal_body_unit:
+    title: Unit of a federal body's own structure (department, directorate, division, geopolitical zone)
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-FED-01, FR-FED-03]
+    pages: [FED-01]
+    notes: scope_node_id is the unit's own node (level formation), a child of its parent unit or of the body.
+    attrs:
+      - "body_id: ref(federal_body)!"
+      - "parent_unit_id: ref(federal_body_unit)"
+      - "unit_type: enum(federal_unit_type)!"
+      - "code: code(40)! | Unique within the body"
+      - "name: title!"
+      - "data_status: enum(reference_data_status)!"
+      - "status: enum(record_status)!"
+    uq: [[body_id, code]]
+    ix: [[parent_unit_id]]
+
+  federal_institution:
+    title: Federal profile of a unity college or federal special training institution
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-FED-02, FR-FED-03, FR-FED-04]
+    pages: [FED-01, REG-02]
+    notes: scope_node_id is the institution's node, a child of its owning unit's node.
+    attrs:
+      - "institution_id: ref(institution)! uq"
+      - "body_id: ref(federal_body)!"
+      - "unit_id: ref(federal_body_unit)!"
+      - "institution_type: enum(federal_institution_type)!"
+      - "geopolitical_zone: enum(geopolitical_zone)!"
+      - "gender_intake: enum(gender_intake)"
+      - "day_boarding: enum(day_boarding)"
+      - "admission_basis: enum(admission_basis) | e.g. national_common_entrance for unity colleges"
+      - "established_year: smallint"
+      - "data_status: enum(reference_data_status)!"
+    ix: [[body_id], [unit_id], [institution_type]]

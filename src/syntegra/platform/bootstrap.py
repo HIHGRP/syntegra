@@ -30,6 +30,22 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
         "restricted",
         [
             "security_training:*",
+            "regulation:*",
+            "institution:view",
+            "learner:*",
+            "enrolment:*",
+            "metric:view",
+            "ceda:view",
+            "user:*",
+        ],
+    ),
+    # federal unity colleges and special training institutions (CR-005) — granted in the Federal Institutions registry
+    "FADM": (
+        "Federal institutions administrator (body, unit or registry)",
+        "restricted",
+        [
+            "federal_institutions:*",
+            "regulation:*",
             "institution:view",
             "learner:*",
             "enrolment:*",
@@ -74,6 +90,7 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "calendar:*",
             "hr:*",
             "clearance:*",
+            "regulation:*",
             "admission:decide",
         ],
     ),
@@ -339,9 +356,11 @@ def _state_tenant(state_code: str, hosts: list[str]) -> uuid.UUID:
 def registry_tenant(code_upper: str, name: str, kind: str, hosts: list[str], *, state_code: str | None) -> uuid.UUID:
     """Create (idempotently) a registry tenant — a state, or a national sector registry — its hosts and GLID block."""
     from syntegra.platform.models import GlidBlock, Tenant, TenantDomain
+    from syntegra.regulation.services import seed_directory
 
     alias = "platform"
     region_id = _platform_base()
+    seed_directory()  # national directory of education watchdogs (CR-005), idempotent
     tid = state_tenant_id(code_upper)
     with transaction.atomic(using=alias):
         if not Tenant.objects.using(alias).filter(pk=tid).exists():

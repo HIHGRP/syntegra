@@ -573,3 +573,32 @@ def security_intake(request: HttpRequest, intake_id: uuid.UUID) -> HttpResponse:
     from syntegra.security_training import services as sti
 
     return render(request, "security_intake.html", _ctx(request, t=sti.intake(intake_id), page=pages.page("STI-04")))
+
+
+# ------------------------------------------------------------------------- federal institutions and watchdogs (CR-005)
+@page("FED-01")
+def federal_institutions(request: HttpRequest) -> HttpResponse:
+    from syntegra.federal_institutions import services as fed
+
+    q = request.GET
+    data = fed.directory(body=q.get("body") or None, zone=q.get("zone") or None, institution_type=q.get("type") or None)
+    zones = ["north_central", "north_east", "north_west", "south_east", "south_south", "south_west"]
+    return render(
+        request, "federal_institutions.html", _ctx(request, data=data, zones=zones, q=q, page=pages.page("FED-01"))
+    )
+
+
+@page("REG-01", public=True)
+def regulators(request: HttpRequest) -> HttpResponse:
+    from syntegra.regulation import services as reg
+
+    return render(request, "regulators.html", _ctx(request, data=reg.directory(), page=pages.page("REG-01")))
+
+
+@page("REG-02")
+def institution_regulation(request: HttpRequest, institution_id: uuid.UUID) -> HttpResponse:
+    from syntegra.regulation import services as reg
+
+    return render(
+        request, "institution_regulation.html", _ctx(request, p=reg.profile(institution_id), page=pages.page("REG-02"))
+    )

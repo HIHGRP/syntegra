@@ -1,6 +1,6 @@
 # Page → data traceability
 
-Every one of the 260 pages in SYN-MFS-002 v2.4 and the 18 pages added by change requests is served by at least one CEDA entity or metric. Generated; do not edit.
+Every one of the 260 pages in SYN-MFS-002 v2.4 and the 21 pages added by change requests is served by at least one CEDA entity or metric. Generated; do not edit.
 
 | Page | Source | Title | Module | Phase | CEDA entities and metrics | MFS master objects |
 |---|---|---|---|---|---|---|
@@ -139,6 +139,7 @@ Every one of the 260 pages in SYN-MFS-002 v2.4 and the 18 pages added by change 
 | FCL-02 | CR-001 | Obligations register | Fee clearance | P2 | `clearance_check`, `learner_obligation`, `metric:FCL-OUTSTANDING-RATE`, `obligation_dispute` |  |
 | FCL-03 | CR-001 | Clearance disputes | Fee clearance | P2 | `metric:FCL-DISPUTE-UPHELD`, `metric:FCL-OUTSTANDING-RATE`, `obligation_dispute` |  |
 | FCL-04 | CR-002 | National clearance network | Fee clearance | P3 | `clearance_exchange_query`, `exchange_peer`, `metric:FCL-NATIONAL-COVERAGE` |  |
+| FED-01 | CR-005 | Federal institutions | Federal institutions | P3 | `federal_body`, `federal_body_unit`, `federal_institution`, `metric:REG-PROFILE-COMPLETE` |  |
 | FIN-01 | MFS | Budget planning | Finance | P4 | `budget` | Budget |
 | FIN-02 | MFS | Budget vs actual | Finance | P4 | `budget`, `metric:BUDGET-EXECUTION` | Budget, Ledger |
 | FIN-03 | MFS | Procurement | Finance | P4 | `purchase_order`, `requisition`, `supplier` | Requisition, PurchaseOrder, Supplier 360 |
@@ -231,6 +232,8 @@ Every one of the 260 pages in SYN-MFS-002 v2.4 and the 18 pages added by change 
 | PVT-103 | MFS | Provider 360 | Private providers | P1 | `approval`, `closure_case`, `provider`, `provider_person`, `reg_dataset_definition`, `reg_snapshot`, `regulatory_fee`, `sanction` |  |
 | PVT-104 | MFS | Private institutions register | Private providers | P1 | `approval`, `closure_case`, `institution`, `provider`, `unknown_institution_reference` |  |
 | PVT-105 | MFS | Approval conditions and renewals | Private providers | P2 | `approval`, `approval_condition`, `corrective_action`, `sanction` |  |
+| REG-01 | CR-005 | Education watchdogs and examination bodies | Regulation | P3 | `body_dependency`, `regulatory_body` |  |
+| REG-02 | CR-005 | Institution regulatory profile | Regulation | P3 | `federal_institution`, `institution_regulation`, `metric:REG-PROFILE-COMPLETE`, `regulatory_body` |  |
 | RPT-01 | MFS | Report library | Reporting | P1 | `report_definition`, `report_export` | ReportDefinition |
 | RPT-02 | MFS | Report builder | Reporting | P6 | `metric_definition`, `report_definition`, `report_export` | ReportDefinition, Metric |
 | RPT-03 | MFS | Government return | Reporting | P6 | `return_definition`, `return_submission` | Return |
