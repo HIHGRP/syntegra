@@ -74,14 +74,14 @@ Module boundaries are enforced by `import-linter`:
 
 | Area | Service (`<module>/services.py`) | API (`/api/v1/…`) | Page |
 |---|---|---|---|
-| Sign-in and sessions | Argon2id; lockout after 5 failures in 10 min; sessions stored as SHA-256 only; TOTP MFA; idle timeout set by clearance | `auth/sign-in`, `auth/mfa`, `auth/role`, `auth/sign-out`, `me` | `/sign-in` |
-| Institutions | Registration with duplicate detection (name similarity, distance, gov. registration number), scope node and closure | `institutions` | — |
+| Sign-in and sessions | Argon2id; lockout after 5 failures in 10 min; sessions stored as SHA-256 only; TOTP MFA; idle timeout set by clearance | `auth/sign-in`, `auth/mfa`, `auth/role`, `auth/sign-out`, `me` | `/sign-in`, AUT-03 `/auth/context` (choose the role to work in; shown after sign-in when you hold several) |
+| Institutions | Registration with duplicate detection (name similarity, distance, gov. registration number), scope node and closure | `institutions` | form `/forms/institution-register` |
 | Learners | Fellegi–Sunter matching (auto-link ≥ 0.98, review 0.80–0.98), GLID from leased blocks, encrypted NIN with purpose-bound reveal, one active primary enrolment, transfer; guardians at registration — a minor needs one with parental responsibility (age of majority is the state policy `LRN-AGE-OF-MAJORITY`), guardians matched by NIN, phone or e-mail with agreeing names before creation, relationship, contact priority, lives-with, collector and payer flags; contact details withheld where contact is restricted | `learners`, `learners/{id}/transfer`, `learners/{id}/nin`, `learners/{id}/guardians` | LRN-02 `/learners/new`, LRN-04 `/learners/{id}` |
-| Classes | Sessions, classes, memberships, subject plans, teacher-of-record assignments | `classes`, `classes/{id}/members` | — |
+| Classes | Sessions, classes, memberships, subject plans, teacher-of-record assignments | `classes`, `classes/{id}/members` | forms `/forms/class-create`, `/forms/class-member` |
 | Attendance | Registers, idempotent offline sync (`client_op_id`), audited corrections, rates with policy thresholds | `classes/{id}/registers`, `registers/{id}`, `learners/{id}/attendance` | ATT-01 `/registers/class/{id}` |
 | Coverage | G2/G3 invariants; gaps deduplicated by the database; owner, due date in school days, escalation, events | `institutions/{id}/coverage/evaluate`, `coverage/gaps` | CUR-101 `/coverage` |
 | Certificates | Minimal-disclosure payload, RFC 8785 + ES256 signature, public verification log, JWKS, four-eyes reissue with supersession | `certificates`, `certificates/{id}/reissue`, `reissue-cases/{id}/decision`, `public/verify`, `public/jwks.json` | PUB-01 `/verify` |
-| SDAF financing | Census with a content hash, billing at most once per period across institutions, UBE payer rule, rate cards with four eyes, demands | `institutions/{id}/census`, `census/{id}/freeze`, `census/{id}/demand` | — |
+| SDAF financing | Census with a content hash, billing at most once per period across institutions, UBE payer rule, rate cards with four eyes, demands | `institutions/{id}/census`, `census/{id}/freeze`, `census/{id}/demand` | forms `/forms/census-take`, `census-freeze`, `census-demand` |
 | HRMS (CR-001) | Establishment and vacancies; appointments with statutory retirement; posting orders that move role grants, end teaching and re-run coverage (G9→G2); leave with balances the database cannot over-book and cover hand-off (G8); promotions; employee relations with due process; separation that ends access everywhere; encrypted salary accounts with four-eyes; Nigerian payroll (NTA 2025 PAYE, pension, NHF) with two-person approval; state-wide integrity scan (shared accounts/BVNs, double employment, pay after exit, past retirement, no attendance, failed headcount) with human pay holds | `hr/positions`, `hr/institutions/{id}/establishment`, `hr/appointments`, `hr/postings`, `hr/leave`, `hr/promotions`, `hr/relations`, `hr/separations`, `hr/integrity/*`, `hr/payroll-runs` | HRM-01 `/hr/establishment` |
 | Fee clearance (CR-001) | Obligations published from each institution's ledger (never SDAF); mandatory, purpose-bound check before transfer and re-admission across every public and private institution in the state; human admission decision — admit, payment plan, defer, protected — never a refusal and never blocking records or attendance (P9); UBE protection; disputes resolved by the LGA; debt-hopping flags; families see every check | `clearance/checks`, `clearance/checks/{id}/decision`, `clearance/obligations`, `clearance/obligations/{id}/disputes`, `clearance/disputes/{id}/resolution`, `learners/{id}/clearance-checks`; `X-Syntegra-Clearance-*` headers on transfer and registration | FCL-01 `/admissions/clearance` |
 | National clearance network (CR-002) | Every check also asks the other 36 states and the FCT: a directory of all 37 registries; signed (ES256), expiring, single-use queries; matching by Global Learner ID, a national NIN token (never the NIN) or demographics; data returned only for a confident match; states not on the network or not answering are reported as coverage gaps and never block (P9); new arrivals checked before enrolment; both states log; families see checks from other states | `exchange/clearance` (state-to-state, signed messages), `exchange/keys` | FCL-04 `/clearance/network` |
@@ -89,6 +89,7 @@ Module boundaries are enforced by `import-linter`:
 | Federal institutions (CR-005) | A national sector registry (`ng-fed`) for the federal unity colleges (FGCs, FGGCs, King's and Queen's College, Federal Science and Technical Colleges) and federal special training institutions (colleges of education, agriculture, forestry, fisheries, co-operatives, statistics, surveying, aviation, maritime, petroleum, NTI) under their owning ministries and structures (FME zones and departments); official lists imported and validated row by row | `federal-institutions`, `federal-institutions/import` | FED-01 `/federal-institutions` |
 | Education watchdogs (CR-005) | National directory of regulators, examination, admission, curriculum, teacher, funding and professional bodies (FME, NUC, NBTE, NCCE, UBEC, NERDC, TRCN, WAEC, NECO, NABTEB, NBAIS, JAMB, TETFund, NMCN …) with their dependencies; every institution in every registry gets its regulatory profile on registration (supervision, accreditation, curriculum, examination, admission, teachers, funding) with gaps reported | `regulators` (public), `institutions/{id}/regulation`, `regulation-links/{id}` | REG-01 `/regulators`, REG-02 `/institutions/{id}/regulation` |
 | Metrics | Semantic layer (`ENR-COUNT`, `ATT-RATE`, `CUR-GAPS-OPEN`) limited to the caller's scope; small-number suppression set by policy | `metrics/{id}` | Home tiles |
+| Forms | Every write action above also has a web form: 34 forms at `/forms`, listed by module for the role in use. Each form validates with the API's own serializer and calls the same service, so a page and the API accept and refuse exactly the same things; errors show beside the field they belong to, values are kept, and option lists only offer records in the user's scope (anything else is refused). Record pages link to the forms that act on them (end a regulatory link, accept a gap, add a trainee, record an outcome, transfer a learner, publish unpaid fees) | — | `/forms`, `/forms/{key}` |
 | Any CEDA entity | Read-only, scoped and clearance-trimmed. Vault, warehouse and special-category data are excluded. | `ceda`, `ceda/{entity}`, `ceda/{entity}/{id}` | `/pages` (the 260-page catalogue with live and planned status) |
 
 The models for all 528 tables exist and are tested against MySQL. Pages and services for the other MFS modules are
@@ -164,6 +165,13 @@ The integration tests cover:
 - the SDAF once-per-period guard and UBE demand;
 - metric suppression;
 - the server-rendered pages;
+- the forms: every form renders for a role that may use it and is refused to one that may not; an empty
+  submission is a 422, never a 500; institution registration, classes and members by Global Learner ID,
+  publishing, disputing and resolving unpaid fees (amounts in naira stored in kobo), HR positions, postings with a
+  second approver, leave and its approval, relations cases, integrity scan, payroll validation, regulatory links,
+  the official-list upload, and security-training intakes, trainees and outcomes; the workspace chooser (no open
+  redirect); and pages that now return 422 or 404 instead of 500 for malformed dates and identifiers;
+- request validation: malformed or missing fields and identifiers return a 422 problem on every API endpoint;
 - fee clearance: decision required (never a refusal), deferral, payment plans, UBE protection, disputes and who may
   raise them, debt-hopping flags, ledger publication without SDAF, expiry, family view, re-admission and the API;
 - HRMS: appointment and establishment, posting chain (grants, teaching, G2 gap as of the effective date), leave and
@@ -186,7 +194,7 @@ ceda/                 Canonical Enterprise Data Architecture (model, generators,
 src/syntegra/core     kernel: context, authz, uow, audit, outbox, policy, workflow, crypto, tenancy, api
 src/syntegra/<module> one Django app per CEDA module: models.py (generated), domain/ (pure rules), services.py, api.py, urls.py
 src/syntegra/schema   migrations that apply the CEDA DDL to each zone
-src/syntegra/web      page registry, server-rendered pages (Jinja2), design tokens
+src/syntegra/web      page registry, server-rendered pages (Jinja2), forms (forms.py, choices.py), design tokens
 deploy/               Containerfile (UBI 10), compose stack (MySQL 9.7, Valkey)
 tests/                unit (pure domain) and integration (MySQL) tests
 ```

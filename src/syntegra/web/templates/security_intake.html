@@ -7,8 +7,9 @@
 <section class="card">
   <h2>Trainees ({{ t.trainees|length }})</h2>
   {% if t.trainees %}
-  <table class="compact"><thead><tr><th scope="col">Trainee</th><th scope="col">Global Learner ID</th><th scope="col">Rank at entry</th><th scope="col">Outcome</th><th scope="col">Result</th></tr></thead>
-  <tbody>{% for r in t.trainees %}<tr><td><a href="/learners/{{ r.learner_id }}">{{ r.name }}</a></td><td><code>{{ r.global_learner_id }}</code></td><td>{{ r.rank_at_entry or "—" }}</td><td>{{ r.outcome.replace("_", " ") }}</td><td>{{ r.result or "" }}</td></tr>{% endfor %}</tbody></table>
+  <table class="compact"><thead><tr><th scope="col">Trainee</th><th scope="col">Global Learner ID</th><th scope="col">Rank at entry</th><th scope="col">Outcome</th><th scope="col">Result</th>{% if ctx.has("security_training:record") %}<th scope="col"><span class="sr">Actions</span></th>{% endif %}</tr></thead>
+  <tbody>{% for r in t.trainees %}<tr><td><a href="/learners/{{ r.learner_id }}">{{ r.name }}</a></td><td><code>{{ r.global_learner_id }}</code></td><td>{{ r.rank_at_entry or "—" }}</td><td>{{ r.outcome.replace("_", " ") }}</td><td>{{ r.result or "" }}</td>{% if ctx.has("security_training:record") %}<td>{% if r.outcome == "in_training" %}<a href="/forms/security-outcome?target={{ r.id }}">Record outcome</a>{% endif %}</td>{% endif %}</tr>{% endfor %}</tbody></table>
   {% else %}<p class="muted">No trainee on this intake yet.</p>{% endif %}
+  {% if ctx.has("security_training:record") and t.status in ("planned", "in_progress") %}<p class="actions"><a href="/forms/security-trainee?target={{ t.id }}">Add a trainee</a></p>{% endif %}
 </section>
 {% endblock %}

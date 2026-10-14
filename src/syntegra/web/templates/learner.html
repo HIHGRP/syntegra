@@ -3,6 +3,7 @@
 {% block content %}
 <h1>{{ learner.legal_given_name }} {{ learner.legal_middle_names or "" }} {{ learner.legal_family_name }}</h1>
 <p class="muted"><code>{{ learner.global_learner_id }}</code> · {{ learner.sex }} · born {{ learner.date_of_birth | date }} · identity {{ learner.identity_verified_level.replace("_", " ") }} · {{ learner.status }}</p>
+{% if ctx.has("enrolment:transfer") or ctx.has("clearance:publish") %}<p class="actions">{% if ctx.has("enrolment:transfer") %}<a href="/forms/learner-transfer?learner={{ learner.global_learner_id }}">Transfer</a>{% endif %}{% if ctx.has("clearance:publish") %}<a href="/forms/obligation-publish?learner_id={{ learner.global_learner_id }}">Publish unpaid fees</a>{% endif %}</p>{% endif %}
 <section class="grid2">
   <article class="card">
     <h2>Enrolments</h2>

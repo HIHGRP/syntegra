@@ -33,7 +33,7 @@ h1 { font-size: 1.6rem; margin: .25rem 0 1rem; } h2 { font-size: 1.15rem; margin
 .tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem; }
 .big { font-size: 2rem; font-weight: 700; margin: 0 0 .5rem; }
 label { display: block; margin-bottom: .75rem; font-weight: 600; }
-input, select { display: block; width: 100%; padding: .6rem .7rem; margin-top: .25rem; border: 1px solid var(--line);
+input, select, textarea { display: block; width: 100%; padding: .6rem .7rem; margin-top: .25rem; border: 1px solid var(--line);
                 border-radius: 6px; background: var(--surface); color: var(--text); font: inherit; }
 input[type=radio] { display: inline; width: auto; margin: 0; transform: scale(1.3); }
 input.num { width: 5rem; }
@@ -75,3 +75,4 @@ tr.overdue td { background: var(--bad-bg); }
 .card > .tree { padding-left: 0; border-left: 0; }
 .tree li { padding: .2rem 0; } .tree .tree { margin-top: .2rem; }
 .facts { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1rem; margin: 0; } .facts dt { color: var(--muted); }
+.hint.opt { display: inline; }

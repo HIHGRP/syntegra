@@ -2,14 +2,15 @@
 {% block title %}Coverage assurance{% endblock %}
 {% block content %}
 <h1>Coverage assurance</h1>
+{% if ctx.has("coverage:evaluate") %}<p class="actions"><a href="/forms/coverage-evaluate">Evaluate an institution</a></p>{% endif %}
 <p class="muted">Open gaps in your scope. Every gap has an owner, a due date and an escalation path (MFS §5.4).</p>
 {% if not gaps %}<div class="alert alert-ok">No open coverage gaps.</div>{% else %}
 <table>
-  <thead><tr><th scope="col">Rule</th><th scope="col">Severity</th><th scope="col">Institution</th><th scope="col" class="num">Learners</th><th scope="col">Owner</th><th scope="col">Due</th><th scope="col">Status</th></tr></thead>
+  <thead><tr><th scope="col">Rule</th><th scope="col">Severity</th><th scope="col">Institution</th><th scope="col" class="num">Learners</th><th scope="col">Owner</th><th scope="col">Due</th><th scope="col">Status</th>{% if ctx.has("coverage:manage") %}<th scope="col"><span class="sr">Actions</span></th>{% endif %}</tr></thead>
   <tbody>{% for g in gaps %}
   <tr class="{{ 'overdue' if g.due_on < today else '' }}"><td><strong>{{ g.rule.upper() }}</strong></td><td><span class="sev sev-{{ g.severity }}">{{ g.severity }}</span></td>
     <td>{{ insts[g.institution_id].name if g.institution_id in insts else g.institution_id }}</td><td class="num">{{ g.learners_affected }}</td>
-    <td>{{ g.owner_role }}</td><td>{{ g.due_on | date }}</td><td>{{ g.status }}</td></tr>
+    <td>{{ g.owner_role }}</td><td>{{ g.due_on | date }}</td><td>{{ g.status }}</td>{% if ctx.has("coverage:manage") %}<td><a href="/forms/coverage-gap-accept?target={{ g.id }}">Accept</a></td>{% endif %}</tr>
   {% endfor %}</tbody>
 </table>{% endif %}
 {% endblock %}

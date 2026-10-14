@@ -26,9 +26,10 @@ IMPLEMENTED: dict[str, str] = {
     "STI-02": "security_institution",
     "STI-03": "security_course",
     "STI-04": "security_intake",
+    "AUT-03": "workspace",
 }
 # Pages served for any signed-in user, independent of role lists
-UNIVERSAL = {"home", "catalogue"}
+UNIVERSAL = {"home", "catalogue", "forms_hub", "form_page"}
 
 
 def all_pages() -> list[dict[str, Any]]:

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Forms{% endblock %}
+{% block content %}
+<h1>Forms</h1>
+<p class="muted">Every action you may take in your current role. Each form validates exactly as the API does and calls the same service;
+nothing is saved unless every check passes.</p>
+{% if not groups %}<div class="alert" role="status">Your current role has no data-entry actions.
+  {% if signed_in %}<a href="/auth/context">Switch role</a> if you hold another.{% endif %}</div>{% endif %}
+<div class="tiles">
+{% for module, items in groups.items() %}
+  <section class="tile" aria-labelledby="m{{ loop.index }}">
+    <h2 id="m{{ loop.index }}">{{ module }}</h2>
+    <ul class="people">{% for f in items %}<li><a href="/forms/{{ f.key }}">{{ f.title }}</a></li>{% endfor %}</ul>
+  </section>
+{% endfor %}
+</div>
+{% endblock %}

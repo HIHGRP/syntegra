@@ -7,6 +7,7 @@ import uuid
 from collections.abc import Callable
 from functools import wraps
 from typing import Any
+from urllib.parse import urlencode
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
@@ -14,10 +15,17 @@ from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
 
 from syntegra.core import catalog, context
-from syntegra.core.errors import DomainError, Forbidden
+from syntegra.core.errors import DomainError, Forbidden, HardValidation, NotFound
 from syntegra.web import pages
 
 View = Callable[..., HttpResponse]
+
+
+def _uuid_or_fail(value: object, what: str) -> uuid.UUID:
+    try:
+        return uuid.UUID(str(value))
+    except ValueError as exc:
+        raise HardValidation("PAGE-PARAM", f"Invalid {what}", f"Choose a {what} from the list.") from exc
 
 
 def _ctx(request: HttpRequest, **extra: Any) -> dict[str, Any]:
@@ -79,8 +87,10 @@ def sign_in(request: HttpRequest) -> HttpResponse:
                 ip=c.ip,
                 ua=c.user_agent,
             )
-            nxt = request.GET.get("next", "/")
-            resp = HttpResponseRedirect(nxt if nxt.startswith("/") and not nxt.startswith("//") else "/")
+            nxt = _safe_next(request.GET.get("next"))
+            if len(r.grants) > 1 and not r.mfa_required:  # several roles: choose the workspace first (AUT-03)
+                nxt = f"/auth/context?{urlencode({'next': nxt})}"
+            resp = HttpResponseRedirect(nxt)
             resp.set_cookie(
                 settings.SESSION_COOKIE_NAME,
                 r.token,
@@ -189,7 +199,10 @@ def register(request: HttpRequest, class_id: uuid.UUID) -> HttpResponse:
     c = context.require()
     if not c.has("attendance:view"):
         raise Forbidden()
-    day = dt.date.fromisoformat(request.GET.get("date", dt.date.today().isoformat()))
+    try:
+        day = dt.date.fromisoformat(request.GET.get("date") or dt.date.today().isoformat())
+    except ValueError as exc:
+        raise HardValidation("PAGE-PARAM", "Invalid date", "date must be YYYY-MM-DD") from exc
     reg = att.open_register(class_id, day)
     message = None
     if request.method == "POST":
@@ -197,8 +210,10 @@ def register(request: HttpRequest, class_id: uuid.UUID) -> HttpResponse:
         for key, code in request.POST.items():
             code = str(code)
             if key.startswith("mark_") and code:
-                lid = uuid.UUID(key[5:])
+                lid = _uuid_or_fail(key[5:], "learner")
                 late = request.POST.get(f"late_{lid}")
+                if late and not late.isdigit():
+                    raise HardValidation("ATT-LATE", "Invalid minutes late", "Enter whole minutes.")
                 marks.append(
                     att.Mark(
                         learner_id=lid,
@@ -207,7 +222,8 @@ def register(request: HttpRequest, class_id: uuid.UUID) -> HttpResponse:
                         client_op_id=uuid.uuid5(reg.id, f"{lid}:{code}:{late}"),
                     )
                 )
-        r = att.submit(reg.id, marks, if_match=int(request.POST.get("row_version", "0")) or None)
+        rv = request.POST.get("row_version", "0")
+        r = att.submit(reg.id, marks, if_match=int(rv) if rv.isdigit() and int(rv) else None)
         message = f"Saved: {r['created']} new, {r['corrected']} corrected. Register {r['status'].replace('_', ' ')}."
     view = att.register_view(reg.id)
     names = {lr.id: lr for lr in Learner.objects.filter(id__in=[m.learner_id for m in view["roster"]])}
@@ -456,7 +472,9 @@ def clearance(request: HttpRequest) -> HttpResponse:
     chk = decision = learner = None
     message = None
     if request.method == "POST" and request.POST.get("check_id"):
-        chk = ClearanceCheck.objects.get(pk=uuid.UUID(request.POST["check_id"]))
+        chk = ClearanceCheck.objects.filter(pk=_uuid_or_fail(request.POST["check_id"], "check")).first()
+        if chk is None:
+            raise NotFound("clearance check", request.POST["check_id"])
         decision = fcl.decide(
             chk.id,
             fcl.DecisionInput(
@@ -475,7 +493,7 @@ def clearance(request: HttpRequest) -> HttpResponse:
         else:
             chk = fcl.check(
                 learner.id,
-                uuid.UUID(request.POST["institution_id"]),
+                _uuid_or_fail(request.POST.get("institution_id"), "institution"),
                 purpose=request.POST.get("purpose", "admission"),
                 education_level=request.POST.get("education_level", ""),
             )
@@ -514,7 +532,7 @@ def establishment(request: HttpRequest) -> HttpResponse:
         raise Forbidden()
     institutions = list(Institution.objects.in_scope().filter(status="active").order_by("name")[:200])
     chosen = request.GET.get("institution_id") or (str(institutions[0].id) if institutions else None)
-    data = est.establishment(uuid.UUID(chosen)) if chosen else None
+    data = est.establishment(_uuid_or_fail(chosen, "institution")) if chosen else None
     return render(
         request,
         "establishment.html",
@@ -601,4 +619,99 @@ def institution_regulation(request: HttpRequest, institution_id: uuid.UUID) -> H
 
     return render(
         request, "institution_regulation.html", _ctx(request, p=reg.profile(institution_id), page=pages.page("REG-02"))
+    )
+
+
+# ------------------------------------------------------------------------------------- forms for every write action
+@page()
+def forms_hub(request: HttpRequest) -> HttpResponse:
+    from syntegra.web import forms
+
+    return render(request, "forms/hub.html", _ctx(request, groups=forms.available(context.current(required=False))))
+
+
+@require_http_methods(["GET", "POST"])
+@page()
+def form_page(request: HttpRequest, key: str) -> HttpResponse:
+    """One form: GET shows it (values may be prefilled from the query string, e.g. ``?target=<id>``); POST
+    validates with the API serializer, calls the service and shows the outcome beside the fields."""
+    from syntegra.web import forms
+
+    form = forms.REGISTRY.get(key)
+    if form is None:
+        raise NotFound("form", key)
+    if not form.allowed(context.require()):
+        raise Forbidden()
+    posted = request.method == "POST"
+    params = request.POST if posted else request.GET
+    opts = forms.options(form, params)
+    outcome = forms.submit(form, request.POST, request.FILES, opts) if posted else forms.Outcome()
+    keep = posted and bool(outcome.errors)
+    values: dict[str, Any] = {}
+    for f in form.fields:
+        if keep:
+            values[f.name] = params.getlist(f.name) if f.kind == "multi" else params.get(f.name, "")
+        elif f.kind == "hidden" or not posted:
+            src = request.GET if not posted or f.kind != "hidden" else request.POST
+            values[f.name] = src.getlist(f.name) if f.kind == "multi" else src.get(f.name, f.default)
+        else:
+            values[f.name] = [] if f.kind == "multi" else f.default
+    nothing = any(f.name == "target" and not opts.get("target") for f in form.fields)
+    return render(
+        request,
+        "forms/form.html",
+        _ctx(
+            request,
+            form=form,
+            opts=opts,
+            values=values,
+            outcome=outcome,
+            nothing=nothing,
+            multipart=any(f.kind == "file" for f in form.fields),
+            today=dt.date.today().isoformat(),
+        ),
+        status=422 if outcome.errors else 200,
+    )
+
+
+# ------------------------------------------------------------------------------------- workspace (role) chooser
+def _safe_next(value: str | None) -> str:
+    return value if value and value.startswith("/") and not value.startswith("//") else "/"
+
+
+@require_http_methods(["GET", "POST"])
+@page("AUT-03")
+def workspace(request: HttpRequest) -> HttpResponse:
+    """AUT-03: choose which role-at-scope grant the session acts under."""
+    from syntegra.core.middleware import session_token
+    from syntegra.governance.models import ScopeNode
+    from syntegra.iam import services as iam
+    from syntegra.iam.models import AppUser
+
+    c = context.require()
+    user = AppUser.objects.get(pk=c.actor_id)
+    grants = iam.user_grants(user)
+    nodes = {str(n.id): n for n in ScopeNode.objects.filter(id__in=[g["scope_id"] for g in grants])}
+    error = None
+    if request.method == "POST":
+        chosen = request.POST.get("grant_id", "")
+        if chosen not in {str(g["grant_id"]) for g in grants}:
+            error = "Choose one of your roles."
+        else:
+            token, _ = session_token(request)
+            iam.select_grant(token or "", uuid.UUID(chosen))
+            return HttpResponseRedirect(_safe_next(request.GET.get("next")))
+    return render(
+        request,
+        "workspace.html",
+        _ctx(
+            request,
+            grants=grants,
+            nodes=nodes,
+            active=str(c.grant_id) if c.grant_id else None,
+            error=error,
+            next=_safe_next(request.GET.get("next")),
+            page=pages.page("AUT-03"),
+        ),
+        status=422 if error else 200,
     )

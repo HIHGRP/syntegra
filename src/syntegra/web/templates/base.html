@@ -20,11 +20,12 @@
     {% if ctx.has("federal_institutions:view") %}<a href="/federal-institutions">Federal institutions</a>{% endif %}
     <a href="/regulators">Regulators</a>
     {% if ctx.has("hr:view") %}<a href="/hr/establishment">HR</a>{% endif %}
+    <a href="/forms">Forms</a>
     <a href="/pages">Pages</a>
     <a href="/verify">Verify</a>
   </nav>
   <div class="who">
-    <span>{{ user.display_name }} · <strong>{{ ctx.role_code or "no role" }}</strong></span>
+    <span>{{ user.display_name }} · <strong>{{ ctx.role_code or "no role" }}</strong> · <a href="/auth/context?next={{ request.path|urlencode }}">Switch role</a></span>
     <form method="post" action="/sign-out"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><button class="link">Sign out</button></form>
   </div>
   {% else %}

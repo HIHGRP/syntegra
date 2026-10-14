@@ -2,6 +2,7 @@
 {% block title %}Establishment and vacancies{% endblock %}
 {% block content %}
 <h1>Establishment and vacancies</h1>
+<p class="actions">{% if ctx.has("hr:establishment") %}<a href="/forms/hr-position">Create a position</a>{% endif %}{% if ctx.has("hr:appoint") %}<a href="/forms/hr-appoint">Appoint</a>{% endif %}{% if ctx.has("hr:posting_request") %}<a href="/forms/hr-posting">Request a posting</a>{% endif %}<a href="/forms">All HR forms</a></p>
 <form method="get" class="inline"><label class="sr" for="inst">Institution</label>
   <select id="inst" name="institution_id">{% for i in institutions %}<option value="{{ i.id }}" {% if chosen == i.id|string %}selected{% endif %}>{{ i.name }}</option>{% endfor %}</select>
   <button>Show</button></form>
