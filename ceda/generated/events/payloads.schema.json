@@ -2881,6 +2881,387 @@
         "institution_id"
       ],
       "additionalProperties": false
+    },
+    "HR.POSITION_CHANGED": {
+      "type": "object",
+      "description": "Establishment position approved, frozen or abolished",
+      "properties": {
+        "position_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "proposed",
+            "approved",
+            "frozen",
+            "abolished"
+          ]
+        }
+      },
+      "required": [
+        "position_id",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "HR.POSTING_APPROVED": {
+      "type": "object",
+      "description": "Posting order approved (sending institution prepares handover — G9)",
+      "properties": {
+        "staff_posting_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "to_position_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "effective_on": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "staff_posting_id",
+        "staff_id",
+        "to_position_id",
+        "effective_on"
+      ],
+      "additionalProperties": false
+    },
+    "HR.POSTING_EFFECTIVE": {
+      "type": "object",
+      "description": "Posting took effect: old post ended, new post filled, grants moved",
+      "properties": {
+        "staff_posting_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "new_staff_post_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "staff_posting_id",
+        "staff_id",
+        "new_staff_post_id"
+      ],
+      "additionalProperties": false
+    },
+    "HR.LEAVE_APPROVED": {
+      "type": "object",
+      "description": "Leave approved — staff absence created and cover started (G8)",
+      "properties": {
+        "leave_request_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "starts_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "ends_on": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "leave_request_id",
+        "staff_id",
+        "starts_on",
+        "ends_on"
+      ],
+      "additionalProperties": false
+    },
+    "HR.PROMOTION_DECIDED": {
+      "type": "object",
+      "description": "Promotion board decision recorded",
+      "properties": {
+        "promotion_case_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "board_decision": {
+          "type": "string",
+          "enum": [
+            "approved",
+            "not_approved",
+            "deferred"
+          ]
+        }
+      },
+      "required": [
+        "promotion_case_id",
+        "board_decision"
+      ],
+      "additionalProperties": false
+    },
+    "HR.SEPARATION_RECORDED": {
+      "type": "object",
+      "description": "Staff member separated from a post (access ends, classes reassigned)",
+      "properties": {
+        "separation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "effective_on": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "separation_id",
+        "staff_id",
+        "effective_on"
+      ],
+      "additionalProperties": false
+    },
+    "HR.BANK_ACCOUNT_CHANGED": {
+      "type": "object",
+      "description": "Salary account changed after call-back and second approval (staff member notified)",
+      "properties": {
+        "staff_bank_account_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "staff_bank_account_id",
+        "staff_id"
+      ],
+      "additionalProperties": false
+    },
+    "HR.INTEGRITY_FLAG_RAISED": {
+      "type": "object",
+      "description": "Payroll integrity scan raised a flag",
+      "properties": {
+        "hr_integrity_flag_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "flag_kind": {
+          "type": "string",
+          "enum": [
+            "shared_bank_account",
+            "shared_bvn",
+            "concurrent_public_posts",
+            "paid_after_separation",
+            "past_retirement_date",
+            "no_attendance_30_days",
+            "failed_headcount",
+            "post_without_position",
+            "grade_outside_position"
+          ]
+        }
+      },
+      "required": [
+        "hr_integrity_flag_id",
+        "flag_kind"
+      ],
+      "additionalProperties": false
+    },
+    "HR.PAYROLL_HOLD_DECIDED": {
+      "type": "object",
+      "description": "A person decided to hold or release pay on a flag",
+      "properties": {
+        "hr_integrity_flag_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "payroll_hold": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "hr_integrity_flag_id",
+        "payroll_hold"
+      ],
+      "additionalProperties": false
+    },
+    "HR.HEADCOUNT_COMPLETED": {
+      "type": "object",
+      "description": "Headcount exercise closed",
+      "properties": {
+        "headcount_exercise_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "headcount_exercise_id",
+        "institution_id"
+      ],
+      "additionalProperties": false
+    },
+    "FCL.OBLIGATION_PUBLISHED": {
+      "type": "object",
+      "description": "Creditor published or reconfirmed an obligation",
+      "properties": {
+        "learner_obligation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "creditor_institution_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "learner_obligation_id",
+        "creditor_institution_id"
+      ],
+      "additionalProperties": false
+    },
+    "FCL.OBLIGATION_SETTLED": {
+      "type": "object",
+      "description": "Obligation settled, waived, written off, withdrawn or expired",
+      "properties": {
+        "learner_obligation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "outstanding",
+            "payment_plan",
+            "disputed",
+            "settled",
+            "written_off",
+            "waived",
+            "expired",
+            "withdrawn"
+          ]
+        }
+      },
+      "required": [
+        "learner_obligation_id",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "FCL.CHECK_PERFORMED": {
+      "type": "object",
+      "description": "Clearance check run; each creditor and the family are notified",
+      "properties": {
+        "clearance_check_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "result": {
+          "type": "string",
+          "enum": [
+            "clear",
+            "outstanding",
+            "disputed_only",
+            "protected"
+          ]
+        }
+      },
+      "required": [
+        "clearance_check_id",
+        "learner_id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    "FCL.DECISION_RECORDED": {
+      "type": "object",
+      "description": "Admission decision recorded on a clearance check",
+      "properties": {
+        "clearance_decision_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "admit",
+            "admit_with_payment_plan",
+            "defer_pending_settlement",
+            "admit_protected"
+          ]
+        }
+      },
+      "required": [
+        "clearance_decision_id",
+        "decision"
+      ],
+      "additionalProperties": false
+    },
+    "FCL.DISPUTE_RAISED": {
+      "type": "object",
+      "description": "Obligation disputed (shown as disputed until resolved)",
+      "properties": {
+        "obligation_dispute_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "learner_obligation_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "obligation_dispute_id",
+        "learner_obligation_id"
+      ],
+      "additionalProperties": false
+    },
+    "FCL.DISPUTE_RESOLVED": {
+      "type": "object",
+      "description": "LGA or state resolved a dispute",
+      "properties": {
+        "obligation_dispute_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "resolution": {
+          "type": "string",
+          "enum": [
+            "upheld",
+            "partly_upheld",
+            "rejected",
+            "withdrawn"
+          ]
+        }
+      },
+      "required": [
+        "obligation_dispute_id",
+        "resolution"
+      ],
+      "additionalProperties": false
     }
   }
 }

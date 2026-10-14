@@ -129,6 +129,55 @@ VALUES (UUID_TO_BIN(UUID()), {T1}, UUID_TO_BIN(UUID()), 'g2', 'critical', @inst,
 INSERT INTO coverage_gap (id, tenant_id, scope_node_id, rule, severity, institution_id, class_subject_plan_id, learners_affected, owner_role, due_on, opened_at, status)
 VALUES (UUID_TO_BIN(UUID()), {T1}, UUID_TO_BIN(UUID()), 'g2', 'critical', @inst, @csp, 38, 'HEAD', '2026-10-16', NOW(6), 'open');
 """, 1062),
+    # ------------------------------------------------------------ CR-001: HRMS and fee clearance
+    ("fee clearance: one open obligation per learner × creditor × kind (generated unique key)", "ceda_registry", f"""
+SET @t1 = {T1}; SET @inst = UUID_TO_BIN('0192f1c4-0000-7000-8000-00000000a004'); SET @lrn = UUID_TO_BIN('0192f1c4-0000-7000-8000-00000000a005');
+INSERT INTO learner_obligation (id, tenant_id, scope_node_id, learner_id, creditor_institution_id, creditor_tenant_id, obligation_kind, payer_kind,
+  amount_outstanding_minor, currency, oldest_due_on, evidence, evidence_hash, source, published_by, published_at, reconfirm_by, status)
+VALUES (UUID_TO_BIN(UUID()), @t1, UUID_TO_BIN('0192f1c4-0000-7000-8000-00000000a003'), @lrn, @inst, @t1, 'tuition_fees', 'guardian',
+  4500000, 'NGN', '2026-05-01', JSON_ARRAY('INV-1'), UNHEX(SHA2('a', 256)), 'ledger', UUID_TO_BIN(UUID()), NOW(6), '2027-01-01', 'outstanding');
+INSERT INTO learner_obligation (id, tenant_id, scope_node_id, learner_id, creditor_institution_id, creditor_tenant_id, obligation_kind, payer_kind,
+  amount_outstanding_minor, currency, oldest_due_on, evidence, evidence_hash, source, published_by, published_at, reconfirm_by, status)
+VALUES (UUID_TO_BIN(UUID()), @t1, UUID_TO_BIN('0192f1c4-0000-7000-8000-00000000a003'), @lrn, @inst, @t1, 'tuition_fees', 'guardian',
+  100, 'NGN', '2026-05-01', JSON_ARRAY('INV-2'), UNHEX(SHA2('b', 256)), 'ledger', UUID_TO_BIN(UUID()), NOW(6), '2027-01-01', 'disputed');
+""", 1062),
+    ("fee clearance: SDAF can never be published as a school obligation (enum CHECK)", "ceda_registry", f"""
+SET @t1 = {T1};
+INSERT INTO learner_obligation (id, tenant_id, scope_node_id, learner_id, creditor_institution_id, creditor_tenant_id, obligation_kind, payer_kind,
+  amount_outstanding_minor, currency, oldest_due_on, evidence, evidence_hash, source, published_by, published_at, reconfirm_by, status)
+VALUES (UUID_TO_BIN(UUID()), @t1, UUID_TO_BIN('0192f1c4-0000-7000-8000-00000000a003'), UUID_TO_BIN('0192f1c4-0000-7000-8000-00000000a005'),
+  UUID_TO_BIN('0192f1c4-0000-7000-8000-00000000a004'), @t1, 'sdaf_levy', 'guardian', 100, 'NGN', '2026-05-01', JSON_ARRAY(), UNHEX(SHA2('c', 256)),
+  'ledger', UUID_TO_BIN(UUID()), NOW(6), '2027-01-01', 'outstanding');
+""", 3819),
+    ("fee clearance: a protected admission must state its reason", "ceda_registry", f"""
+SET @t1 = {T1}; SET @chk = UUID_TO_BIN(UUID());
+INSERT INTO clearance_check (id, tenant_id, learner_id, requesting_institution_id, purpose, basis, requested_by, checked_at, coverage, result,
+  obligations, total_outstanding_minor, currency)
+VALUES (@chk, @t1, UUID_TO_BIN('0192f1c4-0000-7000-8000-00000000a005'), UUID_TO_BIN('0192f1c4-0000-7000-8000-00000000a004'), 'transfer',
+  'admission_due_diligence', UUID_TO_BIN(UUID()), NOW(6), 'state', 'outstanding', JSON_ARRAY(), 4500000, 'NGN');
+INSERT INTO clearance_decision (id, tenant_id, check_id, decision, reason, decided_by, decided_at)
+VALUES (UUID_TO_BIN(UUID()), @t1, @chk, 'admit_protected', 'protected', UUID_TO_BIN(UUID()), NOW(6));
+""", 3819),
+    ("HRMS: one active holder per establishment position (generated unique key)", "ceda_registry", f"""
+SET @t1 = {T1}; SET FOREIGN_KEY_CHECKS = 0; SET @pos = UUID_TO_BIN(UUID());
+INSERT INTO employment_record (id, tenant_id, scope_node_id, staff_post_id, staff_id, position_id, cadre_id, employer_scope_id, appointment_type,
+  first_appointment_on, present_appointment_on, salary_structure_id, grade_level, step, status)
+VALUES (UUID_TO_BIN(UUID()), @t1, UUID_TO_BIN(UUID()), UUID_TO_BIN(UUID()), UUID_TO_BIN(UUID()), @pos, UUID_TO_BIN(UUID()), UUID_TO_BIN(UUID()),
+  'first_appointment', '2015-01-05', '2015-01-05', UUID_TO_BIN(UUID()), 8, 2, 'confirmed');
+INSERT INTO employment_record (id, tenant_id, scope_node_id, staff_post_id, staff_id, position_id, cadre_id, employer_scope_id, appointment_type,
+  first_appointment_on, present_appointment_on, salary_structure_id, grade_level, step, status)
+VALUES (UUID_TO_BIN(UUID()), @t1, UUID_TO_BIN(UUID()), UUID_TO_BIN(UUID()), UUID_TO_BIN(UUID()), @pos, UUID_TO_BIN(UUID()), UUID_TO_BIN(UUID()),
+  'first_appointment', '2019-01-05', '2019-01-05', UUID_TO_BIN(UUID()), 7, 1, 'probation');
+""", 1062),
+    ("HRMS: posting order approver must differ from requester", "ceda_registry", f"""
+SET @t1 = {T1}; SET FOREIGN_KEY_CHECKS = 0; SET @u = UUID_TO_BIN(UUID());
+INSERT INTO staff_posting (id, tenant_id, scope_node_id, order_number, staff_id, to_position_id, posting_kind, reason, effective_on, requested_by, approved_by, status)
+VALUES (UUID_TO_BIN(UUID()), @t1, UUID_TO_BIN(UUID()), 'PO-1', UUID_TO_BIN(UUID()), UUID_TO_BIN(UUID()), 'transfer', 'Rationalisation', '2026-11-01', @u, @u, 'approved');
+""", 3819),
+    ("ops HRMS: leave balance refuses over-booking", "ceda_ops", f"""
+INSERT INTO leave_balance (id, tenant_id, staff_id, leave_type, leave_year, entitled, carried_over, taken, pending)
+VALUES (UUID_TO_BIN(UUID()), {T1}, UUID_TO_BIN(UUID()), 'annual_leave', 2026, 30, 0, 25, 10);
+""", 3819),
     ("vault: safeguarding chronology is append-only (DELETE refused)", "ceda_vault", f"""
 SET FOREIGN_KEY_CHECKS = 0;
 INSERT INTO safeguarding_entry (id, tenant_id, case_id, entry_kind, occurred_at, author_user_id, body)

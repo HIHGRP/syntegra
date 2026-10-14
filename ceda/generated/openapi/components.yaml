@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Syntegra CEDA canonical component schemas
-  version: 1.1.0
+  version: 1.2.0
   description: Generated from the CEDA model. API resources compose these schemas; fields marked x-classification restricted/special
     are only serialised for callers whose grant clearance covers them and who supplied X-Syntegra-Purpose.
 paths: {}
@@ -45585,4 +45585,2643 @@ components:
       - created_at
       - updated_at
       - row_version
+      additionalProperties: false
+    SalaryStructure:
+      title: SalaryStructure
+      description: Versioned salary structure (CONPSS, CONTISS, CONUASS, CONTEDISS, state teacher scales, private scales)
+      type: object
+      x-ceda:
+        entity: salary_structure
+        zone: registry
+        domain: HRM
+        kind: config
+        classification: internal
+        history: versioned
+        module: hr
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        code:
+          type: string
+          maxLength: 20
+          pattern: ^[A-Za-z0-9_.:/-]*$
+          description: e.g. CONPSS, CONTISS, AB-TSS
+        title:
+          type: string
+          maxLength: 300
+        employer_scope_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: scope_node
+            description: NULL = available to every employer in scope
+          - type: 'null'
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        effective_from:
+          type: string
+          format: date
+        version:
+          type: integer
+          minimum: 0
+        approval_instrument:
+          anyOf:
+          - type: string
+            maxLength: 200
+            description: Circular or board resolution
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - draft
+          - in_review
+          - approved
+          - published
+          - superseded
+          - retired
+          - withdrawn
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - code
+      - title
+      - currency
+      - effective_from
+      - version
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    SalaryScalePoint:
+      title: SalaryScalePoint
+      description: Grade level and step of a salary structure version with annual basic and standard allowances
+      type: object
+      x-ceda:
+        entity: salary_scale_point
+        zone: registry
+        domain: HRM
+        kind: reference
+        classification: internal
+        history: append
+        module: hr
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        structure_id:
+          type: string
+          format: uuid
+          x-ref: salary_structure
+        grade_level:
+          type: integer
+        step:
+          type: integer
+        annual_basic_minor:
+          type: integer
+          description: (minor units)
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        allowances:
+          anyOf:
+          - type: object
+            description: Standard allowances by element code, as amount or % of basic (housing, transport, rural posting …)
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - structure_id
+      - grade_level
+      - step
+      - annual_basic_minor
+      - currency
+      - created_at
+      additionalProperties: false
+    Cadre:
+      title: Cadre
+      description: Career cadre with progression and statutory retirement rule (e.g. Teacher, Education Officer, Principal,
+        Lecturer)
+      type: object
+      x-ceda:
+        entity: cadre
+        zone: registry
+        domain: HRM
+        kind: config
+        classification: internal
+        history: lifecycle
+        module: hr
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        code:
+          type: string
+          maxLength: 20
+          pattern: ^[A-Za-z0-9_.:/-]*$
+        title:
+          type: string
+          maxLength: 300
+        staff_category:
+          type: string
+          maxLength: 32
+          x-code-list: staff_category
+        is_teaching:
+          type: boolean
+        salary_structure_code:
+          type: string
+          maxLength: 20
+          pattern: ^[A-Za-z0-9_.:/-]*$
+        entry_grade_level:
+          type: integer
+        max_grade_level:
+          type: integer
+        years_per_promotion:
+          type: integer
+        retirement_age:
+          type: integer
+          description: 65 for teachers (Harmonised Retirement Age for Teachers in Nigeria Act 2022), 60 otherwise
+        max_years_service:
+          type: integer
+          description: 40 for teachers, 35 otherwise
+        status:
+          type: string
+          enum:
+          - active
+          - inactive
+          - retired
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - code
+      - title
+      - staff_category
+      - is_teaching
+      - salary_structure_code
+      - entry_grade_level
+      - max_grade_level
+      - years_per_promotion
+      - retirement_age
+      - max_years_service
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    Position:
+      title: Position
+      description: Approved establishment position (one seat) at an institution, unit or office, with cadre, grade range and
+        specialism
+      type: object
+      x-ceda:
+        entity: position
+        zone: registry
+        domain: HRM
+        kind: master
+        classification: internal
+        history: lifecycle
+        module: hr
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        position_code:
+          type: string
+          maxLength: 32
+          pattern: ^[A-Za-z0-9_.:/-]*$
+          description: POS-<institution code>-NNNN
+        institution_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: institution
+            description: NULL for ministry, board or LGA office positions
+          - type: 'null'
+        org_unit_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: org_unit
+          - type: 'null'
+        employer_scope_id:
+          type: string
+          format: uuid
+          x-ref: scope_node
+          description: SUBEB, TESCOM, ministry, tertiary institution or private provider
+        title:
+          type: string
+          maxLength: 300
+        cadre_id:
+          type: string
+          format: uuid
+          x-ref: cadre
+        staff_category:
+          type: string
+          maxLength: 32
+          x-code-list: staff_category
+        grade_level_min:
+          type: integer
+        grade_level_max:
+          type: integer
+        subject_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: subject
+            description: Specialism for teaching positions
+          - type: 'null'
+        education_levels:
+          anyOf:
+          - type: array
+            items:
+              type: string
+              maxLength: 32
+            x-code-list: education_level
+          - type: 'null'
+        funding:
+          type: string
+          enum:
+          - funded
+          - unfunded
+          - donor_funded
+          - privately_funded
+        budget_line:
+          anyOf:
+          - type: string
+            maxLength: 40
+            pattern: ^[A-Za-z0-9_.:/-]*$
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - proposed
+          - approved
+          - frozen
+          - abolished
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - position_code
+      - employer_scope_id
+      - title
+      - cadre_id
+      - staff_category
+      - grade_level_min
+      - grade_level_max
+      - funding
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    EmploymentRecord:
+      title: EmploymentRecord
+      description: Employment record of a staff post — appointment, confirmation, grade and step, position held and projected
+        retirement
+      type: object
+      x-ceda:
+        entity: employment_record
+        zone: registry
+        domain: HRM
+        kind: master
+        classification: confidential
+        history: lifecycle
+        module: hr
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        staff_post_id:
+          type: string
+          format: uuid
+          x-ref: staff_post
+        staff_id:
+          type: string
+          format: uuid
+          x-ref: staff
+        position_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: position
+          - type: 'null'
+        cadre_id:
+          type: string
+          format: uuid
+          x-ref: cadre
+        employer_scope_id:
+          type: string
+          format: uuid
+          x-ref: scope_node
+        appointment_type:
+          type: string
+          enum:
+          - first_appointment
+          - transfer_of_service
+          - secondment
+          - contract
+          - nysc
+          - volunteer
+          - private_hire
+        appointment_letter_ref:
+          anyOf:
+          - type: string
+            maxLength: 64
+            pattern: ^[A-Za-z0-9_.:/-]*$
+          - type: 'null'
+        first_appointment_on:
+          type: string
+          format: date
+          description: Date of first appointment into the service
+        present_appointment_on:
+          type: string
+          format: date
+        confirmation_due_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        confirmed_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        salary_structure_id:
+          type: string
+          format: uuid
+          x-ref: salary_structure
+        grade_level:
+          type: integer
+        step:
+          type: integer
+        last_promotion_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        retirement_due_on:
+          anyOf:
+          - type: string
+            format: date
+            description: Earlier of retirement age and maximum years of service (cadre rule)
+          - type: 'null'
+        retirement_basis:
+          anyOf:
+          - type: string
+            enum:
+            - age
+            - length_of_service
+            - contract_end
+            - none
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - probation
+          - confirmed
+          - suspended
+          - seconded
+          - separated
+        seat_key:
+          anyOf:
+          - type: string
+            format: uuid
+            description: position_id while the post is active (one active holder per position)
+            readOnly: true
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - staff_post_id
+      - staff_id
+      - cadre_id
+      - employer_scope_id
+      - appointment_type
+      - first_appointment_on
+      - present_appointment_on
+      - salary_structure_id
+      - grade_level
+      - step
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    StaffPosting:
+      title: StaffPosting
+      description: Posting order — first posting, transfer, redeployment or secondment of a staff member between institutions
+        and employers
+      type: object
+      x-ceda:
+        entity: staff_posting
+        zone: registry
+        domain: HRM
+        kind: transaction
+        classification: confidential
+        history: lifecycle
+        module: hr
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        order_number:
+          type: string
+          maxLength: 40
+          pattern: ^[A-Za-z0-9_.:/-]*$
+        staff_id:
+          type: string
+          format: uuid
+          x-ref: staff
+        from_staff_post_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: staff_post
+          - type: 'null'
+        to_position_id:
+          type: string
+          format: uuid
+          x-ref: position
+        to_institution_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: institution
+          - type: 'null'
+        posting_kind:
+          type: string
+          enum:
+          - first_posting
+          - transfer
+          - redeployment
+          - secondment
+          - promotion_posting
+          - rationalisation
+          - on_request
+          - disciplinary
+        reason:
+          type: string
+          maxLength: 65535
+        effective_on:
+          type: string
+          format: date
+        coverage_impact:
+          anyOf:
+          - type: object
+            description: Class-subjects left without a teacher of record (G9) at the sending institution
+          - type: 'null'
+        requested_by:
+          type: string
+          format: uuid
+          x-ref: app_user
+        approved_by:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: app_user
+          - type: 'null'
+        workflow_instance_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: workflow_instance
+          - type: 'null'
+        new_staff_post_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: staff_post
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - draft
+          - submitted
+          - approved
+          - effective
+          - rejected
+          - cancelled
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - order_number
+      - staff_id
+      - to_position_id
+      - posting_kind
+      - reason
+      - effective_on
+      - requested_by
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    PromotionCase:
+      title: PromotionCase
+      description: Promotion case of a staff member in a promotion exercise (eligibility, examination, board decision, effective
+        date)
+      type: object
+      x-ceda:
+        entity: promotion_case
+        zone: registry
+        domain: HRM
+        kind: transaction
+        classification: confidential
+        history: lifecycle
+        module: hr
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        staff_id:
+          type: string
+          format: uuid
+          x-ref: staff
+        employment_record_id:
+          type: string
+          format: uuid
+          x-ref: employment_record
+        exercise_label:
+          type: string
+          maxLength: 20
+          pattern: ^[A-Za-z0-9_.:/-]*$
+          description: e.g. 2026-PROMO
+        from_grade_level:
+          type: integer
+        from_step:
+          type: integer
+        to_grade_level:
+          type: integer
+        to_step:
+          type: integer
+        eligibility:
+          type: object
+          description: Years on grade, appraisal ratings, examination, discipline status — each with pass/fail
+        exam_score:
+          anyOf:
+          - type: string
+            format: decimal
+          - type: 'null'
+        board_decision:
+          anyOf:
+          - type: string
+            enum:
+            - approved
+            - not_approved
+            - deferred
+          - type: 'null'
+        decided_by:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: app_user
+            description: Human decision (board secretary)
+          - type: 'null'
+        effective_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - draft
+          - submitted
+          - in_review
+          - approved
+          - rejected
+          - cancelled
+          - fulfilled
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - staff_id
+      - employment_record_id
+      - exercise_label
+      - from_grade_level
+      - from_step
+      - to_grade_level
+      - to_step
+      - eligibility
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    Separation:
+      title: Separation
+      description: Separation from a post (resignation, retirement, death, dismissal, end of contract, transfer of service)
+        with exit clearance
+      type: object
+      x-ceda:
+        entity: separation
+        zone: registry
+        domain: HRM
+        kind: transaction
+        classification: confidential
+        history: lifecycle
+        module: hr
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        staff_id:
+          type: string
+          format: uuid
+          x-ref: staff
+        staff_post_id:
+          type: string
+          format: uuid
+          x-ref: staff_post
+        separation_kind:
+          type: string
+          enum:
+          - resignation
+          - retirement_statutory
+          - retirement_voluntary
+          - death
+          - dismissal
+          - termination
+          - end_of_contract
+          - transfer_of_service
+          - abandonment
+        notice_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        effective_on:
+          type: string
+          format: date
+        exit_checklist:
+          type: object
+          description: Handover of classes (G9), assets, ID card, final pay, pension notification, access removal
+        pension_notified_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        recorded_by:
+          type: string
+          format: uuid
+          x-ref: app_user
+        status:
+          type: string
+          enum:
+          - draft
+          - submitted
+          - in_review
+          - approved
+          - rejected
+          - cancelled
+          - fulfilled
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - staff_id
+      - staff_post_id
+      - separation_kind
+      - effective_on
+      - exit_checklist
+      - recorded_by
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    StaffBankAccount:
+      title: StaffBankAccount
+      description: Staff salary bank account (encrypted; lookup token for duplicate detection; dual approval and call-back
+        on change)
+      type: object
+      x-ceda:
+        entity: staff_bank_account
+        zone: registry
+        domain: HRM
+        kind: master
+        classification: restricted
+        history: lifecycle
+        module: hr
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        staff_id:
+          type: string
+          format: uuid
+          x-ref: staff
+        bank_code:
+          type: string
+          maxLength: 10
+          pattern: ^[A-Za-z0-9_.:/-]*$
+          description: CBN bank code
+        account_number:
+          type: string
+          x-classification: restricted
+          writeOnly: true
+          description: NUBAN — envelope-encrypted
+        account_name:
+          type: string
+          maxLength: 200
+          x-personal-data: true
+        is_primary:
+          type: boolean
+        verified_via:
+          anyOf:
+          - type: string
+            enum:
+            - call_back
+            - nibss_name_enquiry
+            - document
+            - none
+          - type: 'null'
+        verified_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        requested_by:
+          type: string
+          format: uuid
+          x-ref: app_user
+        approved_by:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: app_user
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - active
+          - inactive
+          - retired
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - staff_id
+      - bank_code
+      - account_number
+      - account_name
+      - is_primary
+      - requested_by
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    HrIntegrityFlag:
+      title: HrIntegrityFlag
+      description: Payroll integrity flag across all employers in the state (ghost worker, double employment, pay after exit
+        …)
+      type: object
+      x-ceda:
+        entity: hr_integrity_flag
+        zone: registry
+        domain: HRM
+        kind: queue
+        classification: restricted
+        history: lifecycle
+        module: hr
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        staff_id:
+          type: string
+          format: uuid
+          x-ref: staff
+        employer_scope_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: scope_node
+          - type: 'null'
+        flag_kind:
+          type: string
+          enum:
+          - shared_bank_account
+          - shared_bvn
+          - concurrent_public_posts
+          - paid_after_separation
+          - past_retirement_date
+          - no_attendance_30_days
+          - failed_headcount
+          - post_without_position
+          - grade_outside_position
+        evidence:
+          type: object
+          description: Matching records, dates and sources — never special-category data
+        detected_at:
+          type: string
+          format: date-time
+        run_label:
+          anyOf:
+          - type: string
+            maxLength: 40
+            pattern: ^[A-Za-z0-9_.:/-]*$
+          - type: 'null'
+        payroll_hold:
+          type: boolean
+          description: Set only by a person (A1)
+        decided_by:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: app_user
+          - type: 'null'
+        decision_reason:
+          anyOf:
+          - type: string
+            maxLength: 65535
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - open
+          - in_progress
+          - resolved
+          - dismissed
+          - cancelled
+        open_key:
+          anyOf:
+          - type: string
+            maxLength: 120
+            pattern: ^[A-Za-z0-9_.:/-]*$
+            description: kind:staff while open (one open flag per kind per staff member)
+            readOnly: true
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - staff_id
+      - flag_kind
+      - evidence
+      - detected_at
+      - payroll_hold
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    HeadcountExercise:
+      title: HeadcountExercise
+      description: Staff headcount (verification) exercise at an institution — in person, biometric or video
+      type: object
+      x-ceda:
+        entity: headcount_exercise
+        zone: registry
+        domain: HRM
+        kind: transaction
+        classification: internal
+        history: lifecycle
+        module: hr
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        institution_id:
+          type: string
+          format: uuid
+          x-ref: institution
+        label:
+          type: string
+          maxLength: 40
+          pattern: ^[A-Za-z0-9_.:/-]*$
+          description: e.g. 2026-Q4
+        method:
+          type: string
+          enum:
+          - in_person
+          - biometric
+          - video
+        starts_on:
+          type: string
+          format: date
+        ends_on:
+          type: string
+          format: date
+        conducted_by:
+          type: string
+          format: uuid
+          x-ref: app_user
+        status:
+          type: string
+          enum:
+          - draft
+          - active
+          - under_review
+          - completed
+          - closed
+          - cancelled
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - institution_id
+      - label
+      - method
+      - starts_on
+      - ends_on
+      - conducted_by
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    HeadcountResult:
+      title: HeadcountResult
+      description: Outcome for one staff member in a headcount exercise
+      type: object
+      x-ceda:
+        entity: headcount_result
+        zone: registry
+        domain: HRM
+        kind: event
+        classification: confidential
+        history: append
+        module: hr
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        exercise_id:
+          type: string
+          format: uuid
+          x-ref: headcount_exercise
+        staff_id:
+          type: string
+          format: uuid
+          x-ref: staff
+        staff_post_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: staff_post
+          - type: 'null'
+        outcome:
+          type: string
+          enum:
+          - verified
+          - absent_with_reason
+          - absent_without_reason
+          - not_on_nominal_roll
+          - impersonation_suspected
+        verified_at:
+          type: string
+          format: date-time
+        evidence:
+          anyOf:
+          - type: object
+            description: Biometric match score, document seen, witness
+          - type: 'null'
+        verifier_id:
+          type: string
+          format: uuid
+          x-ref: app_user
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - exercise_id
+      - staff_id
+      - outcome
+      - verified_at
+      - verifier_id
+      - created_at
+      additionalProperties: false
+    LeavePolicy:
+      title: LeavePolicy
+      description: Leave entitlement rule by leave type, cadre and grade-level band (versioned)
+      type: object
+      x-ceda:
+        entity: leave_policy
+        zone: ops
+        domain: HRM
+        kind: config
+        classification: internal
+        history: versioned
+        module: hr
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        code:
+          type: string
+          maxLength: 40
+          pattern: ^[A-Za-z0-9_.:/-]*$
+        leave_type:
+          type: string
+          maxLength: 32
+          x-code-list: absence_type
+        cadre_code:
+          anyOf:
+          - type: string
+            maxLength: 20
+            pattern: ^[A-Za-z0-9_.:/-]*$
+            description: NULL = every cadre
+          - type: 'null'
+        grade_level_min:
+          type: integer
+        grade_level_max:
+          type: integer
+        days_per_year:
+          type: string
+          format: decimal
+        day_basis:
+          type: string
+          enum:
+          - working_days
+          - calendar_days
+        carry_over_max:
+          type: string
+          format: decimal
+        requires_document:
+          type: boolean
+        is_paid:
+          type: boolean
+        version:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          enum:
+          - draft
+          - in_review
+          - approved
+          - published
+          - superseded
+          - retired
+          - withdrawn
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - code
+      - leave_type
+      - grade_level_min
+      - grade_level_max
+      - days_per_year
+      - day_basis
+      - carry_over_max
+      - requires_document
+      - is_paid
+      - version
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    LeaveBalance:
+      title: LeaveBalance
+      description: Leave balance per staff member, leave type and leave year (the database refuses over-booking)
+      type: object
+      x-ceda:
+        entity: leave_balance
+        zone: ops
+        domain: HRM
+        kind: projection
+        classification: confidential
+        history: none
+        module: hr
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        staff_id:
+          type: string
+          format: uuid
+          x-ref: staff
+        leave_type:
+          type: string
+          maxLength: 32
+          x-code-list: absence_type
+        leave_year:
+          type: integer
+        entitled:
+          type: string
+          format: decimal
+        carried_over:
+          type: string
+          format: decimal
+        taken:
+          type: string
+          format: decimal
+        pending:
+          type: string
+          format: decimal
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - staff_id
+      - leave_type
+      - leave_year
+      - entitled
+      - carried_over
+      - taken
+      - pending
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    LeaveRequest:
+      title: LeaveRequest
+      description: Leave request with approval; approval creates the staff absence that starts cover (G8)
+      type: object
+      x-ceda:
+        entity: leave_request
+        zone: ops
+        domain: HRM
+        kind: transaction
+        classification: confidential
+        history: lifecycle
+        module: hr
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        staff_id:
+          type: string
+          format: uuid
+          x-ref: staff
+        staff_post_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: staff_post
+          - type: 'null'
+        leave_type:
+          type: string
+          maxLength: 32
+          x-code-list: absence_type
+        starts_on:
+          type: string
+          format: date
+        ends_on:
+          type: string
+          format: date
+        days:
+          type: string
+          format: decimal
+        note:
+          anyOf:
+          - type: string
+            maxLength: 500
+            description: No medical detail — that goes to staff_absence.reason_note (sealed)
+          - type: 'null'
+        requested_by:
+          type: string
+          format: uuid
+          description: app_user (registry)
+        approver_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        decided_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        relief_staff_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: staff
+          - type: 'null'
+        absence_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: staff_absence
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - requested
+          - approved
+          - rejected
+          - recorded
+          - cancelled
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - staff_id
+      - leave_type
+      - starts_on
+      - ends_on
+      - days
+      - requested_by
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    EmployeeRelationsCase:
+      title: EmployeeRelationsCase
+      description: Employee relations case — query, disciplinary, grievance, appeal or petition with due-process steps and
+        a human outcome
+      type: object
+      x-ceda:
+        entity: employee_relations_case
+        zone: ops
+        domain: HRM
+        kind: transaction
+        classification: restricted
+        history: lifecycle
+        module: hr
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        case_number:
+          type: string
+          maxLength: 32
+          pattern: ^[A-Za-z0-9_.:/-]*$
+        staff_id:
+          type: string
+          format: uuid
+          x-ref: staff
+        case_kind:
+          type: string
+          enum:
+          - query
+          - disciplinary
+          - grievance
+          - appeal
+          - petition
+        summary:
+          type: string
+          maxLength: 65535
+          description: No special-category content
+        vault_allegation_ref:
+          anyOf:
+          - type: string
+            format: uuid
+            description: Allegation in the vault (reference only)
+          - type: 'null'
+        raised_by:
+          type: string
+          format: uuid
+        raised_on:
+          type: string
+          format: date
+        response_due_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        steps:
+          type: object
+          description: 'Due-process timeline: query issued, response, panel, hearing, decision, appeal window'
+        outcome:
+          anyOf:
+          - type: string
+            enum:
+            - no_case
+            - advice
+            - warning
+            - severe_warning
+            - suspension
+            - interdiction
+            - demotion
+            - dismissal
+            - retirement_in_public_interest
+            - upheld
+            - not_upheld
+          - type: 'null'
+        outcome_decided_by:
+          anyOf:
+          - type: string
+            format: uuid
+            description: Human decision (A1)
+          - type: 'null'
+        outcome_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - open
+          - in_progress
+          - on_hold
+          - closed
+          - transferred
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - case_number
+      - staff_id
+      - case_kind
+      - summary
+      - raised_by
+      - raised_on
+      - steps
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    PayElement:
+      title: PayElement
+      description: Payroll element — earning, allowance, statutory or voluntary deduction, loan repayment or employer contribution
+        (versioned)
+      type: object
+      x-ceda:
+        entity: pay_element
+        zone: ops
+        domain: HRM
+        kind: config
+        classification: internal
+        history: versioned
+        module: hr
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        code:
+          type: string
+          maxLength: 20
+          pattern: ^[A-Za-z0-9_.:/-]*$
+          description: BASIC, HOUSING, TRANSPORT, RURAL, PAYE, PENSION_EE, PENSION_ER, NHF, UNION, COOP, LOAN …
+        title:
+          type: string
+          maxLength: 300
+        element_kind:
+          type: string
+          enum:
+          - earning
+          - allowance
+          - statutory_deduction
+          - voluntary_deduction
+          - loan_repayment
+          - employer_contribution
+        calc_method:
+          type: string
+          enum:
+          - fixed
+          - pct_of_basic
+          - pct_of_gross
+          - pct_of_pensionable
+          - table
+        rate:
+          anyOf:
+          - type: string
+            format: decimal
+            description: Percentage or fixed rate per method
+          - type: 'null'
+        table_kind:
+          anyOf:
+          - type: string
+            enum:
+            - paye
+            - pension
+            - nhf
+            - nhis
+            - other
+            description: Statutory table used (PAYE, pension, NHF)
+          - type: 'null'
+        is_taxable:
+          type: boolean
+        is_pensionable:
+          type: boolean
+        version:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          enum:
+          - draft
+          - in_review
+          - approved
+          - published
+          - superseded
+          - retired
+          - withdrawn
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - code
+      - title
+      - element_kind
+      - calc_method
+      - is_taxable
+      - is_pensionable
+      - version
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    StaffPayElement:
+      title: StaffPayElement
+      description: Recurring pay element of a staff post (allowance, voluntary deduction, loan with balance), effective-dated
+      type: object
+      x-ceda:
+        entity: staff_pay_element
+        zone: ops
+        domain: HRM
+        kind: link
+        classification: restricted
+        history: effective
+        module: hr
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        staff_post_id:
+          type: string
+          format: uuid
+          x-ref: staff_post
+        element_code:
+          type: string
+          maxLength: 20
+          pattern: ^[A-Za-z0-9_.:/-]*$
+        amount_minor:
+          anyOf:
+          - type: integer
+            description: Monthly amount for fixed elements (minor units)
+          - type: 'null'
+        rate:
+          anyOf:
+          - type: string
+            format: decimal
+          - type: 'null'
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        loan_balance_minor:
+          anyOf:
+          - type: integer
+            description: (minor units)
+          - type: 'null'
+        reference:
+          anyOf:
+          - type: string
+            maxLength: 64
+            pattern: ^[A-Za-z0-9_.:/-]*$
+          - type: 'null'
+        approved_by:
+          type: string
+          format: uuid
+        valid_from:
+          type: string
+          format: date
+          description: 'Effective from (inclusive) — history: effective'
+          readOnly: true
+        valid_to:
+          type: string
+          format: date
+          description: 'Effective to (inclusive); NULL = open-ended — history: effective'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - staff_post_id
+      - element_code
+      - currency
+      - approved_by
+      - valid_from
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    LearnerObligation:
+      title: LearnerObligation
+      description: Outstanding obligation of a learner's payer to an institution (fees or other dues), published from the
+        creditor's ledger
+      type: object
+      x-ceda:
+        entity: learner_obligation
+        zone: registry
+        domain: FCL
+        kind: transaction
+        classification: restricted
+        history: lifecycle
+        module: clearance
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        learner_id:
+          type: string
+          format: uuid
+          x-ref: learner
+        creditor_institution_id:
+          type: string
+          format: uuid
+          x-ref: institution
+        creditor_tenant_id:
+          type: string
+          format: uuid
+          description: Operating tenant whose ledger holds the invoices
+        obligation_kind:
+          type: string
+          enum:
+          - tuition_fees
+          - boarding
+          - examination_fees
+          - transport
+          - meals
+          - books_and_materials
+          - uniform
+          - development_levy
+          - damaged_property
+          - library
+          - other_dues
+        payer_kind:
+          type: string
+          enum:
+          - learner
+          - family
+          - guardian
+          - sponsor
+          - funder
+          - government
+          - employer
+          - institution
+        periods:
+          anyOf:
+          - type: object
+            description: Billing periods covered, e.g. 2025/26-T2, 2025/26-T3
+          - type: 'null'
+        amount_outstanding_minor:
+          type: integer
+          description: (minor units)
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        oldest_due_on:
+          type: string
+          format: date
+        evidence:
+          type: object
+          description: Invoice numbers and content hashes, or document ids for manual claims
+        evidence_hash:
+          type: string
+          contentEncoding: base64
+          description: SHA-256 of the canonical evidence
+        source:
+          type: string
+          enum:
+          - ledger
+          - manual_with_evidence
+        published_by:
+          type: string
+          format: uuid
+        published_at:
+          type: string
+          format: date-time
+        reconfirm_by:
+          type: string
+          format: date
+          description: Expires if the creditor does not reconfirm (default 90 days)
+        last_checked_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        settled_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - outstanding
+          - payment_plan
+          - disputed
+          - settled
+          - written_off
+          - waived
+          - expired
+          - withdrawn
+        open_key:
+          anyOf:
+          - type: string
+            maxLength: 120
+            pattern: ^[A-Za-z0-9_.:/-]*$
+            description: learner:creditor:kind while open
+            readOnly: true
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - learner_id
+      - creditor_institution_id
+      - creditor_tenant_id
+      - obligation_kind
+      - payer_kind
+      - amount_outstanding_minor
+      - currency
+      - oldest_due_on
+      - evidence
+      - evidence_hash
+      - source
+      - published_by
+      - published_at
+      - reconfirm_by
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    ObligationDispute:
+      title: ObligationDispute
+      description: Dispute of a published obligation by the family, the admitting institution or the creditor (resolved by
+        LGA or state)
+      type: object
+      x-ceda:
+        entity: obligation_dispute
+        zone: registry
+        domain: FCL
+        kind: transaction
+        classification: restricted
+        history: lifecycle
+        module: clearance
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        scope_node_id:
+          type: string
+          format: uuid
+          description: 'Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure'
+          readOnly: true
+        obligation_id:
+          type: string
+          format: uuid
+          x-ref: learner_obligation
+        raised_by_kind:
+          type: string
+          enum:
+          - guardian
+          - learner
+          - admitting_institution
+          - creditor
+        raised_by:
+          type: string
+          format: uuid
+        grounds:
+          type: string
+          enum:
+          - already_paid
+          - amount_wrong
+          - not_liable
+          - waiver_granted
+          - statute_barred
+          - protected_learner
+          - other
+        statement:
+          type: string
+          maxLength: 65535
+        evidence_document_ids:
+          anyOf:
+          - type: object
+          - type: 'null'
+        due_by:
+          type: string
+          format: date
+          description: Resolution service level (default 10 school days)
+        resolver_scope_id:
+          type: string
+          format: uuid
+          x-ref: scope_node
+          description: LGA or state node that decides
+        resolution:
+          anyOf:
+          - type: string
+            enum:
+            - upheld
+            - partly_upheld
+            - rejected
+            - withdrawn
+          - type: 'null'
+        resolved_amount_minor:
+          anyOf:
+          - type: integer
+            description: (minor units)
+          - type: 'null'
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        resolved_by:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: app_user
+          - type: 'null'
+        resolved_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - open
+          - in_progress
+          - on_hold
+          - closed
+          - transferred
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - scope_node_id
+      - obligation_id
+      - raised_by_kind
+      - raised_by
+      - grounds
+      - statement
+      - due_by
+      - resolver_scope_id
+      - currency
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    ClearanceCheck:
+      title: ClearanceCheck
+      description: Clearance check run for an incoming learner (purpose-bound, logged, visible to the family)
+      type: object
+      x-ceda:
+        entity: clearance_check
+        zone: registry
+        domain: FCL
+        kind: event
+        classification: restricted
+        history: append
+        module: clearance
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        learner_id:
+          type: string
+          format: uuid
+          x-ref: learner
+        requesting_institution_id:
+          type: string
+          format: uuid
+          x-ref: institution
+        purpose:
+          type: string
+          enum:
+          - admission
+          - transfer
+          - re_enrolment
+          - enquiry_with_consent
+        basis:
+          type: string
+          enum:
+          - admission_due_diligence
+          - guardian_consent
+        admission_application_id:
+          anyOf:
+          - type: string
+            format: uuid
+            description: ops-zone admission application
+          - type: 'null'
+        learner_transfer_id:
+          anyOf:
+          - type: string
+            format: uuid
+            x-ref: learner_transfer
+          - type: 'null'
+        requested_by:
+          type: string
+          format: uuid
+        checked_at:
+          type: string
+          format: date-time
+        coverage:
+          type: string
+          enum:
+          - state
+          - national
+        result:
+          type: string
+          enum:
+          - clear
+          - outstanding
+          - disputed_only
+          - protected
+        obligations:
+          type: object
+          description: 'Snapshot: obligation id, creditor, kind, amount, oldest due date, status'
+        total_outstanding_minor:
+          type: integer
+          description: (minor units)
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        pattern_flags:
+          anyOf:
+          - type: object
+            description: e.g. repeat_unsettled_transfers (count, window)
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - learner_id
+      - requesting_institution_id
+      - purpose
+      - basis
+      - requested_by
+      - checked_at
+      - coverage
+      - result
+      - obligations
+      - total_outstanding_minor
+      - currency
+      - created_at
+      additionalProperties: false
+    ClearanceDecision:
+      title: ClearanceDecision
+      description: Human admission decision recorded on a clearance check (or the automatic protection of a learner)
+      type: object
+      x-ceda:
+        entity: clearance_decision
+        zone: registry
+        domain: FCL
+        kind: event
+        classification: restricted
+        history: append
+        module: clearance
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        check_id:
+          type: string
+          format: uuid
+          x-ref: clearance_check
+        decision:
+          type: string
+          enum:
+          - admit
+          - admit_with_payment_plan
+          - defer_pending_settlement
+          - admit_protected
+        protected_reason:
+          anyOf:
+          - type: string
+            enum:
+            - public_basic_education
+            - send
+            - safeguarding
+            - child_in_care
+            - displaced
+            - other_vulnerability
+          - type: 'null'
+        reason:
+          type: string
+          maxLength: 65535
+        payment_plan_ref:
+          anyOf:
+          - type: string
+            maxLength: 64
+            pattern: ^[A-Za-z0-9_.:/-]*$
+          - type: 'null'
+        decided_by:
+          type: string
+          format: uuid
+          description: app_user, or the system for automatic protection
+        decided_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - check_id
+      - decision
+      - reason
+      - decided_by
+      - decided_at
+      - created_at
       additionalProperties: false

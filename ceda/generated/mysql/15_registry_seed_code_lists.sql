@@ -106,7 +106,11 @@ INSERT INTO `code_value` (`id`, `tenant_id`, `code_list_id`, `code`, `label`, `s
   (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'identifier_scheme'), 'TIN', 'Tin', 11, '2026-01-01'),
   (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'identifier_scheme'), 'UPN', 'Upn', 12, '2026-01-01'),
   (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'identifier_scheme'), 'INST-ID', 'Inst-id', 13, '2026-01-01'),
-  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'identifier_scheme'), 'PREV-LRN-ID', 'Prev-lrn-id', 14, '2026-01-01');
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'identifier_scheme'), 'PREV-LRN-ID', 'Prev-lrn-id', 14, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'identifier_scheme'), 'NG-BVN', 'Ng-bvn', 15, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'identifier_scheme'), 'PENCOM-RSA', 'Pencom-rsa', 16, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'identifier_scheme'), 'NHF', 'Nhf', 17, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'identifier_scheme'), 'IPPIS', 'Ippis', 18, '2026-01-01');
 
 -- regulator: Regulators, examination and awarding bodies
 INSERT INTO `code_list` (`id`, `tenant_id`, `code`, `title`, `pack`, `is_extensible`) VALUES (UUID_TO_BIN(UUID()), @tenant, 'regulator', 'Regulators, examination and awarding bodies', 'ng-core', TRUE);
@@ -183,7 +187,11 @@ INSERT INTO `code_value` (`id`, `tenant_id`, `code_list_id`, `code`, `label`, `s
   (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'absence_type'), 'training', 'Training', 6, '2026-01-01'),
   (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'absence_type'), 'official_duty', 'Official duty', 7, '2026-01-01'),
   (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'absence_type'), 'compassionate', 'Compassionate', 8, '2026-01-01'),
-  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'absence_type'), 'unauthorised', 'Unauthorised', 9, '2026-01-01');
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'absence_type'), 'unauthorised', 'Unauthorised', 9, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'absence_type'), 'casual', 'Casual', 10, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'absence_type'), 'examination', 'Examination', 11, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'absence_type'), 'sabbatical', 'Sabbatical', 12, '2026-01-01'),
+  (UUID_TO_BIN(UUID()), @tenant, (SELECT `id` FROM `code_list` WHERE `tenant_id` = @tenant AND `code` = 'absence_type'), 'leave_of_absence', 'Leave of absence', 13, '2026-01-01');
 
 -- leaving_reason: Leaving reasons
 INSERT INTO `code_list` (`id`, `tenant_id`, `code`, `title`, `pack`, `is_extensible`) VALUES (UUID_TO_BIN(UUID()), @tenant, 'leaving_reason', 'Leaving reasons', 'ng-core', FALSE);

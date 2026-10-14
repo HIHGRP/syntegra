@@ -32,6 +32,7 @@ CEDA_APPS = [
     "syntegra.learners",
     "syntegra.families",
     "syntegra.people",
+    "syntegra.hr",
     "syntegra.academic",
     "syntegra.curriculum",
     "syntegra.timetable",
@@ -45,6 +46,7 @@ CEDA_APPS = [
     "syntegra.comms",
     "syntegra.finance",
     "syntegra.financing",
+    "syntegra.clearance",
     "syntegra.operations",
     "syntegra.forms",
     "syntegra.records",
@@ -135,6 +137,7 @@ SYNTEGRA_SCHEMA_PATTERNS = {
     "dw": "syn_dw_{state}",
 }
 SYNTEGRA_CEDA_DDL_DIR = Path(env("SYNTEGRA_CEDA_DDL_DIR", str(REPO_DIR / "ceda" / "generated" / "mysql")))
+SYNTEGRA_CEDA_RELEASES_DIR = Path(env("SYNTEGRA_CEDA_RELEASES_DIR", str(REPO_DIR / "ceda" / "releases")))
 SYNTEGRA_DEFAULT_TENANT_CODE = env("SYNTEGRA_DEFAULT_TENANT_CODE", "ng-ab")
 
 # --------------------------------------------------------------------------- keys (CEDA §8.1)

@@ -2,12 +2,12 @@
  "ceda": {
   "application": "Python 3.12, Django 5.2 LTS (+ FastAPI for high-throughput services)",
   "database": "MySQL 9.7 LTS (InnoDB, utf8mb4)",
-  "date": "2026-10-13",
+  "date": "2026-10-14",
   "derived_from": "SYN-MFS-002 v2.4 (Master Functional Specification, consolidated single volume, 13 Oct 2026)",
   "id": "SYN-CEDA-001",
   "platform": "Red Hat Enterprise Linux 10 / OpenShift",
   "status": "Baseline for build",
-  "version": "1.1.0"
+  "version": "1.2.0"
  },
  "code_lists": {
   "absence_reason": [
@@ -29,7 +29,11 @@
    "training",
    "official_duty",
    "compassionate",
-   "unauthorised"
+   "unauthorised",
+   "casual",
+   "examination",
+   "sabbatical",
+   "leave_of_absence"
   ],
   "academic_rank": [
    "professor",
@@ -304,7 +308,11 @@
    "TIN",
    "UPN",
    "INST-ID",
-   "PREV-LRN-ID"
+   "PREV-LRN-ID",
+   "NG-BVN",
+   "PENCOM-RSA",
+   "NHF",
+   "IPPIS"
   ],
   "industry_sector": [
    "agriculture",
@@ -811,6 +819,15 @@
    "withdrawn",
    "appealed"
   ],
+  "appointment_type": [
+   "first_appointment",
+   "transfer_of_service",
+   "secondment",
+   "contract",
+   "nysc",
+   "volunteer",
+   "private_hire"
+  ],
   "appraisal_status": [
    "planned",
    "objectives_set",
@@ -908,6 +925,12 @@
    "staff_award",
    "activity"
   ],
+  "bank_verification": [
+   "call_back",
+   "nibss_name_enquiry",
+   "document",
+   "none"
+  ],
   "behaviour_outcome": [
    "none",
    "warning",
@@ -937,6 +960,11 @@
    "service",
    "subscription",
    "pay_as_you_go"
+  ],
+  "board_decision": [
+   "approved",
+   "not_approved",
+   "deferred"
   ],
   "boarding_event": [
    "boarded",
@@ -1096,6 +1124,32 @@
    "confidential",
    "restricted",
    "special"
+  ],
+  "clearance_basis": [
+   "admission_due_diligence",
+   "guardian_consent"
+  ],
+  "clearance_coverage": [
+   "state",
+   "national"
+  ],
+  "clearance_decision_kind": [
+   "admit",
+   "admit_with_payment_plan",
+   "defer_pending_settlement",
+   "admit_protected"
+  ],
+  "clearance_purpose": [
+   "admission",
+   "transfer",
+   "re_enrolment",
+   "enquiry_with_consent"
+  ],
+  "clearance_result": [
+   "clear",
+   "outstanding",
+   "disputed_only",
+   "protected"
   ],
   "cme_outcome": [
    "located_enrolled",
@@ -1356,6 +1410,27 @@
    "refused_legal_hold",
    "executed"
   ],
+  "dispute_grounds": [
+   "already_paid",
+   "amount_wrong",
+   "not_liable",
+   "waiver_granted",
+   "statute_barred",
+   "protected_learner",
+   "other"
+  ],
+  "dispute_party": [
+   "guardian",
+   "learner",
+   "admitting_institution",
+   "creditor"
+  ],
+  "dispute_resolution": [
+   "upheld",
+   "partly_upheld",
+   "rejected",
+   "withdrawn"
+  ],
   "document_origin": [
    "born_digital",
    "digitised",
@@ -1391,6 +1466,13 @@
    "gate_duty",
    "on_call",
    "bus_duty"
+  ],
+  "employment_status": [
+   "probation",
+   "confirmed",
+   "suspended",
+   "seconded",
+   "separated"
   ],
   "enquiry_source": [
    "website_widget",
@@ -1433,6 +1515,26 @@
    "withdrawn",
    "absent",
    "resulted"
+  ],
+  "er_case_kind": [
+   "query",
+   "disciplinary",
+   "grievance",
+   "appeal",
+   "petition"
+  ],
+  "er_outcome": [
+   "no_case",
+   "advice",
+   "warning",
+   "severe_warning",
+   "suspension",
+   "interdiction",
+   "demotion",
+   "dismissal",
+   "retirement_in_public_interest",
+   "upheld",
+   "not_upheld"
   ],
   "escalation_target": [
    "pastoral_lead",
@@ -1576,6 +1678,29 @@
    "partly_achieved",
    "not_achieved",
    "dropped"
+  ],
+  "headcount_method": [
+   "in_person",
+   "biometric",
+   "video"
+  ],
+  "headcount_outcome": [
+   "verified",
+   "absent_with_reason",
+   "absent_without_reason",
+   "not_on_nominal_roll",
+   "impersonation_suspected"
+  ],
+  "hr_integrity_kind": [
+   "shared_bank_account",
+   "shared_bvn",
+   "concurrent_public_posts",
+   "paid_after_separation",
+   "past_retirement_date",
+   "no_attendance_30_days",
+   "failed_headcount",
+   "post_without_position",
+   "grade_outside_position"
   ],
   "identifier_status": [
    "unverified",
@@ -1727,6 +1852,10 @@
    "deceased",
    "merged"
   ],
+  "leave_day_basis": [
+   "working_days",
+   "calendar_days"
+  ],
   "legal_basis": [
    "consent",
    "contract",
@@ -1873,6 +2002,33 @@
    "hidden",
    "removed"
   ],
+  "obligation_kind": [
+   "tuition_fees",
+   "boarding",
+   "examination_fees",
+   "transport",
+   "meals",
+   "books_and_materials",
+   "uniform",
+   "development_levy",
+   "damaged_property",
+   "library",
+   "other_dues"
+  ],
+  "obligation_source": [
+   "ledger",
+   "manual_with_evidence"
+  ],
+  "obligation_status": [
+   "outstanding",
+   "payment_plan",
+   "disputed",
+   "settled",
+   "written_off",
+   "waived",
+   "expired",
+   "withdrawn"
+  ],
   "office": [
    "class_teacher",
    "bursary",
@@ -1945,6 +2101,21 @@
    "cpd",
    "digital_skill",
    "guidance"
+  ],
+  "pay_calc_method": [
+   "fixed",
+   "pct_of_basic",
+   "pct_of_gross",
+   "pct_of_pensionable",
+   "table"
+  ],
+  "pay_element_kind": [
+   "earning",
+   "allowance",
+   "statutory_deduction",
+   "voluntary_deduction",
+   "loan_repayment",
+   "employer_contribution"
   ],
   "payment_method": [
    "bank_transfer",
@@ -2090,6 +2261,36 @@
    "positive",
    "negative"
   ],
+  "position_funding": [
+   "funded",
+   "unfunded",
+   "donor_funded",
+   "privately_funded"
+  ],
+  "position_status": [
+   "proposed",
+   "approved",
+   "frozen",
+   "abolished"
+  ],
+  "posting_kind": [
+   "first_posting",
+   "transfer",
+   "redeployment",
+   "secondment",
+   "promotion_posting",
+   "rationalisation",
+   "on_request",
+   "disciplinary"
+  ],
+  "posting_status": [
+   "draft",
+   "submitted",
+   "approved",
+   "effective",
+   "rejected",
+   "cancelled"
+  ],
   "price_basis": [
    "per_learner_term",
    "per_learner_semester",
@@ -2109,6 +2310,14 @@
    "probation",
    "withdraw",
    "graduate"
+  ],
+  "protected_reason": [
+   "public_basic_education",
+   "send",
+   "safeguarding",
+   "child_in_care",
+   "displaced",
+   "other_vulnerability"
   ],
   "provider_person_role": [
    "proprietor",
@@ -2346,6 +2555,12 @@
    "no_information",
    "supervised_only"
   ],
+  "retirement_basis": [
+   "age",
+   "length_of_service",
+   "contract_end",
+   "none"
+  ],
   "return_status": [
    "generated",
    "validated",
@@ -2496,6 +2711,17 @@
    "alphabetical",
    "random",
    "separate_negative_influences"
+  ],
+  "separation_kind": [
+   "resignation",
+   "retirement_statutory",
+   "retirement_voluntary",
+   "death",
+   "dismissal",
+   "termination",
+   "end_of_contract",
+   "transfer_of_service",
+   "abandonment"
   ],
   "series_status": [
    "setup",
@@ -3561,6 +3787,84 @@
    "producer": "families",
    "trigger": "Guardian master created"
   },
+  "FCL.CHECK_PERFORMED": {
+   "aggregate": "clearance_check",
+   "consumers": [
+    "comms",
+    "analytics",
+    "intelligence"
+   ],
+   "payload": {
+    "clearance_check_id": "uuid!",
+    "learner_id": "uuid!",
+    "result": "enum(clearance_result)!"
+   },
+   "producer": "clearance",
+   "trigger": "Clearance check run; each creditor and the family are notified"
+  },
+  "FCL.DECISION_RECORDED": {
+   "aggregate": "clearance_decision",
+   "consumers": [
+    "comms",
+    "analytics"
+   ],
+   "payload": {
+    "clearance_decision_id": "uuid!",
+    "decision": "enum(clearance_decision_kind)!"
+   },
+   "producer": "clearance",
+   "trigger": "Admission decision recorded on a clearance check"
+  },
+  "FCL.DISPUTE_RAISED": {
+   "aggregate": "obligation_dispute",
+   "consumers": [
+    "comms"
+   ],
+   "payload": {
+    "learner_obligation_id": "uuid!",
+    "obligation_dispute_id": "uuid!"
+   },
+   "producer": "clearance",
+   "trigger": "Obligation disputed (shown as disputed until resolved)"
+  },
+  "FCL.DISPUTE_RESOLVED": {
+   "aggregate": "obligation_dispute",
+   "consumers": [
+    "comms",
+    "analytics"
+   ],
+   "payload": {
+    "obligation_dispute_id": "uuid!",
+    "resolution": "enum(dispute_resolution)!"
+   },
+   "producer": "clearance",
+   "trigger": "LGA or state resolved a dispute"
+  },
+  "FCL.OBLIGATION_PUBLISHED": {
+   "aggregate": "learner_obligation",
+   "consumers": [
+    "analytics"
+   ],
+   "payload": {
+    "creditor_institution_id": "uuid!",
+    "learner_obligation_id": "uuid!"
+   },
+   "producer": "clearance",
+   "trigger": "Creditor published or reconfirmed an obligation"
+  },
+  "FCL.OBLIGATION_SETTLED": {
+   "aggregate": "learner_obligation",
+   "consumers": [
+    "analytics",
+    "comms"
+   ],
+   "payload": {
+    "learner_obligation_id": "uuid!",
+    "status": "enum(obligation_status)!"
+   },
+   "producer": "clearance",
+   "trigger": "Obligation settled, waived, written off, withdrawn or expired"
+  },
   "FRM.SUBMITTED": {
    "aggregate": "form_response",
    "consumers": [
@@ -3638,6 +3942,153 @@
    },
    "producer": "governance",
    "trigger": "Hierarchy node created, moved or closed (closure table rebuilt)"
+  },
+  "HR.BANK_ACCOUNT_CHANGED": {
+   "aggregate": "staff_bank_account",
+   "consumers": [
+    "comms",
+    "intelligence"
+   ],
+   "payload": {
+    "staff_bank_account_id": "uuid!",
+    "staff_id": "uuid!"
+   },
+   "producer": "hr",
+   "trigger": "Salary account changed after call-back and second approval (staff member notified)"
+  },
+  "HR.HEADCOUNT_COMPLETED": {
+   "aggregate": "headcount_exercise",
+   "consumers": [
+    "analytics",
+    "intelligence"
+   ],
+   "payload": {
+    "headcount_exercise_id": "uuid!",
+    "institution_id": "uuid!"
+   },
+   "producer": "hr",
+   "trigger": "Headcount exercise closed"
+  },
+  "HR.INTEGRITY_FLAG_RAISED": {
+   "aggregate": "hr_integrity_flag",
+   "consumers": [
+    "intelligence",
+    "comms",
+    "analytics"
+   ],
+   "payload": {
+    "flag_kind": "enum(hr_integrity_kind)!",
+    "hr_integrity_flag_id": "uuid!"
+   },
+   "producer": "hr",
+   "trigger": "Payroll integrity scan raised a flag"
+  },
+  "HR.LEAVE_APPROVED": {
+   "aggregate": "leave_request",
+   "consumers": [
+    "timetable",
+    "attendance",
+    "comms"
+   ],
+   "payload": {
+    "ends_on": "date!",
+    "leave_request_id": "uuid!",
+    "staff_id": "uuid!",
+    "starts_on": "date!"
+   },
+   "producer": "hr",
+   "trigger": "Leave approved — staff absence created and cover started (G8)"
+  },
+  "HR.PAYROLL_HOLD_DECIDED": {
+   "aggregate": "hr_integrity_flag",
+   "consumers": [
+    "people",
+    "comms"
+   ],
+   "payload": {
+    "hr_integrity_flag_id": "uuid!",
+    "payroll_hold": "bool!"
+   },
+   "producer": "hr",
+   "trigger": "A person decided to hold or release pay on a flag"
+  },
+  "HR.POSITION_CHANGED": {
+   "aggregate": "position",
+   "consumers": [
+    "curriculum",
+    "analytics",
+    "finance"
+   ],
+   "payload": {
+    "position_id": "uuid!",
+    "status": "enum(position_status)!"
+   },
+   "producer": "hr",
+   "trigger": "Establishment position approved, frozen or abolished"
+  },
+  "HR.POSTING_APPROVED": {
+   "aggregate": "staff_posting",
+   "consumers": [
+    "curriculum",
+    "comms",
+    "timetable"
+   ],
+   "payload": {
+    "effective_on": "date!",
+    "staff_id": "uuid!",
+    "staff_posting_id": "uuid!",
+    "to_position_id": "uuid!"
+   },
+   "producer": "hr",
+   "trigger": "Posting order approved (sending institution prepares handover — G9)"
+  },
+  "HR.POSTING_EFFECTIVE": {
+   "aggregate": "staff_posting",
+   "consumers": [
+    "iam",
+    "curriculum",
+    "timetable",
+    "analytics",
+    "people"
+   ],
+   "payload": {
+    "new_staff_post_id": "uuid!",
+    "staff_id": "uuid!",
+    "staff_posting_id": "uuid!"
+   },
+   "producer": "hr",
+   "trigger": "Posting took effect: old post ended, new post filled, grants moved"
+  },
+  "HR.PROMOTION_DECIDED": {
+   "aggregate": "promotion_case",
+   "consumers": [
+    "people",
+    "comms",
+    "analytics"
+   ],
+   "payload": {
+    "board_decision": "enum(board_decision)!",
+    "promotion_case_id": "uuid!"
+   },
+   "producer": "hr",
+   "trigger": "Promotion board decision recorded"
+  },
+  "HR.SEPARATION_RECORDED": {
+   "aggregate": "separation",
+   "consumers": [
+    "iam",
+    "curriculum",
+    "people",
+    "comms",
+    "analytics"
+   ],
+   "payload": {
+    "effective_on": "date!",
+    "separation_id": "uuid!",
+    "staff_id": "uuid!"
+   },
+   "producer": "hr",
+   "trigger": "Staff member separated from a post (access ends, classes reassigned)"
   },
   "IAM.GRANT_CHANGED": {
    "aggregate": "role_grant",
@@ -5661,10 +6112,170 @@
     "coverage_gap",
     "maintenance_request"
    ]
+  },
+  {
+   "direction": "higher_is_better",
+   "formula": "approved positions filled by an active employment record ÷ approved positions",
+   "grain": "day × institution/LGA/employer × cadre",
+   "group": "Human resources",
+   "id": "HR-ESTAB-FILL",
+   "name": "Establishment fill rate",
+   "pages": [
+    "HRM-10",
+    "HRM-01"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-HRM-15",
+    "FR-HRM-01"
+   ],
+   "sources": [
+    "position",
+    "employment_record"
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "formula": "approved funded positions without an active employment record, by subject specialism",
+   "grain": "day × institution/LGA × subject",
+   "group": "Human resources",
+   "id": "HR-VACANCIES",
+   "name": "Vacant positions by subject",
+   "pages": [
+    "HRM-10",
+    "HRM-01",
+    "STF-10"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-HRM-15"
+   ],
+   "sources": [
+    "position",
+    "employment_record"
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "formula": "separations in the last 12 months ÷ average active posts",
+   "grain": "month × employer/LGA × cadre × separation kind",
+   "group": "Human resources",
+   "id": "HR-ATTRITION",
+   "name": "Staff attrition",
+   "pages": [
+    "HRM-10"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-HRM-15"
+   ],
+   "sources": [
+    "separation",
+    "employment_record"
+   ]
+  },
+  {
+   "direction": "target_band",
+   "formula": "active employment records with retirement_due_on within 12 months",
+   "grain": "month × employer/LGA × subject",
+   "group": "Human resources",
+   "id": "HR-RETIRE-12M",
+   "name": "Retirements due in 12 months",
+   "pages": [
+    "HRM-10",
+    "HRM-02"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-HRM-15",
+    "FR-HRM-03"
+   ],
+   "sources": [
+    "employment_record"
+   ]
+  },
+  {
+   "direction": "target_band",
+   "formula": "Σ (entitled + carried over − taken) annual-leave days across staff",
+   "grain": "leave year × employer × institution",
+   "group": "Human resources",
+   "id": "HR-LEAVE-LIABILITY",
+   "name": "Leave liability",
+   "pages": [
+    "HRM-10",
+    "HRM-04"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-HRM-15"
+   ],
+   "sources": [
+    "leave_balance"
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "formula": "open flags by kind; pay held by decision",
+   "grain": "day × employer × flag kind",
+   "group": "Human resources",
+   "id": "HR-INTEGRITY-OPEN",
+   "name": "Open payroll integrity flags",
+   "pages": [
+    "HRM-08",
+    "HRM-10"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-HRM-12",
+    "FR-HRM-15"
+   ],
+   "sources": [
+    "hr_integrity_flag"
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "formula": "clearance checks with result outstanding ÷ clearance checks",
+   "grain": "month × LGA × institution type",
+   "group": "Finance",
+   "id": "FCL-OUTSTANDING-RATE",
+   "name": "Incoming learners with outstanding obligations",
+   "pages": [
+    "FCL-01",
+    "FCL-02",
+    "FCL-03"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-FCL-02",
+    "FR-FCL-08"
+   ],
+   "sources": [
+    "clearance_check"
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "formula": "disputes upheld or partly upheld ÷ disputes resolved, by creditor institution (unsupported claims)",
+   "grain": "term × creditor institution",
+   "group": "Finance",
+   "id": "FCL-DISPUTE-UPHELD",
+   "name": "Obligation disputes upheld",
+   "pages": [
+    "FCL-03"
+   ],
+   "refresh": "daily",
+   "reqs": [
+    "FR-FCL-06"
+   ],
+   "sources": [
+    "obligation_dispute"
+   ]
   }
  ],
  "pages": [
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ACA-01",
    "module": "Academic structure",
@@ -5680,6 +6291,7 @@
    "title": "Academic calendar"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ACA-02",
    "module": "Academic structure",
@@ -5695,6 +6307,7 @@
    "title": "Year groups, classes & programmes"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ACA-03",
    "module": "Academic structure",
@@ -5710,6 +6323,7 @@
    "title": "Subjects & courses"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ACA-04",
    "module": "Academic structure",
@@ -5726,6 +6340,7 @@
    "title": "Programme builder"
   },
   {
+   "change_request": null,
    "classification": "confidential",
    "id": "ACA-05",
    "module": "Academic structure",
@@ -5740,6 +6355,7 @@
    "title": "My class"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ACA-101",
    "module": "Academic structure",
@@ -5755,6 +6371,7 @@
    "title": "Class subject plan"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ACA-102",
    "module": "Academic structure",
@@ -5771,6 +6388,7 @@
    "title": "Department 360"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ACA-103",
    "module": "Academic structure",
@@ -5785,6 +6403,7 @@
    "title": "Course allocation"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ADM-01",
    "module": "Platform administration",
@@ -5798,6 +6417,7 @@
    "title": "Tenants"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ADM-02",
    "module": "Platform administration",
@@ -5812,6 +6432,7 @@
    "title": "Country configuration"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ADM-03",
    "module": "Platform administration",
@@ -5826,6 +6447,7 @@
    "title": "Institution setup"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ADM-04",
    "module": "Platform administration",
@@ -5843,6 +6465,7 @@
    "title": "Users"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ADM-05",
    "module": "Platform administration",
@@ -5858,6 +6481,7 @@
    "title": "Roles & permissions"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ADM-06",
    "module": "Platform administration",
@@ -5874,6 +6498,7 @@
    "title": "Policy & rule engine"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ADM-07",
    "module": "Platform administration",
@@ -5889,6 +6514,7 @@
    "title": "Workflow designer"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ADM-08",
    "module": "Platform administration",
@@ -5905,6 +6531,7 @@
    "title": "Integration marketplace"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ADM-09",
    "module": "Platform administration",
@@ -5921,6 +6548,7 @@
    "title": "API clients & data exchange"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ADM-10",
    "module": "Platform administration",
@@ -5934,6 +6562,7 @@
    "title": "Data governance"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "ADM-11",
    "module": "Platform administration",
@@ -5950,6 +6579,7 @@
    "title": "Audit log"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ADM-12",
    "module": "Platform administration",
@@ -5964,6 +6594,7 @@
    "title": "Languages"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ADM-13",
    "module": "Platform administration",
@@ -5978,6 +6609,7 @@
    "title": "Branding"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ADM-14",
    "module": "Platform administration",
@@ -5994,6 +6626,7 @@
    "title": "Subscription & licensing"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ADM-15",
    "module": "Platform administration",
@@ -6009,6 +6642,7 @@
    "title": "Data import & migration"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ADM-16",
    "module": "Platform administration",
@@ -6022,6 +6656,7 @@
    "title": "System health"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "ADM-17",
    "module": "Platform administration",
@@ -6035,6 +6670,7 @@
    "title": "Master data stewardship"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ADM-18",
    "module": "Platform administration",
@@ -6049,6 +6685,7 @@
    "title": "Notification rules"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "AGT-101",
    "module": "Automation agents",
@@ -6064,6 +6701,7 @@
    "title": "Agent library"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "AGT-102",
    "module": "Automation agents",
@@ -6077,6 +6715,7 @@
    "title": "Configure agent"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "AGT-103",
    "module": "Automation agents",
@@ -6093,6 +6732,7 @@
    "title": "Agent console"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "AGT-104",
    "module": "Automation agents",
@@ -6108,6 +6748,7 @@
    "title": "Agent activity log"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "AIX-01",
    "module": "Intelligence",
@@ -6127,6 +6768,7 @@
    "title": "Recommendations queue"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "AIX-02",
    "module": "Intelligence",
@@ -6143,6 +6785,7 @@
    "title": "Document intelligence"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "AIX-03",
    "module": "Intelligence",
@@ -6158,6 +6801,7 @@
    "title": "Model governance"
   },
   {
+   "change_request": null,
    "classification": "confidential",
    "id": "ASM-01",
    "module": "Assessment",
@@ -6172,6 +6816,7 @@
    "title": "Markbook"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ASM-02",
    "module": "Assessment",
@@ -6187,6 +6832,7 @@
    "title": "Assessment setup"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ASM-03",
    "module": "Assessment",
@@ -6202,6 +6848,7 @@
    "title": "Grading scales"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ASM-04",
    "module": "Assessment",
@@ -6217,6 +6864,7 @@
    "title": "Report cards"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ASM-05",
    "module": "Assessment",
@@ -6231,6 +6879,7 @@
    "title": "Moderation"
   },
   {
+   "change_request": null,
    "classification": "confidential",
    "id": "ATT-01",
    "module": "Attendance",
@@ -6244,6 +6893,7 @@
    "title": "Take register"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ATT-02",
    "module": "Attendance",
@@ -6261,6 +6911,7 @@
    "title": "Attendance dashboard"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ATT-03",
    "module": "Attendance",
@@ -6275,6 +6926,7 @@
    "title": "Absence follow-up"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ATT-101",
    "module": "Attendance",
@@ -6290,6 +6942,7 @@
    "title": "Evacuation roll call"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ATT-102",
    "module": "Attendance",
@@ -6306,6 +6959,7 @@
    "title": "Register compliance"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ATT-103",
    "module": "Attendance",
@@ -6321,6 +6975,7 @@
    "title": "Parent-reported absences"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "AUT-01",
    "module": "Access",
@@ -6334,6 +6989,7 @@
    "title": "Sign in"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "AUT-02",
    "module": "Access",
@@ -6347,6 +7003,7 @@
    "title": "Multi-factor verification"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "AUT-03",
    "module": "Access",
@@ -6360,6 +7017,7 @@
    "title": "Choose workspace"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "AUT-04",
    "module": "Access",
@@ -6373,6 +7031,7 @@
    "title": "Reset password"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "BEH-01",
    "module": "Behaviour",
@@ -6388,6 +7047,7 @@
    "title": "Log behaviour"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "BEH-02",
    "module": "Behaviour",
@@ -6404,6 +7064,7 @@
    "title": "Behaviour overview"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "BEH-101",
    "module": "Behaviour",
@@ -6420,6 +7081,7 @@
    "title": "Behaviour policy and rewards"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "BEH-102",
    "module": "Behaviour",
@@ -6435,6 +7097,7 @@
    "title": "Seating plan and influences"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "BEH-103",
    "module": "Behaviour",
@@ -6450,6 +7113,7 @@
    "title": "Intelligence events"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "BEH-104",
    "module": "Behaviour",
@@ -6467,6 +7131,7 @@
    "title": "Detention manager"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "BEH-105",
    "module": "Behaviour",
@@ -6482,6 +7147,7 @@
    "title": "On-call board"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "BEH-106",
    "module": "Behaviour",
@@ -6499,6 +7165,7 @@
    "title": "On-report card"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "BIL-01",
    "module": "Billing",
@@ -6514,6 +7181,7 @@
    "title": "Fee structure & billing rules"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "BIL-02",
    "module": "Billing",
@@ -6527,6 +7195,7 @@
    "title": "Billing run"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "BIL-03",
    "module": "Billing",
@@ -6541,6 +7210,7 @@
    "title": "Learner account"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "BIL-04",
    "module": "Billing",
@@ -6555,6 +7225,7 @@
    "title": "Family statement"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "BIL-05",
    "module": "Billing",
@@ -6568,6 +7239,7 @@
    "title": "Invoices"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "BIL-06",
    "module": "Billing",
@@ -6582,6 +7254,7 @@
    "title": "Payment plans & hardship"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "BIL-07",
    "module": "Billing",
@@ -6596,6 +7269,7 @@
    "title": "Funding sources & sponsors"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "BIL-08",
    "module": "Billing",
@@ -6612,6 +7286,7 @@
    "title": "Government funding reconciliation"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "CER-01",
    "module": "Certificate 360",
@@ -6629,6 +7304,7 @@
    "title": "Certificate register"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "CER-02",
    "module": "Certificate 360",
@@ -6643,6 +7319,7 @@
    "title": "Award eligibility run"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "CER-03",
    "module": "Certificate 360",
@@ -6656,6 +7333,7 @@
    "title": "Issue certificate"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "CER-04",
    "module": "Certificate 360",
@@ -6672,6 +7350,7 @@
    "title": "Certificate 360"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "CER-05",
    "module": "Certificate 360",
@@ -6685,6 +7364,7 @@
    "title": "Revoke, correct or reissue"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CER-06",
    "module": "Certificate 360",
@@ -6699,6 +7379,7 @@
    "title": "Certificate templates & signatories"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CER-07",
    "module": "Certificate 360",
@@ -6713,6 +7394,7 @@
    "title": "Verification requests"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CER-101",
    "module": "Certificate 360",
@@ -6727,6 +7409,7 @@
    "title": "Reissue requests"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CER-102",
    "module": "Certificate 360",
@@ -6740,6 +7423,7 @@
    "title": "Reissue review"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CMD-01",
    "module": "Command centre",
@@ -6753,6 +7437,7 @@
    "title": "Global education dashboard"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CMD-02",
    "module": "Command centre",
@@ -6766,6 +7451,7 @@
    "title": "National command centre"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CMD-03",
    "module": "Command centre",
@@ -6780,6 +7466,7 @@
    "title": "State command centre"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CMD-04",
    "module": "Command centre",
@@ -6794,6 +7481,7 @@
    "title": "LGA / district command centre"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CMD-05",
    "module": "Command centre",
@@ -6807,6 +7495,7 @@
    "title": "Network dashboard"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CMD-06",
    "module": "Command centre",
@@ -6822,6 +7511,7 @@
    "title": "Institution dashboard"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CMD-07",
    "module": "Command centre",
@@ -6839,6 +7529,7 @@
    "title": "Hierarchy explorer"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CMD-08",
    "module": "Command centre",
@@ -6858,6 +7549,7 @@
    "title": "Follow the problem"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CMD-09",
    "module": "Command centre",
@@ -6892,6 +7584,7 @@
    "title": "Alert centre"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CMD-10",
    "module": "Command centre",
@@ -6926,6 +7619,7 @@
    "title": "Alert detail"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CMD-101",
    "module": "Command centres",
@@ -6941,6 +7635,7 @@
    "title": "State education control room"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CMD-102",
    "module": "Command centres",
@@ -6956,6 +7651,7 @@
    "title": "Institution league with context"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CMD-103",
    "module": "Command centres",
@@ -6971,6 +7667,7 @@
    "title": "Coverage and onboarding tracker"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CMD-104",
    "module": "Command centres",
@@ -6988,6 +7685,7 @@
    "title": "Education Administrator 360"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CMD-11",
    "module": "Command centre",
@@ -7005,6 +7703,7 @@
    "title": "Compare"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CMD-12",
    "module": "Command centre",
@@ -7022,6 +7721,7 @@
    "title": "What's working"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CMD-13",
    "module": "Command centre",
@@ -7037,6 +7737,7 @@
    "title": "Resource allocation"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CMD-14",
    "module": "Command centre",
@@ -7053,6 +7754,7 @@
    "title": "Planning scenarios"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "CMD-15",
    "module": "Command centre",
@@ -7069,6 +7771,7 @@
    "title": "Integrity command centre"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CMD-16",
    "module": "Command centre",
@@ -7086,6 +7789,7 @@
    "title": "Data quality command centre"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "COM-01",
    "module": "Communication",
@@ -7105,6 +7809,7 @@
    "title": "Send a message"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "COM-02",
    "module": "Communication",
@@ -7120,6 +7825,7 @@
    "title": "Communication log & templates"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "COM-101",
    "module": "Communication",
@@ -7139,6 +7845,7 @@
    "title": "Conversations inbox"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "COM-102",
    "module": "Communication",
@@ -7153,6 +7860,7 @@
    "title": "Channels and templates"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "COM-103",
    "module": "Communication",
@@ -7170,6 +7878,7 @@
    "title": "Broadcast campaigns"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "COM-104",
    "module": "Communication",
@@ -7186,6 +7895,7 @@
    "title": "Staff announcements and consent requests"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CUR-01",
    "module": "Curriculum 360",
@@ -7205,6 +7915,7 @@
    "title": "Curriculum library"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CUR-02",
    "module": "Curriculum 360",
@@ -7218,6 +7929,7 @@
    "title": "Curriculum editor"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CUR-03",
    "module": "Curriculum 360",
@@ -7233,6 +7945,7 @@
    "title": "Curriculum approval"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CUR-04",
    "module": "Curriculum 360",
@@ -7250,6 +7963,7 @@
    "title": "Curriculum 360"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CUR-05",
    "module": "Curriculum 360",
@@ -7264,6 +7978,7 @@
    "title": "State adaptation"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CUR-06",
    "module": "Curriculum 360",
@@ -7283,6 +7998,7 @@
    "title": "Curriculum compliance"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CUR-07",
    "module": "Curriculum 360",
@@ -7300,6 +8016,7 @@
    "title": "Compliance heatmap"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CUR-08",
    "module": "Curriculum 360",
@@ -7317,6 +8034,7 @@
    "title": "Policy conflicts & exceptions"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CUR-09",
    "module": "Curriculum 360",
@@ -7331,6 +8049,7 @@
    "title": "Lesson plan & delivery log"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CUR-101",
    "module": "Curriculum 360",
@@ -7348,6 +8067,7 @@
    "title": "Coverage assurance"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CUR-102",
    "module": "Curriculum 360",
@@ -7364,6 +8084,7 @@
    "title": "Teaching assignment matrix"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "CUR-103",
    "module": "Curriculum 360",
@@ -7381,6 +8102,7 @@
    "title": "Gap register"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "DOC-101",
    "module": "Records & archives",
@@ -7396,6 +8118,7 @@
    "title": "Digitisation programme"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "DOC-102",
    "module": "Records & archives",
@@ -7410,6 +8133,7 @@
    "title": "Batches and custody"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "DOC-103",
    "module": "Records & archives",
@@ -7424,6 +8148,7 @@
    "title": "Indexing and QA workstation"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "DOC-104",
    "module": "Records & archives",
@@ -7441,6 +8166,7 @@
    "title": "Records search"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "DOC-105",
    "module": "Records & archives",
@@ -7454,6 +8180,7 @@
    "title": "Document viewer"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "DOC-106",
    "module": "Records & archives",
@@ -7468,6 +8195,7 @@
    "title": "File plan and retention"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "EXM-01",
    "module": "Examinations",
@@ -7484,6 +8212,7 @@
    "title": "Examination series"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "EXM-02",
    "module": "Examinations",
@@ -7498,6 +8227,7 @@
    "title": "Candidate entries"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "EXM-03",
    "module": "Examinations",
@@ -7511,6 +8241,7 @@
    "title": "Exam timetable & seating"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "EXM-04",
    "module": "Examinations",
@@ -7525,6 +8256,7 @@
    "title": "Results entry & import"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "EXM-05",
    "module": "Examinations",
@@ -7542,6 +8274,7 @@
    "title": "Results approval & release"
   },
   {
+   "change_request": null,
    "classification": "confidential",
    "id": "EXM-06",
    "module": "Examinations",
@@ -7555,6 +8288,7 @@
    "title": "Transcripts"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "EXM-07",
    "module": "Examinations",
@@ -7570,6 +8304,7 @@
    "title": "GPA & classification"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "EXM-08",
    "module": "Examinations",
@@ -7585,6 +8320,7 @@
    "title": "Exam anomaly review"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "EYR-01",
    "module": "Early years",
@@ -7600,6 +8336,7 @@
    "title": "Observations & milestones"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "EYR-02",
    "module": "Early years",
@@ -7614,6 +8351,7 @@
    "title": "Development tracker"
   },
   {
+   "change_request": null,
    "classification": "confidential",
    "id": "FAM-01",
    "module": "Families",
@@ -7631,6 +8369,7 @@
    "title": "Family 360"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "FAM-02",
    "module": "Families",
@@ -7645,6 +8384,7 @@
    "title": "Link a guardian"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "FAM-03",
    "module": "Families",
@@ -7658,6 +8398,7 @@
    "title": "Parent home"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "FAM-04",
    "module": "Families",
@@ -7674,6 +8415,7 @@
    "title": "Consents"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "FIN-01",
    "module": "Finance",
@@ -7689,6 +8431,7 @@
    "title": "Budget planning"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "FIN-02",
    "module": "Finance",
@@ -7705,6 +8448,7 @@
    "title": "Budget vs actual"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "FIN-03",
    "module": "Finance",
@@ -7721,6 +8465,7 @@
    "title": "Procurement"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "FIN-04",
    "module": "Finance",
@@ -7734,6 +8479,7 @@
    "title": "Supplier 360"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "FIN-05",
    "module": "Finance",
@@ -7747,6 +8493,7 @@
    "title": "General ledger"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "FIN-06",
    "module": "Finance",
@@ -7761,6 +8508,7 @@
    "title": "Currencies & tax"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "FRM-101",
    "module": "Forms",
@@ -7775,6 +8523,7 @@
    "title": "Form builder"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "FRM-102",
    "module": "Forms",
@@ -7792,6 +8541,7 @@
    "title": "Forms and Daybook"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "HED-01",
    "module": "Admissions",
@@ -7806,6 +8556,7 @@
    "title": "Admissions pipeline"
   },
   {
+   "change_request": null,
    "classification": "confidential",
    "id": "HED-02",
    "module": "Admissions",
@@ -7820,6 +8571,7 @@
    "title": "Application review"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "HED-03",
    "module": "Higher education",
@@ -7835,6 +8587,7 @@
    "title": "Course registration"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "HED-04",
    "module": "Higher education",
@@ -7850,6 +8603,7 @@
    "title": "Accommodation"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "HED-05",
    "module": "Higher education",
@@ -7865,6 +8619,7 @@
    "title": "Research students & ethics"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "HED-06",
    "module": "Higher education",
@@ -7879,6 +8634,7 @@
    "title": "Graduation & alumni"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "HED-07",
    "module": "Finance",
@@ -7894,6 +8650,7 @@
    "title": "Scholarships & bursaries"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "HOM-01",
    "module": "Home",
@@ -7928,6 +8685,7 @@
    "title": "My briefing"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "HOM-02",
    "module": "Home",
@@ -7964,6 +8722,7 @@
    "title": "Notifications"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "HOM-03",
    "module": "Home",
@@ -7998,6 +8757,7 @@
    "title": "My tasks"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "HOM-04",
    "module": "Home",
@@ -8034,6 +8794,7 @@
    "title": "My profile & preferences"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "HOM-05",
    "module": "Home",
@@ -8068,6 +8829,7 @@
    "title": "Search"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "HOM-06",
    "module": "Intelligence",
@@ -8102,6 +8864,7 @@
    "title": "Education assistant"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ILP-101",
    "module": "Interventions",
@@ -8119,6 +8882,7 @@
    "title": "Learning plans"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "ILP-102",
    "module": "Interventions",
@@ -8136,6 +8900,7 @@
    "title": "Personal learning plan"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "INS-01",
    "module": "Institutions",
@@ -8155,6 +8920,7 @@
    "title": "Institution register"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "INS-02",
    "module": "Institutions",
@@ -8175,6 +8941,7 @@
    "title": "Institution 360"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "INS-03",
    "module": "Institutions",
@@ -8191,6 +8958,7 @@
    "title": "Register an institution"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "INS-04",
    "module": "Institutions",
@@ -8208,6 +8976,7 @@
    "title": "Licences & accreditation"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "INS-05",
    "module": "Institutions",
@@ -8226,6 +8995,7 @@
    "title": "Health index breakdown"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "INS-06",
    "module": "Institutions",
@@ -8241,6 +9011,7 @@
    "title": "Organisation structure"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "INS-07",
    "module": "Inspection & compliance",
@@ -8257,6 +9028,7 @@
    "title": "Inspections"
   },
   {
+   "change_request": null,
    "classification": "confidential",
    "id": "INS-08",
    "module": "Inspection & compliance",
@@ -8270,6 +9042,7 @@
    "title": "Inspection workspace"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "INS-09",
    "module": "Inspection & compliance",
@@ -8289,6 +9062,7 @@
    "title": "Compliance centre"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "INS-10",
    "module": "Inspection & compliance",
@@ -8306,6 +9080,7 @@
    "title": "Improvement workspace"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "INS-11",
    "module": "Inspection & compliance",
@@ -8323,6 +9098,7 @@
    "title": "Corrective action plan"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "INT-01",
    "module": "Interventions",
@@ -8339,6 +9115,7 @@
    "title": "Interventions"
   },
   {
+   "change_request": null,
    "classification": "confidential",
    "id": "INT-02",
    "module": "Interventions",
@@ -8355,6 +9132,7 @@
    "title": "Early warning — learners"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "LMS-101",
    "module": "LMS",
@@ -8370,6 +9148,7 @@
    "title": "Course space"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "LMS-102",
    "module": "LMS",
@@ -8383,6 +9162,7 @@
    "title": "Create or edit assignment"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "LMS-103",
    "module": "LMS",
@@ -8396,6 +9176,7 @@
    "title": "Submission (learner)"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "LMS-104",
    "module": "LMS",
@@ -8409,6 +9190,7 @@
    "title": "Marking workspace"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "LMS-105",
    "module": "LMS",
@@ -8422,6 +9204,7 @@
    "title": "My marking"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "LMS-106",
    "module": "LMS",
@@ -8437,6 +9220,7 @@
    "title": "Quiz and question bank"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "LMS-107",
    "module": "LMS",
@@ -8451,6 +9235,7 @@
    "title": "Learner work (my assignments)"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "LMS-108",
    "module": "LMS",
@@ -8467,6 +9252,7 @@
    "title": "Digital learning dashboard"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "LMS-109",
    "module": "Digital learning",
@@ -8483,6 +9269,7 @@
    "title": "Homework calendar"
   },
   {
+   "change_request": null,
    "classification": "confidential",
    "id": "LRN-01",
    "module": "Learners",
@@ -8506,6 +9293,7 @@
    "title": "Learners"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "LRN-02",
    "module": "Learners",
@@ -8521,6 +9309,7 @@
    "title": "Register a learner"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "LRN-03",
    "module": "Learners",
@@ -8536,6 +9325,7 @@
    "title": "Duplicate review"
   },
   {
+   "change_request": null,
    "classification": "special",
    "id": "LRN-04",
    "module": "Learners",
@@ -8558,6 +9348,7 @@
    "title": "Learner 360"
   },
   {
+   "change_request": null,
    "classification": "confidential",
    "id": "LRN-05",
    "module": "Learners",
@@ -8574,6 +9365,7 @@
    "title": "Transfer a learner"
   },
   {
+   "change_request": null,
    "classification": "confidential",
    "id": "LRN-06",
    "module": "Learners",
@@ -8589,6 +9381,7 @@
    "title": "Education passport"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "LRN-07",
    "module": "Learners",
@@ -8604,6 +9397,7 @@
    "title": "Enrolment & placement"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "LRN-08",
    "module": "Learners",
@@ -8617,6 +9411,7 @@
    "title": "Merge records"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "LRN-09",
    "module": "Learners",
@@ -8631,6 +9426,7 @@
    "title": "Withdraw / leaver"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "MED-01",
    "module": "Medical education",
@@ -8645,6 +9441,7 @@
    "title": "Clinical placements & rotations"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "MED-02",
    "module": "Medical education",
@@ -8660,6 +9457,7 @@
    "title": "Clinical logbook & sign-off"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "MED-03",
    "module": "Medical education",
@@ -8675,6 +9473,7 @@
    "title": "Clinical hours & registration readiness"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "OPS-01",
    "module": "Operations",
@@ -8692,6 +9491,7 @@
    "title": "Estate & rooms"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "OPS-02",
    "module": "Operations",
@@ -8708,6 +9508,7 @@
    "title": "Asset register"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "OPS-03",
    "module": "Operations",
@@ -8725,6 +9526,7 @@
    "title": "Maintenance"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "OPS-04",
    "module": "Operations",
@@ -8740,6 +9542,7 @@
    "title": "Transport"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "OPS-05",
    "module": "Operations",
@@ -8758,6 +9561,7 @@
    "title": "Clubs & activities"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "OPS-06",
    "module": "Operations",
@@ -8775,6 +9579,7 @@
    "title": "Trips & visits"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "OPS-07",
    "module": "Operations",
@@ -8792,6 +9597,7 @@
    "title": "Meals & nutrition"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "OPS-08",
    "module": "Operations",
@@ -8809,6 +9615,7 @@
    "title": "Library"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "P16-01",
    "module": "Post-16 & careers",
@@ -8825,6 +9632,7 @@
    "title": "Subject options"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "P16-02",
    "module": "Post-16 & careers",
@@ -8841,6 +9649,7 @@
    "title": "Applications & careers"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "PAY-01",
    "module": "People",
@@ -8855,6 +9664,7 @@
    "title": "Payroll runs"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "PAY-02",
    "module": "People",
@@ -8869,6 +9679,7 @@
    "title": "Pay run detail"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "PMT-01",
    "module": "Payments",
@@ -8882,6 +9693,7 @@
    "title": "Payments & receipts"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "PMT-02",
    "module": "Payments",
@@ -8895,6 +9707,7 @@
    "title": "Bank reconciliation"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "PMT-03",
    "module": "Payments",
@@ -8909,6 +9722,7 @@
    "title": "Pay online"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "PTM-101",
    "module": "Parents' meetings",
@@ -8924,6 +9738,7 @@
    "title": "Parents' meetings"
   },
   {
+   "change_request": null,
    "classification": "public",
    "id": "PUB-01",
    "module": "Public verification",
@@ -8937,6 +9752,7 @@
    "title": "Verify a certificate"
   },
   {
+   "change_request": null,
    "classification": "public",
    "id": "PUB-02",
    "module": "Public verification",
@@ -8950,6 +9766,7 @@
    "title": "Verification result"
   },
   {
+   "change_request": null,
    "classification": "confidential",
    "id": "PUB-03",
    "module": "Admissions",
@@ -8964,6 +9781,7 @@
    "title": "Online application"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "PUB-101",
    "module": "Public verification",
@@ -8977,6 +9795,7 @@
    "title": "Request a certificate reissue"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "PVT-101",
    "module": "Private providers",
@@ -8991,6 +9810,7 @@
    "title": "Provider application"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "PVT-102",
    "module": "Private providers",
@@ -9005,6 +9825,7 @@
    "title": "Application review"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "PVT-103",
    "module": "Private providers",
@@ -9020,6 +9841,7 @@
    "title": "Provider 360"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "PVT-104",
    "module": "Private providers",
@@ -9035,6 +9857,7 @@
    "title": "Private institutions register"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "PVT-105",
    "module": "Private providers",
@@ -9049,6 +9872,7 @@
    "title": "Approval conditions and renewals"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "RPT-01",
    "module": "Reporting",
@@ -9069,6 +9893,7 @@
    "title": "Report library"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "RPT-02",
    "module": "Reporting",
@@ -9087,6 +9912,7 @@
    "title": "Report builder"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "RPT-03",
    "module": "Reporting",
@@ -9104,6 +9930,7 @@
    "title": "Government return"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "RPT-04",
    "module": "Reporting",
@@ -9121,6 +9948,7 @@
    "title": "Data lineage"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "RPT-05",
    "module": "Reporting",
@@ -9137,6 +9965,7 @@
    "title": "Scheduled reports"
   },
   {
+   "change_request": null,
    "classification": "special",
    "id": "SAF-01",
    "module": "Safeguarding",
@@ -9160,6 +9989,7 @@
    "title": "Record a concern"
   },
   {
+   "change_request": null,
    "classification": "special",
    "id": "SAF-02",
    "module": "Safeguarding",
@@ -9173,6 +10003,7 @@
    "title": "Safeguarding caseload"
   },
   {
+   "change_request": null,
    "classification": "special",
    "id": "SAF-03",
    "module": "Safeguarding",
@@ -9186,6 +10017,7 @@
    "title": "Safeguarding case"
   },
   {
+   "change_request": null,
    "classification": "special",
    "id": "SAF-04",
    "module": "Safeguarding",
@@ -9199,6 +10031,7 @@
    "title": "External referral"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "SAF-101",
    "module": "Safeguarding",
@@ -9214,6 +10047,7 @@
    "title": "Staff allegations and low-level concerns"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "SAF-102",
    "module": "Safeguarding",
@@ -9229,6 +10063,7 @@
    "title": "Community reporting forms"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "SAF-103",
    "module": "Safeguarding",
@@ -9245,6 +10080,7 @@
    "title": "Safeguarding insights"
   },
   {
+   "change_request": null,
    "classification": "special",
    "id": "SEN-01",
    "module": "SEND & inclusion",
@@ -9262,6 +10098,7 @@
    "title": "SEND register"
   },
   {
+   "change_request": null,
    "classification": "special",
    "id": "SEN-02",
    "module": "SEND & inclusion",
@@ -9276,6 +10113,7 @@
    "title": "Learner support profile"
   },
   {
+   "change_request": null,
    "classification": "special",
    "id": "SEN-03",
    "module": "SEND & inclusion",
@@ -9289,6 +10127,7 @@
    "title": "Support plan & review"
   },
   {
+   "change_request": null,
    "classification": "special",
    "id": "SEN-04",
    "module": "SEND & inclusion",
@@ -9305,6 +10144,7 @@
    "title": "Provision map"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "STF-01",
    "module": "People",
@@ -9324,6 +10164,7 @@
    "title": "Staff directory"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "STF-02",
    "module": "People",
@@ -9342,6 +10183,7 @@
    "title": "Staff 360"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "STF-03",
    "module": "People",
@@ -9356,6 +10198,7 @@
    "title": "Onboard staff"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "STF-04",
    "module": "People",
@@ -9371,6 +10214,7 @@
    "title": "Recruitment"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "STF-05",
    "module": "People",
@@ -9386,6 +10230,7 @@
    "title": "Applicant review"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "STF-06",
    "module": "People",
@@ -9402,6 +10247,7 @@
    "title": "Staff absence & cover"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "STF-07",
    "module": "People",
@@ -9418,6 +10264,7 @@
    "title": "CPD & training"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "STF-08",
    "module": "People",
@@ -9435,6 +10282,7 @@
    "title": "Teacher qualifications register"
   },
   {
+   "change_request": null,
    "classification": "restricted",
    "id": "STF-09",
    "module": "People",
@@ -9451,6 +10299,7 @@
    "title": "Performance review"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "STF-10",
    "module": "People",
@@ -9466,6 +10315,7 @@
    "title": "Teacher deployment"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "STF-101",
    "module": "Staff, HR and payroll",
@@ -9483,6 +10333,7 @@
    "title": "Safeguarding training and compliance"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "SUB-101",
    "module": "Billing",
@@ -9498,6 +10349,7 @@
    "title": "SDAF rate card"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "SUB-102",
    "module": "Billing",
@@ -9514,6 +10366,7 @@
    "title": "Term census and billable learners"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "SUB-103",
    "module": "Billing",
@@ -9529,6 +10382,7 @@
    "title": "SDAF demand and collections"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "SUB-104",
    "module": "Billing",
@@ -9544,6 +10398,7 @@
    "title": "Remittance and reconciliation"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "SUB-105",
    "module": "Billing",
@@ -9560,6 +10415,7 @@
    "title": "Programme financing dashboard"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "SUB-106",
    "module": "Billing",
@@ -9575,6 +10431,7 @@
    "title": "SDAF exemptions and payers"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "SUB-107",
    "module": "Billing",
@@ -9590,6 +10447,7 @@
    "title": "Subscription and billing"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "SUB-108",
    "module": "Billing",
@@ -9604,6 +10462,7 @@
    "title": "Operator subscription management"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "SUB-109",
    "module": "Billing",
@@ -9618,6 +10477,7 @@
    "title": "Pay the Student Digital Access Fee"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "TIM-01",
    "module": "Timetable",
@@ -9632,6 +10492,7 @@
    "title": "Timetable builder"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "TIM-02",
    "module": "Timetable",
@@ -9649,6 +10510,7 @@
    "title": "Timetable"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "TIM-03",
    "module": "Timetable",
@@ -9663,6 +10525,7 @@
    "title": "Cover board"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "TIM-04",
    "module": "Timetable",
@@ -9678,6 +10541,7 @@
    "title": "Rooms & bookings"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "TVT-01",
    "module": "TVET",
@@ -9693,6 +10557,7 @@
    "title": "Competency tracking"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "TVT-02",
    "module": "TVET",
@@ -9707,6 +10572,7 @@
    "title": "Workshops & practicals"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "TVT-03",
    "module": "TVET",
@@ -9721,6 +10587,7 @@
    "title": "Apprenticeships & placements"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "TVT-04",
    "module": "TVET",
@@ -9736,6 +10603,7 @@
    "title": "Employer partner 360"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "TVT-05",
    "module": "TVET",
@@ -9751,6 +10619,7 @@
    "title": "Skills passport"
   },
   {
+   "change_request": null,
    "classification": "special",
    "id": "WEL-01",
    "module": "Wellbeing",
@@ -9766,6 +10635,7 @@
    "title": "Wellbeing"
   },
   {
+   "change_request": null,
    "classification": "internal",
    "id": "WEL-101",
    "module": "Wellbeing",
@@ -9780,6 +10650,210 @@
    ],
    "route": "/wellbeing/insights",
    "title": "Wellbeing concerns and insights"
+  },
+  {
+   "change_request": "CR-001",
+   "classification": "internal",
+   "id": "HRM-01",
+   "module": "Human resources",
+   "pattern": "Register / list",
+   "phase": "P2",
+   "purpose": "Approved positions per institution and unit with fill status, vacancies by subject and over-establishment.",
+   "roles": [
+    "HR",
+    "HEAD",
+    "STA",
+    "LGA"
+   ],
+   "route": "/hr/establishment",
+   "title": "Establishment and vacancies"
+  },
+  {
+   "change_request": "CR-001",
+   "classification": "restricted",
+   "id": "HRM-02",
+   "module": "Human resources",
+   "pattern": "Record 360",
+   "phase": "P2",
+   "purpose": "Appointment, grade and step, posting history, leave, appraisal, promotion, cases, pay elements and retirement projection.",
+   "roles": [
+    "HR",
+    "HEAD"
+   ],
+   "route": "/hr/employees/{id}",
+   "title": "Employee record"
+  },
+  {
+   "change_request": "CR-001",
+   "classification": "confidential",
+   "id": "HRM-03",
+   "module": "Human resources",
+   "pattern": "Workflow queue",
+   "phase": "P2",
+   "purpose": "Posting orders between institutions and employers with coverage impact (G9) and approval.",
+   "roles": [
+    "HR",
+    "STA",
+    "LGA"
+   ],
+   "route": "/hr/postings",
+   "title": "Postings and transfers"
+  },
+  {
+   "change_request": "CR-001",
+   "classification": "confidential",
+   "id": "HRM-04",
+   "module": "Human resources",
+   "pattern": "Workflow queue",
+   "phase": "P2",
+   "purpose": "Leave requests, approvals, balances and the cover they trigger.",
+   "roles": [
+    "HR",
+    "HEAD",
+    "TCH"
+   ],
+   "route": "/hr/leave",
+   "title": "Leave"
+  },
+  {
+   "change_request": "CR-001",
+   "classification": "confidential",
+   "id": "HRM-05",
+   "module": "Human resources",
+   "pattern": "Workflow queue",
+   "phase": "P2",
+   "purpose": "Promotion exercises, eligibility, board decisions and effective dates.",
+   "roles": [
+    "HR",
+    "STA"
+   ],
+   "route": "/hr/promotions",
+   "title": "Promotions"
+  },
+  {
+   "change_request": "CR-001",
+   "classification": "restricted",
+   "id": "HRM-06",
+   "module": "Human resources",
+   "pattern": "Case management",
+   "phase": "P2",
+   "purpose": "Queries, disciplinary and grievance cases with due-process steps and human outcomes.",
+   "roles": [
+    "HR",
+    "HEAD"
+   ],
+   "route": "/hr/cases",
+   "title": "Employee relations"
+  },
+  {
+   "change_request": "CR-001",
+   "classification": "confidential",
+   "id": "HRM-07",
+   "module": "Human resources",
+   "pattern": "Workflow queue",
+   "phase": "P2",
+   "purpose": "Exits with clearance checklist, access removal and reassignment of classes.",
+   "roles": [
+    "HR",
+    "HEAD"
+   ],
+   "route": "/hr/separations",
+   "title": "Separations and exit clearance"
+  },
+  {
+   "change_request": "CR-001",
+   "classification": "restricted",
+   "id": "HRM-08",
+   "module": "Human resources",
+   "pattern": "Exception queue",
+   "phase": "P2",
+   "purpose": "Ghost-worker and double-dipping flags across employers, headcount results and pay holds decided by a person.",
+   "roles": [
+    "HR",
+    "PAYR",
+    "STA",
+    "INTEG"
+   ],
+   "route": "/hr/integrity",
+   "title": "Payroll integrity"
+  },
+  {
+   "change_request": "CR-001",
+   "classification": "internal",
+   "id": "HRM-09",
+   "module": "Human resources",
+   "pattern": "Settings / configuration",
+   "phase": "P2",
+   "purpose": "Versioned salary scales, grade levels, steps and standard allowances.",
+   "roles": [
+    "HR",
+    "PAYR",
+    "STA"
+   ],
+   "route": "/hr/salary-structures",
+   "title": "Salary structures"
+  },
+  {
+   "change_request": "CR-001",
+   "classification": "internal",
+   "id": "HRM-10",
+   "module": "Human resources",
+   "pattern": "Dashboard / command centre",
+   "phase": "P2",
+   "purpose": "Establishment fill, vacancies by subject, attrition, retirements due, leave liability and integrity flags.",
+   "roles": [
+    "HR",
+    "STA",
+    "LGA",
+    "HEAD"
+   ],
+   "route": "/hr",
+   "title": "HR dashboard"
+  },
+  {
+   "change_request": "CR-001",
+   "classification": "restricted",
+   "id": "FCL-01",
+   "module": "Fee clearance",
+   "pattern": "Workspace",
+   "phase": "P2",
+   "purpose": "Run the due-diligence check for an incoming learner, see open obligations across the ecosystem and record the admission decision.",
+   "roles": [
+    "HEAD",
+    "REG"
+   ],
+   "route": "/admissions/clearance",
+   "title": "Fee clearance check"
+  },
+  {
+   "change_request": "CR-001",
+   "classification": "restricted",
+   "id": "FCL-02",
+   "module": "Fee clearance",
+   "pattern": "Register / list",
+   "phase": "P2",
+   "purpose": "Obligations this institution has published, their status, checks made against them and disputes.",
+   "roles": [
+    "FINO",
+    "HEAD"
+   ],
+   "route": "/finance/obligations",
+   "title": "Obligations register"
+  },
+  {
+   "change_request": "CR-001",
+   "classification": "restricted",
+   "id": "FCL-03",
+   "module": "Fee clearance",
+   "pattern": "Case management",
+   "phase": "P2",
+   "purpose": "Disputed obligations awaiting LGA or state resolution within the service level.",
+   "roles": [
+    "LGA",
+    "STA"
+   ],
+   "route": "/clearance/disputes",
+   "title": "Clearance disputes"
   }
  ],
  "retention": {

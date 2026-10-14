@@ -15,6 +15,8 @@ IMPLEMENTED: dict[str, str] = {
     "ATT-01": "register",
     "LRN-04": "learner",
     "CUR-101": "coverage",
+    "FCL-01": "clearance",
+    "HRM-01": "establishment",
 }
 # Pages served for any signed-in user, independent of role lists
 UNIVERSAL = {"home", "catalogue"}

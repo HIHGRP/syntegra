@@ -7,6 +7,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from syntegra.clearance.api import decision_from_headers
 from syntegra.core.api import views as v
 from syntegra.core.api.pagination import UUID7CursorPagination
 from syntegra.learners import services
@@ -56,7 +57,11 @@ class LearnerList(APIView):
         m = v.meta(request)
 
         def run() -> Response:
-            r = services.register(services.RegisterLearner(**s.validated_data), override_reason=m.override_reason)
+            r = services.register(
+                services.RegisterLearner(**s.validated_data),
+                override_reason=m.override_reason,
+                clearance=decision_from_headers(request),
+            )
             body = {
                 "outcome": r.outcome,
                 "learner": learner_row(r.learner),
@@ -89,7 +94,7 @@ class LearnerTransfer(APIView):
     def post(self, request: Request, pk: uuid.UUID) -> Response:
         s = TransferSerializer(data=request.data)
         s.is_valid(raise_exception=True)
-        t = services.transfer(pk, **s.validated_data)
+        t = services.transfer(pk, **s.validated_data, clearance=decision_from_headers(request))
         return Response(v.row(t), status=201)
 
 

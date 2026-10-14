@@ -1,8 +1,10 @@
 """Apply CEDA-generated DDL to a zone database.
 
-The CEDA DDL (ceda/generated/mysql) is the physical schema authority; Django models are ``managed = False``.
-Schema evolution follows CEDA §17.4: each CEDA release ships a migration in this app whose operations
-apply that release's expand/contract DDL to every zone alias.
+The CEDA DDL is the physical schema authority; Django models are ``managed = False``. Schema evolution
+follows CEDA §17.4: ``ceda/releases/<version>/`` holds the full DDL of the baseline release and an
+expand-only delta (plus any hand-written expand script in ``manual/``) for each later release; every release
+has one migration in this app that applies it to each zone alias. ``ceda/tools/release.py check --mysql``
+proves that replaying the releases reproduces the current generated DDL.
 """
 
 from __future__ import annotations
@@ -64,17 +66,28 @@ def split_sql(script: str) -> list[str]:
     return out
 
 
-def statements_for_zone(zone: str) -> list[str]:
-    base = Path(settings.SYNTEGRA_CEDA_DDL_DIR)
+def release_dir(version: str) -> Path:
+    return Path(settings.SYNTEGRA_CEDA_RELEASES_DIR) / version
+
+
+def statements_for_zone(zone: str, version: str) -> list[str]:
+    """Statements of one CEDA release for a zone: the hand-written expand script first, then the release file."""
+    d = release_dir(version)
     stmts: list[str] = []
     for name in ZONE_FILES[zone]:
-        stmts.extend(split_sql((base / name).read_text(encoding="utf-8")))
+        for path in (d / "manual" / name, d / name):
+            if path.exists():
+                stmts.extend(split_sql(path.read_text(encoding="utf-8")))
     return stmts
 
 
-def apply_ceda_ddl(apps, schema_editor) -> None:  # type: ignore[no-untyped-def]
-    alias = schema_editor.connection.alias
-    zone = zone_of_alias(alias)
-    with schema_editor.connection.cursor() as cur:
-        for stmt in statements_for_zone(zone):
-            cur.execute(stmt)
+def apply_release(version: str):  # type: ignore[no-untyped-def]
+    """RunPython operation applying CEDA release ``version`` to whichever zone alias is being migrated."""
+
+    def apply(apps, schema_editor) -> None:  # type: ignore[no-untyped-def]
+        zone = zone_of_alias(schema_editor.connection.alias)
+        with schema_editor.connection.cursor() as cur:
+            for stmt in statements_for_zone(zone, version):
+                cur.execute(stmt)
+
+    return apply

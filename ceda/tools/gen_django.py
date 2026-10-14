@@ -111,6 +111,9 @@ class Raw:
 def _pages() -> list[dict]:
     """MFS page catalogue (ceda/sources/mfs_pages.yaml) reduced to what the page registry needs."""
     src = yaml.safe_load((REPO / "ceda" / "sources" / "mfs_pages.yaml").read_text(encoding="utf-8"))["pages"]
+    for cr_path in sorted((REPO / "ceda" / "model" / "change_requests").glob("CR-*.yaml")):
+        cr = yaml.safe_load(cr_path.read_text(encoding="utf-8"))
+        src += [dict(pg, change_request=cr["id"]) for pg in cr.get("pages", [])]
     return [
         {
             "id": p["id"],
@@ -122,9 +125,27 @@ def _pages() -> list[dict]:
             "phase": p.get("phase"),
             "roles": [str(r).split(" ", 1)[0] for r in p.get("roles") or []],
             "purpose": p.get("purpose"),
+            "change_request": p.get("change_request"),
         }
         for p in src
     ]
+
+
+# Relation names that would shadow django.db.models.Model attributes stay plain UUID columns.
+DJANGO_MODEL_ATTRS = {
+    "check",
+    "clean",
+    "save",
+    "delete",
+    "objects",
+    "pk",
+    "full_clean",
+    "validate_unique",
+    "refresh_from_db",
+    "serializable_value",
+    "prepare_database_save",
+    "unscoped",
+}
 
 
 def field_for(m: cedagen.Model, e: cedagen.Entity, c: cedagen.Column, fk_cols: dict, names: set) -> tuple[str, str]:
@@ -157,7 +178,7 @@ def field_for(m: cedagen.Model, e: cedagen.Entity, c: cedagen.Column, fk_cols: d
     if c.name in fk_cols:
         tgt = fk_cols[c.name]
         fname = c.name[:-3] if c.name.endswith("_id") else c.name
-        if fname not in names or fname == c.name:
+        if fname not in DJANGO_MODEL_ATTRS and (fname not in names or fname == c.name):
             ref = f'"{tgt.module}.{pascal(tgt.name)}"'
             o = {
                 "on_delete": Raw("models.DO_NOTHING"),

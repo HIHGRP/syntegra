@@ -1,0 +1,703 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/32_fee_clearance.schema.json",
+  "title": "CEDA FCL — Fee-clearance due diligence — learner obligations register, clearance checks, admission decisions and disputes",
+  "$defs": {
+    "LearnerObligation": {
+      "title": "LearnerObligation",
+      "description": "Outstanding obligation of a learner's payer to an institution (fees or other dues), published from the creditor's ledger",
+      "type": "object",
+      "x-ceda": {
+        "entity": "learner_obligation",
+        "zone": "registry",
+        "domain": "FCL",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "clearance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "creditor_institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "creditor_tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Operating tenant whose ledger holds the invoices"
+        },
+        "obligation_kind": {
+          "type": "string",
+          "enum": [
+            "tuition_fees",
+            "boarding",
+            "examination_fees",
+            "transport",
+            "meals",
+            "books_and_materials",
+            "uniform",
+            "development_levy",
+            "damaged_property",
+            "library",
+            "other_dues"
+          ]
+        },
+        "payer_kind": {
+          "type": "string",
+          "enum": [
+            "learner",
+            "family",
+            "guardian",
+            "sponsor",
+            "funder",
+            "government",
+            "employer",
+            "institution"
+          ]
+        },
+        "periods": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Billing periods covered, e.g. 2025/26-T2, 2025/26-T3"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "amount_outstanding_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "oldest_due_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "evidence": {
+          "type": "object",
+          "description": "Invoice numbers and content hashes, or document ids for manual claims"
+        },
+        "evidence_hash": {
+          "type": "string",
+          "contentEncoding": "base64",
+          "description": "SHA-256 of the canonical evidence"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "ledger",
+            "manual_with_evidence"
+          ]
+        },
+        "published_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "published_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reconfirm_by": {
+          "type": "string",
+          "format": "date",
+          "description": "Expires if the creditor does not reconfirm (default 90 days)"
+        },
+        "last_checked_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "settled_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "outstanding",
+            "payment_plan",
+            "disputed",
+            "settled",
+            "written_off",
+            "waived",
+            "expired",
+            "withdrawn"
+          ]
+        },
+        "open_key": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 120,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "learner:creditor:kind while open",
+              "readOnly": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "learner_id",
+        "creditor_institution_id",
+        "creditor_tenant_id",
+        "obligation_kind",
+        "payer_kind",
+        "amount_outstanding_minor",
+        "currency",
+        "oldest_due_on",
+        "evidence",
+        "evidence_hash",
+        "source",
+        "published_by",
+        "published_at",
+        "reconfirm_by",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ObligationDispute": {
+      "title": "ObligationDispute",
+      "description": "Dispute of a published obligation by the family, the admitting institution or the creditor (resolved by LGA or state)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "obligation_dispute",
+        "zone": "registry",
+        "domain": "FCL",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "clearance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "obligation_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner_obligation"
+        },
+        "raised_by_kind": {
+          "type": "string",
+          "enum": [
+            "guardian",
+            "learner",
+            "admitting_institution",
+            "creditor"
+          ]
+        },
+        "raised_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "grounds": {
+          "type": "string",
+          "enum": [
+            "already_paid",
+            "amount_wrong",
+            "not_liable",
+            "waiver_granted",
+            "statute_barred",
+            "protected_learner",
+            "other"
+          ]
+        },
+        "statement": {
+          "type": "string",
+          "maxLength": 65535
+        },
+        "evidence_document_ids": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "due_by": {
+          "type": "string",
+          "format": "date",
+          "description": "Resolution service level (default 10 school days)"
+        },
+        "resolver_scope_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "scope_node",
+          "description": "LGA or state node that decides"
+        },
+        "resolution": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "upheld",
+                "partly_upheld",
+                "rejected",
+                "withdrawn"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resolved_amount_minor": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "description": "(minor units)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "resolved_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resolved_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "in_progress",
+            "on_hold",
+            "closed",
+            "transferred"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "obligation_id",
+        "raised_by_kind",
+        "raised_by",
+        "grounds",
+        "statement",
+        "due_by",
+        "resolver_scope_id",
+        "currency",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ClearanceCheck": {
+      "title": "ClearanceCheck",
+      "description": "Clearance check run for an incoming learner (purpose-bound, logged, visible to the family)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "clearance_check",
+        "zone": "registry",
+        "domain": "FCL",
+        "kind": "event",
+        "classification": "restricted",
+        "history": "append",
+        "module": "clearance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "requesting_institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "purpose": {
+          "type": "string",
+          "enum": [
+            "admission",
+            "transfer",
+            "re_enrolment",
+            "enquiry_with_consent"
+          ]
+        },
+        "basis": {
+          "type": "string",
+          "enum": [
+            "admission_due_diligence",
+            "guardian_consent"
+          ]
+        },
+        "admission_application_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "ops-zone admission application"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "learner_transfer_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "learner_transfer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requested_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "checked_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "string",
+          "enum": [
+            "state",
+            "national"
+          ]
+        },
+        "result": {
+          "type": "string",
+          "enum": [
+            "clear",
+            "outstanding",
+            "disputed_only",
+            "protected"
+          ]
+        },
+        "obligations": {
+          "type": "object",
+          "description": "Snapshot: obligation id, creditor, kind, amount, oldest due date, status"
+        },
+        "total_outstanding_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "pattern_flags": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "e.g. repeat_unsettled_transfers (count, window)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "learner_id",
+        "requesting_institution_id",
+        "purpose",
+        "basis",
+        "requested_by",
+        "checked_at",
+        "coverage",
+        "result",
+        "obligations",
+        "total_outstanding_minor",
+        "currency",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "ClearanceDecision": {
+      "title": "ClearanceDecision",
+      "description": "Human admission decision recorded on a clearance check (or the automatic protection of a learner)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "clearance_decision",
+        "zone": "registry",
+        "domain": "FCL",
+        "kind": "event",
+        "classification": "restricted",
+        "history": "append",
+        "module": "clearance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "check_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "clearance_check"
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "admit",
+            "admit_with_payment_plan",
+            "defer_pending_settlement",
+            "admit_protected"
+          ]
+        },
+        "protected_reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "public_basic_education",
+                "send",
+                "safeguarding",
+                "child_in_care",
+                "displaced",
+                "other_vulnerability"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 65535
+        },
+        "payment_plan_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "decided_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "app_user, or the system for automatic protection"
+        },
+        "decided_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "check_id",
+        "decision",
+        "reason",
+        "decided_by",
+        "decided_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

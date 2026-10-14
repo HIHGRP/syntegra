@@ -1,0 +1,136 @@
+domain: fee_clearance
+code: FCL
+title: Fee-clearance due diligence — learner obligations register, clearance checks, admission decisions and disputes
+module: clearance
+zone: registry
+retention: RS-FIN
+summary: >
+  Before a learner with a previous enrolment is admitted or transferred anywhere in the ecosystem, the
+  receiving institution checks whether the learner owes fees or other dues to any other institution
+  (change request CR-001). Each institution's ledger (ops zone, domain FIN) publishes outstanding obligations
+  to this state-wide register as summaries backed by issued invoices; the register therefore spans public and
+  private tenants without exposing ledgers. The check informs a human admission decision and notifies the
+  creditor — it never refuses admission, delays the transfer of records or restricts attendance by itself
+  (MFS principle P9; admission refusal is human-only). Learners entering public basic education, and learners
+  the head identifies as SEND, safeguarding, in care or displaced, are always admitted. Families see every
+  check and can dispute any claim; stale claims expire; SDAF arrears never appear here (state revenue only).
+  Repeated transfers that leave unsettled obligations are flagged for state review — the abuse the register
+  exists to stop — and creditors that publish unsupported claims are visible through upheld disputes.
+
+entities:
+  learner_obligation:
+    title: Outstanding obligation of a learner's payer to an institution (fees or other dues), published from the creditor's ledger
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-FCL-01, FR-FCL-07]
+    pages: [FCL-02, FCL-01]
+    events: [FCL.OBLIGATION_PUBLISHED, FCL.OBLIGATION_SETTLED]
+    notes: >
+      scope_node_id is the creditor institution's node. One open obligation per learner × creditor × kind; the
+      amount is re-published from the ledger (never typed in) except for manual claims with evidence.
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "creditor_institution_id: ref(institution)!"
+      - "creditor_tenant_id: uuid! | Operating tenant whose ledger holds the invoices"
+      - "obligation_kind: enum(obligation_kind)!"
+      - "payer_kind: enum(account_holder)!"
+      - "periods: json | Billing periods covered, e.g. 2025/26-T2, 2025/26-T3"
+      - "amount_outstanding: money!"
+      - "currency: currency!"
+      - "oldest_due_on: date!"
+      - "evidence: json! | Invoice numbers and content hashes, or document ids for manual claims"
+      - "evidence_hash: hash! | SHA-256 of the canonical evidence"
+      - "source: enum(obligation_source)!"
+      - "published_by: uuid!"
+      - "published_at: ts!"
+      - "reconfirm_by: date! | Expires if the creditor does not reconfirm (default 90 days)"
+      - "last_checked_at: ts"
+      - "settled_at: ts"
+      - "status: enum(obligation_status)!"
+      - "open_key: code(120) derived | learner:creditor:kind while open"
+    generated:
+      open_key: "IF(`status` IN ('outstanding','payment_plan','disputed'), CONCAT(HEX(`learner_id`), ':', HEX(`creditor_institution_id`), ':', `obligation_kind`), NULL)"
+    uq: [[open_key]]
+    ix: [[learner_id, status], [creditor_institution_id, status], [reconfirm_by]]
+    checks:
+      positive: "amount_outstanding_minor > 0"
+
+  obligation_dispute:
+    title: Dispute of a published obligation by the family, the admitting institution or the creditor (resolved by LGA or state)
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-FCL-06]
+    pages: [FCL-03, FCL-02]
+    events: [FCL.DISPUTE_RAISED, FCL.DISPUTE_RESOLVED]
+    attrs:
+      - "obligation_id: ref(learner_obligation)!"
+      - "raised_by_kind: enum(dispute_party)!"
+      - "raised_by: uuid!"
+      - "grounds: enum(dispute_grounds)!"
+      - "statement: text!"
+      - "evidence_document_ids: json"
+      - "due_by: date! | Resolution service level (default 10 school days)"
+      - "resolver_scope_id: ref(scope_node)! | LGA or state node that decides"
+      - "resolution: enum(dispute_resolution)"
+      - "resolved_amount: money"
+      - "currency: currency!"
+      - "resolved_by: ref(app_user)"
+      - "resolved_at: ts"
+      - "status: enum(case_status)!"
+    ix: [[obligation_id], [resolver_scope_id, status]]
+
+  clearance_check:
+    title: Clearance check run for an incoming learner (purpose-bound, logged, visible to the family)
+    kind: event
+    class: restricted
+    history: append
+    origin: ceda
+    retention: RS-AUDIT
+    scope_note: Visible to the requesting institution, the creditors named in it, the family and the LGA/state.
+    reqs: [FR-FCL-02, FR-FCL-03, FR-FCL-08]
+    pages: [FCL-01, FCL-02]
+    events: [FCL.CHECK_PERFORMED]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "requesting_institution_id: ref(institution)!"
+      - "purpose: enum(clearance_purpose)!"
+      - "basis: enum(clearance_basis)!"
+      - "admission_application_id: uuid | ops-zone admission application"
+      - "learner_transfer_id: ref(learner_transfer)"
+      - "requested_by: uuid!"
+      - "checked_at: ts!"
+      - "coverage: enum(clearance_coverage)!"
+      - "result: enum(clearance_result)!"
+      - "obligations: json! | Snapshot: obligation id, creditor, kind, amount, oldest due date, status"
+      - "total_outstanding: money!"
+      - "currency: currency!"
+      - "pattern_flags: json | e.g. repeat_unsettled_transfers (count, window)"
+    ix: [[learner_id, checked_at], [requesting_institution_id, checked_at]]
+
+  clearance_decision:
+    title: Human admission decision recorded on a clearance check (or the automatic protection of a learner)
+    kind: event
+    class: restricted
+    history: append
+    origin: ceda
+    retention: RS-AUDIT
+    scope_note: Inherits the clearance check's visibility.
+    reqs: [FR-FCL-04, FR-FCL-05]
+    pages: [FCL-01]
+    events: [FCL.DECISION_RECORDED]
+    attrs:
+      - "check_id: ref(clearance_check)! uq"
+      - "decision: enum(clearance_decision_kind)!"
+      - "protected_reason: enum(protected_reason)"
+      - "reason: text!"
+      - "payment_plan_ref: code(64)"
+      - "decided_by: uuid! | app_user, or the system for automatic protection"
+      - "decided_at: ts!"
+    checks:
+      protection_reason: "decision <> 'admit_protected' OR protected_reason IS NOT NULL"

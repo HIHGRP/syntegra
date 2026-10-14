@@ -4,9 +4,9 @@
 
 ceda:
   id: SYN-CEDA-001
-  version: 1.1.0
+  version: 1.2.0
   status: Baseline for build
-  date: 2026-10-13
+  date: 2026-10-14
   derived_from: SYN-MFS-002 v2.4 (Master Functional Specification, consolidated single volume, 13 Oct 2026)
   database: MySQL 9.7 LTS (InnoDB, utf8mb4)
   application: Python 3.12, Django 5.2 LTS (+ FastAPI for high-throughput services)

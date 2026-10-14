@@ -55,7 +55,7 @@ code_lists:
   - code: identifier_scheme
     title: External identifier schemes
     extensible: true
-    values: [NG-NIN, WAEC-CAND, NECO-CAND, NABTEB-CAND, JAMB-REG, BECE-CAND, TRCN, MDCN, NMCN, CAC-RC, TIN, UPN, INST-ID, PREV-LRN-ID]
+    values: [NG-NIN, WAEC-CAND, NECO-CAND, NABTEB-CAND, JAMB-REG, BECE-CAND, TRCN, MDCN, NMCN, CAC-RC, TIN, UPN, INST-ID, PREV-LRN-ID, NG-BVN, PENCOM-RSA, NHF, IPPIS]
   - code: regulator
     title: Regulators, examination and awarding bodies
     extensible: true
@@ -79,7 +79,7 @@ code_lists:
     values: [illness, medical_appointment, family_emergency, religious_observance, transport, insecurity, weather_flooding, other]
   - code: absence_type
     title: Staff absence types
-    values: [sick, annual_leave, maternity, paternity, study, training, official_duty, compassionate, unauthorised]
+    values: [sick, annual_leave, maternity, paternity, study, training, official_duty, compassionate, unauthorised, casual, examination, sabbatical, leave_of_absence]
   - code: leaving_reason
     title: Leaving reasons
     values: [completed_level, transferred, relocated, financial, dropped_out, deceased, excluded, unknown, employment, marriage]

@@ -1,0 +1,64 @@
+# CEDA change request register entry. Change requests add requirements and pages that do not come from
+# SYN-MFS-002 v2.4. cedagen merges them with the MFS register so that every new entity, metric and page is
+# traceable to an approved source, exactly like MFS content.
+
+id: CR-001
+title: Enterprise Human Resource Management Suite (HRMS) and ecosystem-wide fee-clearance due diligence
+received: 2026-10-14
+status: adopted
+ceda_version: 1.2.0
+summary: >
+  (1) An enterprise HRMS for every employer in the education ecosystem — State Ministry, SUBEB, TESCOM/PPSMB,
+  tertiary institutions and private providers — integrated with the staff register, IAM, coverage, timetable
+  and cover, staff attendance, finance and analytics. (2) A due-diligence check, before admission or transfer,
+  of whether the learner owes fees or other dues to any other institution in the ecosystem, designed to stop
+  "debt hopping" between schools without breaching MFS principle P9 (education is never withheld for money)
+  or the rule that admission refusal is a human-only decision.
+constraints:
+  - "P9 (MFS §21, §20.9): unpaid fees never automatically restrict attendance, teaching, assessment, results or record transfer. The clearance check informs a human admission decision; it never blocks by itself and never delays the transfer of records."
+  - "Admission refusal, staff discipline and fee waivers are human-only decisions (MFS §6, agent autonomy A1)."
+  - "SDAF arrears are pursued only through state revenue processes (MFS §20.9); SDAF is never an obligation in the clearance register."
+  - "Public basic education (primary, JSS) is free under the UBE Act 2004: a learner moving into public basic education is always admitted; any obligation stays visible to the creditor only."
+  - "NDPA 2023: obligation data is restricted, purpose-bound (admission_due_diligence) and visible to the family, who can see every check and dispute any claim."
+
+requirements:
+  # ------------------------------------------------------------------ HRMS
+  - {id: FR-HRM-01, module: HRM, priority: SHALL, phase: P2, text: "Maintain the approved establishment: positions per institution and organisational unit with cadre, grade-level range, staff category, subject specialism and funding line; show filled, vacant and over-establishment counts."}
+  - {id: FR-HRM-02, module: HRM, priority: SHALL, phase: P2, text: "Maintain versioned salary structures (e.g. CONPSS, CONTISS, CONUASS, state and private scales) with grade levels, steps, annual basic and standard allowances."}
+  - {id: FR-HRM-03, module: HRM, priority: SHALL, phase: P2, text: "Hold an employment record per post: appointment type and letter, first and present appointment dates, confirmation, grade level and step, and projected retirement date computed from the statutory rule for the cadre."}
+  - {id: FR-HRM-04, module: HRM, priority: SHALL, phase: P2, text: "Post, transfer and redeploy staff between institutions and employers through an approved posting order; the old post ends, the new post fills a position, role grants follow the posting, and coverage (G9) is re-checked before the effective date."}
+  - {id: FR-HRM-05, module: HRM, priority: SHALL, phase: P2, text: "Configure leave types and entitlements by cadre and grade; keep leave balances per leave year with accrual and carry-over."}
+  - {id: FR-HRM-06, module: HRM, priority: SHALL, phase: P2, text: "Request, approve (requester never approves own leave) and cancel leave; approved leave creates the staff absence that starts the cover process (G8)."}
+  - {id: FR-HRM-07, module: HRM, priority: SHALL, phase: P2, text: "Run promotion exercises and individual promotion cases with eligibility (years on grade, appraisal, examination), board decision and effective date; arrears are calculated by payroll."}
+  - {id: FR-HRM-08, module: HRM, priority: SHALL, phase: P2, text: "Manage employee relations cases (query, disciplinary, grievance, appeal) with due process steps; outcomes are human decisions; allegations about adults stay in the vault and are referenced only."}
+  - {id: FR-HRM-09, module: HRM, priority: SHALL, phase: P2, text: "Record separations (resignation, retirement, death, dismissal, end of contract, transfer out of service) with an exit clearance checklist; access ends automatically and every class-subject is reassigned (G9)."}
+  - {id: FR-HRM-10, module: HRM, priority: SHALL, phase: P2, text: "Maintain payroll elements (earnings, statutory and voluntary deductions, loans) and recurring pay elements per post, and compute payslips from the salary structure and the versioned statutory tables (PAYE, pension, NHF)."}
+  - {id: FR-HRM-11, module: HRM, priority: SHALL, phase: P2, text: "Hold staff bank accounts encrypted, with a lookup token; changes need call-back verification and a second approver."}
+  - {id: FR-HRM-12, module: HRM, priority: SHALL, phase: P2, text: "Detect payroll integrity risks across all employers in the state: shared bank accounts or BVNs, concurrent public posts, pay after separation or retirement date, no attendance for 30 days, failed headcount verification, posts without an approved position; payment is held only by a human decision."}
+  - {id: FR-HRM-13, module: HRM, priority: SHALL, phase: P2, text: "Run headcount (staff verification) exercises per institution, in person or biometric, and feed the result to payroll integrity."}
+  - {id: FR-HRM-14, module: HRM, priority: SHOULD, phase: P3, text: "Provide employee self-service for payslips, leave, personal details change requests and HR letters."}
+  - {id: FR-HRM-15, module: HRM, priority: SHALL, phase: P2, text: "Report establishment fill rate, vacancies by subject, attrition, retirements due in 12 months, leave liability and open integrity flags by scope."}
+  # ------------------------------------------------------------------ fee clearance
+  - {id: FR-FCL-01, module: FCL, priority: SHALL, phase: P2, text: "Publish outstanding learner obligations (fees and other dues) from each institution's ledger to the state clearance register as summaries backed by issued invoices; manual claims need documentary evidence."}
+  - {id: FR-FCL-02, module: FCL, priority: SHALL, phase: P2, text: "Before admitting a learner with a previous enrolment, and before every transfer, run a clearance check across all institutions in the state (and other states through the national exchange)."}
+  - {id: FR-FCL-03, module: FCL, priority: SHALL, phase: P2, text: "Show the admitting institution the creditor, kind, amount, oldest due date and status of each open obligation, and notify each creditor that the learner is moving."}
+  - {id: FR-FCL-04, module: FCL, priority: SHALL, phase: P2, text: "Require a recorded human admission decision when obligations are outstanding (admit, admit with payment plan, defer pending settlement); the check never refuses, delays records transfer or blocks attendance by itself."}
+  - {id: FR-FCL-05, module: FCL, priority: SHALL, phase: P2, text: "Protect learners moving into public basic education and learners the head identifies as SEND, safeguarding, in care or displaced: they are admitted; the obligation remains with the creditor."}
+  - {id: FR-FCL-06, module: FCL, priority: SHALL, phase: P2, text: "Let families and the admitting institution dispute an obligation; a disputed obligation is shown as disputed and resolved by the LGA or state within a set time."}
+  - {id: FR-FCL-07, module: FCL, priority: SHALL, phase: P2, text: "Expire obligations not reconfirmed by the creditor within 90 days and refuse claims older than the limitation period; never include SDAF arrears."}
+  - {id: FR-FCL-08, module: FCL, priority: SHALL, phase: P2, text: "Log every check with purpose and requester; let the family see who checked; flag repeated transfers that leave unsettled obligations for state review."}
+
+pages:
+  - {id: HRM-01, title: Establishment and vacancies, module: Human resources, pattern: Register / list, route: "/hr/establishment", classification: Internal, phase: P2, roles: [HR (HR Officer), HEAD (Head of Institution), STA (State Ministry Administrator), LGA (Local Authority Education Officer)], purpose: "Approved positions per institution and unit with fill status, vacancies by subject and over-establishment."}
+  - {id: HRM-02, title: Employee record, module: Human resources, pattern: Record 360, route: "/hr/employees/{id}", classification: Restricted, phase: P2, roles: [HR (HR Officer), HEAD (Head of Institution)], purpose: "Appointment, grade and step, posting history, leave, appraisal, promotion, cases, pay elements and retirement projection."}
+  - {id: HRM-03, title: Postings and transfers, module: Human resources, pattern: Workflow queue, route: "/hr/postings", classification: Confidential, phase: P2, roles: [HR (HR Officer), STA (State Ministry Administrator), LGA (Local Authority Education Officer)], purpose: "Posting orders between institutions and employers with coverage impact (G9) and approval."}
+  - {id: HRM-04, title: Leave, module: Human resources, pattern: Workflow queue, route: "/hr/leave", classification: Confidential, phase: P2, roles: [HR (HR Officer), HEAD (Head of Institution), TCH (Teacher / Lecturer)], purpose: "Leave requests, approvals, balances and the cover they trigger."}
+  - {id: HRM-05, title: Promotions, module: Human resources, pattern: Workflow queue, route: "/hr/promotions", classification: Confidential, phase: P2, roles: [HR (HR Officer), STA (State Ministry Administrator)], purpose: "Promotion exercises, eligibility, board decisions and effective dates."}
+  - {id: HRM-06, title: Employee relations, module: Human resources, pattern: Case management, route: "/hr/cases", classification: Restricted, phase: P2, roles: [HR (HR Officer), HEAD (Head of Institution)], purpose: "Queries, disciplinary and grievance cases with due-process steps and human outcomes."}
+  - {id: HRM-07, title: Separations and exit clearance, module: Human resources, pattern: Workflow queue, route: "/hr/separations", classification: Confidential, phase: P2, roles: [HR (HR Officer), HEAD (Head of Institution)], purpose: "Exits with clearance checklist, access removal and reassignment of classes."}
+  - {id: HRM-08, title: Payroll integrity, module: Human resources, pattern: Exception queue, route: "/hr/integrity", classification: Restricted, phase: P2, roles: [HR (HR Officer), PAYR (Payroll Officer), STA (State Ministry Administrator), INTEG (Integrity Investigator)], purpose: "Ghost-worker and double-dipping flags across employers, headcount results and pay holds decided by a person."}
+  - {id: HRM-09, title: Salary structures, module: Human resources, pattern: Settings / configuration, route: "/hr/salary-structures", classification: Internal, phase: P2, roles: [HR (HR Officer), PAYR (Payroll Officer), STA (State Ministry Administrator)], purpose: "Versioned salary scales, grade levels, steps and standard allowances."}
+  - {id: HRM-10, title: HR dashboard, module: Human resources, pattern: Dashboard / command centre, route: "/hr", classification: Internal, phase: P2, roles: [HR (HR Officer), STA (State Ministry Administrator), LGA (Local Authority Education Officer), HEAD (Head of Institution)], purpose: "Establishment fill, vacancies by subject, attrition, retirements due, leave liability and integrity flags."}
+  - {id: FCL-01, title: Fee clearance check, module: Fee clearance, pattern: Workspace, route: "/admissions/clearance", classification: Restricted, phase: P2, roles: [HEAD (Head of Institution), REG (Registrar / Admissions Officer)], purpose: "Run the due-diligence check for an incoming learner, see open obligations across the ecosystem and record the admission decision."}
+  - {id: FCL-02, title: Obligations register, module: Fee clearance, pattern: Register / list, route: "/finance/obligations", classification: Restricted, phase: P2, roles: [FINO (Finance Officer / Bursar), HEAD (Head of Institution)], purpose: "Obligations this institution has published, their status, checks made against them and disputes."}
+  - {id: FCL-03, title: Clearance disputes, module: Fee clearance, pattern: Case management, route: "/clearance/disputes", classification: Restricted, phase: P2, roles: [LGA (Local Authority Education Officer), STA (State Ministry Administrator)], purpose: "Disputed obligations awaiting LGA or state resolution within the service level."}

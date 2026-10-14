@@ -1,6 +1,6 @@
 # CEDA data dictionary
 
-Generated from the CEDA model (SYN-CEDA-001 v1.1.0). Do not edit by hand.
+Generated from the CEDA model (SYN-CEDA-001 v1.2.0). Do not edit by hand.
 
 | Domain | Code | Module (Django app) | Default zone | Entities |
 |---|---|---|---|---|
@@ -34,4 +34,6 @@ Generated from the CEDA model (SYN-CEDA-001 v1.1.0). Do not edit by hand.
 | [Reporting, semantic layer registry, government returns, scheduled reports and lineage](28_reporting.md) | RPT | `reporting` | registry | 6 |
 | [Integration, data exchange, imports, webhooks, idempotency and data-subject requests](29_integration.md) | INTG | `integration` | registry | 16 |
 | [Audit trail, chain anchors and the transactional outbox](30_audit.md) | AUD | `core` | ops | 20 |
+| [Enterprise Human Resource Management Suite — establishment, employment, postings, leave, promotion, employee relations, separation, payroll elements and payroll integrity](31_hrms.md) | HRM | `hr` | registry | 18 |
+| [Fee-clearance due diligence — learner obligations register, clearance checks, admission decisions and disputes](32_fee_clearance.md) | FCL | `clearance` | registry | 4 |
 | [Analytics warehouse — conformed dimensions, facts, aggregates, live KPI read model and feature store](90_warehouse.md) | DW | `analytics` | dw | 38 |

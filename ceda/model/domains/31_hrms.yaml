@@ -1,0 +1,485 @@
+domain: hrms
+code: HRM
+title: Enterprise Human Resource Management Suite — establishment, employment, postings, leave, promotion, employee relations, separation, payroll elements and payroll integrity
+module: hr
+zone: registry
+retention: RS-STF-FILE
+summary: >
+  The enterprise HRMS for every employer in the education ecosystem — State Ministry, SUBEB, TESCOM/PPSMB,
+  tertiary institutions and private providers (change request CR-001). It extends the staff register of domain
+  STF rather than duplicating it: one staff master and one staff_post per post remain in STF; HRMS adds the
+  approved establishment (positions), salary structures and cadres, the employment record of each post,
+  posting orders that move staff between institutions and employers, promotions, separations, bank accounts
+  and state-wide payroll integrity in the registry (the state HR hub), because deployment, ghost-worker and
+  double-employment detection must see every employer at once. Leave, employee relations and payroll
+  elements are operational and live in the employer's ops zone; payroll runs and payslips stay in STF.
+  Integration: postings and separations drive IAM grants (role grants follow the posting; access ends at
+  separation), coverage rules G8/G9/G11, cover, staff attendance, finance journals and the semantic layer.
+
+entities:
+  # ------------------------------------------------------------------ structure (registry)
+  salary_structure:
+    title: Versioned salary structure (CONPSS, CONTISS, CONUASS, CONTEDISS, state teacher scales, private scales)
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: ceda
+    retention: RS-CONFIG
+    reqs: [FR-HRM-02]
+    pages: [HRM-09]
+    attrs:
+      - "code: code(20)! | e.g. CONPSS, CONTISS, AB-TSS"
+      - "title: title!"
+      - "employer_scope_id: ref(scope_node) | NULL = available to every employer in scope"
+      - "currency: currency!"
+      - "effective_from: date!"
+      - "version: int_u!"
+      - "approval_instrument: str(200) | Circular or board resolution"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, code, version]]
+
+  salary_scale_point:
+    title: Grade level and step of a salary structure version with annual basic and standard allowances
+    kind: reference
+    class: internal
+    history: append
+    origin: ceda
+    retention: RS-CONFIG
+    scope_note: Inherits the salary structure's scope; a new structure version carries a new set of points.
+    reqs: [FR-HRM-02, FR-HRM-10]
+    pages: [HRM-09]
+    attrs:
+      - "structure_id: ref(salary_structure)!"
+      - "grade_level: smallint!"
+      - "step: smallint!"
+      - "annual_basic: money!"
+      - "currency: currency!"
+      - "allowances: json | Standard allowances by element code, as amount or % of basic (housing, transport, rural posting …)"
+    uq: [[structure_id, grade_level, step]]
+    checks:
+      positive: "annual_basic_minor > 0 AND grade_level BETWEEN 1 AND 17 AND step BETWEEN 1 AND 15"
+
+  cadre:
+    title: Career cadre with progression and statutory retirement rule (e.g. Teacher, Education Officer, Principal, Lecturer)
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-CONFIG
+    reqs: [FR-HRM-01, FR-HRM-03, FR-HRM-07]
+    pages: [HRM-09, HRM-05]
+    attrs:
+      - "code: code(20)!"
+      - "title: title!"
+      - "staff_category: cl(staff_category)!"
+      - "is_teaching: bool!"
+      - "salary_structure_code: code(20)!"
+      - "entry_grade_level: smallint!"
+      - "max_grade_level: smallint!"
+      - "years_per_promotion: smallint! default=3"
+      - "retirement_age: smallint! | 65 for teachers (Harmonised Retirement Age for Teachers in Nigeria Act 2022), 60 otherwise"
+      - "max_years_service: smallint! | 40 for teachers, 35 otherwise"
+      - "status: enum(record_status)!"
+    uq: [[scope_node_id, code]]
+    checks:
+      grades: "entry_grade_level <= max_grade_level"
+
+  position:
+    title: Approved establishment position (one seat) at an institution, unit or office, with cadre, grade range and specialism
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-INS-PERM
+    reqs: [FR-HRM-01, FR-HRM-15]
+    pages: [HRM-01, HRM-10, HRM-03]
+    events: [HR.POSITION_CHANGED]
+    notes: >
+      A staff post fills a position through its employment record. Vacant positions with a subject specialism
+      feed the vacancy workflow (STF vacancy) and the teacher demand–supply metric.
+    attrs:
+      - "position_code: code(32)! uq | POS-<institution code>-NNNN"
+      - "institution_id: ref(institution) | NULL for ministry, board or LGA office positions"
+      - "org_unit_id: ref(org_unit)"
+      - "employer_scope_id: ref(scope_node)! | SUBEB, TESCOM, ministry, tertiary institution or private provider"
+      - "title: title!"
+      - "cadre_id: ref(cadre)!"
+      - "staff_category: cl(staff_category)!"
+      - "grade_level_min: smallint!"
+      - "grade_level_max: smallint!"
+      - "subject_id: ref(subject) | Specialism for teaching positions"
+      - "education_levels: cls(education_level)"
+      - "funding: enum(position_funding)!"
+      - "budget_line: code(40)"
+      - "status: enum(position_status)!"
+    ix: [[institution_id, status], [employer_scope_id], [subject_id]]
+    checks:
+      grades: "grade_level_min <= grade_level_max"
+
+  employment_record:
+    title: Employment record of a staff post — appointment, confirmation, grade and step, position held and projected retirement
+    kind: master
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-HRM-03, FR-HRM-07, FR-HRM-15]
+    pages: [HRM-02, HRM-10]
+    attrs:
+      - "staff_post_id: ref(staff_post)! uq"
+      - "staff_id: ref(staff)!"
+      - "position_id: ref(position)"
+      - "cadre_id: ref(cadre)!"
+      - "employer_scope_id: ref(scope_node)!"
+      - "appointment_type: enum(appointment_type)!"
+      - "appointment_letter_ref: code(64)"
+      - "first_appointment_on: date! | Date of first appointment into the service"
+      - "present_appointment_on: date!"
+      - "confirmation_due_on: date"
+      - "confirmed_on: date"
+      - "salary_structure_id: ref(salary_structure)!"
+      - "grade_level: smallint!"
+      - "step: smallint!"
+      - "last_promotion_on: date"
+      - "retirement_due_on: date | Earlier of retirement age and maximum years of service (cadre rule)"
+      - "retirement_basis: enum(retirement_basis)"
+      - "status: enum(employment_status)!"
+      - "seat_key: uuid derived | position_id while the post is active (one active holder per position)"
+    ix: [[staff_id], [position_id], [retirement_due_on], [employer_scope_id, status]]
+    generated:
+      seat_key: "IF(`status` IN ('probation','confirmed','suspended','seconded'), `position_id`, NULL)"
+    uq: [[seat_key]]
+
+  staff_posting:
+    title: Posting order — first posting, transfer, redeployment or secondment of a staff member between institutions and employers
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-HRM-04]
+    pages: [HRM-03, HRM-02]
+    events: [HR.POSTING_APPROVED, HR.POSTING_EFFECTIVE]
+    notes: >
+      Effective postings end the old staff_post, create the new one in the receiving position, move the staff
+      member's role grants to the new institution scope and re-run coverage (G9 before, G2/G3 after).
+    attrs:
+      - "order_number: code(40)! uq"
+      - "staff_id: ref(staff)!"
+      - "from_staff_post_id: ref(staff_post)"
+      - "to_position_id: ref(position)!"
+      - "to_institution_id: ref(institution)"
+      - "posting_kind: enum(posting_kind)!"
+      - "reason: text!"
+      - "effective_on: date!"
+      - "coverage_impact: json | Class-subjects left without a teacher of record (G9) at the sending institution"
+      - "requested_by: ref(app_user)!"
+      - "approved_by: ref(app_user)"
+      - "workflow_instance_id: ref(workflow_instance)"
+      - "new_staff_post_id: ref(staff_post)"
+      - "status: enum(posting_status)!"
+    ix: [[staff_id, status], [to_position_id], [effective_on]]
+    checks:
+      four_eyes: "approved_by IS NULL OR approved_by <> requested_by"
+
+  promotion_case:
+    title: Promotion case of a staff member in a promotion exercise (eligibility, examination, board decision, effective date)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-HRM-07]
+    pages: [HRM-05, HRM-02]
+    events: [HR.PROMOTION_DECIDED]
+    attrs:
+      - "staff_id: ref(staff)!"
+      - "employment_record_id: ref(employment_record)!"
+      - "exercise_label: code(20)! | e.g. 2026-PROMO"
+      - "from_grade_level: smallint!"
+      - "from_step: smallint!"
+      - "to_grade_level: smallint!"
+      - "to_step: smallint!"
+      - "eligibility: json! | Years on grade, appraisal ratings, examination, discipline status — each with pass/fail"
+      - "exam_score: pct"
+      - "board_decision: enum(board_decision)"
+      - "decided_by: ref(app_user) | Human decision (board secretary)"
+      - "effective_on: date"
+      - "status: enum(request_status)!"
+    uq: [[staff_id, exercise_label]]
+    checks:
+      upward: "to_grade_level > from_grade_level OR (to_grade_level = from_grade_level AND to_step > from_step)"
+
+  separation:
+    title: Separation from a post (resignation, retirement, death, dismissal, end of contract, transfer of service) with exit clearance
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-HRM-09]
+    pages: [HRM-07, HRM-02]
+    events: [HR.SEPARATION_RECORDED]
+    attrs:
+      - "staff_id: ref(staff)!"
+      - "staff_post_id: ref(staff_post)!"
+      - "separation_kind: enum(separation_kind)!"
+      - "notice_on: date"
+      - "effective_on: date!"
+      - "exit_checklist: json! | Handover of classes (G9), assets, ID card, final pay, pension notification, access removal"
+      - "pension_notified_on: date"
+      - "recorded_by: ref(app_user)!"
+      - "status: enum(request_status)!"
+    ix: [[staff_id], [effective_on]]
+
+  staff_bank_account:
+    title: Staff salary bank account (encrypted; lookup token for duplicate detection; dual approval and call-back on change)
+    kind: master
+    class: restricted
+    history: lifecycle
+    origin: ceda
+    retention: RS-FIN
+    scope_note: Visible to payroll officers of the staff member's employers and to the staff member.
+    reqs: [FR-HRM-11, FR-HRM-12]
+    pages: [HRM-02, HRM-08]
+    events: [HR.BANK_ACCOUNT_CHANGED]
+    attrs:
+      - "staff_id: ref(staff)!"
+      - "bank_code: code(10)! | CBN bank code"
+      - "account_number: secret! lookup mask4 restricted | NUBAN — envelope-encrypted"
+      - "account_name: name! pii"
+      - "is_primary: bool! default=true"
+      - "verified_via: enum(bank_verification)"
+      - "verified_at: ts"
+      - "requested_by: ref(app_user)!"
+      - "approved_by: ref(app_user)"
+      - "status: enum(record_status)!"
+    ix: [[staff_id], [account_number_hmac]]
+    checks:
+      four_eyes: "approved_by IS NULL OR approved_by <> requested_by"
+
+  hr_integrity_flag:
+    title: Payroll integrity flag across all employers in the state (ghost worker, double employment, pay after exit …)
+    kind: queue
+    class: restricted
+    history: lifecycle
+    origin: ceda
+    retention: RS-INTEL
+    scope_note: State payroll integrity unit and the employer's HR; payment holds are human decisions.
+    reqs: [FR-HRM-12, FR-HRM-15]
+    pages: [HRM-08, HRM-10]
+    events: [HR.INTEGRITY_FLAG_RAISED, HR.PAYROLL_HOLD_DECIDED]
+    attrs:
+      - "staff_id: ref(staff)!"
+      - "employer_scope_id: ref(scope_node)"
+      - "flag_kind: enum(hr_integrity_kind)!"
+      - "evidence: json! | Matching records, dates and sources — never special-category data"
+      - "detected_at: ts!"
+      - "run_label: code(40)"
+      - "payroll_hold: bool! default=false | Set only by a person (A1)"
+      - "decided_by: ref(app_user)"
+      - "decision_reason: text"
+      - "status: enum(queue_status)!"
+      - "open_key: code(120) derived | kind:staff while open (one open flag per kind per staff member)"
+    generated:
+      open_key: "IF(`status` IN ('open','in_progress'), CONCAT(`flag_kind`, ':', HEX(`staff_id`)), NULL)"
+    uq: [[open_key]]
+    ix: [[employer_scope_id, status], [flag_kind]]
+
+  headcount_exercise:
+    title: Staff headcount (verification) exercise at an institution — in person, biometric or video
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-OPS-7
+    reqs: [FR-HRM-13]
+    pages: [HRM-08]
+    events: [HR.HEADCOUNT_COMPLETED]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "label: code(40)! | e.g. 2026-Q4"
+      - "method: enum(headcount_method)!"
+      - "starts_on: date!"
+      - "ends_on: date!"
+      - "conducted_by: ref(app_user)!"
+      - "status: enum(plan_status)!"
+    uq: [[institution_id, label]]
+
+  headcount_result:
+    title: Outcome for one staff member in a headcount exercise
+    kind: event
+    class: confidential
+    history: append
+    origin: ceda
+    retention: RS-OPS-7
+    scope_note: Inherits the exercise's scope.
+    reqs: [FR-HRM-13, FR-HRM-12]
+    pages: [HRM-08]
+    attrs:
+      - "exercise_id: ref(headcount_exercise)!"
+      - "staff_id: ref(staff)!"
+      - "staff_post_id: ref(staff_post)"
+      - "outcome: enum(headcount_outcome)!"
+      - "verified_at: ts!"
+      - "evidence: json | Biometric match score, document seen, witness"
+      - "verifier_id: ref(app_user)!"
+    uq: [[exercise_id, staff_id]]
+
+  # ------------------------------------------------------------------ employer operations (ops)
+  leave_policy:
+    title: Leave entitlement rule by leave type, cadre and grade-level band (versioned)
+    kind: config
+    zone: ops
+    class: internal
+    history: versioned
+    scope: owned
+    origin: ceda
+    retention: RS-CONFIG
+    reqs: [FR-HRM-05]
+    pages: [HRM-04]
+    attrs:
+      - "code: code(40)!"
+      - "leave_type: cl(absence_type)!"
+      - "cadre_code: code(20) | NULL = every cadre"
+      - "grade_level_min: smallint! default=1"
+      - "grade_level_max: smallint! default=17"
+      - "days_per_year: dec(6,1)!"
+      - "day_basis: enum(leave_day_basis)!"
+      - "carry_over_max: dec(6,1)! default=0"
+      - "requires_document: bool! default=false"
+      - "is_paid: bool! default=true"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, code, version]]
+
+  leave_balance:
+    title: Leave balance per staff member, leave type and leave year (the database refuses over-booking)
+    kind: projection
+    zone: ops
+    class: confidential
+    history: none
+    origin: ceda
+    scope_note: "Derived: the staff member's posts at this employer."
+    reqs: [FR-HRM-05, FR-HRM-06, FR-HRM-15]
+    pages: [HRM-04, HRM-02]
+    attrs:
+      - "staff_id: ref(staff)!"
+      - "leave_type: cl(absence_type)!"
+      - "leave_year: smallint!"
+      - "entitled: dec(6,1)!"
+      - "carried_over: dec(6,1)! default=0"
+      - "taken: dec(6,1)! default=0"
+      - "pending: dec(6,1)! default=0"
+    uq: [[staff_id, leave_type, leave_year]]
+    checks:
+      within_entitlement: "taken >= 0 AND pending >= 0 AND taken + pending <= entitled + carried_over"
+
+  leave_request:
+    title: Leave request with approval; approval creates the staff absence that starts cover (G8)
+    kind: transaction
+    zone: ops
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-STF-FILE
+    reqs: [FR-HRM-06, FR-HRM-14]
+    pages: [HRM-04]
+    events: [HR.LEAVE_APPROVED]
+    attrs:
+      - "staff_id: ref(staff)!"
+      - "staff_post_id: ref(staff_post)"
+      - "leave_type: cl(absence_type)!"
+      - "starts_on: date!"
+      - "ends_on: date!"
+      - "days: dec(6,1)!"
+      - "note: str(500) | No medical detail — that goes to staff_absence.reason_note (sealed)"
+      - "requested_by: uuid! | app_user (registry)"
+      - "approver_id: uuid"
+      - "decided_at: ts"
+      - "relief_staff_id: ref(staff)"
+      - "absence_id: ref(staff_absence)"
+      - "status: enum(absence_status)!"
+    ix: [[staff_id, starts_on], [status]]
+    checks:
+      window: "ends_on >= starts_on"
+      four_eyes: "approver_id IS NULL OR approver_id <> requested_by"
+
+  employee_relations_case:
+    title: Employee relations case — query, disciplinary, grievance, appeal or petition with due-process steps and a human outcome
+    kind: transaction
+    zone: ops
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-STF-FILE
+    reqs: [FR-HRM-08]
+    pages: [HRM-06, HRM-02]
+    notes: Allegations about adults that concern children stay in the vault (SAF allegation); this case holds a reference only.
+    attrs:
+      - "case_number: code(32)! uq"
+      - "staff_id: ref(staff)!"
+      - "case_kind: enum(er_case_kind)!"
+      - "summary: text! | No special-category content"
+      - "vault_allegation_ref: uuid | Allegation in the vault (reference only)"
+      - "raised_by: uuid!"
+      - "raised_on: date!"
+      - "response_due_on: date"
+      - "steps: json! | Due-process timeline: query issued, response, panel, hearing, decision, appeal window"
+      - "outcome: enum(er_outcome)"
+      - "outcome_decided_by: uuid | Human decision (A1)"
+      - "outcome_on: date"
+      - "status: enum(case_status)!"
+    ix: [[staff_id, status]]
+
+  pay_element:
+    title: Payroll element — earning, allowance, statutory or voluntary deduction, loan repayment or employer contribution (versioned)
+    kind: config
+    zone: ops
+    class: internal
+    history: versioned
+    scope: owned
+    origin: ceda
+    retention: RS-FIN
+    reqs: [FR-HRM-10]
+    pages: [HRM-09]
+    attrs:
+      - "code: code(20)! | BASIC, HOUSING, TRANSPORT, RURAL, PAYE, PENSION_EE, PENSION_ER, NHF, UNION, COOP, LOAN …"
+      - "title: title!"
+      - "element_kind: enum(pay_element_kind)!"
+      - "calc_method: enum(pay_calc_method)!"
+      - "rate: dec(9,4) | Percentage or fixed rate per method"
+      - "table_kind: enum(payroll_table_kind) | Statutory table used (PAYE, pension, NHF)"
+      - "is_taxable: bool! default=true"
+      - "is_pensionable: bool! default=false"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, code, version]]
+
+  staff_pay_element:
+    title: Recurring pay element of a staff post (allowance, voluntary deduction, loan with balance), effective-dated
+    kind: link
+    zone: ops
+    class: restricted
+    history: effective
+    origin: ceda
+    retention: RS-FIN
+    scope_note: Visible to payroll officers of the employer and the staff member.
+    reqs: [FR-HRM-10]
+    pages: [HRM-02]
+    attrs:
+      - "staff_post_id: ref(staff_post)!"
+      - "element_code: code(20)!"
+      - "amount: money | Monthly amount for fixed elements"
+      - "rate: dec(9,4)"
+      - "currency: currency!"
+      - "loan_balance: money"
+      - "reference: code(64)"
+      - "approved_by: uuid!"
+    ix: [[staff_post_id]]

@@ -275,3 +275,76 @@ def coverage(request: HttpRequest) -> HttpResponse:
         "coverage.html",
         _ctx(request, gaps=gaps, insts=insts, today=dt.date.today(), page=pages.page("CUR-101")),
     )
+
+
+@require_http_methods(["GET", "POST"])
+@page("FCL-01")
+def clearance(request: HttpRequest) -> HttpResponse:
+    """Admissions desk: run the fee-clearance check for an incoming learner and record the human decision."""
+    from syntegra.clearance import services as fcl
+    from syntegra.clearance.models import ClearanceCheck, ClearanceDecision
+    from syntegra.institutions.models import Institution
+    from syntegra.learners.models import Learner
+
+    c = context.require()
+    if not c.has("clearance:check"):
+        raise Forbidden()
+    institutions = list(Institution.objects.in_scope().filter(status="active").order_by("name")[:50])
+    chk = decision = learner = None
+    message = None
+    if request.method == "POST" and request.POST.get("check_id"):
+        chk = ClearanceCheck.objects.get(pk=uuid.UUID(request.POST["check_id"]))
+        decision = fcl.decide(
+            chk.id,
+            fcl.DecisionInput(
+                decision=request.POST.get("decision", ""),
+                reason=request.POST.get("reason", ""),
+                protected_reason=request.POST.get("protected_reason") or None,
+                payment_plan_ref=request.POST.get("payment_plan_ref") or None,
+            ),
+        )
+        learner = Learner.objects.get(pk=chk.learner_id)
+        message = "Decision recorded. Continue the admission or transfer."
+    elif request.method == "POST":
+        learner = Learner.objects.filter(global_learner_id=request.POST.get("glid", "").strip().upper()).first()
+        if learner is None:
+            message = "No learner with that Global Learner ID in this state."
+        else:
+            chk = fcl.check(
+                learner.id,
+                uuid.UUID(request.POST["institution_id"]),
+                purpose=request.POST.get("purpose", "admission"),
+                education_level=request.POST.get("education_level", ""),
+            )
+            decision = ClearanceDecision.objects.filter(check_id=chk.id).first()
+    return render(
+        request,
+        "clearance.html",
+        _ctx(
+            request,
+            institutions=institutions,
+            chk=chk,
+            decision=decision,
+            learner=learner,
+            message=message,
+            page=pages.page("FCL-01"),
+        ),
+    )
+
+
+@page("HRM-01")
+def establishment(request: HttpRequest) -> HttpResponse:
+    from syntegra.hr import establishment as est
+    from syntegra.institutions.models import Institution
+
+    c = context.require()
+    if not c.has("hr:view"):
+        raise Forbidden()
+    institutions = list(Institution.objects.in_scope().filter(status="active").order_by("name")[:200])
+    chosen = request.GET.get("institution_id") or (str(institutions[0].id) if institutions else None)
+    data = est.establishment(uuid.UUID(chosen)) if chosen else None
+    return render(
+        request,
+        "establishment.html",
+        _ctx(request, institutions=institutions, chosen=chosen, data=data, page=pages.page("HRM-01")),
+    )

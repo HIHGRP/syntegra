@@ -70,9 +70,14 @@ class Command:
         return obj
 
     # -------------------------------------------------------------- writes
-    def add(self, obj: M) -> M:
+    def add(self, obj: M, *, cross_scope_basis: str | None = None) -> M:
+        """Insert ``obj``. A record owned by a scope outside the caller's subtree is refused unless the service
+        states the authorisation basis (``cross_scope_basis``), which is written to the audit event."""
         if "scope_node_id" in getattr(obj, "ceda_fields", {}) and getattr(obj, "scope_node_id", None) is not None:
-            authz.require_scope(obj.scope_node_id, self.ctx)  # type: ignore[attr-defined]
+            if cross_scope_basis is None:
+                authz.require_scope(obj.scope_node_id, self.ctx)  # type: ignore[attr-defined]
+            else:
+                self.note("cross_scope_basis", None, cross_scope_basis)
         obj.save(using=self.alias)
         self._capture(obj, None)
         if self.record_id is None:

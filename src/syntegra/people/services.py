@@ -51,6 +51,33 @@ def create_staff(
         return s, p
 
 
+def create_staff_master(
+    given: str,
+    family: str,
+    *,
+    date_of_birth: dt.date | None = None,
+    sex: str | None = None,
+    user_id: uuid.UUID | None = None,
+    email: str | None = None,
+) -> Staff:
+    """Staff master only (one person, many posts); HR appointment creates the post (hr.establishment.appoint)."""
+    with uow.command("registry", "staff:manage", action="create", record_kind="staff") as cmd:
+        serial = Staff.objects.count() + 1
+        return cmd.add(
+            Staff(
+                staff_number=format_staff_number(serial),
+                given_name=given,
+                family_name=family,
+                name_phonetic=name_phonetic(given, family),
+                date_of_birth=date_of_birth,
+                sex=sex,
+                email=email,
+                user_id=user_id,
+                status="onboarding",
+            )
+        )
+
+
 def add_authorisation(
     staff_id: uuid.UUID,
     subject_id: uuid.UUID,

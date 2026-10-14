@@ -11,4 +11,6 @@ urlpatterns = [
     path("registers/class/<uuid:class_id>", views.register, name="register"),
     path("learners/<uuid:learner_id>", views.learner, name="learner"),
     path("coverage", views.coverage, name="coverage"),
+    path("admissions/clearance", views.clearance, name="clearance"),
+    path("hr/establishment", views.establishment, name="establishment"),
 ]

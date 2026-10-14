@@ -17,6 +17,7 @@ from typing import Any
 from django.db import IntegrityError, connections, transaction
 from django.db.models import Q, QuerySet
 
+from syntegra.clearance.services import DecisionInput, gate
 from syntegra.core import authz, context, crypto, uow
 from syntegra.core.errors import ConflictError, HardValidation, NotFound, SoftWarning
 from syntegra.core.ids import format_glid
@@ -159,7 +160,9 @@ def _validate(data: RegisterLearner) -> None:
         raise HardValidation("LRN-VALIDATION", "Some fields need attention", errors=errs)
 
 
-def register(data: RegisterLearner, *, override_reason: str | None = None) -> Registration:
+def register(
+    data: RegisterLearner, *, override_reason: str | None = None, clearance: DecisionInput | None = None
+) -> Registration:
     ctx = context.require()
     authz.require("learner:register", ctx)
     if data.nin:
@@ -187,6 +190,9 @@ def register(data: RegisterLearner, *, override_reason: str | None = None) -> Re
             for lr, r in found[:3]
         ]
         raise err
+    if top and top[1].band == "auto_link" and _left_elsewhere(top[0].id, inst.id):
+        # re-admission of a known learner who was enrolled elsewhere: fee-clearance due diligence (CR-001)
+        gate(top[0].id, inst.id, purpose="admission", education_level=data.education_level, decision=clearance)
     with uow.command("registry", None, action="register", record_kind="learner", reason=override_reason) as cmd:
         if top and top[1].band == "auto_link":
             learner = top[0]
@@ -304,8 +310,14 @@ def transfer(
     *,
     effective_on: dt.date | None = None,
     education_level: str | None = None,
+    clearance: DecisionInput | None = None,
 ) -> LearnerTransfer:
-    """Move a learner's active primary enrolment to another institution in the state (FR-LRN-07)."""
+    """Move a learner's active primary enrolment to another institution in the state (FR-LRN-07).
+
+    The receiving institution's fee-clearance check runs first (CR-001). It never blocks the records
+    transfer or the learner's attendance at the current school (P9); outstanding obligations need a recorded
+    human admission decision before the new enrolment is created.
+    """
     ctx = context.require()
     authz.require("enrolment:transfer", ctx)
     effective_on = effective_on or dt.date.today()
@@ -313,6 +325,13 @@ def transfer(
     if to_inst is None:
         raise NotFound("institution", to_institution_id)
     authz.require_scope(to_inst.scope_node_id, ctx)  # the receiving institution requests the transfer
+    level = education_level or (
+        Enrolment.objects.filter(learner_id=learner_id, status="active", is_primary=True)
+        .values_list("education_level", flat=True)
+        .first()
+        or ""
+    )
+    gate(learner_id, to_inst.id, purpose="transfer", education_level=level, decision=clearance)
     with uow.command("registry", None, action="transfer", record_kind="learner_transfer") as cmd:
         learner = cmd.lock(Learner, learner_id)
         cur = (
@@ -360,6 +379,15 @@ def transfer(
             payload={"learner_id": learner.id, "learner_transfer_id": t.id, "to_institution_id": to_inst.id},
         )
         return t
+
+
+def _left_elsewhere(learner_id: uuid.UUID, institution_id: uuid.UUID) -> bool:
+    """Previously enrolled at another institution and not actively enrolled anywhere now."""
+    enrs = Enrolment.objects.filter(learner_id=learner_id)
+    return (
+        enrs.exclude(institution_id=institution_id).exists()
+        and not enrs.filter(status="active", is_primary=True).exists()
+    )
 
 
 def enrolments(learner_id: uuid.UUID) -> list[Enrolment]:

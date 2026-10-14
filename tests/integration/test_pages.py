@@ -37,3 +37,50 @@ def test_head_signs_in_takes_register_and_opens_learner_360(world, as_user, clie
     assert r.status_code == 200 and b"Attendance (90 days)" in r.content and b"100.0%" in r.content
     assert client.get("/pages?q=ATT-01").status_code == 200
     assert client.get("/coverage").status_code == 200
+
+
+def test_clearance_desk_and_establishment_pages(world, as_user, client) -> None:  # type: ignore[no-untyped-def]
+    from syntegra.core.tenancy import SEED_STATE_TENANT
+    from syntegra.institutions import services as inst
+    from tests.conftest import make_user
+    from tests.integration.test_fee_clearance import enrol_at, owe
+
+    with as_user("STA", world.state_scope):
+        private = inst.register(
+            inst.RegisterInstitution(
+                name="Lighthouse Academy",
+                category="secondary",
+                ownership="private",
+                lga_scope_id=world.lga_scope,
+                address={},
+                levels=["sss_1"],
+                operating_tenant_id=SEED_STATE_TENANT,
+            )
+        )
+    lrn = enrol_at(world, as_user, private, "Tobenna")
+    owe(world, as_user, private, lrn, 75_000)
+    u, _ = make_user(world, "HEAD", world.institution.scope_node_id)
+    client.handler.enforce_csrf_checks = False
+    assert client.post("/sign-in", {"username": u.username, "password": "correct-horse-battery"}).status_code == 302
+    r = client.post(
+        "/admissions/clearance",
+        {
+            "glid": lrn.global_learner_id,
+            "institution_id": str(world.institution.id),
+            "education_level": "SSS1",
+            "purpose": "transfer",
+        },
+    )
+    assert r.status_code == 200 and b"Outstanding" in r.content and b"Lighthouse Academy" in r.content
+    check_id = re.search(rb'name="check_id" value="([0-9a-f-]+)"', r.content).group(1).decode()
+    r = client.post(
+        "/admissions/clearance",
+        {
+            "check_id": check_id,
+            "decision": "admit_with_payment_plan",
+            "payment_plan_ref": "LH-PP-7",
+            "reason": "Plan agreed with Lighthouse",
+        },
+    )
+    assert r.status_code == 200 and b"Decision recorded" in r.content
+    assert client.get("/hr/establishment").status_code == 200  # heads hold hr:view

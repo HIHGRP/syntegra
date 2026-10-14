@@ -107,6 +107,7 @@ type = "forbidden"
 source_modules = [
   "syntegra.learners.domain", "syntegra.attendance.domain", "syntegra.certificates.domain",
   "syntegra.curriculum.domain", "syntegra.financing.domain", "syntegra.institutions.domain",
+  "syntegra.hr.domain", "syntegra.clearance.domain",
 ]
 forbidden_modules = ["django", "rest_framework"]
 allow_indirect_imports = true
@@ -119,11 +120,18 @@ forbidden_modules = ["syntegra.finance", "syntegra.financing", "syntegra.platfor
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
+name = "Fee clearance sees published obligation summaries only, never ledgers or SDAF (CR-001, P9)"
+type = "forbidden"
+source_modules = ["syntegra.clearance"]
+forbidden_modules = ["syntegra.finance", "syntegra.financing"]
+
+[[tool.importlinter.contracts]]
 name = "Only the safeguarding and success modules touch the special-category vault models"
 type = "forbidden"
 source_modules = [
   "syntegra.learners", "syntegra.attendance", "syntegra.assessment", "syntegra.certificates", "syntegra.lms",
   "syntegra.comms", "syntegra.finance", "syntegra.financing", "syntegra.reporting", "syntegra.analytics",
+  "syntegra.hr", "syntegra.clearance",
 ]
 forbidden_modules = ["syntegra.safeguarding.models"]
 allow_indirect_imports = true

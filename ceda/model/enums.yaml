@@ -359,3 +359,37 @@ enums:
   exchange_dataset: {title: Exchange dataset, values: [learner_record, transcript, results, institution, staff, funding, attendance, outcomes]}
   import_template: {title: Import template, values: [learners, guardians, staff, classes, enrolments, marks, balances, assessments, curriculum]}
   dsr_kind: {title: Data-subject request kind, values: [access, rectification, erasure, restriction, portability, objection]}
+
+  # ---------------------------------------------------------------- HRMS (CR-001)
+  position_funding: {title: Position funding, values: [funded, unfunded, donor_funded, privately_funded]}
+  position_status: {title: Establishment position status, values: [proposed, approved, frozen, abolished]}
+  appointment_type: {title: Appointment type, values: [first_appointment, transfer_of_service, secondment, contract, nysc, volunteer, private_hire]}
+  employment_status: {title: Employment status of a post, values: [probation, confirmed, suspended, seconded, separated]}
+  retirement_basis: {title: Retirement basis, values: [age, length_of_service, contract_end, none]}
+  posting_kind: {title: Posting kind, values: [first_posting, transfer, redeployment, secondment, promotion_posting, rationalisation, on_request, disciplinary]}
+  posting_status: {title: Posting order status, values: [draft, submitted, approved, effective, rejected, cancelled]}
+  board_decision: {title: Promotion board decision, values: [approved, not_approved, deferred]}
+  separation_kind: {title: Separation kind, values: [resignation, retirement_statutory, retirement_voluntary, death, dismissal, termination, end_of_contract, transfer_of_service, abandonment]}
+  bank_verification: {title: Bank account verification channel, values: [call_back, nibss_name_enquiry, document, none]}
+  hr_integrity_kind: {title: Payroll integrity flag kind, values: [shared_bank_account, shared_bvn, concurrent_public_posts, paid_after_separation, past_retirement_date, no_attendance_30_days, failed_headcount, post_without_position, grade_outside_position]}
+  headcount_method: {title: Headcount method, values: [in_person, biometric, video]}
+  headcount_outcome: {title: Headcount outcome, values: [verified, absent_with_reason, absent_without_reason, not_on_nominal_roll, impersonation_suspected]}
+  leave_day_basis: {title: Leave day basis, values: [working_days, calendar_days]}
+  er_case_kind: {title: Employee relations case kind, values: [query, disciplinary, grievance, appeal, petition]}
+  er_outcome: {title: Employee relations outcome, values: [no_case, advice, warning, severe_warning, suspension, interdiction, demotion, dismissal, retirement_in_public_interest, upheld, not_upheld]}
+  pay_element_kind: {title: Pay element kind, values: [earning, allowance, statutory_deduction, voluntary_deduction, loan_repayment, employer_contribution]}
+  pay_calc_method: {title: Pay element calculation, values: [fixed, pct_of_basic, pct_of_gross, pct_of_pensionable, table]}
+
+  # ---------------------------------------------------------------- fee clearance (CR-001)
+  obligation_kind: {title: Learner obligation kind (never SDAF — state revenue only), values: [tuition_fees, boarding, examination_fees, transport, meals, books_and_materials, uniform, development_levy, damaged_property, library, other_dues]}
+  obligation_source: {title: Obligation source, values: [ledger, manual_with_evidence]}
+  obligation_status: {title: Obligation status, values: [outstanding, payment_plan, disputed, settled, written_off, waived, expired, withdrawn]}
+  dispute_party: {title: Party raising a dispute, values: [guardian, learner, admitting_institution, creditor]}
+  dispute_grounds: {title: Dispute grounds, values: [already_paid, amount_wrong, not_liable, waiver_granted, statute_barred, protected_learner, other]}
+  dispute_resolution: {title: Dispute resolution, values: [upheld, partly_upheld, rejected, withdrawn]}
+  clearance_purpose: {title: Clearance check purpose, values: [admission, transfer, re_enrolment, enquiry_with_consent]}
+  clearance_basis: {title: Lawful basis of a clearance check, values: [admission_due_diligence, guardian_consent]}
+  clearance_coverage: {title: Clearance check coverage, values: [state, national]}
+  clearance_result: {title: Clearance result, values: [clear, outstanding, disputed_only, protected]}
+  clearance_decision_kind: {title: Admission decision on a clearance check, values: [admit, admit_with_payment_plan, defer_pending_settlement, admit_protected]}
+  protected_reason: {title: Reason a learner is admitted regardless of obligations, values: [public_basic_education, send, safeguarding, child_in_care, displaced, other_vulnerability]}

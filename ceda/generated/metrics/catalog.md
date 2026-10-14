@@ -74,6 +74,8 @@ Generated from `ceda/model/metrics.yaml`. Every indicator shown on a dashboard, 
 | `BUDGET-EXECUTION` | Budget execution | actual ÷ budget by cost centre | month × institution × cost centre | daily | target_band | `fact_finance`, `budget` | FIN-02 |
 | `FEEDING-RECON` | School feeding reconciliation | meals served ÷ learners present | day × institution | daily | target_band | `meal_service`, `agg_attendance_daily` | OPS-07, CMD-101 |
 | `SDAF-COLLECTION` | SDAF billed | collection rate = collected ÷ (billed − exempted); outstanding = billed − exempted − collected; remittance variance = collected − remitted (aged) | billing period × institution/LGA/institution type | daily | higher_is_better | `fact_sdaf` | SUB-105, SUB-103, SUB-104 |
+| `FCL-OUTSTANDING-RATE` | Incoming learners with outstanding obligations | clearance checks with result outstanding ÷ clearance checks | month × LGA × institution type | daily | lower_is_better | `clearance_check` | FCL-01, FCL-02, FCL-03 |
+| `FCL-DISPUTE-UPHELD` | Obligation disputes upheld | disputes upheld or partly upheld ÷ disputes resolved, by creditor institution (unsupported claims) | term × creditor institution | daily | lower_is_better | `obligation_dispute` | FCL-03 |
 
 ## Integrity and data
 
@@ -102,4 +104,15 @@ Generated from `ceda/model/metrics.yaml`. Every indicator shown on a dashboard, 
 | `GLOBAL-INDICATORS` | Global and national indicators (from state aggregates only) | country and global aggregates computed from in-country state aggregates; each labelled verified, calculated or estimated | year × country/state | termly | target_band | `agg_metric` | CMD-01, CMD-02 |
 | `NETWORK-SUMMARY` | Network dashboard summary | member-institution aggregates of ENR-COUNT, ATT-RATE, HEALTH-INDEX, EXAM-5CREDITS, FEE-COLLECTION | day × network | daily | target_band | `agg_metric` | CMD-05 |
 | `LGA-TODAY` | LGA today — attendance | live attendance, open cover gaps (G8), critical maintenance, registers missing | day × LGA × institution | live_15min | target_band | `live_kpi`, `coverage_gap`, `maintenance_request` | CMD-04 |
+
+## Human resources
+
+| ID | Metric | Definition / formula | Grain | Refresh | Direction | Sources | Pages |
+|---|---|---|---|---|---|---|---|
+| `HR-ESTAB-FILL` | Establishment fill rate | approved positions filled by an active employment record ÷ approved positions | day × institution/LGA/employer × cadre | daily | higher_is_better | `position`, `employment_record` | HRM-10, HRM-01 |
+| `HR-VACANCIES` | Vacant positions by subject | approved funded positions without an active employment record, by subject specialism | day × institution/LGA × subject | daily | lower_is_better | `position`, `employment_record` | HRM-10, HRM-01, STF-10 |
+| `HR-ATTRITION` | Staff attrition | separations in the last 12 months ÷ average active posts | month × employer/LGA × cadre × separation kind | daily | lower_is_better | `separation`, `employment_record` | HRM-10 |
+| `HR-RETIRE-12M` | Retirements due in 12 months | active employment records with retirement_due_on within 12 months | month × employer/LGA × subject | daily | target_band | `employment_record` | HRM-10, HRM-02 |
+| `HR-LEAVE-LIABILITY` | Leave liability | Σ (entitled + carried over − taken) annual-leave days across staff | leave year × employer × institution | daily | target_band | `leave_balance` | HRM-10, HRM-04 |
+| `HR-INTEGRITY-OPEN` | Open payroll integrity flags | open flags by kind; pay held by decision | day × employer × flag kind | daily | lower_is_better | `hr_integrity_flag` | HRM-08, HRM-10 |
 

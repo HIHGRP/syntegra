@@ -43,6 +43,9 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "learner.nin:reveal",
             "curriculum:*",
             "calendar:*",
+            "hr:*",
+            "clearance:*",
+            "admission:decide",
         ],
     ),
     "LGA": (
@@ -58,6 +61,9 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "ceda:view",
             "staff:view",
             "class:view",
+            "hr:view",
+            "hr:posting_request",
+            "clearance:resolve",
         ],
     ),
     "HEAD": (
@@ -75,9 +81,60 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "ceda:view",
             "institution:view",
             "certificate:view",
+            "admission:decide",
+            "clearance:check",
+            "clearance:dispute",
+            "clearance:publish",
+            "hr:view",
+            "hr:leave_approve",
+            "hr:posting_request",
+            "hr:relations",
         ],
     ),
-    "TCH": ("Teacher", "confidential", ["attendance:mark", "attendance:view", "learner:view", "class:view"]),
+    "TCH": (
+        "Teacher",
+        "confidential",
+        ["attendance:mark", "attendance:view", "learner:view", "class:view", "hr:leave_request"],
+    ),
+    "REG": (
+        "Registrar / admissions officer",
+        "confidential",
+        [
+            "learner:register",
+            "learner:view",
+            "enrolment:view",
+            "clearance:check",
+            "clearance:dispute",
+            "institution:view",
+        ],
+    ),
+    "HR": (
+        "HR officer",
+        "restricted",
+        [
+            "hr:view",
+            "hr:configure",
+            "hr:establishment",
+            "hr:appoint",
+            "hr:posting_request",
+            "hr:posting_approve",
+            "hr:leave_manage",
+            "hr:leave_approve",
+            "hr:promote",
+            "hr:separate",
+            "hr:relations",
+            "hr:relations_decide",
+            "hr:bank_request",
+            "staff:*",
+            "institution:view",
+            "metric:view",
+        ],
+    ),
+    "PAYR": (
+        "Payroll officer",
+        "restricted",
+        ["hr:view", "hr:payroll_prepare", "hr:bank_approve", "institution:view"],
+    ),
     "CERT": (
         "Certification registrar",
         "confidential",
@@ -90,11 +147,23 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "institution:view",
         ],
     ),
-    "INTEG": ("Integrity investigator", "restricted", ["certificate:view", "learner:view", "institution:view"]),
+    "INTEG": (
+        "Integrity investigator",
+        "restricted",
+        ["certificate:view", "learner:view", "institution:view", "hr:integrity", "hr:view"],
+    ),
     "FINO": (
         "Finance officer (SDAF)",
         "confidential",
-        ["financing:*", "census:view", "institution:view", "metric:view"],
+        [
+            "financing:*",
+            "census:view",
+            "institution:view",
+            "metric:view",
+            "clearance:publish",
+            "clearance:dispute",
+            "hr:payroll_approve",
+        ],
     ),
 }
 
@@ -287,7 +356,9 @@ def bootstrap(
                 role = Role.objects.filter(code=code).first()
                 if role is None:
                     role = cmd.add(Role(code=code, name=name, clearance=clearance, is_builtin=True, status="active"))
-                    for p in perms:
+                have = set(RolePermission.objects.filter(role_id=role.id).values_list("permission", flat=True))
+                for p in perms:  # built-in roles gain permissions added by later releases
+                    if p not in have:
                         cmd.add(RolePermission(role_id=role.id, permission=p))
                 out.role_ids[code] = role.id
             for code, label, reason, roles in PURPOSES:
@@ -321,6 +392,9 @@ def bootstrap(
                             status="published",
                         )
                     )
+        from syntegra.hr import defaults as hr_defaults
+
+        hr_defaults.seed(out.state_scope_id)
         admin = AppUser.objects.filter(username=admin_username).first()
         if admin is None:
             admin = iam.create_user(

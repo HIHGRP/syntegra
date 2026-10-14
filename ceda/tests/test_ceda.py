@@ -37,14 +37,20 @@ def test_generated_artefacts_are_current():
 
 def test_every_page_is_served(model):
     m, _ = model
-    assert len(m.pages) == 260
+    mfs = [p for p in m.pages.values() if "change_request" not in p]
+    cr = [p for p in m.pages.values() if p.get("change_request")]
+    assert len(mfs) == 260  # every MFS page …
+    assert {p["change_request"] for p in cr} <= set(m.change_requests)  # … plus pages added by approved change requests
     assert set(m.coverage["pages"]) == set(m.pages)
 
 
 def test_every_functional_requirement_is_accounted_for(model):
     m, _ = model
     frs = {r for r in m.requirements if r.startswith("FR-")}
-    assert len(frs) == 517
+    assert len({r for r in frs if "change_request" not in m.requirements[r]}) == 517
+    assert {m.requirements[r]["change_request"] for r in frs if "change_request" in m.requirements[r]} <= set(
+        m.change_requests
+    )
     unaccounted = frs - set(m.coverage["reqs"]) - set(m.coverage["behavioural"])
     assert not unaccounted, sorted(unaccounted)
 
@@ -108,7 +114,7 @@ def test_event_payloads_carry_no_personal_types(model):
 
 def test_summary_counts():
     s = json.loads((CEDA / "generated" / "summary.json").read_text())
-    assert s["pages_covered"] == s["pages_total"] == 260
+    assert s["pages_covered"] == s["pages_total"] >= 260
     assert s["appj_tables_mapped"] == s["appj_tables_total"] == 174
     assert s["tables"] >= 174
 
@@ -117,3 +123,21 @@ def test_summary_counts():
 def test_ddl_loads_and_guarantees_hold_in_mysql_97():
     r = subprocess.run([sys.executable, str(CEDA / "tools" / "mysql_check.py")], capture_output=True, text=True)
     assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_releases_reproduce_the_current_ddl():
+    """ceda/releases (baseline + expand-only deltas + manual expand scripts) replays to the current DDL."""
+    import importlib
+
+    release = importlib.import_module("release")
+    assert release.cmd_check() == 0
+    assert release.versions()[-1] == json.loads((CEDA / "generated" / "summary.json").read_text())["version"]
+
+
+def test_change_requests_are_traceable(model):
+    m, _ = model
+    for cr_id, cr in m.change_requests.items():
+        assert cr["status"] == "adopted", cr_id
+        served = {e for r in cr["requirements"] for e in m.coverage["reqs"].get(r["id"], set())}
+        assert served, f"{cr_id} has no realising entity"
+

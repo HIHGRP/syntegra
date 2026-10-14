@@ -16,12 +16,14 @@ COPY --from=build /opt/venv /opt/venv
 WORKDIR /opt/app-root/src
 # The CEDA DDL is the physical schema authority applied by `manage.py migrate --database=<zone>`.
 COPY ceda/generated/mysql ./ceda/generated/mysql
+COPY ceda/releases ./ceda/releases
 COPY manage.py ./
 COPY src ./src
 ENV PATH=/opt/venv/bin:$PATH PYTHONPATH=/opt/app-root/src/src \
     PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
     DJANGO_SETTINGS_MODULE=syntegra.settings.prod \
-    SYNTEGRA_CEDA_DDL_DIR=/opt/app-root/src/ceda/generated/mysql
+    SYNTEGRA_CEDA_DDL_DIR=/opt/app-root/src/ceda/generated/mysql \
+    SYNTEGRA_CEDA_RELEASES_DIR=/opt/app-root/src/ceda/releases
 RUN python manage.py collectstatic --noinput --settings=syntegra.settings.dev >/dev/null
 USER 1001
 EXPOSE 8000

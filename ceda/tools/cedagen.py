@@ -224,6 +224,19 @@ class Model:
         self.trace = load_yaml(MODEL / "traceability.yaml")
         self.pages = {p["id"]: p for p in load_yaml(SOURCES / "mfs_pages.yaml")["pages"]}
         self.requirements = {r["id"]: r for r in load_yaml(SOURCES / "mfs_requirements.yaml")["requirements"]}
+        # change requests add governed requirements and pages that are not in the MFS (model/change_requests)
+        self.change_requests = {}
+        for path in sorted((MODEL / "change_requests").glob("CR-*.yaml")):
+            cr = load_yaml(path)
+            self.change_requests[cr["id"]] = cr
+            for r in cr.get("requirements", []):
+                if r["id"] in self.requirements:
+                    raise SystemExit(f"{cr['id']}: requirement {r['id']} already exists")
+                self.requirements[r["id"]] = dict(r, change_request=cr["id"])
+            for pg in cr.get("pages", []):
+                if pg["id"] in self.pages:
+                    raise SystemExit(f"{cr['id']}: page {pg['id']} already exists")
+                self.pages[pg["id"]] = dict(pg, change_request=cr["id"])
         self.appj = {t["table"]: t for t in load_yaml(SOURCES / "mfs_appj_tables.yaml")["tables"]}
         self.reserved = set((SOURCES / "mysql97_reserved_words.txt").read_text().split())
         self.domains: list[Domain] = []
@@ -1133,24 +1146,28 @@ def gen_trace(m: Model) -> dict:
     cov = m.coverage
     out = {}
     # pages
+    mfs_pages = sum(1 for p in m.pages.values() if "change_request" not in p)
+    cr_pages = len(m.pages) - mfs_pages
     L = ["# Page → data traceability", "",
-         "Every one of the 260 pages in SYN-MFS-002 v2.4 is served by at least one CEDA entity or metric. "
-         "Generated; do not edit.", "",
-         "| Page | Title | Module | Phase | CEDA entities and metrics | MFS master objects |", "|---|---|---|---|---|---|"]
+         f"Every one of the {mfs_pages} pages in SYN-MFS-002 v2.4 and the {cr_pages} pages added by change requests "
+         "is served by at least one CEDA entity or metric. Generated; do not edit.", "",
+         "| Page | Source | Title | Module | Phase | CEDA entities and metrics | MFS master objects |",
+         "|---|---|---|---|---|---|---|"]
     for pid in sorted(m.pages):
         p = m.pages[pid]
         ents = sorted(cov["pages"].get(pid, []))
-        L.append(f"| {pid} | {md_escape(p.get('title', ''))} | {md_escape(p.get('module', ''))} | {p.get('phase', '')} | "
+        L.append(f"| {pid} | {p.get('change_request', 'MFS')} | {md_escape(p.get('title', ''))} | {md_escape(p.get('module', ''))} | {p.get('phase', '')} | "
                  f"{', '.join('`' + x + '`' for x in ents)} | {md_escape(', '.join(p.get('objects', [])))} |")
     out["traceability/pages.md"] = "\n".join(L) + "\n"
     # requirements
     fr = [r for r in m.requirements if r.startswith("FR-")]
     data_mapped = [r for r in fr if r in cov["reqs"]]
     L = ["# Requirement → data traceability", "",
-         f"{len(fr)} functional requirements in SYN-MFS-002 v2.4: {len(data_mapped)} are realised by CEDA entities "
+         f"{len(fr)} functional requirements (SYN-MFS-002 v2.4 and change requests "
+         f"{', '.join(sorted(m.change_requests)) or 'none'}): {len(data_mapped)} are realised by CEDA entities "
          f"or metrics; {len(fr) - len(data_mapped)} are behavioural (UI, workflow or engine behaviour over data "
          "already modelled) and name the entity they operate on. Generated; do not edit.", "",
-         "| Requirement | Priority | Phase | Realised by | Text |", "|---|---|---|---|---|"]
+         "| Requirement | Source | Priority | Phase | Realised by | Text |", "|---|---|---|---|---|---|"]
     for r in sorted(fr):
         rec = m.requirements[r]
         if r in cov["reqs"]:
@@ -1158,7 +1175,8 @@ def gen_trace(m: Model) -> dict:
         else:
             b = cov["behavioural"].get(r, {})
             by = f"behavioural — uses `{b.get('uses', '—')}`: {md_escape(b.get('note', ''))}"
-        L.append(f"| {r} | {rec.get('priority', '')} | {rec.get('phase', '')} | {by} | {md_escape(rec.get('text', ''))[:220]} |")
+        L.append(f"| {r} | {rec.get('change_request', 'MFS')} | {rec.get('priority', '')} | {rec.get('phase', '')} | {by} | "
+                 f"{md_escape(rec.get('text', ''))[:220]} |")
     out["traceability/requirements.md"] = "\n".join(L) + "\n"
     # appendix J
     sup = m.trace.get("appj_superseded") or {}
@@ -1199,6 +1217,7 @@ def gen_summary(m: Model) -> dict:
         "fr_total": sum(1 for r in m.requirements if r.startswith("FR-")),
         "fr_data_mapped": sum(1 for r in m.requirements if r.startswith("FR-") and r in m.coverage["reqs"]),
         "appj_tables_mapped": len(m.coverage["appj"]), "appj_tables_total": len(m.appj),
+        "change_requests": sorted(m.change_requests),
     }
     return {"summary.json": json.dumps(s, indent=2) + "\n"}
 
