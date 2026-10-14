@@ -13,6 +13,7 @@ from syntegra.academic.models import (
     ClassGroup,
     ClassMembership,
     ClassSubjectPlan,
+    Programme,
     Subject,
     TeachingAssignment,
 )
@@ -66,6 +67,36 @@ def create_subject(
                 levels=levels,
                 is_mandatory_core=mandatory,
                 status="active",
+            )
+        )
+
+
+def create_programme(
+    institution_id: uuid.UUID,
+    code: str,
+    name: str,
+    *,
+    duration_terms: int | None = None,
+    delivery_mode: str = "on_campus",
+    accreditation_status: str | None = None,
+    rules: dict[str, object] | None = None,
+) -> Programme:
+    """A qualification-bearing programme of a post-secondary institution (FR-ACA-04, FR-HED-101)."""
+    inst = _institution(institution_id)
+    if Programme.objects.filter(scope_node_id=inst.scope_node_id, code=code.upper()).exists():
+        raise ConflictError("ACA-PROGRAMME-EXISTS", "Programme code already used", code.upper())
+    with uow.command("registry", "institution:manage", action="create", record_kind="programme") as cmd:
+        return cmd.add(
+            Programme(
+                scope_node_id=inst.scope_node_id,
+                institution_id=inst.id,
+                code=code.upper(),
+                name=name,
+                delivery_mode=delivery_mode,
+                duration_terms=duration_terms,
+                accreditation_status=accreditation_status,
+                rules=rules or {},
+                status="published",
             )
         )
 

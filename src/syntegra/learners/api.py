@@ -45,6 +45,9 @@ class RegisterSerializer(serializers.Serializer):  # type: ignore[type-arg]
     start_on = serializers.DateField(required=False)
     is_minimal_documentation = serializers.BooleanField(default=False)
     guardians = GuardianSerializer(many=True, required=False, default=list)
+    programme_id = serializers.UUIDField(required=False, allow_null=True)
+    cohort_label = serializers.CharField(max_length=60, required=False, allow_null=True, allow_blank=True)
+    identifiers = serializers.DictField(child=serializers.CharField(max_length=40), required=False, default=dict)
 
 
 class TransferSerializer(serializers.Serializer):  # type: ignore[type-arg]

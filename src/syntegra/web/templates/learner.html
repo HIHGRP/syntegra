@@ -7,8 +7,15 @@
   <article class="card">
     <h2>Enrolments</h2>
     <table class="compact"><thead><tr><th scope="col">Institution</th><th scope="col">Level</th><th scope="col">From</th><th scope="col">To</th><th scope="col">Status</th></tr></thead>
-      <tbody>{% for e in enrolments %}<tr><td>{{ insts[e.institution_id].name }}</td><td>{{ e.education_level }}</td><td>{{ e.start_on | date }}</td><td>{{ e.end_on | date }}</td><td>{{ e.status }}</td></tr>{% endfor %}</tbody></table>
+      <tbody>{% for e in enrolments %}<tr><td>{{ insts[e.institution_id].name }}{% if e.programme_id and programmes.get(e.programme_id) %}<br><span class="muted">{{ programmes[e.programme_id].name }}{% if e.cohort_label %} · {{ e.cohort_label }}{% endif %}</span>{% endif %}</td><td>{{ e.education_level }}</td><td>{{ e.start_on | date }}</td><td>{{ e.end_on | date }}</td><td>{{ e.status }}</td></tr>{% endfor %}</tbody></table>
   </article>
+  {% if identifiers %}
+  <article class="card">
+    <h2>Identifiers</h2>
+    <ul class="people">{% for i in identifiers %}<li><strong>{{ {"NG-NIN": "NIN", "JAMB-REG": "JAMB registration", "INST-ID": "Matriculation number"}.get(i.scheme, i.scheme) }}</strong>
+      <span class="line">•••• {{ i.last4 }} <span class="muted">· {{ i.status }}</span></span></li>{% endfor %}</ul>
+  </article>
+  {% endif %}
   <article class="card">
     <h2>Parents and guardians</h2>
     {% if guardians %}

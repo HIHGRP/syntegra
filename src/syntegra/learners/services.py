@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import re
 import uuid
 from dataclasses import dataclass, field
 from typing import Any
@@ -17,6 +18,7 @@ from typing import Any
 from django.db import IntegrityError, connections, transaction
 from django.db.models import Q, QuerySet
 
+from syntegra.academic.models import Programme
 from syntegra.clearance.services import DecisionInput, gate, national_network_active
 from syntegra.core import authz, context, crypto, uow
 from syntegra.core.errors import ConflictError, HardValidation, NotFound, SoftWarning
@@ -30,6 +32,9 @@ from syntegra.learners.models import Enrolment, Learner, LearnerTransfer
 from syntegra.mdm.models import ExternalIdentifier, MatchReview
 
 SEXES = {"female", "male"}
+# Identifiers captured at registration besides the NIN (post-secondary: JAMB registration and matriculation number)
+_IDENTIFIER = re.compile(r"[A-Z0-9][A-Z0-9/-]{2,22}[A-Z0-9]")
+REGISTRATION_SCHEMES = ("JAMB-REG", "INST-ID", "WAEC-CAND", "NECO-CAND", "NABTEB-CAND", "PREV-LRN-ID")
 
 
 @dataclass
@@ -51,6 +56,9 @@ class RegisterLearner:
     basis: str = "admission"
     is_minimal_documentation: bool = False
     guardians: list[GuardianInput] = field(default_factory=list)
+    programme_id: uuid.UUID | None = None  # post-secondary: the programme admitted to
+    cohort_label: str | None = None  # intake cohort, e.g. 2026/2027 entry
+    identifiers: dict[str, str] = field(default_factory=dict)  # scheme → value, e.g. JAMB-REG, INST-ID
 
 
 @dataclass
@@ -188,6 +196,7 @@ def register(
         learner_id=top[0].id if top and top[1].band == "auto_link" else None,
         learner_nin=data.nin,
     )
+    _check_programme_and_identifiers(data, inst, top[0].id if top and top[1].band == "auto_link" else None)
     if top and top[1].band == "review" and not override_reason:
         err = SoftWarning(
             "LRN-PROBABLE-MATCH",
@@ -230,7 +239,17 @@ def register(
             )
             cmd.record_id = learner.id
             linked_guardians = families.link(cmd, learner.id, data.guardians, valid_from=start)
-            enr = _enrol(cmd, learner, inst, data.education_level, data.start_on, data.basis)
+            _add_identifiers(cmd, learner.id, data.identifiers)
+            enr = _enrol(
+                cmd,
+                learner,
+                inst,
+                data.education_level,
+                data.start_on,
+                data.basis,
+                data.programme_id,
+                data.cohort_label,
+            )
             return Registration(learner, enr, "linked", review.id, {"score": top[1].score}, linked_guardians)
         learner = Learner(
             global_learner_id=allocate_glid(cmd.alias),
@@ -291,18 +310,110 @@ def register(
             {"score": top[1].score} if top else None,
             families.link(cmd, learner.id, data.guardians, valid_from=start),
         )
+        _add_identifiers(cmd, learner.id, data.identifiers)
         if not cross_state:
-            reg.enrolment = _enrol(cmd, learner, inst, data.education_level, data.start_on, data.basis)
+            reg.enrolment = _enrol(
+                cmd,
+                learner,
+                inst,
+                data.education_level,
+                data.start_on,
+                data.basis,
+                data.programme_id,
+                data.cohort_label,
+            )
             return reg
     gate(learner.id, inst.id, purpose="admission", education_level=data.education_level, decision=clearance)
     with uow.command("registry", None, action="enrol", record_kind="enrolment") as cmd:
-        reg.enrolment = _enrol(cmd, learner, inst, data.education_level, data.start_on, data.basis)
+        reg.enrolment = _enrol(
+            cmd, learner, inst, data.education_level, data.start_on, data.basis, data.programme_id, data.cohort_label
+        )
     return reg
+
+
+# --------------------------------------------------------------------------- programme and identifiers
+def _normalise_identifier(value: str) -> str:
+    return "".join(value.split()).upper()
+
+
+def _check_programme_and_identifiers(
+    data: RegisterLearner, inst: Institution, linked_learner_id: uuid.UUID | None
+) -> None:
+    """Programme must belong to the admitting institution; an identifier can never belong to two learners."""
+    ctx = context.require()
+    errs: list[dict[str, Any]] = []
+    if data.programme_id is not None:
+        prog = Programme.objects.filter(pk=data.programme_id).first()
+        if prog is None or prog.institution_id != inst.id:
+            errs.append({"field": "programme_id", "message": "choose a programme of the admitting institution"})
+        elif prog.status not in ("approved", "published"):
+            errs.append({"field": "programme_id", "message": "the programme is not open for admission"})
+    for scheme, raw in data.identifiers.items():
+        f = f"identifiers[{scheme}]"
+        value = _normalise_identifier(raw or "")
+        if scheme not in REGISTRATION_SCHEMES:
+            errs.append({"field": f, "message": "this identifier cannot be captured at registration"})
+            continue
+        if not value:
+            continue
+        if not _IDENTIFIER.fullmatch(value):
+            errs.append({"field": f, "message": "letters, digits, / and - only (4–24 characters)"})
+            continue
+        token = crypto.lookup_hmac(value, scheme=scheme, tenant_id=ctx.state_tenant_id)
+        holder = (
+            ExternalIdentifier.objects.filter(person_kind="learner", scheme=scheme, value_hmac=token)
+            .exclude(person_id=linked_learner_id)
+            .values_list("person_id", flat=True)
+            .first()
+        )
+        if holder is not None:
+            other = Learner.objects.filter(pk=holder).values_list("global_learner_id", flat=True).first()
+            errs.append({"field": f, "message": f"already recorded for another learner ({other or 'unknown'})"})
+    if errs:
+        raise HardValidation("LRN-VALIDATION", "Some fields need attention", errors=errs)
+
+
+def _add_identifiers(cmd: uow.Command, learner_id: uuid.UUID, identifiers: dict[str, str]) -> None:
+    tenant = cmd.ctx.state_tenant_id
+    for scheme, raw in identifiers.items():
+        value = _normalise_identifier(raw or "")
+        if (
+            not value
+            or ExternalIdentifier.objects.filter(person_kind="learner", person_id=learner_id, scheme=scheme).exists()
+        ):
+            continue
+        cmd.add(
+            ExternalIdentifier(
+                person_kind="learner",
+                person_id=learner_id,
+                scheme=scheme,
+                value_hmac=crypto.lookup_hmac(value, scheme=scheme, tenant_id=tenant),
+                value_enc=crypto.encrypt(value, purpose=f"id:{scheme}", tenant_id=tenant),
+                value_last4=crypto.last4(value),
+                status="unverified",
+            )
+        )
+
+
+def identifiers_of(learner_id: uuid.UUID) -> list[dict[str, Any]]:
+    """Identifiers on record, masked (last four characters only)."""
+    get(learner_id)
+    return [
+        {"scheme": e.scheme, "last4": e.value_last4, "status": e.status}
+        for e in ExternalIdentifier.objects.filter(person_kind="learner", person_id=learner_id).order_by("scheme")
+    ]
 
 
 # --------------------------------------------------------------------------- enrolment
 def _enrol(
-    cmd: uow.Command, learner: Learner, inst: Institution, level: str, start_on: dt.date | None, basis: str
+    cmd: uow.Command,
+    learner: Learner,
+    inst: Institution,
+    level: str,
+    start_on: dt.date | None,
+    basis: str,
+    programme_id: uuid.UUID | None = None,
+    cohort_label: str | None = None,
 ) -> Enrolment:
     enr = Enrolment(
         scope_node_id=inst.scope_node_id,
@@ -310,6 +421,8 @@ def _enrol(
         institution_id=inst.id,
         operating_tenant_id=inst.operating_tenant_id,
         education_level=level,
+        programme_id=programme_id,
+        cohort_label=cohort_label or None,
         is_primary=True,
         basis=basis,
         start_on=start_on or dt.date.today(),

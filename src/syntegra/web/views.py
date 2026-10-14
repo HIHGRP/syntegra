@@ -13,7 +13,7 @@ from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
 
-from syntegra.core import context
+from syntegra.core import catalog, context
 from syntegra.core.errors import DomainError, Forbidden
 from syntegra.web import pages
 
@@ -233,21 +233,9 @@ def register(request: HttpRequest, class_id: uuid.UUID) -> HttpResponse:
     )
 
 
-LEVELS = [
-    "eccde",
-    "primary_1",
-    "primary_2",
-    "primary_3",
-    "primary_4",
-    "primary_5",
-    "primary_6",
-    "jss_1",
-    "jss_2",
-    "jss_3",
-    "sss_1",
-    "sss_2",
-    "sss_3",
-]
+POST_SECONDARY = ("technical_college", "college_of_education", "polytechnic", "monotechnic", "university",
+                  "school_of_nursing", "school_of_health_technology")  # fmt: skip
+LEVELS = catalog.code_list("education_level")
 
 
 def _guardians_from_form(f: Any) -> list[Any]:
@@ -281,6 +269,7 @@ def _guardians_from_form(f: Any) -> list[Any]:
 @page("LRN-02")
 def learner_new(request: HttpRequest) -> HttpResponse:
     """Register a learner: identity matching, then fee clearance across every state on the network, then enrolment."""
+    from syntegra.academic.models import Programme
     from syntegra.clearance.models import ClearanceCheck, ClearanceDecision
     from syntegra.clearance.services import AdmissionDeferred, ClearanceDecisionRequired, DecisionInput
     from syntegra.core.errors import HardValidation, SoftWarning
@@ -295,6 +284,13 @@ def learner_new(request: HttpRequest) -> HttpResponse:
     if not c.has("learner:register"):
         raise Forbidden()
     institutions = list(Institution.objects.in_scope().filter(status="active").order_by("name")[:200])
+    names = {i.id: i.name for i in institutions}
+    programmes = [
+        {"id": str(p.id), "institution_id": str(p.institution_id), "label": f"{p.name} ({p.code})"}
+        for p in Programme.objects.filter(
+            institution_id__in=list(names), status__in=("approved", "published")
+        ).order_by("name")
+    ]
     f = request.POST if request.method == "POST" else {}
     errors: dict[str, str] = {}
     out: dict[str, Any] = {}
@@ -329,6 +325,9 @@ def learner_new(request: HttpRequest) -> HttpResponse:
                 start_on=start_on,
                 is_minimal_documentation=bool(f.get("is_minimal_documentation")),
                 guardians=_guardians_from_form(f),
+                programme_id=uuid.UUID(f["programme_id"]) if f.get("programme_id") else None,
+                cohort_label=f.get("cohort_label") or None,
+                identifiers={s: f[k] for s, k in (("JAMB-REG", "jamb_reg"), ("INST-ID", "matric_no")) if f.get(k)},
             )
             decision = None
             if f.get("decision"):
@@ -344,6 +343,8 @@ def learner_new(request: HttpRequest) -> HttpResponse:
                 out["registration"] = reg
                 chk = ClearanceCheck.objects.filter(learner_id=reg.learner.id).order_by("-checked_at").first()
                 out["check"] = chk
+                pid = reg.enrolment.programme_id if reg.enrolment else None
+                out["programme"] = Programme.objects.filter(pk=pid).first() if pid else None
                 out["decision"] = ClearanceDecision.objects.filter(check_id=chk.id).first() if chk else None
                 # A record created moments earlier while the clearance decision was pending is new to this state.
                 out["new_here"] = (
@@ -371,6 +372,8 @@ def learner_new(request: HttpRequest) -> HttpResponse:
             levels=LEVELS,
             states=STATES,
             relationships=RELATIONSHIPS,
+            programmes=programmes,
+            post_secondary=[str(i.id) for i in institutions if i.category in POST_SECONDARY],
             majority=families.majority_age(institutions[0].scope_node_id if institutions else None),
             today=dt.date.today().isoformat(),
             page=pages.page("LRN-02"),
@@ -381,6 +384,7 @@ def learner_new(request: HttpRequest) -> HttpResponse:
 
 @page("LRN-04")
 def learner(request: HttpRequest, learner_id: uuid.UUID) -> HttpResponse:
+    from syntegra.academic.models import Programme
     from syntegra.attendance import services as att
     from syntegra.families import services as families
     from syntegra.institutions.models import Institution
@@ -406,6 +410,10 @@ def learner(request: HttpRequest, learner_id: uuid.UUID) -> HttpResponse:
             insts=insts,
             attendance=attendance,
             guardians=families.guardians_of(learner_id),
+            identifiers=lrn.identifiers_of(learner_id),
+            programmes={
+                p.id: p for p in Programme.objects.filter(id__in=[e.programme_id for e in enrolments if e.programme_id])
+            },
             page=pages.page("LRN-04"),
         ),
     )
