@@ -478,8 +478,9 @@ def localise(links: list[Link], state_code: str | None, category: str, ownership
         eq["STATE_MOE"] = STATE_TERTIARY_MINISTRY[state_code]
     out = [Link(eq.get(x.body, x.body), x.relationship, x.covers, x.levels, x.mandatory) for x in links]
     board = STATE_SECONDARY_BOARD.get(state_code)
-    covered = any(x.body == board and x.relationship == "supervision" for x in out)
-    if board and ownership in PUBLIC and category in SECONDARY_CATEGORIES and not covered:
+    if board and ownership in PUBLIC and category in SECONDARY_CATEGORIES:
+        # added even when the board already supervises basic education here (JSS): merged into one link, it then
+        # covers the senior classes too
         out.append(Link(board, "supervision", "Public secondary education in the state", JUNIOR + SENIOR))
     return out
 

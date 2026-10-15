@@ -47,6 +47,13 @@ def test_abia_demonstration_load_small_scale(world: Any) -> None:
         assert ClassGroup.objects.filter(institution_id=school.id).count() == 12
         links = {(x["body_code"], x["relationship"]) for x in reg.profile(school.id)["links"]}
         assert ("ASUBEB", "supervision") in links and ("ABMOE", "supervision") in links
+        secondary = Institution.objects.get(name="Government Secondary School, Eziama")
+        board = next(
+            x
+            for x in reg.profile(secondary.id)["links"]
+            if (x["body_code"], x["relationship"]) == ("ASUBEB", "supervision")
+        )
+        assert {"JSS1", "SSS3"} <= set(board["levels"])  # the board supervises the senior classes too
         absu = Institution.objects.get(name="Abia State University, Uturu")
         assert ("ABMTE", "supervision") in {(x["body_code"], x["relationship"]) for x in reg.profile(absu.id)["links"]}
         students = Enrolment.objects.filter(institution_id=absu.id, status="active")

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import datetime as dt
 import uuid
+from collections import defaultdict
 from typing import Any
 
 from django.db import transaction
@@ -142,24 +143,13 @@ def apply_rules(
     directory_ = bodies()
     if not directory_:
         return 0  # directory not loaded on this platform yet
-    from syntegra.core.tenancy import tenant_code_for
-
-    code = tenant_code_for(cmd.ctx.state_tenant_id)
-    links = _merge(
-        ref.localise(
-            ref.profile(
-                category=inst.category,
-                ownership=inst.ownership,
-                levels=list(inst.levels or []),
-                owner_ministry=owner_ministry,
-                accreditation=accreditation,
-                unity_college=unity_college,
-                technical=technical or inst.category == "technical_college",
-            ),
-            code.upper() if code else None,
-            inst.category,
-            inst.ownership,
-        )
+    links = _expected(
+        cmd,
+        inst,
+        owner_ministry=owner_ministry,
+        accreditation=accreditation,
+        unity_college=unity_college,
+        technical=technical,
     )
     have = set(
         InstitutionRegulation.unscoped.using(cmd.alias)
@@ -195,6 +185,37 @@ def apply_rules(
         )
         n += 1
     return n
+
+
+def _expected(
+    cmd: uow.Command,
+    inst: Institution,
+    *,
+    owner_ministry: str | None = None,
+    accreditation: tuple[str, ...] | list[str] = (),
+    unity_college: bool = False,
+    technical: bool = False,
+) -> list[ref.Link]:
+    """The rule-derived links an institution should have, localised to its state's own bodies."""
+    from syntegra.core.tenancy import tenant_code_for
+
+    code = tenant_code_for(cmd.ctx.state_tenant_id)
+    return _merge(
+        ref.localise(
+            ref.profile(
+                category=inst.category,
+                ownership=inst.ownership,
+                levels=list(inst.levels or []),
+                owner_ministry=owner_ministry,
+                accreditation=accreditation,
+                unity_college=unity_college,
+                technical=technical or inst.category == "technical_college",
+            ),
+            code.upper() if code else None,
+            inst.category,
+            inst.ownership,
+        )
+    )
 
 
 def _visible(institution_id: uuid.UUID) -> Institution:
@@ -369,7 +390,8 @@ def apply_all() -> dict[str, int]:
 
 def localise_registry() -> dict[str, int]:
     """Move the current registry's rule-derived links from the generic state bodies to the state's own bodies
-    (after a state's bodies are added to the directory). Ends the generic links; adds the state's."""
+    (after a state's bodies are added to the directory). Ends the generic links; adds the state's. A rule link
+    whose levels have changed since it was made (e.g. a board now also covers the senior classes) is replaced."""
     from syntegra.core.tenancy import tenant_code_for
 
     ctx = context.require()
@@ -384,8 +406,26 @@ def localise_registry() -> dict[str, int]:
         for row in InstitutionRegulation.objects.filter(source="rule", valid_to__isnull=True, body_code__in=generic):
             cmd.update(row, valid_to=dt.date.today())
             n["ended"] += 1
+        current: dict[uuid.UUID, list[InstitutionRegulation]] = defaultdict(list)
+        for row in InstitutionRegulation.objects.filter(source="rule", valid_to__isnull=True).exclude(
+            body_code__in=generic
+        ):
+            current[row.institution_id].append(row)
         for inst in Institution.objects.exclude(status__in=("closed", "merged")):
-            n["added"] += apply_rules(cmd, inst, **_extras(inst))
-        if not (n["ended"] or n["added"]):
+            extras = _extras(inst)
+            # a rule link whose levels have changed (e.g. the board now also covers the senior classes) is replaced
+            expected = {(x.body, x.relationship): x for x in _expected(cmd, inst, **extras)}
+            for row in current.get(inst.id, []):
+                want = expected.get((row.body_code, row.relationship))
+                if want is None or list(want.levels) == list(row.levels or []):
+                    continue
+                if row.valid_from == dt.date.today():  # started today: correct it rather than end it the same day
+                    cmd.update(row, levels=list(want.levels) or None, covers=want.covers[:200])
+                    n["updated"] = n.get("updated", 0) + 1
+                else:
+                    cmd.update(row, valid_to=dt.date.today())
+                    n["ended"] += 1
+            n["added"] += apply_rules(cmd, inst, **extras)
+        if not (n["ended"] or n["added"] or n.get("updated")):
             cmd.audited = False
     return n
