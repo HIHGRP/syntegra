@@ -9,7 +9,7 @@ on:
 jobs:
   quality:
     name: Lint, types, architecture boundaries, generated models
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -30,7 +30,7 @@ jobs:
 
   tests:
     name: Tests on MySQL 9.7
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     services:
       mysql:
         image: mysql:9.7

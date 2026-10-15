@@ -6,7 +6,7 @@
 | **Version** | 1.7.0 — adds institutional budgets and imprest, funding and loan platforms for institutions, staff and learners, the government property register with facility condition, usability and proactive maintenance, the infrastructure data warehouse for the Commissioner, and security-agency curricula through each agency's structure (change request CR-006; §28); documents the Abia State demonstration and school performance comparison (§29) and adds the End-User Guide (§30). 1.6.0 added the federal unity colleges and federal special training institutions, extends the security agencies' institutions, and links every institution to the education watchdogs and examination bodies it depends on (change request CR-005; §27). 1.5.0 added the security agencies' education and training institutions, each under its own agency structure with its own curricula (CR-004; §26). 1.4.0 modelled two-factor authentication and single sign-on (CR-003); 1.3.0 the national clearance network (CR-002; §25); 1.2.0 the HRMS and fee-clearance due diligence (CR-001; §23, §24). Change log in §22 |
 | **Date** | 14 October 2026 (1.0.0 and 1.1.0: 13–14 October 2026) |
 | **Derived from** | SYN-MFS-002 v2.4, Master Functional Specification (consolidated single volume: Books 1–3, 517 functional requirements, 260 pages, Appendix J MySQL schema of 174 tables), extended by change requests CR-001 (23 requirements, 13 pages), CR-002 (6 requirements, 1 page), CR-003 (7 requirements), CR-004 (8 requirements, 4 pages), CR-005 (8 requirements, 3 pages) and CR-006 (26 requirements, 7 pages) |
-| **Platform** | Python 3.12 · Django 5.2 LTS (+ FastAPI for high-throughput services) · MySQL 9.7 LTS · Red Hat Enterprise Linux 10 / OpenShift |
+| **Platform** | Python 3.12 · Django 5.2 LTS (+ FastAPI for high-throughput services) · MySQL 9.7 LTS · Red Hat Enterprise Linux 10.2 / OpenShift (pinned versions in §21) |
 | **Machine-readable model** | `ceda/model/` (single source of truth) → `ceda/generated/` (DDL, dictionary, ERDs, JSON Schema, OpenAPI components, event schemas, metric catalogue, traceability) |
 | **Status of artefacts** | Model validates with 0 errors, 0 warnings; every zone's DDL loads into MySQL 9.7.2; 12 database-level guarantees verified on MySQL 9.7 (§18) |
 
@@ -774,7 +774,7 @@ Read from the files that pin them; `cedagen.py check` fails when this table no l
 
 | Layer | Version | Pinned in |
 |---|---|---|
-| Operating system — application image | Red Hat Enterprise Linux 10 (UBI 10 minimal) | `deploy/Containerfile`: `registry.access.redhat.com/ubi10/python-312-minimal` |
+| Operating system — application image | Red Hat Enterprise Linux 10.2 (UBI minimal) | `deploy/Containerfile`: `registry.access.redhat.com/ubi10/python-312-minimal:10.2` |
 | Python | >=3.12, <3.13 | `pyproject.toml` |
 | Database — MySQL LTS | 9.7 | `deploy/compose.yaml`: `docker.io/library/mysql:9.7` |
 | Cache and rate limits — Valkey | 8 | `deploy/compose.yaml`: `docker.io/valkey/valkey:8` |
@@ -796,8 +796,8 @@ Read from the files that pin them; `cedagen.py check` fails when this table no l
 | Quality gate — djangorestframework-stubs | 3.16.4 | `pyproject.toml` [dev] |
 | Quality gate — import-linter | 2.5 | `pyproject.toml` [dev] |
 | Quality gate — types-PyYAML | unpinned | `pyproject.toml` [dev] |
-| Continuous integration — app | ubuntu-latest, Python 3.12, mysql:9.7 | `.github/workflows/app.yml` |
-| Continuous integration — ceda | ubuntu-latest, Python 3.12, mysql:9.7 | `.github/workflows/ceda.yml` |
+| Continuous integration — app | ubuntu-26.04, Python 3.12, mysql:9.7 | `.github/workflows/app.yml` |
+| Continuous integration — ceda | ubuntu-26.04, Python 3.12, mysql:9.7 | `.github/workflows/ceda.yml` |
 
 <!-- /cedagen:index -->
 
@@ -817,6 +817,7 @@ Read from the files that pin them; `cedagen.py check` fails when this table no l
 | Roles OPSM and COMM; 28 enums, 13 events (incl. `LRN.ROLL_IMPORTED`), 11 metrics, retention series RS-FUND; room types and asset categories for estate; 7 pages | Needed by the new domains |
 | Release 1.7.0: expand script adding the unique key `(tenant_id, id)` to the ops-zone tables the new entities reference (`budget`, `capital_plan_item`, `maintenance_request` …), plus the derived delta | Upgrading a live 1.6.0 database in place |
 | Application: bulk roll import, national GLID block leasing, assessment service, Abia bodies (ASUBEB, ABMOE, ABMTE), the Abia demonstration loader, the control room and school comparison (§29), CR-006 pages, forms and API, the End-User Guide (§30) | End-to-end testing at state scale; performance comparison; using the platform |
+| Build: application image pinned to RHEL 10.2 (UBI `python-312-minimal:10.2`), CI on Ubuntu 26.04 LTS; the index of artefacts (§21) is generated with the build's pinned versions | Latest operating system releases, reproducible builds, documentation that cannot drift |
 
 ### 1.6.0 — 14 October 2026 (change request CR-005)
 
