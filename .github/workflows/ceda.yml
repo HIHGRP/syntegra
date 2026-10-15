@@ -2,9 +2,9 @@ name: CEDA
 
 on:
   push:
-    paths: ["ceda/**", ".github/workflows/ceda.yml"]
+    paths: ["ceda/**", "pyproject.toml", "deploy/**", ".github/workflows/**"]
   pull_request:
-    paths: ["ceda/**", ".github/workflows/ceda.yml"]
+    paths: ["ceda/**", "pyproject.toml", "deploy/**", ".github/workflows/**"]
 
 jobs:
   model:

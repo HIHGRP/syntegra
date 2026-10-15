@@ -683,7 +683,7 @@ Fixed enums change only through a CEDA release. Jurisdiction code lists change t
 | Tool | What it does |
 |---|---|
 | `ceda/tools/cedagen.py validate` | Parses the model; checks names (≤ 64 chars, no MySQL 9.7 reserved words), types, enums, code lists, references, zone rules (special only in vault; sealed fields elsewhere), append-only rules, partition rules (keys include the partition column; no FKs), index sizes (≤ 3,072 bytes), row size (≤ 65,535 bytes), money/currency pairing, events, metrics, retention, and full traceability (260 MFS pages + change-request pages, 517 MFS FRs + change-request FRs, 174 Appendix J tables) |
-| `ceda/tools/cedagen.py generate` / `check` | Writes / verifies `ceda/generated/` |
+| `ceda/tools/cedagen.py generate` / `check` | Writes / verifies `ceda/generated/` and the index of artefacts with the build's pinned versions (§21) |
 | `ceda/tools/mysql_check.py` | Loads every zone's DDL into MySQL 9.7 and proves the database guarantees (18) |
 | `ceda/tools/release.py` | Freezes releases, derives expand-only deltas, and proves (`check --mysql`) that replaying the releases reproduces the current DDL structurally |
 | `ceda/tools/gen_django.py` | Generates the Django models and the runtime catalogue from the model; `check` fails when stale |
@@ -691,7 +691,7 @@ Fixed enums change only through a CEDA release. Jurisdiction code lists change t
 | `.github/workflows/ceda.yml` | Runs all of the above on every change under `ceda/`, with a `mysql:9.7` service |
 | `ceda/tools/extract_mfs.py` | Re-extracts the page catalogue and requirement register from the MFS when it is revised |
 
-Verified on MySQL 9.7.2 (14 October 2026): all 7 DDL files load (513 tables); the 1.1.0 baseline plus the 1.2.0 and 1.3.0 deltas replays to a structurally identical schema in every zone, and upgrades a seeded database in place; the following hold in the database itself — one active primary enrolment per learner; tenant-consistent keys refuse cross-tenant references; UBE Act payer rule; enum CHECKs; append-only UPDATE and DELETE refused (registry and vault); four-eyes on policy exceptions; 12-month exception window; one-sided ledger entries; one open coverage gap per target per rule; partitioned attendance accepts marks; one open fee obligation per learner × creditor × kind; SDAF can never be a school obligation; a protected admission must state its reason; one active holder per establishment position; posting approver ≠ requester; leave balances refuse over-booking.
+Verified on MySQL 9.7.2 (15 October 2026): all 7 DDL files load (552 tables: platform 26, registry 198, ops 239, vault 26, records 19, warehouse 44); the 1.1.0 baseline plus the 1.2.0 to 1.7.0 deltas replays to a structurally identical schema in every zone, and upgrades a seeded database in place; the following hold in the database itself — one active primary enrolment per learner; tenant-consistent keys refuse cross-tenant references; UBE Act payer rule; enum CHECKs; append-only UPDATE and DELETE refused (registry and vault); four-eyes on policy exceptions; 12-month exception window; one-sided ledger entries; one open coverage gap per target per rule; partitioned attendance accepts marks; one open fee obligation per learner × creditor × kind; SDAF can never be a school obligation; a protected admission must state its reason; one active holder per establishment position; posting approver ≠ requester; leave balances refuse over-booking.
 
 ---
 
@@ -740,30 +740,68 @@ The Appendix J DDL (174 tables) was extracted from the MFS and loaded into MySQL
 
 ## 21. Index of artefacts
 
+<!-- cedagen:index — written by ceda/tools/cedagen.py generate; do not edit by hand -->
+
 | Path | Content |
 |---|---|
-| `ceda/model/_meta.yaml` | Zones, standard columns, vocabularies, naming |
-| `ceda/model/types.yaml` | Canonical types → MySQL, Django, JSON Schema |
-| `ceda/model/enums.yaml` | 305 fixed enumerations |
-| `ceda/model/reference/ng_core.yaml` | Nigerian jurisdiction pack: 51 code lists |
-| `ceda/model/domains/*.yaml` | 31 domain models (459 entities) |
-| `ceda/model/events.yaml` | 133 domain events |
-| `ceda/model/metrics.yaml` | 51 semantic-layer metrics |
-| `ceda/model/retention.yaml` | 32 retention series |
+| `ceda/model/_meta.yaml` | Zones (6), standard columns, vocabularies, naming; CEDA 1.7.0 |
+| `ceda/model/types.yaml` | 45 canonical types → MySQL, Django, JSON Schema |
+| `ceda/model/enums.yaml` | 388 fixed enumerations |
+| `ceda/model/reference/*.yaml` | Jurisdiction packs: 51 code lists |
+| `ceda/model/domains/*.yaml` | 38 domain models (522 entities, 552 tables) |
+| `ceda/model/events.yaml` | 166 domain events |
+| `ceda/model/metrics.yaml` | 74 semantic-layer metrics |
+| `ceda/model/retention.yaml` | 33 retention series |
 | `ceda/model/traceability.yaml` | Behavioural requirements and Appendix J notes |
-| `ceda/sources/` | Extracted MFS page catalogue (260) and requirement register (571), Appendix J table index (174), MySQL 9.7 reserved words |
-| `ceda/generated/mysql/` | DDL per zone + jurisdiction code-list seed |
-| `ceda/generated/dictionary/` | Data dictionary per domain |
-| `ceda/generated/erd/` | Mermaid ERDs per domain |
-| `ceda/generated/jsonschema/`, `ceda/generated/openapi/components.yaml` | Canonical resource schemas |
-| `ceda/generated/events/` | Event catalogue, envelope and payload schemas |
+| `ceda/model/change_requests/CR-*.yaml` | 6 change requests (CR-001, CR-002, CR-003, CR-004, CR-005, CR-006): 28 pages and 78 requirements beyond the MFS (CD-18) |
+| `ceda/sources/` | Extracted MFS page catalogue (260) and requirement register (571), Appendix J table index (174), MySQL 9.7 reserved words (264) |
+| `ceda/generated/mysql/` | DDL per zone + jurisdiction code-list seed (7 files, 552 tables, 8,515 columns) |
+| `ceda/generated/dictionary/` | Data dictionary per domain (39 files) |
+| `ceda/generated/erd/` | Mermaid ERDs per domain (38 files) |
+| `ceda/generated/jsonschema/`, `ceda/generated/openapi/components.yaml` | Canonical resource schemas (37 JSON Schema bundles + OpenAPI components) |
+| `ceda/generated/events/` | Event catalogue, envelope and payload schemas (3 files) |
 | `ceda/generated/metrics/catalog.md` | Metric catalogue |
-| `ceda/generated/traceability/` | Page, requirement and Appendix J traceability |
+| `ceda/generated/traceability/` | Page (288/288), requirement (588/595 realised in data) and Appendix J (174/174) traceability |
 | `ceda/generated/summary.json` | Counts |
-| `ceda/model/change_requests/CR-*.yaml` | Change requests: requirements and pages beyond the MFS (CD-18) |
-| `ceda/releases/<version>/` | Frozen release DDL: 1.1.0 baseline; 1.2.0 to 1.6.0 deltas and expand scripts (CD-21) |
+| `ceda/releases/<version>/` | Frozen release DDL: 1.1.0 baseline; 1.2.0 to 1.7.0 deltas and expand scripts (CD-21) |
 | `ceda/templates/federal_institutions.csv` | Column layout of the federal institutions reference import (FR-FED-04) |
+| `ceda/guide/img/` | End-User Guide screenshots (31) (§30) |
 | `ceda/tools/gen_django.py` → `src/syntegra/*/models.py`, `src/syntegra/core/catalog/ceda_catalog.json` | Django models (`managed = False`) and the runtime catalogue (events, metrics, enums, code lists, pages) for the application |
+
+### Build and runtime versions
+
+Read from the files that pin them; `cedagen.py check` fails when this table no longer matches them.
+
+| Layer | Version | Pinned in |
+|---|---|---|
+| Operating system — application image | Red Hat Enterprise Linux 10 (UBI 10 minimal) | `deploy/Containerfile`: `registry.access.redhat.com/ubi10/python-312-minimal` |
+| Python | >=3.12, <3.13 | `pyproject.toml` |
+| Database — MySQL LTS | 9.7 | `deploy/compose.yaml`: `docker.io/library/mysql:9.7` |
+| Cache and rate limits — Valkey | 8 | `deploy/compose.yaml`: `docker.io/valkey/valkey:8` |
+| Runtime library — Django | 5.2.7 | `pyproject.toml` |
+| Runtime library — djangorestframework | 3.16.1 | `pyproject.toml` |
+| Runtime library — mysqlclient | 2.2.7 | `pyproject.toml` |
+| Runtime library — cryptography | 45.0.7 | `pyproject.toml` |
+| Runtime library — argon2-cffi | 25.1.0 | `pyproject.toml` |
+| Runtime library — PyYAML | 6.0.2 | `pyproject.toml` |
+| Runtime library — Jinja2 | 3.1.6 | `pyproject.toml` |
+| Runtime library — celery | 5.5.3 | `pyproject.toml` |
+| Runtime library — gunicorn | 23.0.0 | `pyproject.toml` |
+| Runtime library — segno | 1.6.6 | `pyproject.toml` |
+| Quality gate — pytest | 8.4.2 | `pyproject.toml` [dev] |
+| Quality gate — pytest-django | 4.11.1 | `pyproject.toml` [dev] |
+| Quality gate — ruff | 0.13.3 | `pyproject.toml` [dev] |
+| Quality gate — mypy | 1.18.2 | `pyproject.toml` [dev] |
+| Quality gate — django-stubs | 5.2.5 | `pyproject.toml` [dev] |
+| Quality gate — djangorestframework-stubs | 3.16.4 | `pyproject.toml` [dev] |
+| Quality gate — import-linter | 2.5 | `pyproject.toml` [dev] |
+| Quality gate — types-PyYAML | unpinned | `pyproject.toml` [dev] |
+| Continuous integration — app | ubuntu-latest, Python 3.12, mysql:9.7 | `.github/workflows/app.yml` |
+| Continuous integration — ceda | ubuntu-latest, Python 3.12, mysql:9.7 | `.github/workflows/ceda.yml` |
+
+<!-- /cedagen:index -->
+
+---
 
 ## 22. Change log
 

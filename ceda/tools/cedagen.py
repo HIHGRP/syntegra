@@ -14,6 +14,8 @@ This tool validates it and generates every derived artefact under ceda/generated
   traceability/ requirement, page and Appendix J coverage reports
   summary.json  counts used by the documentation
 
+and the index of artefacts in CEDA.md §21 (between the cedagen:index markers), with the build's pinned versions.
+
 Usage:
   python3 ceda/tools/cedagen.py validate        # validate only (exit 1 on errors)
   python3 ceda/tools/cedagen.py generate        # validate, then (re)write ceda/generated/
@@ -1245,6 +1247,119 @@ def gen_seed(m: Model) -> dict:
     return {"mysql/15_registry_seed_code_lists.sql": "\n".join(L) + "\n"}
 
 
+INDEX_START = "<!-- cedagen:index — written by ceda/tools/cedagen.py generate; do not edit by hand -->"
+INDEX_END = "<!-- /cedagen:index -->"
+
+
+def _n(files: dict, prefix: str) -> int:
+    return sum(1 for rel in files if rel.startswith(prefix))
+
+
+def _versions() -> list:
+    """(layer, version, source) for the build, read from the files that pin them; empty when ceda/ stands alone."""
+    repo = ROOT.parent
+    pyproject = repo / "pyproject.toml"
+    if not pyproject.exists():
+        return []
+    import tomllib
+    proj = tomllib.loads(pyproject.read_text(encoding="utf-8"))["project"]
+    rows = []
+    cf = repo / "deploy" / "Containerfile"
+    if cf.exists():
+        image = re.findall(r"^FROM\s+(\S+)", cf.read_text(encoding="utf-8"), re.M)[-1]
+        ubi = re.search(r"/ubi(\d+)/", image)
+        os_name = f"Red Hat Enterprise Linux {ubi.group(1)} (UBI {ubi.group(1)} minimal)" if ubi else image
+        rows.append(("Operating system — application image", os_name, f"`deploy/Containerfile`: `{image}`"))
+    rows.append(("Python", proj["requires-python"].replace(",", ", "), "`pyproject.toml`"))
+    compose = repo / "deploy" / "compose.yaml"
+    if compose.exists():
+        for image in re.findall(r"^\s+image:\s*(\S+)", compose.read_text(encoding="utf-8"), re.M):
+            name, _, tag = image.rpartition("/")[2].partition(":")
+            layer = {"mysql": "Database — MySQL LTS", "valkey": "Cache and rate limits — Valkey"}.get(name, name)
+            rows.append((layer, tag, f"`deploy/compose.yaml`: `{image}`"))
+    for dep in proj["dependencies"]:
+        name, _, ver = dep.partition("==")
+        rows.append((f"Runtime library — {name}", ver or dep, "`pyproject.toml`"))
+    for dep in proj.get("optional-dependencies", {}).get("dev", []):
+        name, _, ver = dep.partition("==")
+        rows.append((f"Quality gate — {name}", ver or "unpinned", "`pyproject.toml` [dev]"))
+    for wf in sorted((repo / ".github" / "workflows").glob("*.yml")):
+        text = wf.read_text(encoding="utf-8")
+        runner = sorted(set(re.findall(r"runs-on:\s*(\S+)", text)))
+        services = sorted(set(re.findall(r"^\s+image:\s*(\S+)", text, re.M)))
+        py = sorted(set(re.findall(r"python-version:\s*\"?([\d.]+)", text)))
+        detail = ", ".join(runner + [f"Python {v}" for v in py] + services)
+        rows.append((f"Continuous integration — {wf.stem}", detail, f"`.github/workflows/{wf.name}`"))
+    return rows
+
+
+def gen_index(m: Model, files: dict) -> str:
+    """CEDA.md §21: the artefact index, with counts taken from the model and the generated files."""
+    s = json.loads(files["summary.json"])
+    mfs_pages = sum(1 for p in m.pages.values() if "change_request" not in p)
+    mfs_reqs = sum(1 for r in m.requirements.values() if "change_request" not in r)
+    releases = sorted((p.name for p in (ROOT / "releases").iterdir() if p.is_dir()),
+                      key=lambda v: tuple(int(x) for x in v.split(".")))
+    guide = ROOT / "guide" / "img"
+    shots = len(list(guide.glob("*.png"))) if guide.exists() else 0
+    crs = ", ".join(s["change_requests"])
+    rows = [
+        ("`ceda/model/_meta.yaml`", f"Zones ({len(ZONE_ORDER)}), standard columns, vocabularies, naming; CEDA {s['version']}"),
+        ("`ceda/model/types.yaml`", f"{len(m.types)} canonical types → MySQL, Django, JSON Schema"),
+        ("`ceda/model/enums.yaml`", f"{s['enums']} fixed enumerations"),
+        ("`ceda/model/reference/*.yaml`", f"Jurisdiction packs: {s['code_lists']} code lists"),
+        ("`ceda/model/domains/*.yaml`", f"{s['domains']} domain models ({s['entities']} entities, {s['tables']} tables)"),
+        ("`ceda/model/events.yaml`", f"{s['events']} domain events"),
+        ("`ceda/model/metrics.yaml`", f"{s['metrics']} semantic-layer metrics"),
+        ("`ceda/model/retention.yaml`", f"{s['retention_series']} retention series"),
+        ("`ceda/model/traceability.yaml`", "Behavioural requirements and Appendix J notes"),
+        ("`ceda/model/change_requests/CR-*.yaml`", f"{len(s['change_requests'])} change requests ({crs}): "
+         f"{len(m.pages) - mfs_pages} pages and {len(m.requirements) - mfs_reqs} requirements beyond the MFS (CD-18)"),
+        ("`ceda/sources/`", f"Extracted MFS page catalogue ({mfs_pages}) and requirement register ({mfs_reqs}), "
+         f"Appendix J table index ({len(m.appj)}), MySQL 9.7 reserved words ({len(m.reserved)})"),
+        ("`ceda/generated/mysql/`", f"DDL per zone + jurisdiction code-list seed ({_n(files, 'mysql/')} files, "
+         f"{s['tables']} tables, {s['columns']:,} columns)"),
+        ("`ceda/generated/dictionary/`", f"Data dictionary per domain ({_n(files, 'dictionary/')} files)"),
+        ("`ceda/generated/erd/`", f"Mermaid ERDs per domain ({_n(files, 'erd/')} files)"),
+        ("`ceda/generated/jsonschema/`, `ceda/generated/openapi/components.yaml`",
+         f"Canonical resource schemas ({_n(files, 'jsonschema/')} JSON Schema bundles + OpenAPI components)"),
+        ("`ceda/generated/events/`", f"Event catalogue, envelope and payload schemas ({_n(files, 'events/')} files)"),
+        ("`ceda/generated/metrics/catalog.md`", "Metric catalogue"),
+        ("`ceda/generated/traceability/`", f"Page ({s['pages_covered']}/{s['pages_total']}), requirement "
+         f"({s['fr_data_mapped']}/{s['fr_total']} realised in data) and Appendix J "
+         f"({s['appj_tables_mapped']}/{s['appj_tables_total']}) traceability"),
+        ("`ceda/generated/summary.json`", "Counts"),
+        ("`ceda/releases/<version>/`", f"Frozen release DDL: {releases[0]} baseline; {releases[1]} to {releases[-1]} "
+         "deltas and expand scripts (CD-21)" if len(releases) > 1 else f"Frozen release DDL: {releases[0]} baseline"),
+        ("`ceda/templates/federal_institutions.csv`", "Column layout of the federal institutions reference import (FR-FED-04)"),
+        ("`ceda/guide/img/`", f"End-User Guide screenshots ({shots}) (§30)"),
+        ("`ceda/tools/gen_django.py` → `src/syntegra/*/models.py`, `src/syntegra/core/catalog/ceda_catalog.json`",
+         "Django models (`managed = False`) and the runtime catalogue (events, metrics, enums, code lists, pages) for the application"),
+    ]
+    L = [INDEX_START, "", "| Path | Content |", "|---|---|"]
+    L += [f"| {path} | {text} |" for path, text in rows]
+    versions = _versions()
+    if versions:
+        L += ["", "### Build and runtime versions", "",
+              "Read from the files that pin them; `cedagen.py check` fails when this table no longer matches them.", "",
+              "| Layer | Version | Pinned in |", "|---|---|---|"]
+        L += [f"| {layer} | {ver} | {src} |" for layer, ver, src in versions]
+    return "\n".join(L + ["", INDEX_END])
+
+
+def sync_index(m: Model, files: dict, write: bool) -> bool:
+    """Write (or check) the generated block of CEDA.md §21. Returns True when it is up to date."""
+    doc = ROOT / "CEDA.md"
+    text = doc.read_text(encoding="utf-8")
+    start, end = text.find(INDEX_START), text.find(INDEX_END)
+    if start < 0 or end < 0:
+        raise SystemExit(f"{doc.name}: §21 index markers missing")
+    new = text[:start] + gen_index(m, files) + text[end + len(INDEX_END):]
+    if write and new != text:
+        doc.write_text(new, encoding="utf-8")
+    return new == text
+
+
 def generate_all(m: Model) -> dict:
     plan_keys(m)
     files = {}
@@ -1284,7 +1399,8 @@ def main(argv=None):
         return 0
     if args.command == "generate":
         write_tree(files, GENERATED)
-        print(f"generated {len(files)} files under {GENERATED.relative_to(ROOT.parent)}")
+        sync_index(m, files, write=True)
+        print(f"generated {len(files)} files under {GENERATED.relative_to(ROOT.parent)} and the CEDA.md §21 index")
         return 0
     # check
     stale = []
@@ -1294,6 +1410,8 @@ def main(argv=None):
         if p is None or p.read_text(encoding="utf-8") != content:
             stale.append(rel)
     stale.extend(f"{rel} (orphan)" for rel in existing)
+    if not sync_index(m, files, write=False):
+        stale.append("CEDA.md §21 index of artefacts")
     if stale:
         print("generated artefacts are stale; run: python3 ceda/tools/cedagen.py generate")
         for s in stale[:50]:
