@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from "_seat_macros.html" import room %}
+{% block title %}Seating plan — {{ d.class.name }}{% endblock %}
+{% block content %}
+<h1>Seating plan — {{ d.class.name }}</h1>
+<p class="muted">{{ d.institution }} · {{ d.learners }} learners{% if d.plan %} · {{ d.plan.room }} · {{ d.plan.layout|lower }} · strategy: {{ d.plan.strategy|human }}{% endif %}</p>
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<form method="post" class="card no-print" id="arrange">
+  <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="generate">
+  <div class="grid3">
+    <label>Classroom<select name="room_id">{% for r in rooms %}<option value="{{ r.id }}" {% if (d.plan and d.plan.room == r.code) or (not d.plan and r.home) %}selected{% endif %}>{{ r.code }} · {{ r.capacity }} seats{% if not r.usable %} — assessed {{ r.usability|human|lower }}{% endif %}</option>{% endfor %}</select></label>
+    <label>Layout<select name="style">{% for k, v in styles.items() %}<option value="{{ k }}" {% if d.plan and d.plan.style == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+    <label>Strategy<select name="strategy">{% for s in strategies %}<option value="{{ s }}" {% if d.plan and d.plan.strategy == s %}selected{% endif %}>{{ {"alphabetical": "Alphabetical", "ability": "By ability — most support at the front", "mixed_ability": "Mixed ability — stronger with weaker at each desk", "random": "Random", "separate_negative_influences": "Separate negative influences"}[s] }}</option>{% endfor %}</select></label>
+  </div>
+  <p><button class="primary">Arrange the class</button> <span class="muted">Learners with a seating or large-print adjustment always sit in the front row.</span></p>
+</form>
+{% if d.plan %}
+<div class="legend no-print" aria-label="Key"><span><span class="rag green"></span>Green — working average 70+</span><span><span class="rag amber"></span>Amber — 50 to 69</span><span><span class="rag red"></span>Red — below 50</span><span><span class="front-star">★</span> front-row adjustment</span><span>att. = attendance this term</span></div>
+<p class="muted no-print" id="influence-line">{% if d.kept_apart_pairs %}{% if d.plan.strategy == "separate_negative_influences" %}{{ d.plan.kept_apart }} pair{{ "" if d.plan.kept_apart == 1 else "s" }} kept apart on the behaviour evidence{% else %}{{ d.kept_apart_pairs }} pair{{ "" if d.kept_apart_pairs == 1 else "s" }} with behaviour evidence{% endif %} · sitting together now: <strong>{{ d.plan.still_neighbours }}</strong>{% else %}No pairs in this class have enough shared behaviour evidence yet (20 events) to keep apart.{% endif %} · Drag a learner onto another seat to swap them, or tap one then the other.</p>
+{{ room(d.plan) }}
+{% if d.plan.evidence %}<details class="card no-print" id="evidence"><summary><strong>Behaviour evidence</strong> — pairs who behave differently when seated together (visible to this class's teachers only)</summary>
+  <table class="compact"><thead><tr><th scope="col">Learners</th><th scope="col" class="num">Shared events</th><th scope="col" class="num">Negative, together</th><th scope="col" class="num">Negative, apart</th><th scope="col">Now</th></tr></thead>
+  <tbody>{% for e in d.plan.evidence %}<tr><td>{{ e.a }} and {{ e.b }}</td><td class="num">{{ e.shared }}</td><td class="num">{{ e.negative_adjacent }}</td><td class="num">{{ e.negative_apart }}</td><td>{% if not e.counts %}<span class="muted">not enough evidence</span>{% elif e.together %}<span class="sev sev-high">sitting together</span> ({{ e.seats[0] }}, {{ e.seats[1] }}){% else %}apart ({{ e.seats[0] }}, {{ e.seats[1] }}){% endif %}</td></tr>{% endfor %}</tbody></table>
+  <p class="muted">Counts come from behaviour logged in this class's lessons. They never include protected characteristics and are a guide for the teacher, not a judgement about a child.</p>
+</details>{% endif %}
+{% if d.plan.unplaced %}<p class="muted">Not yet seated: {% for p in d.plan.unplaced %}{{ p.given }} {{ p.family }}{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
+<form method="post" id="save" class="no-print" hidden>
+  <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="save">
+  <input type="hidden" name="plan_id" value="{{ d.plan.id }}"><input type="hidden" name="placements" id="placements">
+  <p><button class="primary">Save my arrangement</button> <span class="muted" id="moves"></span></p>
+</form>
+<section class="grid2c no-print">
+  <article class="card"><h2>On the classroom screen</h2><p>The board-safe view shows names only — no marks, attendance or adjustments.</p><p><a href="/classes/{{ d.class.id }}/seating?view=board">Open the board view</a></p></article>
+  <article class="card"><h2>Print for an observer</h2>
+    <form method="post"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="print"><input type="hidden" name="plan_id" value="{{ d.plan.id }}">
+      <label>Who is it for?<input name="viewer_name" required minlength="3" placeholder="e.g. Mrs A. Eze, ASUBEB quality assurance"></label>
+      <p><button>Print (logged and watermarked)</button></p></form></article>
+</section>
+<script>
+(function () {
+  var room = document.querySelector('.room'); if (!room) return;
+  var picked = null, moves = 0;
+  function seats() { return Array.prototype.slice.call(room.querySelectorAll('.seat')); }
+  function swap(a, b) {
+    if (!a || !b || a === b) return;
+    var pa = a.parentNode, na = a.nextSibling, pb = b.parentNode, nb = b.nextSibling;
+    var la = a.dataset.seat, lb = b.dataset.seat;
+    pb.insertBefore(a, nb); pa.insertBefore(b, na === b ? a : na);
+    a.dataset.seat = lb; b.dataset.seat = la;
+    a.querySelector('.lbl').textContent = lb; b.querySelector('.lbl').textContent = la;
+    moves += 1; save();
+  }
+  function save() {
+    var out = {};
+    seats().forEach(function (s) { if (s.dataset.key) out[s.dataset.key] = s.dataset.seat; });
+    document.getElementById('placements').value = JSON.stringify(out);
+    document.getElementById('save').hidden = false;
+    document.getElementById('moves').textContent = moves + ' change' + (moves === 1 ? '' : 's') + ' not saved yet';
+  }
+  room.addEventListener('dragstart', function (e) { var s = e.target.closest('.seat'); if (s) { picked = s; e.dataTransfer.effectAllowed = 'move'; } });
+  room.addEventListener('dragover', function (e) { var s = e.target.closest('.seat'); if (s) { e.preventDefault(); s.classList.add('drop'); } });
+  room.addEventListener('dragleave', function (e) { var s = e.target.closest('.seat'); if (s) s.classList.remove('drop'); });
+  room.addEventListener('drop', function (e) { var s = e.target.closest('.seat'); if (s) { e.preventDefault(); s.classList.remove('drop'); swap(picked, s); picked = null; } });
+  function tap(s) {
+    if (!picked) { if (s.dataset.key) { picked = s; s.classList.add('picked'); } return; }
+    picked.classList.remove('picked'); swap(picked, s); picked = null;
+  }
+  room.addEventListener('click', function (e) { var s = e.target.closest('.seat'); if (s) tap(s); });
+  room.addEventListener('keydown', function (e) { var s = e.target.closest('.seat'); if (s && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); tap(s); } });
+})();
+</script>
+{% else %}
+<p class="muted">No seating plan yet. Choose the classroom, layout and strategy above.</p>
+{% endif %}
+{% endblock %}

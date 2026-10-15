@@ -2,6 +2,7 @@
 {% block title %}Register · {{ cls.name }}{% endblock %}
 {% block content %}
 <h1>{{ cls.name }} — {{ day | date }}</h1>
+{% if ctx.has("seating:view") %}<p class="actions"><a href="/classes/{{ cls.id }}/seating">Seating plan</a></p>{% endif %}
 <p class="muted">Register status: <strong>{{ reg.status.replace("_", " ") }}</strong> · due {{ reg.due_at | date("%H:%M") }} UTC · {{ roster | length }} learners</p>
 {% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
 <form method="post" class="register">

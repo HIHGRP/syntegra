@@ -31,6 +31,7 @@ urlpatterns = [
     path("institutions/<uuid:institution_id>/regulation", views.institution_regulation, name="institution_regulation"),
     path("hr/establishment", views.establishment, name="establishment"),
     path("exams/series", views.exam_series, name="exam_series"),
+    path("classes/<uuid:class_id>/seating", views.seating, name="seating"),
     path("exams/series/<uuid:series_id>/sittings", views.exam_seating, name="exam_seating"),
     path("finance/performance", views.budget_execution, name="budget_execution"),
     path("finance/imprest", views.imprest, name="imprest"),

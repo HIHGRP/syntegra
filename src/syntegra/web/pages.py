@@ -40,6 +40,7 @@ IMPLEMENTED: dict[str, str] = {
     "STI-05": "security_careers",
     "EXM-01": "exam_series",
     "EXM-03": "exam_seating",
+    "BEH-102": "seating",
 }
 # Pages served for any signed-in user, independent of role lists
 UNIVERSAL = {"home", "catalogue", "forms_hub", "form_page"}

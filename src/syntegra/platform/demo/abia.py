@@ -891,6 +891,66 @@ def _teachers(schools: list[Any], names: _Names, out: Loaded, log: Log, per_scho
         log(f"  {done * per_school} teachers appointed at {done} secondary schools (employer: ASUBEB)")
 
 
+def _classrooms(schools: list[Any], out: Loaded, log: Log) -> None:
+    """At the sample secondary schools: a teacher's sign-in, home rooms for the classes (never a room assessed unsafe),
+    and, in SS 2A, a learner with an authorised front-seat adjustment and three pairs of learners whose (synthetic)
+    behaviour evidence says they should not sit together — for the classroom seating demonstration."""
+    from syntegra.academic.models import ClassGroup, ClassMembership
+    from syntegra.estate.models import PropertySite
+    from syntegra.estate.services import UNSAFE_USABILITY, room_usability
+    from syntegra.operations.models import Room
+    from syntegra.people.models import Staff, StaffPost
+    from syntegra.success.models import Adjustment, InfluenceScore
+
+    done = 0
+    for inst in schools:
+        if inst.category != "combined_secondary" or not PropertySite.objects.filter(institution_id=inst.id).exists():
+            continue
+        post = StaffPost.objects.filter(institution_id=inst.id, valid_to__isnull=True).order_by("staff_id").first()
+        if post is None:
+            continue
+        teacher = Staff.objects.get(pk=post.staff_id)
+        tch = _user(f"teacher.{inst.institution_code.lower()}@abia.demo",
+                    f"{teacher.given_name} {teacher.family_name}, teacher", "TCH", inst.scope_node_id, out, inst.name)  # fmt: skip
+        classes = list(ClassGroup.objects.filter(institution_id=inst.id).order_by("name"))
+        if all(c.room_id for c in classes):
+            continue
+        rooms = list(Room.objects.filter(scope_node_id=inst.scope_node_id, room_type="classroom").order_by("code"))
+        use = room_usability([r.id for r in rooms])
+        rooms = [r for r in rooms if use.get(r.id) not in UNSAFE_USABILITY]
+        head = _user(f"estate.{inst.institution_code.lower()}@abia.demo", "Facilities officer", "OPSM",
+                     inst.scope_node_id, out, inst.name)  # fmt: skip
+        ss2a = next((c for c in classes if c.name == "SS 2A"), None)
+        with context.use(head), uow.command("ops", None, action="demo_classrooms", record_kind="class_group") as cmd:
+            for i, c in enumerate(classes):
+                if rooms and not c.room_id:
+                    cmd.update(
+                        c, room_id=rooms[i % len(rooms)].id, form_teacher_staff_id=teacher.id if c is ss2a else None
+                    )
+            if ss2a is not None:
+                learners = sorted(
+                    ClassMembership.objects.filter(class_group_id=ss2a.id, valid_to__isnull=True).values_list(
+                        "learner_id", flat=True
+                    ),
+                    key=str,
+                )
+                if len(learners) >= 8:
+                    cmd.add(Adjustment(learner_id=learners[0], adjustment_kind="seating",
+                                       parameters={"note": "front row — short-sighted, glasses on order"},
+                                       applies_to=["lessons", "rooms"], authorised_by=tch.actor_id,
+                                       valid_from=dt.date(2026, 9, 14)))  # fmt: skip
+                    now = utcnow()
+                    for a, b, shared, neg_adj, neg_apart in ((1, 2, 31, 9, 2), (3, 4, 26, 7, 1), (5, 6, 24, 6, 2)):
+                        x, y = sorted((learners[a], learners[b]), key=str)
+                        cmd.add(InfluenceScore(class_group_id=ss2a.id, learner_a_id=x, learner_b_id=y,
+                                               shared_events=shared, negative_adjacent=neg_adj,
+                                               negative_apart=neg_apart, positive_adjacent=1, positive_apart=3,
+                                               computed_at=now))  # fmt: skip
+        done += 1
+    if done:
+        log(f"  classroom seating samples at {done} secondary schools (teacher sign-in, home rooms, SS 2A)")
+
+
 def _funding_samples(absu: Any, out: Loaded, log: Log) -> None:
     """Imprest, a staff co-operative loan and a TETFund intervention at ABSU, each through its full approval chain."""
     from syntegra.finance import budgets
@@ -986,6 +1046,7 @@ def run(scale: Scale | None = None, log: Log = print) -> Loaded:
             log("5/6 facilities and budgets")
             _extras(schools, tertiary, names, out, log)
             _teachers(schools, names, out, log)
+            _classrooms(schools, out, log)
             log("6/6 daily jobs: facility rules and the warehouse")
             from syntegra.analytics import warehouse
             from syntegra.estate import services as estate

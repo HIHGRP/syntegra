@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% from "_seat_macros.html" import room %}
+{% block title %}{{ d.class.name }} — seating plan (print){% endblock %}
+{% block content %}
+<p class="no-print"><a href="/classes/{{ d.class.id }}/seating">← Back to the seating plan</a> · Use your browser's Print command. This print is logged.</p>
+<div class="print-sheet">
+  <div class="watermark" aria-hidden="true">{% for _ in range(18) %}<span>For {{ pr.viewer_name }} · {{ pr.printed_at.strftime("%d %b %Y %H:%M") }} · confidential</span>{% endfor %}</div>
+  <h1>Seating plan — {{ d.class.name }}</h1>
+  <p class="muted">{{ d.institution }} · {{ d.plan.room }} · {{ d.plan.layout|lower }} · strategy: {{ d.plan.strategy|human }} · printed for <strong>{{ pr.viewer_name }}</strong> by {{ user.display_name if user else "" }} on {{ pr.printed_at.strftime("%d %b %Y at %H:%M") }} UTC · print record <code>{{ pr.id|string|truncate(13, true, "") }}</code></p>
+  {{ room(d.plan) }}
+  <p class="muted">Working grade: green 70+, amber 50–69, red below 50 (this term's marks). ★ front-row adjustment. Do not copy or leave unattended.</p>
+</div>
+{% endblock %}

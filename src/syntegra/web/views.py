@@ -884,3 +884,66 @@ def exam_seating(request: HttpRequest, series_id: uuid.UUID) -> HttpResponse:
     return render(
         request, "exam_seating.html", _ctx(request, d=exams.arrangements(series_id), page=pages.page("EXM-03"))
     )
+
+
+# ------------------------------------------------------------------------------- classroom seating plans (BEH-102)
+@require_http_methods(["GET", "POST"])
+@page("BEH-102")
+def seating(request: HttpRequest, class_id: uuid.UUID) -> HttpResponse:
+    """Seating plan: generate by strategy, rearrange by drag and drop, board-safe view, logged watermarked print."""
+    import json
+
+    from syntegra.success import arrange
+    from syntegra.success import seating_plans as sp
+
+    message, problem = None, None
+    if request.method == "POST":
+        action = request.POST.get("action")
+        try:
+            if action == "generate":
+                room = request.POST.get("room_id") or None
+                sp.generate(
+                    class_id,
+                    strategy=request.POST.get("strategy", ""),
+                    style=request.POST.get("style", "pairs"),
+                    room_id=_uuid_or_fail(room, "classroom") if room else None,
+                )
+                message = "New seating plan made."
+            elif action == "save":
+                try:
+                    placements = json.loads(request.POST.get("placements") or "{}")
+                except ValueError as exc:
+                    raise HardValidation("SEAT-PLACEMENTS", "The arrangement could not be read", "") from exc
+                if not isinstance(placements, dict):
+                    raise HardValidation("SEAT-PLACEMENTS", "The arrangement could not be read", "")
+                sp.save_manual(
+                    _uuid_or_fail(request.POST.get("plan_id"), "plan"), {str(k): str(v) for k, v in placements.items()}
+                )
+                message = "Your arrangement is saved."
+            elif action == "print":
+                pr = sp.log_print(
+                    _uuid_or_fail(request.POST.get("plan_id"), "plan"), request.POST.get("viewer_name", "")
+                )
+                data = sp.plan_view(class_id)
+                return render(request, "seating_print.html", _ctx(request, d=data, pr=pr, page=pages.page("BEH-102")))
+        except HardValidation as exc:
+            problem = exc.problem()
+    board = request.GET.get("view") == "board"
+    data = sp.plan_view(class_id, board=board)
+    if board:
+        return render(request, "seating_board.html", _ctx(request, d=data, page=pages.page("BEH-102")))
+    return render(
+        request,
+        "seating.html",
+        _ctx(
+            request,
+            d=data,
+            rooms=sp.rooms(class_id),
+            strategies=[s for s in arrange.STRATEGIES if s != "manual"],
+            styles=sp.STYLE_LABEL,
+            message=message,
+            problem=problem,
+            page=pages.page("BEH-102"),
+        ),
+        status=422 if problem else 200,
+    )
