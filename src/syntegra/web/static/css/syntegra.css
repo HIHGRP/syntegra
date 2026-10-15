@@ -98,3 +98,25 @@ td .line { display: block; font-size: .85rem; }
 .tabs { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
 .tabs a { padding: .4rem .8rem; border: 1px solid var(--line); border-radius: 999px; text-decoration: none; }
 .tabs a[aria-current="page"] { background: var(--chart-1); color: #fff; border-color: transparent; }
+/* examination seating (EXM-03): classes take categorical slots in fixed order; each desk also prints its class */
+:root { --cls-1: #2a78d6; --cls-2: #eb6834; --cls-3: #1baf7a; --cls-4: #eda100; --cls-5: #e87ba4; --cls-6: #6250d6; }
+@media (prefers-color-scheme: dark) { :root { --cls-1: #3987e5; --cls-2: #d95926; --cls-3: #199e70; --cls-4: #c98500; --cls-5: #d55181; --cls-6: #9085e9; } }
+.hall-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 1rem; align-items: baseline; }
+.hall-head h3 { margin: 0; }
+.front { text-align: center; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+  border: 1px dashed var(--line); border-radius: 6px; padding: .3rem; margin: .75rem 0; }
+.seats-wrap { overflow-x: auto; }
+.seats { display: grid; gap: 6px; min-width: max-content; }
+.desk { width: 7.2rem; min-height: 3.4rem; border: 1px solid var(--line); border-left: 5px solid var(--line); border-radius: 6px;
+  padding: .25rem .4rem; font-size: .72rem; line-height: 1.25; background: var(--surface); }
+.desk .lbl { color: var(--muted); font-family: ui-monospace, monospace; }
+.desk .no { font-weight: 700; font-variant-numeric: tabular-nums; }
+.desk .nm { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.desk.off { border-style: dashed; border-left-width: 1px; background: transparent; color: var(--muted); }
+.desk.empty { border-left-width: 1px; }
+.desk.c1 { border-left-color: var(--cls-1); } .desk.c2 { border-left-color: var(--cls-2); } .desk.c3 { border-left-color: var(--cls-3); }
+.desk.c4 { border-left-color: var(--cls-4); } .desk.c5 { border-left-color: var(--cls-5); } .desk.c6 { border-left-color: var(--cls-6); }
+.legend { display: flex; flex-wrap: wrap; gap: .4rem 1rem; font-size: .85rem; margin: .5rem 0; }
+.legend .sw { display: inline-block; width: .9rem; height: .9rem; border-radius: 3px; vertical-align: -2px; margin-right: .3rem; }
+.sw.c1 { background: var(--cls-1); } .sw.c2 { background: var(--cls-2); } .sw.c3 { background: var(--cls-3); }
+.sw.c4 { background: var(--cls-4); } .sw.c5 { background: var(--cls-5); } .sw.c6 { background: var(--cls-6); }

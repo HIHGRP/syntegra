@@ -499,6 +499,14 @@ def raise_work_order(action_id: uuid.UUID) -> MaintenanceRequest:
 
 
 # --------------------------------------------------------------------------- reads (FR-EST-05, EST-01, EST-02)
+UNSAFE_USABILITY = rules.UNSAFE
+
+
+def room_usability(room_ids: list[uuid.UUID]) -> dict[uuid.UUID, str]:
+    """Each room's latest recorded usability (rooms never assessed are absent)."""
+    return {k: v.usability for k, v in _latest(room_ids).items()}
+
+
 def _latest(subject_ids: list[uuid.UUID]) -> dict[uuid.UUID, FacilityAssessment]:
     out: dict[uuid.UUID, FacilityAssessment] = {}
     for x in FacilityAssessment.objects.filter(subject_id__in=subject_ids).order_by("-assessed_on", "-created_at"):

@@ -866,3 +866,21 @@ def security_careers(request: HttpRequest, agency_id: uuid.UUID) -> HttpResponse
     from syntegra.security_training import services as sti
 
     return render(request, "security_careers.html", _ctx(request, c=sti.careers(agency_id), page=pages.page("STI-05")))
+
+
+# ----------------------------------------------------------------------------------- examinations (EXM-01, EXM-03)
+@page("EXM-01")
+def exam_series(request: HttpRequest) -> HttpResponse:
+    from syntegra.assessment import exams
+
+    return render(request, "exams.html", _ctx(request, rows=exams.series_list(), page=pages.page("EXM-01")))
+
+
+@page("EXM-03")
+def exam_seating(request: HttpRequest, series_id: uuid.UUID) -> HttpResponse:
+    """Timetable and sitting arrangements: each paper's halls with their seat charts and seating lists."""
+    from syntegra.assessment import exams
+
+    return render(
+        request, "exam_seating.html", _ctx(request, d=exams.arrangements(series_id), page=pages.page("EXM-03"))
+    )

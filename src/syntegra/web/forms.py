@@ -666,6 +666,37 @@ def _assess(d: Data) -> Any:
     )
 
 
+# --------------------------------------------------------------------------- examinations (EXM-01, EXM-03)
+def _exams() -> Any:
+    from syntegra.assessment import exams
+
+    return exams
+
+
+def _plan_sitting(d: Data) -> Any:
+    from syntegra.assessment.api import starts_at
+
+    return _exams().plan_sitting(
+        _u(d["target"]),
+        [_u(x) for x in d["room_ids"]],
+        starts_at(d),
+        spacing=d.get("spacing") or "alternate",
+        invigilator_staff_ids=[_u(x) for x in d.get("invigilator_staff_ids") or []],
+    )
+
+
+def _sitting_done(r: Any, _d: Data) -> tuple[str, str | None]:
+    from syntegra.assessment.models import ExamPaper, ExamSeries
+
+    seated = sum(len(x.seat_allocations or {}) for x in r)
+    paper = ExamPaper.objects.get(pk=r[0].paper_id)
+    series = ExamSeries.objects.get(pk=paper.series_id)
+    return (
+        f"{paper.paper_code}: {seated} candidates seated in {len(r)} hall{'s' if len(r) != 1 else ''}.",
+        f"/exams/series/{series.id}/sittings#paper-{paper.paper_code}",
+    )
+
+
 # --------------------------------------------------------------------------- serializers reused from the API
 def _api(module: str, name: str) -> Any:
     import importlib
@@ -1897,6 +1928,95 @@ FORMS: tuple[Form, ...] = (
         lambda d: _estate().raise_work_order(_u(d["target"])),
         _ok("Work order raised.", "/estate/actions"),
         submit="Raise work order",
+    ),
+    # ------------------------------------------------------------------ examinations (EXM-01, EXM-03)
+    Form(
+        "exam-series",
+        "Set up an examination series",
+        "Examinations",
+        "exam:manage",
+        "An examination series is one set of papers sat together — the first-term examinations, a mock WASSCE, the "
+        "BECE. Add its papers next, then enter the candidates and plan the sitting arrangements.",
+        (
+            Field("institution_id", "Institution", "select", choices=ch.institutions),
+            Field("name", "Name", hint="e.g. First Term Examinations 2026/2027 — SS3"),
+            Field("exam_body", "Set by", "select", choices=ch.code_list("exam_body"), default="INSTITUTION"),
+            Field("entry_closes_on", "Entries close on", "date", required=False),
+        ),
+        lambda d: _exams().create_series(
+            _u(d["institution_id"]), d["name"], exam_body=d["exam_body"], entry_closes_on=d.get("entry_closes_on")
+        ),
+        lambda r, _d: (f"Series {r.name} set up. Add its papers next.", f"/exams/series/{r.id}/sittings"),
+        api("assessment", "SeriesSerializer"),
+        submit="Set up series",
+    ),
+    Form(
+        "exam-paper",
+        "Add a paper",
+        "Examinations",
+        "exam:manage",
+        "A paper of the series, with its code and how long it lasts.",
+        (
+            _target("Series", ch.exam_series),
+            Field("paper_code", "Paper code", hint="e.g. MTH-SS3"),
+            Field("title", "Title", hint="e.g. Mathematics (Paper 1: objective and theory)"),
+            Field("duration_minutes", "Duration (minutes)", "number", default="120"),
+        ),
+        lambda d: _exams().add_paper(_u(d["target"]), d["paper_code"], d["title"], int(d["duration_minutes"])),
+        lambda r, d: (f"Paper {r.paper_code} added.", f"/exams/series/{d['target']}/sittings"),
+        api("assessment", "PaperSerializer"),
+        submit="Add paper",
+    ),
+    Form(
+        "exam-entries",
+        "Enter candidates",
+        "Examinations",
+        "exam:manage",
+        "Enters every learner in the chosen classes for the chosen papers. Each candidate gets a candidate number; "
+        "learners already entered keep theirs.",
+        (
+            _target("Series", ch.exam_series),
+            Field("class_ids", "Classes", "multi", choices=ch.classes, hint="Hold Ctrl (⌘ on Mac) to choose several."),
+            Field("paper_codes", "Papers", "multi", choices=ch.exam_paper_codes),
+        ),
+        lambda d: _exams().enter_classes(_u(d["target"]), [_u(x) for x in d["class_ids"]], d["paper_codes"]),
+        lambda r, d: (
+            f"{r['entered']} candidates entered" + (f", {r['updated']} updated." if r["updated"] else "."),
+            f"/exams/series/{d['target']}/sittings",
+        ),
+        api("assessment", "EntriesSerializer"),
+        submit="Enter candidates",
+    ),
+    Form(
+        "exam-sitting",
+        "Plan the sitting arrangement",
+        "Examinations",
+        "exam:manage",
+        "Seats every candidate entered for the paper across the halls you choose, mixing classes so that neighbours "
+        "are from different classes, and shares out the invigilators — at least one per hall and one more for every "
+        "further 30 candidates. A hall assessed unsafe, or already used by another paper at that time, is refused. "
+        "Planning a paper again replaces its earlier arrangement.",
+        (
+            _target("Paper", ch.exam_papers),
+            Field("room_ids", "Halls", "multi", choices=ch.exam_halls, hint="Hold Ctrl (⌘ on Mac) to choose several."),
+            Field("starts_on", "Date", "date"),
+            Field("starts_time", "Starts at", hint="24-hour time, e.g. 09:00"),
+            Field(
+                "spacing",
+                "Spacing",
+                "select",
+                choices=ch.fixed(
+                    ["alternate", "every_desk"],
+                    {"alternate": "Alternate desks (no one directly beside another)", "every_desk": "Every desk"},
+                ),
+                default="alternate",
+            ),
+            Field("invigilator_staff_ids", "Invigilators", "multi", choices=ch.staff),
+        ),
+        _plan_sitting,
+        _sitting_done,
+        api("assessment", "SittingSerializer"),
+        submit="Plan seating",
     ),
 )
 

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ d.series.name }} — sitting arrangements{% endblock %}
+{% set colour = {} %}{% for c in d.classes %}{% set _ = colour.update({c: "c" ~ ((loop.index0 % 6) + 1)}) %}{% endfor %}
+{% block content %}
+<p><a href="/exams/series">← Examination series</a></p>
+<h1>{{ d.series.name }}</h1>
+<p class="muted">{{ d.institution.name if d.institution else "" }} · {{ d.series.exam_body|human }} · {{ d.candidates }} candidates · {{ d.series.status|human }}</p>
+<p class="actions">{% if ctx.has("exam:manage") %}<a href="/forms/exam-paper">Add a paper</a><a href="/forms/exam-entries">Enter candidates</a><a href="/forms/exam-sitting">Plan the sitting arrangement</a>{% endif %}</p>
+{% if d.classes %}<div class="legend" aria-label="Classes">{% for c in d.classes %}<span><span class="sw {{ colour[c] }}"></span>{{ c }}</span>{% endfor %}</div>{% endif %}
+{% for p in d.papers %}
+<section class="card" id="paper-{{ p.code }}">
+  <h2>{{ p.code }} — {{ p.title }}</h2>
+  <p class="muted">{{ p.duration }} minutes · {{ p.entered }} candidates entered{% if p.sittings %} · {{ p.sittings|length }} hall{{ "" if p.sittings|length == 1 else "s" }} · starts {{ p.sittings[0].starts_at.strftime("%a %d %b %Y, %H:%M") }}{% endif %}</p>
+  {% if not p.sittings %}<p class="muted">No sitting arrangement yet.{% if ctx.has("exam:manage") %} <a href="/forms/exam-sitting">Plan it</a>.{% endif %}</p>{% endif %}
+  {% for h in p.sittings %}
+  <article class="hall" aria-labelledby="hall-{{ h.id }}">
+    <div class="hall-head"><h3 id="hall-{{ h.id }}">Hall {{ h.hall_code }}{% if h.hall != h.hall_code %} · {{ h.hall }}{% endif %}</h3>
+      <span class="muted">{{ h.candidates }} candidates in {{ h.desks }} desks · {{ "alternate desks" if h.spacing == "alternate" else "every desk" }} · same-class neighbours: <strong>{{ h.same_class_neighbours }}</strong> · invigilators: {{ h.invigilators|join(", ") or "none" }}</span></div>
+    <div class="front">Front · invigilator's table · door</div>
+    <div class="seats-wrap"><div class="seats" style="grid-template-columns: repeat({{ h.grid[0]|length if h.grid else 1 }}, max-content)" role="table" aria-label="Seat chart, hall {{ h.hall_code }}">
+      {% for row in h.grid %}{% for cell in row %}{% if cell.candidate %}<div class="desk {{ colour.get(cell.candidate.class, '') }}" role="cell" title="{{ cell.desk }} · {{ cell.candidate.number }} · {{ cell.candidate.name }} · {{ cell.candidate.class }}"><span class="lbl">{{ cell.desk }}</span> <span class="no">{{ cell.candidate.number }}</span><span class="nm">{{ cell.candidate.name }}</span><span class="lbl">{{ cell.candidate.class }}</span></div>{% elif cell.in_use %}<div class="desk empty" role="cell"><span class="lbl">{{ cell.desk }}</span><span class="nm">free</span></div>{% else %}<div class="desk off" role="cell"><span class="lbl">{{ cell.desk }}</span><span class="nm">not used</span></div>{% endif %}{% endfor %}{% endfor %}
+    </div></div>
+    <details><summary>Seating list for hall {{ h.hall_code }} ({{ h.candidates }})</summary>
+      <table class="compact"><thead><tr><th scope="col">Candidate no.</th><th scope="col">Name</th><th scope="col">Class</th><th scope="col">Desk</th><th scope="col">Signature</th></tr></thead>
+      <tbody>{% for s in h.seated %}<tr><td><code>{{ s.number }}</code></td><td>{{ s.name }}</td><td>{{ s.class }}</td><td><code>{{ s.desk }}</code></td><td></td></tr>{% endfor %}</tbody></table>
+    </details>
+  </article>
+  {% endfor %}
+</section>
+{% else %}<p class="muted">No papers yet.{% if ctx.has("exam:manage") %} <a href="/forms/exam-paper">Add one</a>.{% endif %}</p>{% endfor %}
+{% endblock %}

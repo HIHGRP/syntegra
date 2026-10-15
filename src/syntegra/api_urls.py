@@ -22,6 +22,7 @@ urlpatterns = [
     path("", include("syntegra.finance.urls")),
     path("", include("syntegra.funding.urls")),
     path("", include("syntegra.estate.urls")),
+    path("", include("syntegra.assessment.urls")),
     path("ceda", ceda.Catalogue.as_view()),
     path("ceda/<str:entity>", ceda.EntityList.as_view()),
     path("ceda/<str:entity>/<uuid:pk>", ceda.EntityDetail.as_view()),

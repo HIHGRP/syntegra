@@ -840,6 +840,57 @@ def _extras(schools: list[Any], tertiary: dict[str, Any], names: _Names, out: Lo
         _funding_samples(absu, out, log)
 
 
+def _teachers(schools: list[Any], names: _Names, out: Loaded, log: Log, per_school: int = 8) -> None:
+    """Teachers (employed by ASUBEB) at the sample secondary schools that have facilities — the invigilators for
+    the examination seating demonstration."""
+    from syntegra.estate.models import PropertySite
+    from syntegra.hr import establishment as est
+    from syntegra.hr.models import EmploymentRecord, Position
+    from syntegra.people import services as people
+
+    board = _node("AB-ASUBEB")
+    sta = _user("hr.ministry@abia.gov.ng", "Director of Establishments, Ministry of Education", "HR",
+                _node(STATE).id, out, "Abia State")  # fmt: skip
+    rng = names.rng
+    subjects = ("Mathematics", "English Language", "Basic Science", "Civic Education", "Biology", "Igbo Language",
+                "Physics", "Chemistry")  # fmt: skip
+    done = 0
+    for inst in schools:
+        if inst.category != "combined_secondary" or not PropertySite.objects.filter(institution_id=inst.id).exists():
+            continue
+        positions = list(Position.objects.filter(institution_id=inst.id).values_list("id", flat=True))
+        if EmploymentRecord.objects.filter(position_id__in=positions).exists():
+            continue
+        with context.use(sta):
+            for i in range(per_school):
+                sex = "female" if rng.random() < 0.55 else "male"
+                given, _m, family, dob = names.person(sex, dt.date(1972, 1, 1), 365 * 24)
+                gl = rng.randrange(8, 13)
+                pos = est.create_position(
+                    est.NewPosition(
+                        title=f"Teacher, {subjects[i % len(subjects)]}",
+                        cadre_code="TEACHER",
+                        employer_scope_id=board.id,
+                        grade_level_min=max(7, gl - 1),
+                        grade_level_max=min(16, gl + 1),
+                        institution_id=inst.id,
+                    )
+                )
+                staff = people.create_staff_master(given, family, date_of_birth=dob, sex=sex)
+                first = dt.date(rng.randrange(min(2023, max(2000, dob.year + 23)), 2024), rng.randrange(1, 13), 1)
+                est.appoint(
+                    est.Appointment(
+                        staff_id=staff.id, position_id=pos.id, appointment_type="first_appointment",
+                        first_appointment_on=first, grade_level=gl, step=rng.randrange(1, 6),
+                        confirmed_on=first + dt.timedelta(days=730) if first.year < 2024 else None,
+                    )
+                )  # fmt: skip
+                out.staff += 1
+        done += 1
+    if done:
+        log(f"  {done * per_school} teachers appointed at {done} secondary schools (employer: ASUBEB)")
+
+
 def _funding_samples(absu: Any, out: Loaded, log: Log) -> None:
     """Imprest, a staff co-operative loan and a TETFund intervention at ABSU, each through its full approval chain."""
     from syntegra.finance import budgets
@@ -934,6 +985,7 @@ def run(scale: Scale | None = None, log: Log = print) -> Loaded:
         if scale.extras:
             log("5/6 facilities and budgets")
             _extras(schools, tertiary, names, out, log)
+            _teachers(schools, names, out, log)
             log("6/6 daily jobs: facility rules and the warehouse")
             from syntegra.analytics import warehouse
             from syntegra.estate import services as estate

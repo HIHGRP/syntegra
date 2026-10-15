@@ -104,6 +104,7 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "estate:*",
             "warehouse:*",
             "assessment:view",
+            "exam:view",
         ],
     ),
     "LGA": (
@@ -128,6 +129,7 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "budget:view",
             "funding:view",
             "assessment:view",
+            "exam:view",
         ],
     ),
     "HEAD": (
@@ -163,6 +165,21 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "estate:*",
             "warehouse:view",
             "assessment:*",
+            "exam:*",
+        ],
+    ),
+    "EXO": (
+        "Examinations officer",
+        "confidential",
+        [
+            "exam:*",
+            "assessment:view",
+            "learner:view",
+            "class:view",
+            "staff:view",
+            "institution:view",
+            "estate:view",
+            "metric:view",
         ],
     ),
     "TCH": (
@@ -178,6 +195,7 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "assessment:enter",
             "assessment:manage",
             "assessment:view",
+            "exam:view",
         ],
     ),
     "REG": (

@@ -514,3 +514,49 @@ def open_facility_actions(_p: Mapping[str, Any]) -> Options:
     rows = list(rows.order_by("due_on")[:LIMIT])
     names = _inst_names({a.institution_id for a in rows})
     return [(str(a.id), f"[{a.priority}] {names.get(a.institution_id, '?')} — {a.title}") for a in rows]
+
+
+# --------------------------------------------------------------------------- examinations (EXM-01, EXM-03)
+def exam_series(_p: Mapping[str, Any]) -> Options:
+    from syntegra.assessment.models import ExamSeries
+
+    rows = list(ExamSeries.objects.in_scope().exclude(status="closed").order_by("-created_at")[:500])
+    names = _node_names({s.scope_node_id for s in rows})
+    return [(str(s.id), f"{s.name} — {names.get(s.scope_node_id, '?')}") for s in rows]
+
+
+def exam_papers(_p: Mapping[str, Any]) -> Options:
+    from syntegra.assessment.models import ExamPaper, ExamSeries
+
+    series = {s.id: s for s in ExamSeries.objects.in_scope().exclude(status="closed")[:500]}
+    rows = ExamPaper.objects.filter(series_id__in=list(series)).order_by("paper_code")
+    return [(str(p.id), f"{p.paper_code} {p.title} — {series[p.series_id].name}") for p in rows[:LIMIT]]
+
+
+def exam_paper_codes(_p: Mapping[str, Any]) -> Options:
+    from syntegra.assessment.models import ExamPaper, ExamSeries
+
+    series = list(ExamSeries.objects.in_scope().exclude(status="closed").values_list("id", flat=True)[:500])
+    codes = dict(ExamPaper.objects.filter(series_id__in=series).values_list("paper_code", "title"))
+    return [(c, f"{c} — {t}") for c, t in sorted(codes.items())]
+
+
+def exam_halls(_p: Mapping[str, Any]) -> Options:
+    """Rooms that may be examination halls, with capacity — and a warning on those assessed unsafe."""
+    from syntegra.estate.services import UNSAFE_USABILITY, room_usability
+    from syntegra.operations.models import Room
+
+    rows = list(
+        Room.objects.in_scope()
+        .filter(status="active", capacity__gt=0)
+        .exclude(room_type__in=("toilet", "store", "generator_house", "water_point", "guard_house", "kitchen_dining"))
+        .order_by("code")[:LIMIT]
+    )
+    names = _node_names({r.scope_node_id for r in rows})
+    use = room_usability([r.id for r in rows])
+    out = []
+    for r in rows:
+        warn = f" — assessed {use[r.id].replace('_', ' ')}" if use.get(r.id) in UNSAFE_USABILITY else ""
+        label = f"{r.code} {human(r.room_type)}, {r.capacity} seats{warn} — {names.get(r.scope_node_id, '?')}"
+        out.append((str(r.id), label))
+    return sorted(out, key=lambda o: o[1])

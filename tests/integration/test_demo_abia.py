@@ -31,7 +31,7 @@ def test_abia_demonstration_load_small_scale(world: Any) -> None:
     )
     out = abia.run(scale, log=lambda _m: None)
     assert out.lgas == 17 and out.schools == 4 and out.pupils == 4 * 24
-    assert out.tertiary_students == 28 and out.staff == 10
+    assert out.tertiary_students == 28 and out.staff == 10 + 2 * 8  # university staff, and teachers at 2 schools
     assert out.results > 0 and out.attendance_marks > 0
     with context.use(system_ctx()):
         moe, board = ScopeNode.objects.get(code="AB-MOE"), ScopeNode.objects.get(code="AB-ASUBEB")
