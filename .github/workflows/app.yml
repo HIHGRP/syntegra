@@ -11,8 +11,8 @@ jobs:
     name: Lint, types, architecture boundaries, generated models
     runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: System libraries for mysqlclient
@@ -45,8 +45,8 @@ jobs:
       SYNTEGRA_DB_USER: root
       SYNTEGRA_DB_PASSWORD: ceda
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: System libraries for mysqlclient

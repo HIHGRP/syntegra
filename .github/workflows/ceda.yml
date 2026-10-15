@@ -20,8 +20,8 @@ jobs:
           --health-cmd="mysqladmin ping -h 127.0.0.1 -pceda"
           --health-interval=5s --health-timeout=5s --health-retries=30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Install tooling
@@ -35,7 +35,7 @@ jobs:
       - name: Conformance tests (incl. DDL load and database guarantees on MySQL 9.7)
         env:
           MYSQL_CMD: mysql -h127.0.0.1 -P3306 -uroot -pceda
-        run: python -m pytest ceda/tests -q
+        run: python -m pytest ceda/tests -q -o addopts=""  # the project addopts are for pytest-django, not installed here
       - name: Releases replay to the current DDL (structural, in MySQL 9.7)
         env:
           MYSQL_CMD: mysql -h127.0.0.1 -P3306 -uroot -pceda
