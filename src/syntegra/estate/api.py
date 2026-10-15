@@ -124,7 +124,7 @@ class ActSerializer(serializers.Serializer):  # type: ignore[type-arg]
 
 
 class Sites(APIView):
-    required_permission = None  # reading needs estate:view, registering estate:manage — checked in the service
+    required_permission = {"GET": "estate:view", "POST": "estate:manage"}
 
     def get(self, request: Request) -> Response:
         """EST-01: the government property register in scope."""

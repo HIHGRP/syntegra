@@ -25,7 +25,7 @@ class ClassList(APIView):
 
     def get(self, request: Request) -> Response:
         qs = ClassGroup.objects.in_scope().filter(status="active")
-        if inst := request.query_params.get("institution_id"):
+        if inst := v.uuid_param(request, "institution_id"):
             qs = qs.filter(institution_id=inst)
         return Response({"data": [v.row(c) for c in qs.order_by("name")[:500]]})
 

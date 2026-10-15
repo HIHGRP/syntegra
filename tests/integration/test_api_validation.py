@@ -34,3 +34,17 @@ def test_bad_input_returns_422_problems(world, api) -> None:  # type: ignore[no-
         assert r["Content-Type"].startswith("application/problem+json")
     assert sta("get", "/api/v1/coverage/gaps?institution_id=bad").status_code == 422
     assert sta("get", "/api/v1/certificates?learner_id=bad").status_code == 422
+    assert sta("get", "/api/v1/classes?institution_id=bad").status_code == 422
+    assert sta("get", "/api/v1/institutions?lga_scope_id=bad").status_code == 422
+    for path, body in [
+        ("/api/v1/finance/budgets", {"institution_id": "x", "fiscal_year": "y", "lines": "z"}),
+        ("/api/v1/finance/imprest", {"amount_minor": "x"}),
+        (f"/api/v1/finance/imprest/{some}/retirement", {"receipts": [{}], "amount_minor": -1}),
+        ("/api/v1/funding/applications", {"applicant_kind": "dog"}),
+        ("/api/v1/estate/sites", {"owner": "nobody"}),
+        ("/api/v1/estate/assessments", {"subject_kind": "planet", "defects": [{"severity": "zz"}]}),
+    ]:
+        r = sta("post", path, body)
+        assert r.status_code == 422, (path, r.status_code, r.content[:200])
+    assert sta("get", "/api/v1/finance/imprest?status=bogus").status_code == 422
+    assert sta("get", "/api/v1/estate/infrastructure?scope_id=bad").status_code == 422

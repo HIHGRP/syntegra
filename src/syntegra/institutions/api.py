@@ -34,7 +34,7 @@ class InstitutionList(APIView):
 
     def get(self, request: Request) -> Response:
         qs = Institution.objects.in_scope()
-        if lga := request.query_params.get("lga_scope_id"):
+        if lga := v.uuid_param(request, "lga_scope_id"):
             qs = qs.filter(lga_scope_id=lga)
         if q := request.query_params.get("q"):
             qs = qs.filter(name__icontains=q)

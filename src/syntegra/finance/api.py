@@ -104,7 +104,7 @@ class CostCentres(APIView):
 
 
 class Budgets(APIView):
-    required_permission = None  # reading needs budget:view, preparing budget:prepare — checked in the service
+    required_permission = {"GET": "budget:view", "POST": "budget:prepare"}
 
     def get(self, request: Request) -> Response:
         """FIN-02 budget execution (``?institution_id=`` and ``?fiscal_year=`` optional)."""
@@ -183,7 +183,7 @@ class VirementDecision(APIView):
 
 
 class ImprestList(APIView):
-    required_permission = None  # reading needs budget:view, requesting imprest:request — checked in the service
+    required_permission = {"GET": "budget:view", "POST": "imprest:request"}
 
     def get(self, request: Request) -> Response:
         """ACC-01 imprest register (``?status=`` optional)."""
