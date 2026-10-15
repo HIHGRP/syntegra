@@ -42,7 +42,7 @@ Effective-dated so that LGA boundary changes keep history (MFS §4.4). The path 
 | Module | `governance` |
 | Origin | appj |
 | Retention | `RS-CONFIG` |
-| Requirements | FR-CMD-02, FR-CMD-118, FR-INS-08 |
+| Requirements | FR-CMD-02, FR-CMD-118, FR-INS-08, FR-AUT-101 |
 | Pages | CMD-07, AUT-03 |
 | Events | GOV.SCOPE_CHANGED |
 
@@ -59,6 +59,7 @@ Effective-dated so that LGA boundary changes keep history (MFS §4.4). The path 
 | `ref_kind` | `VARCHAR(32)` | yes |  | Entity the node represents · values: tenant, institution, campus, org_unit, class_group, course_section, programme, network, security_agency, agency_unit |
 | `ref_id` | `BINARY(16)` | yes |  | Institution, campus, org unit, class group or course section id (soft) |
 | `ownership` | `VARCHAR(32)` | yes |  | Denormalised for oversight filters (public/private) · code list `ownership` |
+| `address` | `JSON` | yes |  | Office address of a ministry, board, agency or LGA office (street, town, LGA, state); institutions keep theirs on institution (CR-007) |
 | `valid_from` | `DATE` | no |  | Effective from (inclusive) — history: effective |
 | `valid_to` | `DATE` | yes |  | Effective to (inclusive); NULL = open-ended — history: effective |
 | `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |

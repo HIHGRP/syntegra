@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Documents{% endblock %}
+{% block content %}
+<div class="head-row">
+  <h1>Documents</h1>
+  {% if ctx.has("document:upload") %}<a class="button primary" href="/documents/upload" id="upload-link">Upload documents</a>{% endif %}
+</div>
+<p class="muted">Paper documents scanned at each school, stored under the school's name with a reference number. Search the words in the documents, a reference number, a school, a category or a year. {% if ctx.has("document:search") %}You can search every school in your scope; every search is recorded.{% else %}You can search your own school's documents.{% endif %}</p>
+
+<form method="get" class="card filters" id="doc-search" role="search">
+  <label class="grow">Words or reference number<input name="q" value="{{ q }}" placeholder="e.g. admission 1998 Okafor, or INS-NG-000129/ADM/1998"></label>
+  <label>School<select name="institution">
+    {% if ctx.has("document:search") %}<option value="">All schools in my scope</option>{% endif %}
+    {% for s in schools %}<option value="{{ s.id }}"{% if institution == s.id|string %} selected{% endif %}>{{ s.name }}</option>{% endfor %}
+  </select></label>
+  <label>Category<select name="category"><option value="">Any category</option>
+    {% for c in categories %}<option value="{{ c.code }}"{% if cat == c.code %} selected{% endif %}>{{ c.title }}</option>{% endfor %}
+  </select></label>
+  <label>Year<input name="year" value="{{ year }}" inputmode="numeric" pattern="[0-9]{4}" placeholder="e.g. 1998" class="num4"></label>
+  <button class="primary">Search</button>
+</form>
+
+{% if result is not none %}
+<section class="card" id="results">
+  <h2>{{ result.total }} document{{ "s" if result.total != 1 else "" }} found{% if q %} for “{{ q }}”{% endif %}</h2>
+  {% if result.rows %}
+  <div class="scroll-x"><table>
+    <thead><tr><th>Reference</th><th>Title</th><th>School</th><th>Category</th><th>Dates</th><th>Level</th></tr></thead>
+    <tbody>{% for r in result.rows %}
+      <tr><td><a href="/documents/{{ r.id }}"><code>{{ r.reference_no }}</code></a></td><td>{{ r.title }}</td><td>{{ names.get(r.institution_id, "—") }}</td><td>{{ r.category }}</td>
+        <td>{{ r.date_from|date("%Y") if r.date_from else "—" }}{% if r.date_to and r.date_to != r.date_from %}–{{ r.date_to|date("%Y") }}{% endif %}</td>
+        <td><span class="level level-{{ r.level.number }}">{{ r.level.label }}</span></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="muted">Nothing matched. Try fewer or different words, or check the spelling of a name.</p>{% endif %}
+</section>
+{% endif %}
+
+<section class="card" id="by-school">
+  <h2>Schools with documents</h2>
+  {% if by_school %}
+  <div class="scroll-x"><table>
+    <thead><tr><th>School</th><th>Code</th><th class="num">Documents</th><th class="num">Storage used</th></tr></thead>
+    <tbody>{% for s in by_school %}<tr><td><a href="/institutions/{{ s.id }}/documents">{{ s.name }}</a></td><td><code>{{ s.code }}</code></td><td class="num">{{ s.documents }}</td><td class="num">{{ s.size|filesize }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="muted">No documents have been uploaded yet.</p>{% endif %}
+  <p class="hint">Space: each scan is stored once — uploading the same file twice is refused and points to the existing reference. Scan at 200–300 dpi in greyscale to keep files small. Word copies are made when asked and never stored. {% if not ocr %}Text recognition (OCR) is not installed on this server: scanned images are found by their details and any transcription typed at upload.{% endif %}</p>
+</section>
+{% endblock %}

@@ -2,12 +2,12 @@
  "ceda": {
   "application": "Python 3.12, Django 5.2 LTS (+ FastAPI for high-throughput services)",
   "database": "MySQL 9.7 LTS (InnoDB, utf8mb4)",
-  "date": "2026-10-14",
+  "date": "2026-10-15",
   "derived_from": "SYN-MFS-002 v2.4 (Master Functional Specification, consolidated single volume, 13 Oct 2026)",
   "id": "SYN-CEDA-001",
   "platform": "Red Hat Enterprise Linux 10 / OpenShift",
   "status": "Baseline for build",
-  "version": "1.7.0"
+  "version": "1.8.0"
  },
  "code_lists": {
   "absence_reason": [
@@ -3208,6 +3208,14 @@
    "integration",
    "system_job"
   ],
+  "session_end_reason": [
+   "signed_out",
+   "idle_timeout",
+   "expired",
+   "replaced",
+   "ended_by_administrator",
+   "account_inactive"
+  ],
   "session_shift": [
    "morning",
    "afternoon",
@@ -3347,6 +3355,14 @@
    "pass",
    "fail",
    "error"
+  ],
+  "text_source": [
+   "none",
+   "pdf_text_layer",
+   "text_file",
+   "transcription",
+   "pdf_text_layer_and_transcription",
+   "ocr"
   ],
   "trainee_outcome": [
    "in_training",
@@ -3803,6 +3819,18 @@
    "producer": "attendance",
    "trigger": "Register submitted (live tiles, absence follow-up)"
   },
+  "AUTH.CONCURRENT_REFUSED": {
+   "aggregate": "user_session",
+   "consumers": [
+    "security_monitoring"
+   ],
+   "payload": {
+    "active_session_id": "uuid!",
+    "user_id": "uuid!"
+   },
+   "producer": "iam",
+   "trigger": "Sign-in refused because the account already has a session in use (CR-007)"
+  },
   "AUTH.FAILED": {
    "aggregate": "user_session",
    "consumers": [
@@ -3849,6 +3877,20 @@
    },
    "producer": "iam",
    "trigger": "MFA verified"
+  },
+  "AUTH.SESSION_ENDED": {
+   "aggregate": "user_session",
+   "consumers": [
+    "security_monitoring"
+   ],
+   "payload": {
+    "reason": "enum(session_end_reason)!",
+    "session_id": "uuid!",
+    "user_id": "uuid!"
+   },
+   "producer": "iam",
+   "replacement or an administrator (CR-007)": null,
+   "trigger": "Session ended by sign-out"
   },
   "AUTH.SIGNED_IN": {
    "aggregate": "user_session",
@@ -4213,6 +4255,18 @@
    },
    "producer": "curriculum",
    "trigger": "Version withdrawn"
+  },
+  "DOC.INDEXED": {
+   "aggregate": "document_index",
+   "consumers": [
+    "search"
+   ],
+   "payload": {
+    "char_count": "int_u!",
+    "document_id": "uuid!"
+   },
+   "producer": "records",
+   "trigger": "Document metadata and text indexed for full-text search (CR-007)"
   },
   "DOC.INGESTED": {
    "aggregate": "document",
@@ -12141,6 +12195,70 @@
    ],
    "route": "/security-training/agencies/{id}/careers",
    "title": "Agency careers and course requirements"
+  },
+  {
+   "change_request": "CR-007",
+   "classification": "confidential",
+   "id": "DOC-107",
+   "module": "Records",
+   "pattern": "Form",
+   "phase": "P2",
+   "purpose": "Upload digitised paper documents under a school with category, dates, paper reference and description; each file gets a reference number and is indexed.",
+   "roles": [
+    "RECM",
+    "HEAD",
+    "STA"
+   ],
+   "route": "/documents/upload",
+   "title": "Upload documents"
+  },
+  {
+   "change_request": "CR-007",
+   "classification": "confidential",
+   "id": "DOC-108",
+   "module": "Records",
+   "pattern": "Register / list",
+   "phase": "P2",
+   "purpose": "The complete document register of one school or institution, grouped by category with reference numbers, with search within the school.",
+   "roles": [
+    "HEAD",
+    "RECM",
+    "LGA",
+    "STA",
+    "COMM"
+   ],
+   "route": "/institutions/{id}/documents",
+   "title": "School documents"
+  },
+  {
+   "change_request": "CR-007",
+   "classification": "internal",
+   "id": "ADM-101",
+   "module": "Administration",
+   "pattern": "Settings / configuration",
+   "phase": "P1",
+   "purpose": "The five access levels, every role's level, and every user grant in scope with its effective level; lower a grant's level with a reason.",
+   "roles": [
+    "STA",
+    "PLAT"
+   ],
+   "route": "/admin/access-levels",
+   "title": "Access levels"
+  },
+  {
+   "change_request": "CR-007",
+   "classification": "internal",
+   "id": "ADM-102",
+   "module": "Administration",
+   "pattern": "Register / list",
+   "phase": "P1",
+   "purpose": "Sessions in use by users in scope — user, school or office, device, address, start and last activity — and ending a session.",
+   "roles": [
+    "STA",
+    "PLAT"
+   ],
+   "route": "/admin/sessions",
+   "title": "Active sessions"
   }
  ],
  "retention": {

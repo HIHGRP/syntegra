@@ -25,7 +25,10 @@ erDiagram
         BINARY_16_ id PK
         BINARY_16_ scope_node_id
         BINARY_16_ category_id FK
+        VARCHAR_64_ reference_no
         VARCHAR_300_ title
+        VARCHAR_2000_ description
+        VARCHAR_200_ source_reference
         VARCHAR_32_ classification
         BINARY_16_ institution_id
         BINARY_16_ lga_scope_id
@@ -49,6 +52,18 @@ erDiagram
         SMALLINT legal_hold_count
         DATE disposal_due_on
         VARCHAR_32_ status
+    }
+    document_index {
+        BINARY_16_ id PK
+        BINARY_16_ document_id FK
+        BINARY_16_ institution_id
+        VARCHAR_64_ reference_no
+        VARCHAR_300_ title
+        VARCHAR_2000_ keywords
+        MEDIUMTEXT body_text
+        VARCHAR_32_ text_source
+        INT char_count
+        DATETIME_6_ indexed_at
     }
     document_link {
         BINARY_16_ id PK
@@ -182,6 +197,7 @@ erDiagram
     document ||--o{ document_link : "document_id"
     document ||--o{ redaction : "document_id"
     document ||--o{ scanned_page : "document_id"
+    document ||--o| document_index : "document_id"
     document_category ||--o{ document : "category_id"
     record_series ||--o{ digitisation_batch : "record_series_id"
     record_series ||--o{ disposal : "record_series_id"

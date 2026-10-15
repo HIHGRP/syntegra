@@ -1,20 +1,29 @@
 {% extends "base.html" %}
-{% block title %}Choose workspace{% endblock %}
+{% block title %}Confirm your school or office{% endblock %}
 {% block content %}
 <section class="card narrow">
-  <h1>Choose your workspace</h1>
-  <p class="muted">You hold more than one role. Choose the one to work in now; you can switch at any time from the top bar.</p>
+  <p class="eyebrow">Step 2 of 2 · after your password</p>
+  <h1>{% if grants|length > 1 %}Choose your school or office{% else %}Confirm your school or office{% endif %}</h1>
+  <p class="muted">{{ user.display_name }}, your account is registered to {% if grants|length > 1 %}the schools or offices below. Choose the one you are working for now; you can switch later from the top bar.{% else %}the school or office below. Check the name and address before you continue.{% endif %}</p>
   {% if error %}<div class="alert alert-error" role="alert">{{ error }}</div>{% endif %}
   {% if not grants %}<div class="alert" role="status">You have no active roles. Contact your administrator.</div>{% endif %}
-  <form method="post" action="/auth/context?next={{ next|urlencode }}">
+  <form method="post" action="/auth/context?next={{ next|urlencode }}" id="affiliation">
     <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-    <fieldset><legend>Role and scope</legend>
-    {% for g in grants %}{% set n = nodes.get(g.scope_id) %}
-      <label class="check"><input type="radio" name="grant_id" value="{{ g.grant_id }}"{% if g.grant_id == active or (not active and loop.first) %} checked{% endif %}>
-        &nbsp;<span><strong>{{ g.role_name }}</strong> ({{ g.role }}) — {{ n.name if n else "scope " ~ g.scope_id[:8] }}{% if n %} <span class="muted">· {{ n.level }}</span>{% endif %}{% if g.grant_id == active %} <span class="pill pill-live">current</span>{% endif %}</span></label>
+    <fieldset class="affiliations"><legend class="sr">School or office</legend>
+    {% for g in grants %}{% set a = g.affiliation %}
+      <label class="affiliation">
+        <input type="radio" name="grant_id" value="{{ g.grant_id }}"{% if g.grant_id == active or (not active and loop.first) %} checked{% endif %}>
+        <span class="aff-body">
+          <span class="aff-name">{{ a.name or "Scope " ~ g.scope_id[:8] }}</span>
+          <span class="aff-address">{{ a.address or "Address not recorded — ask your administrator to add it." }}</span>
+          <span class="aff-meta">{% if a.code %}<code>{{ a.code }}</code> · {% endif %}{{ g.role_name }} ({{ g.role }}) · <span class="level level-{{ g.level.number }}">{{ g.level.label }}</span>{% if g.grant_id == active and confirmed %} · <span class="pill pill-live">current</span>{% endif %}</span>
+        </span>
+      </label>
     {% endfor %}
     </fieldset>
-    {% if grants %}<button class="primary">Continue</button>{% endif %}
+    {% if grants %}<button class="primary">{% if grants|length > 1 %}Continue{% else %}Yes, this is my school or office — continue{% endif %}</button>{% endif %}
   </form>
+  <p class="hint">Not your school or office? Do not continue — sign out and tell your administrator.</p>
+  <form method="post" action="/sign-out"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><button class="link">Sign out</button></form>
 </section>
 {% endblock %}

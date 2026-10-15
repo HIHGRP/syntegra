@@ -4,12 +4,14 @@
 <section class="card narrow">
   <h1>Sign in</h1>
   <p class="muted">{{ tenant.name if tenant else "" }}</p>
-  {% if error %}<div class="alert alert-error" role="alert">{{ error }}</div>{% endif %}
+  {% if notice %}<div class="alert" role="status">{{ notice }}</div>{% endif %}
+  {% if error %}<div class="alert alert-error" role="alert" id="sign-in-error">{% if in_use is defined and in_use %}<strong>This account is already in use.</strong> {% endif %}{{ error }}</div>{% endif %}
   <form method="post">
     <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
     <label>Username<input name="username" type="text" autocomplete="username" required autofocus></label>
     <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
     <button class="primary">Sign in</button>
   </form>
+  <p class="hint">After your password, Syntegra shows the school or office your account belongs to, with its address, for you to confirm. One account can be signed in on one device at a time.</p>
 </section>
 {% endblock %}

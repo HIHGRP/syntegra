@@ -99,7 +99,12 @@ def test_secondary_school_plans_its_examination_seating(world: Any, client: Any)
     assert page.count('class="desk c') == 10 and "SS 3A" in page and "SS 3B" in page
     assert "First Term Examinations" in _ok(client.get("/exams/series"))
 
-    # the API applies the same rules: no invigilator is refused
+    # one account, one session (CR-007): the API sign-in is refused while the page session is in use …
+    creds = {"username": "head.secondary.abn1@abia.demo", "password": "Demo-password-2026"}
+    r = client.post("/api/v1/auth/sign-in", creds, content_type="application/json")
+    assert r.status_code == 409 and r.json()["code"] == "AUTH-SESSION-IN-USE"
+    client.post("/sign-out")
+    # … and after signing out, the API applies the same rules: no invigilator is refused
     tok = client.post("/api/v1/auth/sign-in", {"username": "head.secondary.abn1@abia.demo",
                       "password": "Demo-password-2026"}, content_type="application/json").json()["token"]  # fmt: skip
     r = client.post(f"/api/v1/exams/papers/{eng}/sitting", {"room_ids": [a1], "starts_on": "2026-12-08",

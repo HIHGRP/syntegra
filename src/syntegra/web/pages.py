@@ -41,9 +41,34 @@ IMPLEMENTED: dict[str, str] = {
     "EXM-01": "exam_series",
     "EXM-03": "exam_seating",
     "BEH-102": "seating",
+    "ADM-101": "access_levels",
+    "ADM-102": "sessions_admin",
+    "DOC-104": "documents",
+    "DOC-105": "document_view",
+    "DOC-107": "document_upload",
+    "DOC-108": "school_documents",
 }
 # Pages served for any signed-in user, independent of role lists
 UNIVERSAL = {"home", "catalogue", "forms_hub", "form_page"}
+
+# Access level needed to open a page (CR-007, FR-ADM-201). By default a page's catalogue classification. Pages whose
+# content is trimmed for each viewer — tabs, fields or records above the viewer's level are withheld by the services —
+# are entered at a lower level; the data-level checks still apply inside them.
+ENTRY_LEVEL: dict[str, str] = {
+    "AUT-03": "public",  # choosing the role comes before any access level applies
+    "LRN-04": "confidential",  # Learner 360: safeguarding (special) and restricted tabs are withheld per viewer
+    "LRN-02": "confidential",  # registration captures data; identity numbers are revealed only to cleared roles
+    "FCL-01": "confidential",  # fee-clearance check: obligation detail stays purpose-bound in the service
+    "FND-02": "confidential",  # funding agreement: borrowers see their own; others need the restricted level
+    "DOC-104": "confidential",  # documents hold personal records; each document's own level is checked as well
+    "DOC-105": "confidential",
+}
+
+
+def entry_level(page_id: str) -> str:
+    if page_id in ENTRY_LEVEL:
+        return ENTRY_LEVEL[page_id]
+    return str(page(page_id).get("classification") or "internal").lower()
 
 
 def all_pages() -> list[dict[str, Any]]:

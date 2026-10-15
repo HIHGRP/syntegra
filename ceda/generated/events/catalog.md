@@ -23,6 +23,8 @@ Generated from `ceda/model/events.yaml`. Events are named `<DOMAIN>.<PAST_TENSE_
 | `AUTH.LOCKED` | `iam` | `app_user` | `syn.{region}.auth.v1` | `user_id`, `locked_until` | comms, security_monitoring | Account locked after repeated failures |
 | `AUTH.MFA_PASSED` | `iam` | `user_session` | `syn.{region}.auth.v1` | `user_id`, `session_id` | analytics | MFA verified |
 | `AUTH.MFA_FAILED` | `iam` | `user_session` | `syn.{region}.auth.v1` | `user_id` | security_monitoring | MFA failed |
+| `AUTH.CONCURRENT_REFUSED` | `iam` | `user_session` | `syn.{region}.auth.v1` | `user_id`, `active_session_id` | security_monitoring | Sign-in refused because the account already has a session in use (CR-007) |
+| `AUTH.SESSION_ENDED` | `iam` | `user_session` | `syn.{region}.auth.v1` | `user_id`, `session_id`, `reason` | security_monitoring | Session ended by sign-out |
 | `ID.NIN_VERIFIED` | `mdm` | `identity_verification` | `syn.{region}.id.v1` | `identity_verification_id`, `person_kind`, `person_id`, `outcome` | learners, certificates, providers | National identifier verification returned |
 | `LRN.MATCH_REVIEWED` | `mdm` | `match_review` | `syn.{region}.lrn.v1` | `match_review_id`, `entity_kind` | learners | Probable-duplicate review opened |
 | `MDM.MATCH_DECIDED` | `mdm` | `match_review` | `syn.{region}.mdm.v1` | `match_review_id`, `decision` | learners, families, people, analytics | Steward decided a pair |
@@ -110,6 +112,7 @@ Generated from `ceda/model/events.yaml`. Events are named `<DOMAIN>.<PAST_TENSE_
 | `COM.MESSAGE_RECEIVED` | `comms` | `message` | `syn.{region}.com.v1` | `message_id`, `channel`, `conversation_id` | comms, intelligence | Inbound message received and matched |
 | `FRM.SUBMITTED` | `forms` | `form_response` | `syn.{region}.frm.v1` | `form_response_id`, `form_id` | governance, records, finance | Form submitted |
 | `DOC.INGESTED` | `records` | `document` | `syn.{region}.doc.v1` | `document_id`, `category_id` | search, intelligence | Document stored (search indexed unless special category) |
+| `DOC.INDEXED` | `records` | `document_index` | `syn.{region}.doc.v1` | `document_id`, `char_count` | search | Document metadata and text indexed for full-text search (CR-007) |
 | `DOC.LINKED` | `records` | `document_link` | `syn.{region}.doc.v1` | `document_link_id`, `record_kind`, `record_id` | search | Document linked to a record |
 | `BIL.RUN_ISSUED` | `finance` | `billing_run` | `syn.{region}.bil.v1` | `billing_run_id`, `invoices` | comms, analytics | Billing run issued |
 | `BIL.INVOICE_ISSUED` | `finance` | `invoice` | `syn.{region}.bil.v1` | `invoice_id`, `account_id` | comms, records | Invoice issued |

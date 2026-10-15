@@ -67,9 +67,15 @@ entities:
     history: lifecycle
     origin: ceda
     retention: RS-SESSION
-    reqs: [FR-ADM-03, FR-AUT-05, FR-AUT-07]
-    pages: [AUT-01, AUT-03, HOM-04]
-    events: [AUTH.SIGNED_IN, AUTH.FAILED, AUTH.LOCKED, AUTH.MFA_PASSED, AUTH.MFA_FAILED]
+    reqs: [FR-ADM-03, FR-AUT-05, FR-AUT-07, FR-AUT-101, FR-AUT-102, FR-AUT-103]
+    pages: [AUT-01, AUT-03, HOM-04, ADM-102]
+    events: [AUTH.SIGNED_IN, AUTH.FAILED, AUTH.LOCKED, AUTH.MFA_PASSED, AUTH.MFA_FAILED, AUTH.CONCURRENT_REFUSED, AUTH.SESSION_ENDED]
+    notes: >
+      One account, one session (CR-007): a sign-in is refused while another session of the account is in use
+      (last_seen_at within the in-use window); quieter sessions are ended with ended_reason = replaced. The school
+      or office is copied from the confirmed grant's scope node — institution name and address for an institution
+      node, otherwise the node's office address — so the session keeps what the user saw even if the address
+      changes later.
     attrs:
       - "user_id: ref(app_user)!"
       - "session_hash: hash! uq | SHA-256 of the session token"
@@ -84,6 +90,11 @@ entities:
       - "last_seen_at: ts!"
       - "expires_at: ts!"
       - "revoked_at: ts"
+      - "ended_reason: enum(session_end_reason) | Why the session ended (CR-007)"
+      - "affiliation_scope_id: uuid | Scope node of the school or office the user signed in for (soft; CR-007)"
+      - "affiliation_name: str(300) | School or office name as shown at sign-in"
+      - "affiliation_address: str(500) | School or office address as shown at sign-in"
+      - "affiliation_confirmed_at: ts | When the user confirmed the school or office after the password"
 
   credential_reset:
     title: Password-reset or magic-link token (hashed, single use, short expiry; generic responses)
@@ -131,12 +142,12 @@ entities:
     class: internal
     history: lifecycle
     origin: appj
-    reqs: [FR-ADM-04]
-    pages: [ADM-05]
+    reqs: [FR-ADM-04, FR-ADM-201]
+    pages: [ADM-05, ADM-101]
     attrs:
       - "code: code(16)! uq | TCH, DSL, STA, PROP, REV …"
       - "name: title!"
-      - "clearance: enum(classification)! | Highest classification the role normally receives"
+      - "clearance: enum(classification)! | Highest classification the role normally receives — its access level (1 public … 5 special, CR-007)"
       - "is_builtin: bool! default=false"
       - "cloned_from_id: ref(role)"
       - "created_by_clearance: enum(classification) | Custom role may never exceed its creator's clearance"
@@ -164,8 +175,8 @@ entities:
     history: effective
     origin: appj
     scope_note: The grant's scope_id is the subtree it opens.
-    reqs: [FR-ADM-03, FR-CMD-119, FR-STF-106, FR-STF-03]
-    pages: [ADM-04, AUT-03, CMD-104]
+    reqs: [FR-ADM-03, FR-CMD-119, FR-STF-106, FR-STF-03, FR-ADM-202, FR-AUT-101]
+    pages: [ADM-04, AUT-03, CMD-104, ADM-101]
     events: [IAM.GRANT_CHANGED]
     attrs:
       - "user_id: ref(app_user)!"
@@ -176,6 +187,7 @@ entities:
       - "review_due_on: date | Access review"
       - "delegation_of_id: ref(role_grant) | Delegated from another grant (Administrator 360 delegations)"
       - "supervised_until: date | Time-limited supervised exception approved by the head while mandatory checks are pending (FR-STF-03)"
+      - "office_scope_id: uuid | School or office the holder works in when it differs from the grant's scope — e.g. a ministry official with state-wide scope works in the Ministry of Education (soft; CR-007)"
       - "status: enum(record_status)!"
     ix: [[user_id, status]]
 

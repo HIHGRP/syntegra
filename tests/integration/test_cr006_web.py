@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from tests.conftest import system_ctx
+from tests.conftest import system_ctx, web_sign_in
 
 pytestmark = pytest.mark.django_db(databases="__all__")
 PASSWORD = "Demo-password-2026"
@@ -16,7 +16,7 @@ PASSWORD = "Demo-password-2026"
 def _sign_in(client: Any, username: str) -> None:
     client.post("/sign-out")
     client.handler.enforce_csrf_checks = False
-    r = client.post("/sign-in", {"username": username, "password": PASSWORD})
+    r = web_sign_in(client, {"username": username, "password": PASSWORD})
     assert r.status_code == 302, r.content.decode()[-1500:]
 
 

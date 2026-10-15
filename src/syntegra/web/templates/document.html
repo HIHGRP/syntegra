@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ d.reference_no }}{% endblock %}
+{% block content %}
+<p class="eyebrow">Document · <code>{{ d.reference_no }}</code></p>
+<h1>{{ d.title }}</h1>
+{% set pq = ("&purpose=" ~ purpose) if purpose else "" %}
+<div class="doc-actions">
+  <a class="button" href="/documents/{{ d.id }}/file?download=1{{ pq }}">Download the scan</a>
+  <a class="button" href="/documents/{{ d.id }}/word{{ ('?purpose=' ~ purpose) if purpose else '' }}" id="word-link">Download as Word (editable text)</a>
+  {% if d.institution %}<a href="/institutions/{{ d.institution_id }}/documents">All documents of this school</a>{% endif %}
+</div>
+<div class="doc-layout">
+  <section class="card doc-meta">
+    <dl>
+      <dt>School</dt><dd>{% if d.institution %}<strong>{{ d.institution.name }}</strong> <code>{{ d.institution.code }}</code><br><span class="muted">{{ d.institution.address }}</span>{% else %}—{% endif %}</dd>
+      <dt>Category</dt><dd>{{ d.category }}</dd>
+      <dt>Access level</dt><dd><span class="level level-{{ d.level.number }}">{{ d.level.label }}</span></dd>
+      <dt>Dates</dt><dd>{{ d.date_from|date if d.date_from else "—" }}{% if d.date_to and d.date_to != d.date_from %} – {{ d.date_to|date }}{% endif %}</dd>
+      {% if d.session_label %}<dt>Session</dt><dd>{{ d.session_label }}</dd>{% endif %}
+      {% if d.level_or_class %}<dt>Class or level</dt><dd>{{ d.level_or_class }}</dd>{% endif %}
+      {% if d.subject_label %}<dt>Subject</dt><dd>{{ d.subject_label }}</dd>{% endif %}
+      {% if d.source_reference %}<dt>Reference on the paper</dt><dd>{{ d.source_reference }}</dd>{% endif %}
+      {% if d.description %}<dt>Description</dt><dd>{{ d.description }}</dd>{% endif %}
+      <dt>File</dt><dd>{{ d.mime_type }} · {{ d.size_bytes|filesize }} · pages {{ d.pages }}</dd>
+      <dt>Captured</dt><dd>{{ d.captured_at|localtime }}</dd>
+      <dt>Search index</dt><dd>{% if d.indexed %}{{ "{:,}".format(d.char_count) }} characters from {{ d.text_source|human }}{% else %}Not indexed{% endif %}</dd>
+      <dt>Integrity</dt><dd><span class="muted">SHA-256 {{ d.sha256[:16] }}… — checked on every read</span></dd>
+    </dl>
+  </section>
+  <section class="card doc-view">
+    <div class="viewer">
+      {% if d.mime_type.startswith("image/") and d.mime_type != "image/tiff" %}<img src="/documents/{{ d.id }}/file{{ ('?purpose=' ~ purpose) if purpose else '' }}" alt="Scan of {{ d.title }}">
+      {% elif d.mime_type == "application/pdf" %}<iframe src="/documents/{{ d.id }}/file{{ ('?purpose=' ~ purpose) if purpose else '' }}" title="Scan of {{ d.title }}"></iframe>
+      {% else %}<pre class="doc-text">{{ d.text_preview }}</pre>{% endif %}
+      <div class="watermark-overlay" aria-hidden="true">{% for _ in range(6) %}<span>For {{ user.display_name }} · {{ stamp }} · {{ d.level.name|lower }}</span>{% endfor %}</div>
+    </div>
+    {% if d.text_preview and d.mime_type != "text/plain" %}<details><summary>Text found in the document</summary><pre class="doc-text">{{ d.text_preview }}{% if d.char_count > 1500 %}
+…{% endif %}</pre></details>{% endif %}
+    <p class="hint">Viewing and downloading are recorded. The scan is the record; the Word copy is made from the text found in it and may contain reading errors.</p>
+  </section>
+</div>
+{% endblock %}

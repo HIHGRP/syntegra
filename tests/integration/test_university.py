@@ -6,6 +6,7 @@ import re
 import pytest
 
 from syntegra.core.errors import HardValidation
+from tests.conftest import web_sign_in
 
 pytestmark = pytest.mark.django_db(databases="__all__")
 
@@ -100,7 +101,7 @@ def test_university_registration_page(world, university, client) -> None:  # typ
     uni, csc, _ = university
     u, _ = make_user(world, "HEAD", uni.scope_node_id)
     client.handler.enforce_csrf_checks = False
-    client.post("/sign-in", {"username": u.username, "password": "correct-horse-battery"})
+    web_sign_in(client, {"username": u.username, "password": "correct-horse-battery"})
     page = client.get("/learners/new").content
     assert b"JAMB registration number" in page and b"B.Sc. Computer Science (CSC)" in page
     assert str(uni.id).encode() in re.search(rb'data-institutions="([^"]*)"', page).group(1)

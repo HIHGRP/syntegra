@@ -2,6 +2,8 @@ import re
 
 import pytest
 
+from tests.conftest import web_sign_in
+
 pytestmark = pytest.mark.django_db(databases="__all__")
 
 
@@ -19,7 +21,7 @@ def test_head_signs_in_takes_register_and_opens_learner_360(world, as_user, clie
     cls, ids = enrol_class(world, as_user, n=3)
     u, _ = make_user(world, "HEAD", world.institution.scope_node_id)
     client.handler.enforce_csrf_checks = False
-    r = client.post("/sign-in", {"username": u.username, "password": "correct-horse-battery"})
+    r = web_sign_in(client, {"username": u.username, "password": "correct-horse-battery"})
     assert r.status_code == 302
     home = client.get("/")
     assert home.status_code == 200, home.content
@@ -61,7 +63,7 @@ def test_clearance_desk_and_establishment_pages(world, as_user, client) -> None:
     owe(world, as_user, private, lrn, 75_000)
     u, _ = make_user(world, "HEAD", world.institution.scope_node_id)
     client.handler.enforce_csrf_checks = False
-    assert client.post("/sign-in", {"username": u.username, "password": "correct-horse-battery"}).status_code == 302
+    assert web_sign_in(client, {"username": u.username, "password": "correct-horse-battery"}).status_code == 302
     r = client.post(
         "/admissions/clearance",
         {
@@ -91,13 +93,13 @@ def test_national_clearance_network_page(world, client) -> None:  # type: ignore
 
     u, _ = make_user(world, "STA", world.state_scope)
     client.handler.enforce_csrf_checks = False
-    assert client.post("/sign-in", {"username": u.username, "password": "correct-horse-battery"}).status_code == 302
+    assert web_sign_in(client, {"username": u.username, "password": "correct-horse-battery"}).status_code == 302
     r = client.get("/clearance/network")
     assert r.status_code == 200 and b"National clearance network" in r.content
     assert b"NG-FC" in r.content and b"1 / 37" in r.content and b"(this state)" in r.content
     h, _ = make_user(world, "HEAD", world.institution.scope_node_id)
     client.post("/sign-out")
-    client.post("/sign-in", {"username": h.username, "password": "correct-horse-battery"})
+    web_sign_in(client, {"username": h.username, "password": "correct-horse-battery"})
     assert client.get("/clearance/network").status_code == 403
 
 
@@ -106,7 +108,7 @@ def test_register_learner_page(world, client) -> None:  # type: ignore[no-untype
 
     u, _ = make_user(world, "HEAD", world.institution.scope_node_id)
     client.handler.enforce_csrf_checks = False
-    client.post("/sign-in", {"username": u.username, "password": "correct-horse-battery"})
+    web_sign_in(client, {"username": u.username, "password": "correct-horse-battery"})
     r = client.get("/learners/new")
     assert r.status_code == 200 and b"Check and register" in r.content and b"Lagos State" in r.content
     form = {

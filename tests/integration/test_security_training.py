@@ -10,6 +10,7 @@ from typing import Any
 import pytest
 
 from syntegra.core.errors import ConflictError, Forbidden, HardValidation, NotFound
+from tests.conftest import web_sign_in
 
 pytestmark = pytest.mark.django_db(databases="__all__")
 HOST = "fse.testserver"
@@ -208,7 +209,7 @@ def test_security_training_pages(fse: Any, client: Any, settings: Any) -> None:
     settings.ALLOWED_HOSTS = [*settings.ALLOWED_HOSTS, HOST]
     _, u = as_fse("SADM", "NG-FSE")
     client.handler.enforce_csrf_checks = False
-    r = client.post("/sign-in", {"username": u.username, "password": "correct-horse-battery"}, HTTP_HOST=HOST)
+    r = web_sign_in(client, {"username": u.username, "password": "correct-horse-battery"}, HTTP_HOST=HOST)
     assert r.status_code == 302
     page = client.get("/security-training", HTTP_HOST=HOST).content
     assert b"Nigerian Defence Academy" in page and b"Nigeria Police Academy" in page and b"Security training" in page

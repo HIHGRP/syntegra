@@ -126,6 +126,17 @@
             }
           ]
         },
+        "address": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Office address of a ministry, board, agency or LGA office (street, town, LGA, state); institutions keep theirs on institution (CR-007)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "valid_from": {
           "type": "string",
           "format": "date",

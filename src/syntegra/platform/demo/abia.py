@@ -167,6 +167,286 @@ def _people_users(nodes: dict[str, Any], out: Loaded) -> None:
     )
 
 
+# offices of the state's education bodies (illustrative addresses, marked demo) — shown at sign-in (CR-007)
+OFFICES = {
+    "AB-MOE": {
+        "office": "Abia State Ministry of Education",
+        "street": "State Secretariat, Ogurube Layout",
+        "town": "Umuahia",
+        "state": "Abia",
+    },
+    "AB-ASUBEB": {
+        "office": "Abia State Universal Basic and Secondary Education Board (ASUBEB)",
+        "street": "ASUBEB Headquarters, Bende Road",
+        "town": "Umuahia",
+        "state": "Abia",
+    },
+    "AB-MOTE": {
+        "office": "Abia State Ministry of Tertiary Education",
+        "street": "State Secretariat, Ogurube Layout",
+        "town": "Umuahia",
+        "state": "Abia",
+    },
+}
+# demo users whose grant has state-wide scope but who work in one office
+USER_OFFICE = {
+    "commissioner.education@abia.gov.ng": "AB-MOE",
+    "commissioner.tertiary@abia.gov.ng": "AB-MOTE",
+    "chairman.asubeb@abia.gov.ng": "AB-ASUBEB",
+    "director.planning@abia.gov.ng": "AB-MOE",
+    "hr.ministry@abia.gov.ng": "AB-MOE",
+    "admin.demo@abia.gov.ng": "AB-MOE",
+    "admin@abia.gov.ng": "AB-MOE",
+}
+
+
+def _offices(out: Loaded) -> None:
+    """Office addresses of the ministries, ASUBEB and every LGA education office, and the office each ministry
+    official works in (their grants keep state-wide scope)."""
+    from syntegra.iam.models import AppUser, RoleGrant
+
+    with uow.command("registry", None, action="update", record_kind="scope_node") as cmd:
+        for code, addr in OFFICES.items():
+            node = _node(code)
+            if node is not None and not node.address:
+                cmd.update(node, address={**addr, "demo": True})
+        for code, name, towns, _urban in D.LGAS:
+            node = _node(code)
+            if node is not None and not node.address:
+                cmd.update(
+                    node,
+                    address={
+                        "office": f"{name} Local Government Education Authority",
+                        "street": "LGA Secretariat",
+                        "town": towns[0],
+                        "lga": name,
+                        "state": "Abia",
+                        "demo": True,
+                    },
+                )
+    n = 0
+    with uow.command("registry", None, action="update", record_kind="role_grant") as cmd:
+        for username, code in USER_OFFICE.items():
+            u = AppUser.objects.filter(username=username).first()
+            office = _node(code)
+            if u is None or office is None:
+                continue
+            for g in RoleGrant.objects.filter(user_id=u.id, status="active", office_scope_id__isnull=True):
+                cmd.update(g, office_scope_id=office.id)
+                n += 1
+    out.notes.append(f"offices: addresses for {len(OFFICES)} bodies and {len(D.LGAS)} LGA offices; {n} grants placed")
+
+
+# --------------------------------------------------------------------------- digitised paper documents (CR-007)
+def _pdf(title: str, lines: list[str]) -> bytes:
+    """A one-page PDF with a text layer — what a scanner with built-in OCR produces — without extra libraries."""
+
+    def esc(t: str) -> str:
+        return (
+            t.encode("latin-1", "replace")
+            .decode("latin-1")
+            .replace("\\", "\\\\")
+            .replace("(", "\\(")
+            .replace(")", "\\)")
+        )
+
+    text = ["BT", "/F2 15 Tf", "56 790 Td", f"({esc(title)}) Tj", "/F1 10.5 Tf", "0 -28 Td", "14 TL"]
+    text += [f"({esc(line)}) '" for line in lines[:48]]
+    text.append("ET")
+    stream = "\n".join(text).encode("latin-1", "replace")
+    objs = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R "
+        b"/Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>",
+        b"<< /Length " + str(len(stream)).encode() + b" >>\nstream\n" + stream + b"\nendstream",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>",
+    ]
+    out = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    offsets = []
+    for i, body in enumerate(objs, 1):
+        offsets.append(len(out))
+        out += f"{i} 0 obj\n".encode() + body + b"\nendobj\n"
+    xref = len(out)
+    out += f"xref\n0 {len(objs) + 1}\n0000000000 65535 f \n".encode()
+    out += b"".join(f"{o:010d} 00000 n \n".encode() for o in offsets)
+    out += f"trailer\n<< /Size {len(objs) + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n".encode()
+    return bytes(out)
+
+
+def _paper_documents(names: _Names) -> list[dict[str, Any]]:
+    """Sample paper records of Community Secondary School, Ohambele and Government Secondary School, Akwete."""
+
+    def nm() -> tuple[str, str]:
+        return names.rng.choice(D.MALE + D.FEMALE), names.rng.choice(D.FAMILY)
+
+    pupils = [nm() for _ in range(18)]
+    adm = [
+        f"{1000 + i:04d}   {g} {f}   born {1984 + i % 3}-0{1 + i % 9}-1{i % 9}   JSS 1   parent: {f} family"
+        for i, (g, f) in enumerate(pupils)
+    ]
+    staff = [nm() for _ in range(9)]
+    return [
+        {
+            "school": "INS-NG-000129",
+            "cat": "ADM",
+            "title": "Admission register 1998-2003",
+            "from": dt.date(1998, 9, 14),
+            "to": dt.date(2003, 7, 18),
+            "session": "1998/1999",
+            "class": "JSS 1",
+            "paper": "Vol. 3, shelf B",
+            "desc": "Bound admission register, entries 1000-1240; names, dates of birth, parents and first class.",
+            "lines": ["COMMUNITY SECONDARY SCHOOL, OHAMBELE - ADMISSION REGISTER", "Volume 3, 1998-2003", ""] + adm,
+        },
+        {
+            "school": "INS-NG-000129",
+            "cat": "MIN",
+            "title": "Minutes of the PTA general meeting, 12 March 2019",
+            "from": dt.date(2019, 3, 12),
+            "session": "2018/2019",
+            "paper": "PTA file 4",
+            "desc": "PTA general meeting: borehole repair levy, SS3 extra lessons, security guard.",
+            "lines": [
+                "Minutes of the Parent-Teacher Association general meeting held on 12 March 2019",
+                "Present: the Principal, 64 parents, 11 teachers.",
+                "1. Borehole repair: the meeting agreed a levy",
+                "   of N500 per family towards repair of the school borehole.",
+                "2. Extra lessons for SS3 candidates before WAEC: approved, free of charge.",
+                "3. Security: a night guard to be engaged from April.",
+                "Closing prayer at 4.10 pm.",
+            ],
+        },
+        {
+            "school": "INS-NG-000129",
+            "cat": "INSP",
+            "title": "Quality assurance inspection report 2023",
+            "from": dt.date(2023, 5, 22),
+            "session": "2022/2023",
+            "paper": "QA/UKE/2023/014",
+            "desc": "ASUBEB quality assurance inspection: teaching, records, facilities.",
+            "lines": [
+                "ASUBEB QUALITY ASSURANCE - WHOLE SCHOOL INSPECTION",
+                "School: Community Secondary School, Ohambele",
+                "Date: 22 May 2023",
+                "Teaching and learning: satisfactory; lesson notes up to date in most subjects.",
+                "Records: admission registers kept since 1979; attendance registers complete.",
+                "Facilities: Block B classrooms unsafe - roof damaged; recommend closure until repaired.",
+                "Recommendation: repair Block B roof; provide a second toilet block.",
+            ],
+        },
+        {
+            "school": "INS-NG-000129",
+            "cat": "STF",
+            "title": "Staff nominal roll 2024",
+            "from": dt.date(2024, 1, 15),
+            "session": "2023/2024",
+            "paper": "Staff file 1",
+            "desc": "Nominal roll of teaching and non-teaching staff with grade levels.",
+            "lines": ["NOMINAL ROLL OF STAFF - JANUARY 2024", ""]
+            + [
+                f"{i + 1}. {g} {f}   grade level {7 + i % 6}   first appointment {1999 + i}"
+                for i, (g, f) in enumerate(staff)
+            ],
+        },
+        {
+            "school": "INS-NG-000129",
+            "cat": "LAND",
+            "title": "Certificate of occupancy for the school site",
+            "from": dt.date(1985, 6, 3),
+            "paper": "Lands/UKE/0412",
+            "desc": "Certificate of occupancy for 4.2 hectares at Ohambele granted to the Ministry of Education.",
+            "lines": [
+                "CERTIFICATE OF OCCUPANCY",
+                "Granted to: Imo State Ministry of Education (now Abia State)",
+                "Land at Ohambele, Ukwa East, measuring 4.2 hectares, for educational use.",
+                "Date: 3 June 1985. Term: 99 years.",
+            ],
+        },
+        {
+            "school": "INS-NG-000128",
+            "cat": "ADM",
+            "title": "Admission register 2001-2006",
+            "from": dt.date(2001, 9, 10),
+            "to": dt.date(2006, 7, 21),
+            "session": "2001/2002",
+            "class": "JSS 1",
+            "paper": "Vol. 5",
+            "desc": "Admission register of Government Secondary School, Akwete.",
+            "lines": ["GOVERNMENT SECONDARY SCHOOL, AKWETE - ADMISSION REGISTER", "Volume 5, 2001-2006", ""] + adm[:9],
+        },
+        {
+            "school": "INS-NG-000128",
+            "cat": "LOG",
+            "title": "School log book 2010-2014",
+            "from": dt.date(2010, 1, 11),
+            "to": dt.date(2014, 12, 12),
+            "paper": "Log book 2",
+            "desc": "Principal's log book: visits, closures, notable events.",
+            "lines": [
+                "LOG BOOK",
+                "11 Jan 2010 - school resumed; 412 pupils present.",
+                "3 Mar 2011 - visit of the Ukwa East education secretary.",
+                "20 Jun 2012 - flooding; classes suspended for two days.",
+                "8 Oct 2014 - new science laboratory opened.",
+            ],
+        },
+    ]
+
+
+def _documents(names: _Names, out: Loaded, log: Log) -> None:
+    """A records manager, an LGA officer and an LGA desk officer at a lower access level; sample digitised paper
+    documents filed under two Ukwa East schools (searchable PDFs, as a scanner with OCR produces)."""
+    from syntegra.iam.models import AppUser, RoleGrant
+    from syntegra.institutions.models import Institution
+    from syntegra.records import services as rec
+    from syntegra.records.models import Document
+
+    state = _node(STATE)
+    rm = _user(
+        "records.manager@abia.gov.ng",
+        "State Records Manager, Ministry of Education",
+        "RECM",
+        state.id,
+        out,
+        "Abia State",
+    )
+    USER_OFFICE.setdefault("records.manager@abia.gov.ng", "AB-MOE")
+    uke = _node("AB-UKE")
+    if uke is not None:
+        _user("lga.ukwaeast@abia.gov.ng", "Education Secretary, Ukwa East LGEA", "LGA", uke.id, out, "Ukwa East")
+        desk = _user("desk.ukwaeast@abia.gov.ng", "Desk Officer, Ukwa East LGEA", "LGA", uke.id, out, "Ukwa East")
+        with context.use(_sys()):
+            u = AppUser.objects.get(username="desk.ukwaeast@abia.gov.ng")
+            g = RoleGrant.objects.filter(user_id=u.id, status="active").first()
+            if g is not None and g.clearance_cap is None:
+                with uow.command("registry", None, action="update", record_kind="role_grant") as cmd:
+                    cmd.update(g, clearance_cap="internal")
+        del desk
+    added = 0
+    with context.use(rm):
+        for item in _paper_documents(names):
+            inst = Institution.objects.filter(institution_code=item["school"]).first()
+            if inst is None or Document.objects.filter(institution_id=inst.id, title=item["title"]).exists():
+                continue
+            rec.upload(
+                rm,
+                institution_id=inst.id,
+                category_code=item["cat"],
+                title=item["title"],
+                files=[rec.Upload(f"{item['cat'].lower()}.pdf", _pdf(item["lines"][0], item["lines"][1:]))],
+                date_from=item.get("from"),
+                date_to=item.get("to"),
+                session_label=item.get("session", ""),
+                level_or_class=item.get("class", ""),
+                source_reference=item.get("paper", ""),
+                description=item.get("desc", ""),
+            )
+            added += 1
+    log(f"  {added} digitised paper documents filed under Ukwa East schools")
+
+
 # --------------------------------------------------------------------------- the session and subjects
 def _calendar() -> tuple[Any, Any]:
     from syntegra.academic import services as academic
@@ -1022,6 +1302,7 @@ def run(scale: Scale | None = None, log: Log = print) -> Loaded:
         lgas = _lgas(scale, out)
         nodes = _authorities(out)
         _people_users(nodes, out)
+        _offices(out)
         session, _term = _calendar()
         subjects = _subjects()
         n_lgas = scale.lgas or len(lgas)
@@ -1047,10 +1328,12 @@ def run(scale: Scale | None = None, log: Log = print) -> Loaded:
             _extras(schools, tertiary, names, out, log)
             _teachers(schools, names, out, log)
             _classrooms(schools, out, log)
+            _documents(names, out, log)
             log("6/6 daily jobs: facility rules and the warehouse")
             from syntegra.analytics import warehouse
             from syntegra.estate import services as estate
 
             estate.run_daily()
             out.notes.append(f"warehouse: {warehouse.load()}")
+        _offices(out)
     return out

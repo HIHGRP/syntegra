@@ -48,6 +48,7 @@ ZONE_FILE = {"platform": "00_platform", "registry": "10_registry", "ops": "20_op
              "vault": "30_vault", "records": "40_records", "dw": "90_dw"}
 CLASS_ORDER = ["public", "internal", "confidential", "restricted", "special"]
 NO_INDEX_TYPES = {"text", "longtext", "json", "sealed", "secret", "cls"}
+FULLTEXT_TYPES = {"str", "name", "title", "text", "longtext"}  # all utf8mb4, so one key may span them
 MAX_IDENT = 64
 
 # ----------------------------------------------------------------------------- model classes
@@ -101,6 +102,7 @@ class Entity:
     pk: list = field(default_factory=list)
     uniques: list = field(default_factory=list)
     indexes: list = field(default_factory=list)
+    fulltext: list = field(default_factory=list)  # FULLTEXT keys (InnoDB) over utf8mb4 text columns
     checks: list = field(default_factory=list)
     fks: list = field(default_factory=list)
     soft_refs: list = field(default_factory=list)
@@ -333,6 +335,8 @@ class Model:
                 e.uniques.append(list(u))
             for i in e.g("ix", []) or []:
                 e.indexes.append(list(i))
+            for f in e.g("fulltext", []) or []:
+                e.fulltext.append(list(f))
             for name, expr in (e.g("checks") or {}).items():
                 e.checks.append((name, expr))
 
@@ -542,6 +546,15 @@ def validate(m: Model):
                 total += mysql_key_bytes(c)
             if total > 3072:
                 E.err(f"{w}: index {keyset} is {total} bytes (> 3072)")
+        for keyset in e.fulltext:
+            for cn in keyset:
+                c = e.col(cn)
+                if not c or not c.attr:
+                    E.err(f"{w}: full-text column {cn} not found")
+                elif c.attr.type not in FULLTEXT_TYPES:
+                    E.err(f"{w}: full-text column {cn} must be one of {sorted(FULLTEXT_TYPES)} (utf8mb4 text)")
+                elif c.attr.classification == "special" or e.classification == "special":
+                    E.err(f"{w}: special-category data is never full-text indexed")
         row = sum(mysql_key_bytes(c) for c in e.columns if not re.match(r"(TEXT|MEDIUM|JSON|BLOB|LONG)", c.mysql.upper()))
         if row > 65535:
             E.err(f"{w}: row size {row} bytes exceeds 65535")
@@ -778,6 +791,8 @@ def ddl_entity(m: Model, e: Entity, used: set | None = None) -> tuple[str, list,
             continue
         lines.append(f"  KEY {q(short('ix_' + e.name + '_' + '_'.join(i)))} ({', '.join(q(c) for c in cols)})")
         keys_seen.append(cols)
+    for f in e.fulltext:  # no tenant prefix: a FULLTEXT key holds text columns only; queries filter tenant_id
+        lines.append(f"  FULLTEXT KEY {q(short('ft_' + e.name + '_' + '_'.join(f)))} ({', '.join(q(c) for c in f)})")
     fk_stmts = []
     for cols, tgt, tcols in e.fks:
         if not covered(keys_seen, cols):
@@ -921,12 +936,14 @@ def gen_dictionary(m: Model) -> dict:
                 key = " **PK**" if c.name in e.pk else ""
                 L.append(f"| `{c.name}`{key}{ref} | `{c.mysql.split(' COLLATE')[0].split(' CHARACTER')[0]}` | "
                          f"{'yes' if c.nullable else 'no'} | {cls} | {md_escape(desc)} |")
-            if e.uniques or e.indexes:
+            if e.uniques or e.indexes or e.fulltext:
                 L.append("")
                 for u in e.uniques:
                     L.append(f"- Unique: ({', '.join(tenantise(e, u))})")
                 for i in e.indexes:
                     L.append(f"- Index: ({', '.join(tenantise(e, i))})")
+                for f in e.fulltext:
+                    L.append(f"- Full-text index: ({', '.join(f)})")
             if e.soft_refs:
                 L.append("")
                 for col, tgt, why in e.soft_refs:

@@ -9,6 +9,7 @@ Module (system of record): `records` · default zone: **records** · default ret
 | [`record_series`](#records-record_series) | records | config | internal | versioned | File-plan record series with owner, classification and retention rule |
 | [`document_category`](#records-document_category) | records | config | internal | lifecycle | Document type/category with its own view, download and share permissions (on top of role and scope) |
 | [`document`](#records-document) | records | master | confidential | lifecycle | Stored document — born-digital or digitised (object-storage pointer, metadata, classification, retention, hash) |
+| [`document_index`](#records-document_index) | records | projection | confidential | none | Full-text search entry of a document — title, keywords and extracted text (never for special category) |
 | [`document_link`](#records-document_link) | records | link | confidential | none | Link from a document to a person or record (learner, staff, guardian, institution, case …) — powers every 360 Documents tab |
 | [`legal_hold`](#records-legal_hold) | records | transaction | restricted | lifecycle | Legal hold suspending disposal for named people, institutions or series |
 | [`disposal`](#records-disposal) | records | event | internal | lifecycle | Approved disposal of documents or originals with disposal/destruction certificate (refused while a legal hold applies) |
@@ -118,8 +119,8 @@ Metadata (MFS §13.4): title, type, institution, LGA, date or range, people refe
 | Module | `records` |
 | Origin | appj |
 | Retention | `RS-DOC` |
-| Requirements | FR-DOC-103, FR-DOC-109, FR-DOC-110, FR-DOC-111, FR-DOC-112, FR-DOC-116, FR-INT-03, FR-INT-101 |
-| Pages | DOC-105, DOC-104, AIX-02, HOM-05 |
+| Requirements | FR-DOC-103, FR-DOC-109, FR-DOC-110, FR-DOC-111, FR-DOC-112, FR-DOC-116, FR-INT-03, FR-INT-101, FR-DOC-201, FR-DOC-202, FR-DOC-205, FR-DOC-206 |
+| Pages | DOC-105, DOC-104, AIX-02, HOM-05, DOC-107, DOC-108 |
 | Events | DOC.INGESTED, DOC.LINKED |
 
 | Column | MySQL type | Null | Class | Description |
@@ -128,7 +129,10 @@ Metadata (MFS §13.4): title, type, institution, LGA, date or range, people refe
 | `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
 | `scope_node_id` | `BINARY(16)` | no |  | Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure |
 | `category_id` → `document_category` | `BINARY(16)` | no |  |  |
+| `reference_no` | `VARCHAR(64)` | yes |  | Reference number, unique in the state: <institution code>/<category>/<year>/<sequence> (CR-007) |
 | `title` | `VARCHAR(300)` | no |  |  |
+| `description` | `VARCHAR(2000)` | yes |  | What the document is and what it contains |
+| `source_reference` | `VARCHAR(200)` | yes |  | Reference, file or box number written on the paper original |
 | `classification` | `VARCHAR(32)` | no |  | values: public, internal, confidential, restricted, special |
 | `institution_id` | `BINARY(16)` | yes |  | Registry institution (soft) |
 | `lga_scope_id` | `BINARY(16)` | yes |  |  |
@@ -158,10 +162,56 @@ Metadata (MFS §13.4): title, type, institution, LGA, date or range, people refe
 | `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
 | `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
 
+- Unique: (tenant_id, reference_no)
 - Index: (tenant_id, category_id)
 - Index: (tenant_id, disposal_due_on)
+- Index: (tenant_id, institution_id, category_id)
 
 - Soft reference `scope_node_id` → `scope_node` — owning scope (governance hierarchy is in the registry zone)
+
+<a id="records-document_index"></a>
+## `document_index`
+
+Full-text search entry of a document — title, keywords and extracted text (never for special category)  
+
+One row per indexed document, rebuilt when the document's metadata or text changes. The FULLTEXT key spans title, keywords and body_text; queries always filter tenant_id and join the document for scope, access level and category permissions. body_text comes from the PDF text layer, text files, the transcription entered at upload and, later, OCR of scanned pages.
+
+| | |
+|---|---|
+| Zone | records |
+| Kind | projection |
+| Classification | confidential |
+| History | none |
+| Scope | none |
+| Module | `records` |
+| Origin | ceda |
+| Retention | `RS-DOC` |
+| Requirements | FR-DOC-203, FR-DOC-204 |
+| Pages | DOC-104, DOC-108 |
+| Events | DOC.INDEXED |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `id` **PK** | `BINARY(16)` | no |  | Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap |
+| `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `document_id` → `document` | `BINARY(16)` | no |  |  |
+| `institution_id` | `BINARY(16)` | yes |  | Denormalised from the document for per-school search |
+| `reference_no` | `VARCHAR(64)` | yes |  |  |
+| `title` | `VARCHAR(300)` | no |  |  |
+| `keywords` | `VARCHAR(2000)` | yes |  | Category, school, session, class, subject, paper reference and description |
+| `body_text` | `MEDIUMTEXT` | yes |  | Extracted or transcribed text |
+| `text_source` | `VARCHAR(32)` | no |  | Where body_text came from · values: none, pdf_text_layer, text_file, transcription, pdf_text_layer_and_transcription, ocr |
+| `char_count` | `INT UNSIGNED` | no |  |  |
+| `indexed_at` | `DATETIME(6)` | no |  |  |
+| `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
+| `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+| `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
+| `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
+| `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
+
+- Unique: (tenant_id, document_id)
+- Index: (tenant_id, institution_id)
+- Full-text index: (title, keywords, body_text)
 
 <a id="records-document_link"></a>
 ## `document_link`

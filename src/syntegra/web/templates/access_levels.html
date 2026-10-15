@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Access levels{% endblock %}
+{% block content %}
+<h1>Access levels</h1>
+<p class="muted">Every role has an access level. A person sees only the pages, menu items, fields and documents at or below the level of the role they are working in. You can lower one person's level for one role — never raise it above the role's level or your own.</p>
+{% if done %}<div class="alert alert-ok" role="status">{{ done }}</div>{% endif %}
+{% if error %}<div class="alert alert-error" role="alert">{{ error }}</div>{% endif %}
+
+<section class="card" id="levels">
+  <h2>The five levels</h2>
+  <ol class="levels">
+  {% for lv in levels %}
+    <li><span class="level level-{{ lv.number }}">{{ lv.label }}</span> <span>{{ lv.sees }}</span></li>
+  {% endfor %}
+  </ol>
+</section>
+
+<section class="card" id="roles">
+  <h2>Roles and their levels</h2>
+  <div class="scroll-x"><table>
+    <thead><tr><th>Role</th><th>Name</th><th>Access level</th><th class="num">People</th></tr></thead>
+    <tbody>{% for r in roles %}<tr><td><code>{{ r.code }}</code></td><td>{{ r.name }}</td><td><span class="level level-{{ r.level.number }}">{{ r.level.label }}</span></td><td class="num">{{ r.holders }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+
+<section class="card" id="grants">
+  <h2>People and their effective level</h2>
+  <form method="get" class="filters"><label>Find a person, role or school<input name="q" value="{{ q }}" placeholder="name, username, role code or school"></label><button>Find</button></form>
+  <p class="muted">{{ total }} role grant{{ "s" if total != 1 else "" }}{% if total > grants|length %} — showing the first {{ grants|length }}; narrow the search{% endif %}.</p>
+  <div class="scroll-x"><table>
+    <thead><tr><th>Person</th><th>Role</th><th>Scope</th><th>Role level</th><th>Effective level</th><th>Change</th></tr></thead>
+    <tbody>
+    {% for g in grants %}
+      <tr>
+        <td><strong>{{ g.user }}</strong><br><span class="muted">{{ g.username }}</span></td>
+        <td><code>{{ g.role }}</code></td>
+        <td>{{ g.scope }}</td>
+        <td><span class="level level-{{ g.role_level.number }}">{{ g.role_level.label }}</span></td>
+        <td><span class="level level-{{ g.effective.number }}">{{ g.effective.label }}</span>{% if g.cap %} <span class="muted">(lowered)</span>{% endif %}</td>
+        <td>{% if g.is_me %}<span class="muted">your own role</span>{% else %}
+          <details><summary>Change</summary>
+            <form method="post" class="inline-form">
+              <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+              <input type="hidden" name="grant_id" value="{{ g.grant_id }}">
+              <label>Level<select name="cap">
+                {% for lv in g.caps_allowed|reverse %}<option value="{{ lv.classification }}"{% if lv.number == g.effective.number %} selected{% endif %}>{{ lv.label }}{% if lv.number == g.role_level.number %} (role level){% endif %}</option>{% endfor %}
+              </select></label>
+              <label>Reason<input name="reason" required minlength="5" placeholder="e.g. clerical duties only"></label>
+              <button class="primary">Save</button>
+            </form>
+          </details>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</section>
+{% endblock %}

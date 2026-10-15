@@ -13,6 +13,24 @@ def _date(value: Any, fmt: str = "%d %b %Y") -> str:
     return value.strftime(fmt) if value else "—"
 
 
+def _localtime(value: Any, fmt: str = "%d %b %Y %H:%M") -> str:
+    """A UTC timestamp in the state's local time (settings.TIME_ZONE, Africa/Lagos)."""
+    from django.utils import timezone
+
+    return timezone.localtime(value).strftime(fmt) if value else "—"
+
+
+def _filesize(n: Any) -> str:
+    if n is None:
+        return "—"
+    size = float(n)
+    for unit in ("bytes", "KB", "MB", "GB"):
+        if size < 1024 or unit == "GB":
+            return f"{size:,.0f} {unit}" if unit == "bytes" else f"{size:,.1f} {unit}"
+        size /= 1024
+    return str(n)
+
+
 def _naira(minor: Any) -> str:
     return "—" if minor is None else f"₦{int(minor) / 100:,.2f}"
 
@@ -40,4 +58,6 @@ def environment(**options: Any) -> Environment:
     env.filters["naira"] = _naira
     env.filters["naira_short"] = _naira_short
     env.filters["human"] = _human
+    env.filters["localtime"] = _localtime
+    env.filters["filesize"] = _filesize
     return env

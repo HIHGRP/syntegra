@@ -61,8 +61,8 @@ entities:
     history: lifecycle
     scope: owned
     origin: appj
-    reqs: [FR-DOC-103, FR-DOC-109, FR-DOC-110, FR-DOC-111, FR-DOC-112, FR-DOC-116, FR-INT-03, FR-INT-101]
-    pages: [DOC-105, DOC-104, AIX-02, HOM-05]
+    reqs: [FR-DOC-103, FR-DOC-109, FR-DOC-110, FR-DOC-111, FR-DOC-112, FR-DOC-116, FR-INT-03, FR-INT-101, FR-DOC-201, FR-DOC-202, FR-DOC-205, FR-DOC-206]
+    pages: [DOC-105, DOC-104, AIX-02, HOM-05, DOC-107, DOC-108]
     events: [DOC.INGESTED, DOC.LINKED]
     notes: >
       Metadata (MFS §13.4): title, type, institution, LGA, date or range, people referenced, session, class/level,
@@ -70,7 +70,10 @@ entities:
       capture date, hash and QA status. Downloads and prints are watermarked with the viewer's name and time.
     attrs:
       - "category_id: ref(document_category)!"
+      - "reference_no: code(64) | Reference number, unique in the state: <institution code>/<category>/<year>/<sequence> (CR-007)"
       - "title: title!"
+      - "description: str(2000) | What the document is and what it contains"
+      - "source_reference: str(200) | Reference, file or box number written on the paper original"
       - "classification: enum(classification)!"
       - "institution_id: uuid | Registry institution (soft)"
       - "lga_scope_id: uuid"
@@ -94,7 +97,36 @@ entities:
       - "legal_hold_count: smallint! default=0"
       - "disposal_due_on: date"
       - "status: enum(document_status)!"
-    ix: [[category_id], [disposal_due_on]]
+    uq: [[reference_no]]
+    ix: [[category_id], [disposal_due_on], [institution_id, category_id]]
+
+  document_index:
+    title: Full-text search entry of a document — title, keywords and extracted text (never for special category)
+    kind: projection
+    class: confidential
+    history: none
+    origin: ceda
+    scope_note: Inherits the document's scope; search results are filtered through the document.
+    reqs: [FR-DOC-203, FR-DOC-204]
+    pages: [DOC-104, DOC-108]
+    events: [DOC.INDEXED]
+    notes: >
+      One row per indexed document, rebuilt when the document's metadata or text changes. The FULLTEXT key spans
+      title, keywords and body_text; queries always filter tenant_id and join the document for scope, access level
+      and category permissions. body_text comes from the PDF text layer, text files, the transcription entered at
+      upload and, later, OCR of scanned pages.
+    attrs:
+      - "document_id: ref(document)! uq"
+      - "institution_id: uuid | Denormalised from the document for per-school search"
+      - "reference_no: code(64)"
+      - "title: title!"
+      - "keywords: str(2000) | Category, school, session, class, subject, paper reference and description"
+      - "body_text: longtext | Extracted or transcribed text"
+      - "text_source: enum(text_source)! | Where body_text came from"
+      - "char_count: int_u! default=0"
+      - "indexed_at: ts!"
+    ix: [[institution_id]]
+    fulltext: [[title, keywords, body_text]]
 
   document_link:
     title: Link from a document to a person or record (learner, staff, guardian, institution, case …) — powers every 360 Documents tab

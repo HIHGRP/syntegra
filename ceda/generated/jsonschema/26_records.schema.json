@@ -283,9 +283,46 @@
           "format": "uuid",
           "x-ref": "document_category"
         },
+        "reference_no": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Reference number, unique in the state: <institution code>/<category>/<year>/<sequence> (CR-007)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "title": {
           "type": "string",
           "maxLength": 300
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2000,
+              "description": "What the document is and what it contains"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_reference": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200,
+              "description": "Reference, file or box number written on the paper original"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "classification": {
           "type": "string",
@@ -546,6 +583,153 @@
         "qa_status",
         "legal_hold_count",
         "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "DocumentIndex": {
+      "title": "DocumentIndex",
+      "description": "Full-text search entry of a document — title, keywords and extracted text (never for special category)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "document_index",
+        "zone": "records",
+        "domain": "DOC",
+        "kind": "projection",
+        "classification": "confidential",
+        "history": "none",
+        "module": "records"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "document_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "document"
+        },
+        "institution_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Denormalised from the document for per-school search"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reference_no": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "keywords": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2000,
+              "description": "Category, school, session, class, subject, paper reference and description"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "body_text": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "Extracted or transcribed text"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "text_source": {
+          "type": "string",
+          "enum": [
+            "none",
+            "pdf_text_layer",
+            "text_file",
+            "transcription",
+            "pdf_text_layer_and_transcription",
+            "ocr"
+          ],
+          "description": "Where body_text came from"
+        },
+        "char_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "indexed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "document_id",
+        "title",
+        "text_source",
+        "char_count",
+        "indexed_at",
         "created_at",
         "updated_at",
         "row_version"

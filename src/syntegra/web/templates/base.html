@@ -13,31 +13,44 @@
   {% if signed_in %}
   <nav aria-label="Primary">
     <a href="/">Home</a>
-    {% if ctx.has("metric:view") %}<a href="/command/control-room">Control room</a>{% endif %}
-    {% if ctx.has("learner:register") %}<a href="/learners/new">Register learner</a>{% endif %}
-    {% if ctx.has("coverage:view") %}<a href="/coverage">Coverage</a>{% endif %}
-    {% if ctx.has("clearance:check") %}<a href="/admissions/clearance">Fee clearance</a>{% endif %}
-    {% if ctx.has("security_training:view") %}<a href="/security-training">Security training</a>{% endif %}
-    {% if ctx.has("federal_institutions:view") %}<a href="/federal-institutions">Federal institutions</a>{% endif %}
+    {% if ctx.has("metric:view") and can_open("CMD-101") %}<a href="/command/control-room">Control room</a>{% endif %}
+    {% if ctx.has("learner:register") and can_open("LRN-02") %}<a href="/learners/new">Register learner</a>{% endif %}
+    {% if ctx.has("coverage:view") and can_open("CUR-101") %}<a href="/coverage">Coverage</a>{% endif %}
+    {% if ctx.has("clearance:check") and can_open("FCL-01") %}<a href="/admissions/clearance">Fee clearance</a>{% endif %}
+    {% if ctx.has("security_training:view") and can_open("STI-01") %}<a href="/security-training">Security training</a>{% endif %}
+    {% if ctx.has("federal_institutions:view") and can_open("FED-01") %}<a href="/federal-institutions">Federal institutions</a>{% endif %}
     <a href="/regulators">Regulators</a>
-    {% if ctx.has("hr:view") %}<a href="/hr/establishment">HR</a>{% endif %}
-    {% if ctx.has("exam:view") %}<a href="/exams/series">Exams</a>{% endif %}
-    {% if ctx.has("budget:view") %}<a href="/finance/performance">Budgets</a>{% endif %}
-    {% if ctx.has("funding:view") %}<a href="/funding">Funding</a>{% endif %}
-    {% if ctx.has("estate:view") %}<a href="/estate">Facilities</a>{% endif %}
-    {% if ctx.has("warehouse:view") %}<a href="/estate/state">Infrastructure</a>{% endif %}
+    {% if ctx.has("hr:view") and can_open("HRM-01") %}<a href="/hr/establishment">HR</a>{% endif %}
+    {% if ctx.has("exam:view") and can_open("EXM-01") %}<a href="/exams/series">Exams</a>{% endif %}
+    {% if (ctx.has("document:view") or ctx.has("document:search") or ctx.has("document:upload")) and can_open("DOC-104") %}<a href="/documents"{% if request.path.startswith("/documents") or request.path.endswith("/documents") %} aria-current="page"{% endif %}>Documents</a>{% endif %}
+    {% if ctx.has("budget:view") and can_open("FIN-02") %}<a href="/finance/performance">Budgets</a>{% endif %}
+    {% if ctx.has("funding:view") and can_open("FND-01") %}<a href="/funding">Funding</a>{% endif %}
+    {% if ctx.has("estate:view") and can_open("OPS-01") %}<a href="/estate">Facilities</a>{% endif %}
+    {% if ctx.has("warehouse:view") and can_open("EST-03") %}<a href="/estate/state">Infrastructure</a>{% endif %}
+    {% if ctx.has("access:manage") %}<a href="/admin/access-levels">Access levels</a>{% endif %}
+    {% if ctx.has("session:manage") %}<a href="/admin/sessions">Sessions</a>{% endif %}
     <a href="/forms">Forms</a>
     <a href="/pages">Pages</a>
     <a href="/verify">Verify</a>
   </nav>
   <div class="who">
-    <span>{{ user.display_name }} · <strong>{{ ctx.role_code or "no role" }}</strong> · <a href="/auth/context?next={{ request.path|urlencode }}">Switch role</a></span>
+    <span>{{ user.display_name }} · <strong>{{ ctx.role_code or "no role" }}</strong> · <a href="/auth/context?next={{ request.path|urlencode }}">Switch</a></span>
     <form method="post" action="/sign-out"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><button class="link">Sign out</button></form>
   </div>
   {% else %}
   <nav aria-label="Primary"><a href="/verify">Verify a certificate</a><a href="/regulators">Regulators</a><a href="/sign-in">Sign in</a></nav>
   {% endif %}
 </header>
+{% if signed_in and session and session.affiliation_name %}
+<div class="affbar" id="affiliation-bar">
+  <span class="affbar-name">{{ session.affiliation_name }}</span>
+  {% if session.affiliation_address %}<span class="affbar-address">{{ session.affiliation_address }}</span>{% endif %}
+  {% if my_level %}<span class="level level-{{ my_level.number }}" title="{{ my_level.sees }}">{{ my_level.label }}</span>{% endif %}
+</div>
+{% endif %}
+{% if signed_in and refused_sign_ins %}
+<div class="alert alert-error banner" role="alert" id="refused-banner"><strong>Someone tried to sign in to your account while you were using it</strong> ({{ refused_sign_ins }} time{{ "s" if refused_sign_ins != 1 else "" }} since you signed in) and was refused. If this was not you, change your password and tell your administrator.</div>
+{% endif %}
 <main id="main">
   {% if page is defined and page %}<p class="crumb">{{ page.module }} · <code>{{ page.id }}</code> · <span class="cls cls-{{ page.classification }}">{{ page.classification }}</span></p>{% endif %}
   {% block content %}{% endblock %}

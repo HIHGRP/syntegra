@@ -20,7 +20,7 @@ entities:
     class: internal
     history: effective
     origin: appj
-    reqs: [FR-CMD-02, FR-CMD-118, FR-INS-08]
+    reqs: [FR-CMD-02, FR-CMD-118, FR-INS-08, FR-AUT-101]
     pages: [CMD-07, AUT-03]
     events: [GOV.SCOPE_CHANGED]
     notes: >
@@ -36,6 +36,7 @@ entities:
       - "ref_kind: enum(scope_ref_kind) | Entity the node represents"
       - "ref_id: uuid | Institution, campus, org unit, class group or course section id (soft)"
       - "ownership: cl(ownership) | Denormalised for oversight filters (public/private)"
+      - "address: json | Office address of a ministry, board, agency or LGA office (street, town, LGA, state); institutions keep theirs on institution (CR-007)"
     uq: [[code, valid_from]]
 
   scope_closure:

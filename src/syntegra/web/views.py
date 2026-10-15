@@ -12,6 +12,7 @@ from urllib.parse import urlencode
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.decorators.http import require_http_methods
 
 from syntegra.core import catalog, context
@@ -29,17 +30,28 @@ def _uuid_or_fail(value: object, what: str) -> uuid.UUID:
 
 
 def _ctx(request: HttpRequest, **extra: Any) -> dict[str, Any]:
+    from syntegra.core import access
+
     c = context.current(required=False)
     signed_in = c is not None and c.actor_kind == "user"
     user = None
+    sess = getattr(request, "syntegra_session", None) if signed_in else None
+    refused = 0
     if signed_in:
+        from syntegra.iam import services as iam
         from syntegra.iam.models import AppUser
 
         user = AppUser.objects.filter(pk=c.actor_id).first()  # type: ignore[union-attr]
+        if sess is not None:
+            refused = iam.refused_attempts(sess)
     return {
         "ctx": c,
         "signed_in": signed_in,
         "user": user,
+        "session": sess,
+        "refused_sign_ins": refused,
+        "my_level": access.level(c.clearance) if signed_in and c is not None and c.grant_id else None,
+        "can_open": lambda pid: signed_in and c is not None and access.covers(c.clearance, pages.entry_level(pid)),
         "tenant": getattr(request, "syntegra_tenant", None),
         "nav": pages.for_role(c.role_code if c else None),
         "page_status": pages.status,
@@ -47,16 +59,58 @@ def _ctx(request: HttpRequest, **extra: Any) -> dict[str, Any]:
     }
 
 
-def page(page_id: str | None = None, *, public: bool = False) -> Callable[[View], View]:
-    """Wrap a page: sign-in required unless public; domain errors render the problem page."""
+def _signed_out_redirect(request: HttpRequest) -> HttpResponse:
+    """To the sign-in page, saying why when the session behind the cookie has ended (FR-AUT-102)."""
+    from syntegra.core.middleware import session_token
+    from syntegra.iam import services as iam
+
+    q = {"next": request.get_full_path()}
+    token, from_cookie = session_token(request)
+    reason = iam.end_reason(token) if from_cookie else None
+    if reason and reason != "signed_out":
+        q["ended"] = reason
+    resp = HttpResponseRedirect(f"/sign-in?{urlencode(q)}")
+    if reason:
+        resp.delete_cookie(settings.SESSION_COOKIE_NAME)
+    return resp
+
+
+def _check_level(page_id: str) -> None:
+    """Refuse a page above the active grant's access level (CR-007, FR-ADM-201)."""
+    from syntegra.core import access
+
+    c = context.require()
+    needed = access.level(pages.entry_level(page_id))
+    if not access.covers(c.clearance, needed.classification):
+        raise Forbidden(
+            f"This page needs {needed.label}. Your access level in this role is {access.level(c.clearance).label}.",
+            code="AUTH-LEVEL",
+        )
+
+
+def page(page_id: str | None = None, *, public: bool = False, confirm: bool = True) -> Callable[[View], View]:
+    """Wrap a page: sign-in required unless public; the school or office must have been confirmed after the password
+    (``confirm=False`` only for the confirmation page itself and sign-out); the page's access level is enforced;
+    domain errors render the problem page."""
 
     def deco(fn: View) -> View:
         @wraps(fn)
         def wrapper(request: HttpRequest, *args: Any, **kw: Any) -> HttpResponse:
             c = context.current(required=False)
             if not public and (c is None or c.actor_kind != "user"):
-                return HttpResponseRedirect(f"/sign-in?next={request.path}")
+                return _signed_out_redirect(request)
+            sess = getattr(request, "syntegra_session", None)
+            if (
+                not public
+                and confirm
+                and sess is not None
+                and getattr(request, "syntegra_token_cookie", False)
+                and sess.affiliation_confirmed_at is None
+            ):
+                return HttpResponseRedirect(f"/auth/context?{urlencode({'next': request.get_full_path()})}")
             try:
+                if not public and page_id:
+                    _check_level(page_id)
                 return fn(request, *args, **kw)
             except DomainError as exc:
                 return render(
@@ -71,12 +125,22 @@ def page(page_id: str | None = None, *, public: bool = False) -> Callable[[View]
     return deco
 
 
+ENDED_MESSAGES = {
+    "replaced": "You were signed out because your account signed in on another device.",
+    "ended_by_administrator": "An administrator ended your session.",
+    "idle_timeout": "You were signed out after a period of inactivity.",
+    "expired": "Your session expired. Please sign in again.",
+    "account_inactive": "This account can no longer sign in. Contact your administrator.",
+}
+
+
 @require_http_methods(["GET", "POST"])
 @page(public=True)
 def sign_in(request: HttpRequest) -> HttpResponse:
     from syntegra.iam import services as iam
 
     error = None
+    notice = ENDED_MESSAGES.get(request.GET.get("ended", ""))
     if request.method == "POST":
         try:
             c = context.require()
@@ -88,7 +152,7 @@ def sign_in(request: HttpRequest) -> HttpResponse:
                 ua=c.user_agent,
             )
             nxt = _safe_next(request.GET.get("next"))
-            if len(r.grants) > 1 and not r.mfa_required:  # several roles: choose the workspace first (AUT-03)
+            if not r.mfa_required:  # confirm the school or office (and the role, when there are several) — AUT-03
                 nxt = f"/auth/context?{urlencode({'next': nxt})}"
             resp = HttpResponseRedirect(nxt)
             resp.set_cookie(
@@ -102,11 +166,18 @@ def sign_in(request: HttpRequest) -> HttpResponse:
             return resp
         except DomainError as exc:
             error = exc.detail or exc.title
-    return render(request, "sign_in.html", _ctx(request, error=error), status=401 if error else 200)
+            in_use = exc.code == "AUTH-SESSION-IN-USE"
+            return render(
+                request,
+                "sign_in.html",
+                _ctx(request, error=error, in_use=in_use),
+                status=exc.status if in_use else 401,
+            )
+    return render(request, "sign_in.html", _ctx(request, error=error, notice=notice))
 
 
 @require_http_methods(["POST"])
-@page()
+@page(confirm=False)
 def sign_out(request: HttpRequest) -> HttpResponse:
     from syntegra.core.middleware import session_token
     from syntegra.iam import services as iam
@@ -680,35 +751,38 @@ def _safe_next(value: str | None) -> str:
 
 
 @require_http_methods(["GET", "POST"])
-@page("AUT-03")
+@page("AUT-03", confirm=False)
 def workspace(request: HttpRequest) -> HttpResponse:
-    """AUT-03: choose which role-at-scope grant the session acts under."""
+    """AUT-03: after the password, confirm the school or office (name and address from the grant, never typed) and,
+    when there are several, the role to act under (CR-007, FR-AUT-101)."""
+    from syntegra.core import access
     from syntegra.core.middleware import session_token
-    from syntegra.governance.models import ScopeNode
     from syntegra.iam import services as iam
     from syntegra.iam.models import AppUser
 
     c = context.require()
     user = AppUser.objects.get(pk=c.actor_id)
     grants = iam.user_grants(user)
-    nodes = {str(n.id): n for n in ScopeNode.objects.filter(id__in=[g["scope_id"] for g in grants])}
+    for g in grants:
+        g["level"] = access.level(str(g["access_level"]))
     error = None
     if request.method == "POST":
         chosen = request.POST.get("grant_id", "")
         if chosen not in {str(g["grant_id"]) for g in grants}:
-            error = "Choose one of your roles."
+            error = "Choose your school or office."
         else:
             token, _ = session_token(request)
-            iam.select_grant(token or "", uuid.UUID(chosen))
+            iam.select_grant(token or "", uuid.UUID(chosen), confirm=True)
             return HttpResponseRedirect(_safe_next(request.GET.get("next")))
+    sess = getattr(request, "syntegra_session", None)
     return render(
         request,
         "workspace.html",
         _ctx(
             request,
             grants=grants,
-            nodes=nodes,
             active=str(c.grant_id) if c.grant_id else None,
+            confirmed=bool(sess is not None and sess.affiliation_confirmed_at),
             error=error,
             next=_safe_next(request.GET.get("next")),
             page=pages.page("AUT-03"),
@@ -947,3 +1021,305 @@ def seating(request: HttpRequest, class_id: uuid.UUID) -> HttpResponse:
         ),
         status=422 if problem else 200,
     )
+
+
+# ---------------------------------------------------------------------------------- administration (CR-007)
+@require_http_methods(["GET", "POST"])
+@page("ADM-102")
+def sessions_admin(request: HttpRequest) -> HttpResponse:
+    """ADM-102: sessions in use by users in scope; end one with a reason (FR-AUT-103)."""
+    from syntegra.iam import services as iam
+
+    c = context.require()
+    if not c.has("session:manage"):
+        raise Forbidden("Missing permission session:manage.", code="AUTH-PERMISSION")
+    error = done = None
+    status = 200
+    if request.method == "POST":
+        try:
+            iam.end_session(c, _uuid_or_fail(request.POST.get("session_id"), "session"), request.POST.get("reason", ""))
+            done = "The session was ended. The person will be asked to sign in again."
+        except DomainError as exc:
+            error = exc.detail or exc.title
+            status = exc.status
+    rows = iam.active_sessions(c)
+    return render(
+        request,
+        "sessions_admin.html",
+        _ctx(
+            request,
+            rows=rows,
+            window=int(iam.in_use_window().total_seconds() // 60),
+            error=error,
+            done=done,
+            page=pages.page("ADM-102"),
+        ),
+        status=status,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("ADM-101")
+def access_levels(request: HttpRequest) -> HttpResponse:
+    """ADM-101: the five access levels, each role's level, and lowering one user's level for a grant (FR-ADM-202)."""
+    from syntegra.iam import services as iam
+
+    c = context.require()
+    if not c.has("access:manage"):
+        raise Forbidden("Missing permission access:manage.", code="AUTH-PERMISSION")
+    error = done = None
+    status = 200
+    if request.method == "POST":
+        try:
+            cap = request.POST.get("cap") or None
+            iam.set_grant_cap(
+                c, _uuid_or_fail(request.POST.get("grant_id"), "role grant"), cap, request.POST.get("reason", "")
+            )
+            done = "The access level was changed. It applies from the person's next page."
+        except DomainError as exc:
+            error = exc.detail or exc.title
+            status = exc.status
+    data = iam.access_overview(c)
+    q = (request.GET.get("q") or "").strip().lower()
+    grants = [
+        g
+        for g in data["grants"]  # type: ignore[attr-defined]
+        if not q
+        or q in str(g["user"]).lower()
+        or q in str(g["username"]).lower()
+        or q in str(g["role"]).lower()
+        or q in str(g["scope"]).lower()
+    ]
+    return render(
+        request,
+        "access_levels.html",
+        _ctx(
+            request,
+            levels=data["levels"],
+            roles=data["roles"],
+            grants=grants[:300],
+            total=len(grants),
+            q=q,
+            error=error,
+            done=done,
+            page=pages.page("ADM-101"),
+        ),
+        status=status,
+    )
+
+
+# ---------------------------------------------------------------------------------- documents (CR-007)
+def _int_or_none(value: str | None) -> int | None:
+    return int(value) if value and value.isdigit() else None
+
+
+def _date_or_none(value: str | None, what: str) -> dt.date | None:
+    if not value:
+        return None
+    try:
+        return dt.date.fromisoformat(value)
+    except ValueError as exc:
+        raise HardValidation("PAGE-PARAM", f"Invalid {what}", "Use the date picker (YYYY-MM-DD).") from exc
+
+
+def _doc_schools(c: Any) -> list[Any]:
+    """Institutions the caller may file or search under: their own school, or every school in scope."""
+    from syntegra.institutions.models import Institution
+
+    qs = Institution.objects.all()
+    if c.scope_ids is not None:
+        qs = qs.filter(scope_node_id__in=list(c.scope_ids))
+    return list(qs.order_by("name")[:2000])
+
+
+@require_http_methods(["GET"])
+@page("DOC-104")
+def documents(request: HttpRequest) -> HttpResponse:
+    """DOC-104 Documents: search every school's digitised documents in scope (FR-DOC-204/206)."""
+    from syntegra.records import services as rec
+
+    c = context.require()
+    if not (c.has("document:view") or c.has("document:search") or c.has("document:upload")):
+        raise Forbidden("Missing permission document:view.", code="AUTH-PERMISSION")
+    schools = _doc_schools(c)
+    inst_param = request.GET.get("institution") or ""
+    institution_id = _uuid_or_fail(inst_param, "school") if inst_param else None
+    if institution_id is None and not c.has("document:search") and len(schools) == 1:
+        return HttpResponseRedirect(f"/institutions/{schools[0].id}/documents")
+    q = (request.GET.get("q") or "").strip()
+    cat = request.GET.get("category") or ""
+    year = _int_or_none(request.GET.get("year"))
+    searched = bool(q or institution_id or cat or year)
+    result = None
+    if searched and (c.has("document:view") or c.has("document:search")):
+        result = rec.search(c, q=q, institution_id=institution_id, category_code=cat, year=year)
+    by_school = rec.institutions_with_documents(c) if c.has("document:view") or c.has("document:search") else []
+    names = {str(s.id): s.name for s in schools}
+    return render(
+        request,
+        "documents.html",
+        _ctx(
+            request,
+            q=q,
+            cat=cat,
+            year=year or "",
+            institution=str(institution_id or ""),
+            schools=schools,
+            names=names,
+            categories=rec.categories(),
+            result=result,
+            searched=searched,
+            by_school=by_school,
+            ocr=rec.ocr_available(),
+            page=pages.page("DOC-104"),
+        ),
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("DOC-107")
+def document_upload(request: HttpRequest) -> HttpResponse:
+    """DOC-107 Upload digitised paper documents under a school (FR-DOC-202)."""
+    from syntegra.records import services as rec
+
+    c = context.require()
+    if not c.has("document:upload"):
+        raise Forbidden("Missing permission document:upload.", code="AUTH-PERMISSION")
+    schools = _doc_schools(c)
+    error = None
+    errors: list[dict[str, Any]] = []
+    form = request.POST if request.method == "POST" else request.GET
+    if request.method == "POST":
+        try:
+            files = [rec.Upload(f.name or "file", f.read()) for f in request.FILES.getlist("files")]
+            docs = rec.upload(
+                c,
+                institution_id=_uuid_or_fail(form.get("institution"), "school"),
+                category_code=form.get("category", ""),
+                title=form.get("title", ""),
+                files=files,
+                date_from=_date_or_none(form.get("date_from"), "date"),
+                date_to=_date_or_none(form.get("date_to"), "date"),
+                session_label=form.get("session_label", ""),
+                level_or_class=form.get("level_or_class", ""),
+                subject_label=form.get("subject_label", ""),
+                source_reference=form.get("source_reference", ""),
+                description=form.get("description", ""),
+                transcription=form.get("transcription", ""),
+                classification=form.get("classification") or None,
+            )
+            refs = ",".join(str(d.id) for d in docs)
+            return HttpResponseRedirect(
+                f"/institutions/{docs[0].institution_id}/documents?{urlencode({'added': refs})}"
+            )
+        except DomainError as exc:
+            error = exc.detail or exc.title
+            errors = exc.errors
+    from syntegra.core import access
+
+    return render(
+        request,
+        "document_upload.html",
+        _ctx(
+            request,
+            schools=schools,
+            categories=rec.categories(),
+            levels=[lv for lv in access.LEVELS if c.cleared_for(lv.classification) and lv.number < 5],
+            form=form,
+            error=error,
+            errors=errors,
+            ocr=rec.ocr_available(),
+            max_mb=int(settings.SYNTEGRA_DOCUMENT_MAX_BYTES // (1024 * 1024)),
+            page=pages.page("DOC-107"),
+        ),
+        status=422 if error else 200,
+    )
+
+
+@require_http_methods(["GET"])
+@page("DOC-108")
+def school_documents(request: HttpRequest, institution_id: uuid.UUID) -> HttpResponse:
+    """DOC-108 One school's complete document register, grouped by category (FR-DOC-205)."""
+    from syntegra.records import services as rec
+
+    c = context.require()
+    q = (request.GET.get("q") or "").strip()
+    reg = rec.register(c, institution_id, q=q)
+    added = {x for x in (request.GET.get("added") or "").split(",") if x}
+    return render(
+        request,
+        "school_documents.html",
+        _ctx(request, reg=reg, q=q, added=added, page=pages.page("DOC-108")),
+    )
+
+
+def _purposes(c: Any) -> list[Any]:
+    from syntegra.iam.models import PurposeCode
+
+    return [p for p in PurposeCode.objects.order_by("label") if not p.allowed_roles or c.role_code in p.allowed_roles]
+
+
+@require_http_methods(["GET"])
+@page("DOC-105")
+def document_view(request: HttpRequest, document_id: uuid.UUID) -> HttpResponse:
+    """DOC-105 Document viewer: metadata, the scan (watermarked on screen), downloads and the Word copy."""
+    from syntegra.core.errors import PurposeRequired
+    from syntegra.records import services as rec
+
+    c = context.require()
+    purpose = request.GET.get("purpose") or None
+    try:
+        d = rec.detail(c, document_id, purpose)
+    except PurposeRequired:
+        return render(
+            request,
+            "document_purpose.html",
+            _ctx(request, document_id=document_id, purposes=_purposes(c), page=pages.page("DOC-105")),
+            status=428,
+        )
+    from django.utils import timezone
+
+    return render(
+        request,
+        "document.html",
+        _ctx(
+            request,
+            d=d,
+            purpose=purpose or "",
+            stamp=timezone.localtime().strftime("%d %b %Y %H:%M"),
+            page=pages.page("DOC-105"),
+        ),
+    )
+
+
+@xframe_options_sameorigin
+@require_http_methods(["GET"])
+@page("DOC-105")
+def document_file(request: HttpRequest, document_id: uuid.UUID) -> HttpResponse:
+    """The scan itself (hash-verified), shown inline or downloaded; every read is audited."""
+    from syntegra.records import services as rec
+
+    c = context.require()
+    data, mime, name = rec.content(c, document_id, request.GET.get("purpose") or None)
+    resp = HttpResponse(data, content_type=mime)
+    disposition = "attachment" if request.GET.get("download") else "inline"
+    resp["Content-Disposition"] = f'{disposition}; filename="{name}"'
+    resp["Cache-Control"] = "no-store"
+    resp["X-Content-Type-Options"] = "nosniff"  # the type was sniffed from the bytes at upload: PDF, image or text
+    if mime == "text/plain":
+        resp["Content-Security-Policy"] = "default-src 'none'; sandbox"
+    return resp
+
+
+@require_http_methods(["GET"])
+@page("DOC-105")
+def document_word(request: HttpRequest, document_id: uuid.UUID) -> HttpResponse:
+    """An editable Word copy of the document's text, made on demand (the scan stays the record)."""
+    from syntegra.records import services as rec
+
+    c = context.require()
+    data, name = rec.word_copy(c, document_id, request.GET.get("purpose") or None)
+    resp = HttpResponse(data, content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    resp["Content-Disposition"] = f'attachment; filename="{name}"'
+    resp["Cache-Control"] = "no-store"
+    return resp

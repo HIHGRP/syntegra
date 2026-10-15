@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from tests.conftest import system_ctx
+from tests.conftest import system_ctx, web_sign_in
 
 pytestmark = pytest.mark.django_db(databases="__all__")
 
@@ -98,7 +98,7 @@ def test_control_room_compares_schools_and_selects_the_best(world: Any, client: 
 
     client.handler.enforce_csrf_checks = False
     sign_in = {"username": "commissioner.education@abia.gov.ng", "password": "Demo-password-2026"}
-    assert client.post("/sign-in", sign_in).status_code == 302
+    assert web_sign_in(client, sign_in).status_code == 302
     r = client.get("/command/control-room")
     assert r.status_code == 200, r.content.decode()[-2000:]
     body = r.content.decode()

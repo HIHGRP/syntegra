@@ -42,6 +42,11 @@ erDiagram
         DATETIME_6_ last_seen_at
         DATETIME_6_ expires_at
         DATETIME_6_ revoked_at
+        VARCHAR_32_ ended_reason
+        BINARY_16_ affiliation_scope_id
+        VARCHAR_300_ affiliation_name
+        VARCHAR_500_ affiliation_address
+        DATETIME_6_ affiliation_confirmed_at
     }
     credential_reset {
         BINARY_16_ id PK
@@ -92,6 +97,7 @@ erDiagram
         DATE review_due_on
         BINARY_16_ delegation_of_id FK
         DATE supervised_until
+        BINARY_16_ office_scope_id
         VARCHAR_32_ status
         DATE valid_from
         DATE valid_to

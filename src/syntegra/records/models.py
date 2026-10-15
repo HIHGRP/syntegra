@@ -196,13 +196,16 @@ class Document(CedaModel):
     ceda_append_only = False
     ceda_partition = None
     ceda_retention = 'RS-DOC'
-    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'scope_node_id': {'type': 'uuid', 'standard': True}, 'category_id': {'type': 'ref', 'ref': 'document_category'}, 'title': {'type': 'title'}, 'classification': {'type': 'enum', 'enum': 'classification'}, 'institution_id': {'type': 'uuid'}, 'lga_scope_id': {'type': 'uuid'}, 'date_from': {'type': 'date'}, 'date_to': {'type': 'date'}, 'session_label': {'type': 'code'}, 'level_or_class': {'type': 'str'}, 'subject_label': {'type': 'str'}, 'origin': {'type': 'enum', 'enum': 'document_origin'}, 'origin_module': {'type': 'code'}, 'batch_id': {'type': 'ref', 'ref': 'digitisation_batch'}, 'page_range': {'type': 'str'}, 'master_object_key': {'type': 'object_key'}, 'access_object_key': {'type': 'object_key'}, 'mime_type': {'type': 'mime'}, 'size_bytes': {'type': 'bigint'}, 'sha256': {'type': 'hash'}, 'captured_at': {'type': 'ts'}, 'qa_status': {'type': 'enum', 'enum': 'qa_status'}, 'ocr_text_ref': {'type': 'object_key'}, 'legal_hold_count': {'type': 'smallint'}, 'disposal_due_on': {'type': 'date'}, 'status': {'type': 'enum', 'enum': 'document_status'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'scope_node_id': {'type': 'uuid', 'standard': True}, 'category_id': {'type': 'ref', 'ref': 'document_category'}, 'reference_no': {'type': 'code'}, 'title': {'type': 'title'}, 'description': {'type': 'str'}, 'source_reference': {'type': 'str'}, 'classification': {'type': 'enum', 'enum': 'classification'}, 'institution_id': {'type': 'uuid'}, 'lga_scope_id': {'type': 'uuid'}, 'date_from': {'type': 'date'}, 'date_to': {'type': 'date'}, 'session_label': {'type': 'code'}, 'level_or_class': {'type': 'str'}, 'subject_label': {'type': 'str'}, 'origin': {'type': 'enum', 'enum': 'document_origin'}, 'origin_module': {'type': 'code'}, 'batch_id': {'type': 'ref', 'ref': 'digitisation_batch'}, 'page_range': {'type': 'str'}, 'master_object_key': {'type': 'object_key'}, 'access_object_key': {'type': 'object_key'}, 'mime_type': {'type': 'mime'}, 'size_bytes': {'type': 'bigint'}, 'sha256': {'type': 'hash'}, 'captured_at': {'type': 'ts'}, 'qa_status': {'type': 'enum', 'enum': 'qa_status'}, 'ocr_text_ref': {'type': 'object_key'}, 'legal_hold_count': {'type': 'smallint'}, 'disposal_due_on': {'type': 'date'}, 'status': {'type': 'enum', 'enum': 'document_status'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
 
     id = cf.UUID7Field(primary_key=True, default=uuid7)
     tenant_id = cf.UUID7Field()
     scope_node_id = cf.UUID7Field()
     category = models.ForeignKey("records.DocumentCategory", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='category_id')
+    reference_no = models.CharField(max_length=64, null=True, blank=True, help_text='Reference number, unique in the state: <institution code>/<category>/<year>/<sequence> (CR-007)')
     title = models.CharField(max_length=300)
+    description = models.CharField(max_length=2000, null=True, blank=True, help_text='What the document is and what it contains')
+    source_reference = models.CharField(max_length=200, null=True, blank=True, help_text='Reference, file or box number written on the paper original')
     classification = models.CharField(max_length=32, choices=[('public', 'Public'), ('internal', 'Internal'), ('confidential', 'Confidential'), ('restricted', 'Restricted'), ('special', 'Special')])
     institution_id = cf.UUID7Field(null=True, blank=True, help_text='Registry institution (soft)')
     lga_scope_id = cf.UUID7Field(null=True, blank=True)
@@ -282,6 +285,49 @@ class DocumentCategory(CedaModel):
         app_label = 'records'
         base_manager_name = 'unscoped'
         verbose_name = 'Document type/category with its own view, download and share permissions (on top'
+
+
+class DocumentIndex(CedaModel):
+    """Full-text search entry of a document — title, keywords and extracted text (never for special category)"""
+
+    ceda_entity = 'document_index'
+    ceda_zones = ('records',)
+    ceda_domain = 'DOC'
+    ceda_kind = 'projection'
+    ceda_class = 'confidential'
+    ceda_history = 'none'
+    ceda_scope = 'none'
+    ceda_append_only = False
+    ceda_partition = None
+    ceda_retention = 'RS-DOC'
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'document_id': {'type': 'ref', 'ref': 'document'}, 'institution_id': {'type': 'uuid'}, 'reference_no': {'type': 'code'}, 'title': {'type': 'title'}, 'keywords': {'type': 'str'}, 'body_text': {'type': 'longtext'}, 'text_source': {'type': 'enum', 'enum': 'text_source'}, 'char_count': {'type': 'int_u'}, 'indexed_at': {'type': 'ts'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
+
+    id = cf.UUID7Field(primary_key=True, default=uuid7)
+    tenant_id = cf.UUID7Field()
+    document = models.ForeignKey("records.Document", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='document_id')
+    institution_id = cf.UUID7Field(null=True, blank=True, help_text='Denormalised from the document for per-school search')
+    reference_no = models.CharField(max_length=64, null=True, blank=True)
+    title = models.CharField(max_length=300)
+    keywords = models.CharField(max_length=2000, null=True, blank=True, help_text='Category, school, session, class, subject, paper reference and description')
+    body_text = models.TextField(null=True, blank=True, help_text='Extracted or transcribed text')
+    text_source = models.CharField(max_length=32, choices=[('none', 'None'), ('pdf_text_layer', 'Pdf text layer'), ('text_file', 'Text file'), ('transcription', 'Transcription'), ('pdf_text_layer_and_transcription', 'Pdf text layer and transcription'), ('ocr', 'Ocr')], help_text='Where body_text came from')
+    char_count = models.PositiveIntegerField(default=0)
+    indexed_at = models.DateTimeField()
+    created_at = models.DateTimeField(default=cf.utcnow)
+    created_by = cf.UUID7Field(null=True, blank=True)
+    updated_at = models.DateTimeField(default=cf.utcnow)
+    updated_by = cf.UUID7Field(null=True, blank=True)
+    row_version = models.PositiveIntegerField(default=1)
+
+    objects = TenantScopedManager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'document_index'
+        app_label = 'records'
+        base_manager_name = 'unscoped'
+        verbose_name = 'Full-text search entry of a document — title, keywords and extracted text (never'
 
 
 class DocumentLink(CedaModel):

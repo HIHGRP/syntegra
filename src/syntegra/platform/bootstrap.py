@@ -105,6 +105,11 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "warehouse:*",
             "assessment:view",
             "exam:view",
+            "document:view",
+            "document:search",
+            "document:upload",
+            "access:manage",
+            "session:manage",
         ],
     ),
     "LGA": (
@@ -130,6 +135,8 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "funding:view",
             "assessment:view",
             "exam:view",
+            "document:view",
+            "document:search",
         ],
     ),
     "HEAD": (
@@ -167,6 +174,8 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "assessment:*",
             "exam:*",
             "seating:*",
+            "document:view",
+            "document:upload",
         ],
     ),
     "EXO": (
@@ -306,6 +315,18 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "assessment:view",
             "attendance:view",
             "learner:view",
+            "document:view",
+            "document:search",
+        ],
+    ),
+    # records management (CR-007): digitised paper documents of schools and offices
+    "RECM": (
+        "Records manager",
+        "restricted",
+        [
+            "document:*",
+            "institution:view",
+            "ceda:view",
         ],
     ),
 }
@@ -317,6 +338,13 @@ PURPOSES = [
     ("investigation", "Investigation or audit", True, ["STA", "PLAT", "INTEG"]),
     ("exam_integrity", "Examination integrity", True, ["STA", "CERT", "INTEG"]),
     ("child_missing_education", "Child missing education", True, ["HEAD", "LGA", "STA"]),
+    # CR-007: opening restricted documents of a school
+    (
+        "records_retrieval",
+        "Records retrieval for an administrative, legal or verification need",
+        True,
+        ["STA", "COMM", "LGA", "RECM", "HEAD", "PLAT"],
+    ),
 ]
 
 POLICIES = [

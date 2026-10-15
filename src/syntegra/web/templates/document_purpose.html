@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Purpose required{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>Why do you need this document?</h1>
+  <p class="muted">This document is at the Restricted level. Choose the purpose of your access; it is recorded with your name in the audit trail.</p>
+  {% if purposes %}
+  <form method="get" action="/documents/{{ document_id }}" id="purpose">
+    <label>Purpose<select name="purpose" required>{% for p in purposes %}<option value="{{ p.code }}">{{ p.label }}</option>{% endfor %}</select></label>
+    <button class="primary">Open the document</button>
+  </form>
+  {% else %}<div class="alert" role="status">None of the purposes allowed for restricted documents applies to your role.</div>{% endif %}
+</section>
+{% endblock %}

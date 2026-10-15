@@ -10,7 +10,7 @@ from typing import Any
 import pytest
 from markupsafe import escape
 
-from tests.conftest import FED_HOST, make_user, user_ctx
+from tests.conftest import FED_HOST, make_user, user_ctx, web_sign_in
 from tests.integration.test_hrms import hr  # noqa: F401 — fixture
 
 pytestmark = pytest.mark.django_db(databases="__all__")
@@ -24,7 +24,7 @@ def errs(r: Any) -> str:
 
 def sign_in(client: Any, user: Any, **kw: Any) -> Any:
     client.handler.enforce_csrf_checks = False
-    return client.post("/sign-in", {"username": user.username, "password": PASSWORD}, **kw)
+    return web_sign_in(client, {"username": user.username, "password": PASSWORD}, **kw)
 
 
 def test_every_form_renders_only_for_roles_that_may_use_it(world: Any, client: Any) -> None:

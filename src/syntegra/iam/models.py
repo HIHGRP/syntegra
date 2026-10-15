@@ -326,7 +326,7 @@ class Role(CedaModel):
     tenant_id = cf.UUID7Field()
     code = models.CharField(max_length=16, help_text='TCH, DSL, STA, PROP, REV …')
     name = models.CharField(max_length=300)
-    clearance = models.CharField(max_length=32, choices=[('public', 'Public'), ('internal', 'Internal'), ('confidential', 'Confidential'), ('restricted', 'Restricted'), ('special', 'Special')], help_text='Highest classification the role normally receives')
+    clearance = models.CharField(max_length=32, choices=[('public', 'Public'), ('internal', 'Internal'), ('confidential', 'Confidential'), ('restricted', 'Restricted'), ('special', 'Special')], help_text='Highest classification the role normally receives — its access level (1 public … 5 special, CR-007)')
     is_builtin = models.BooleanField(default=False)
     cloned_from = models.ForeignKey("iam.Role", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='cloned_from_id', null=True, blank=True)
     created_by_clearance = models.CharField(max_length=32, choices=[('public', 'Public'), ('internal', 'Internal'), ('confidential', 'Confidential'), ('restricted', 'Restricted'), ('special', 'Special')], null=True, blank=True, help_text="Custom role may never exceed its creator's clearance")
@@ -361,7 +361,7 @@ class RoleGrant(CedaModel):
     ceda_append_only = False
     ceda_partition = None
     ceda_retention = 'RS-IAM'
-    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'user_id': {'type': 'ref', 'ref': 'app_user'}, 'role_id': {'type': 'ref', 'ref': 'role'}, 'scope_id': {'type': 'ref', 'ref': 'scope_node'}, 'clearance_cap': {'type': 'enum', 'enum': 'classification'}, 'granted_by': {'type': 'ref', 'ref': 'app_user'}, 'review_due_on': {'type': 'date'}, 'delegation_of_id': {'type': 'ref', 'ref': 'role_grant'}, 'supervised_until': {'type': 'date'}, 'status': {'type': 'enum', 'enum': 'record_status'}, 'valid_from': {'type': 'date', 'standard': True}, 'valid_to': {'type': 'date', 'standard': True}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'user_id': {'type': 'ref', 'ref': 'app_user'}, 'role_id': {'type': 'ref', 'ref': 'role'}, 'scope_id': {'type': 'ref', 'ref': 'scope_node'}, 'clearance_cap': {'type': 'enum', 'enum': 'classification'}, 'granted_by': {'type': 'ref', 'ref': 'app_user'}, 'review_due_on': {'type': 'date'}, 'delegation_of_id': {'type': 'ref', 'ref': 'role_grant'}, 'supervised_until': {'type': 'date'}, 'office_scope_id': {'type': 'uuid'}, 'status': {'type': 'enum', 'enum': 'record_status'}, 'valid_from': {'type': 'date', 'standard': True}, 'valid_to': {'type': 'date', 'standard': True}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
 
     id = cf.UUID7Field(primary_key=True, default=uuid7)
     tenant_id = cf.UUID7Field()
@@ -373,6 +373,7 @@ class RoleGrant(CedaModel):
     review_due_on = models.DateField(null=True, blank=True, help_text='Access review')
     delegation_of = models.ForeignKey("iam.RoleGrant", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='delegation_of_id', null=True, blank=True)
     supervised_until = models.DateField(null=True, blank=True, help_text='Time-limited supervised exception approved by the head while mandatory checks are pending (FR-STF-03)')
+    office_scope_id = cf.UUID7Field(null=True, blank=True, help_text="School or office the holder works in when it differs from the grant's scope — e.g. a ministry official with state-wide scope works in the Ministry of Education (soft; CR-007)")
     status = models.CharField(max_length=32, choices=[('active', 'Active'), ('inactive', 'Inactive'), ('retired', 'Retired')])
     valid_from = models.DateField()
     valid_to = models.DateField(null=True, blank=True)
@@ -525,7 +526,7 @@ class UserSession(CedaModel):
     ceda_append_only = False
     ceda_partition = None
     ceda_retention = 'RS-SESSION'
-    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'user_id': {'type': 'ref', 'ref': 'app_user'}, 'session_hash': {'type': 'hash'}, 'active_grant_id': {'type': 'ref', 'ref': 'role_grant'}, 'device_label': {'type': 'str'}, 'is_trusted_device': {'type': 'bool'}, 'ip': {'type': 'ip'}, 'user_agent': {'type': 'str'}, 'mfa_at': {'type': 'ts'}, 'auth_method': {'type': 'code'}, 'started_at': {'type': 'ts'}, 'last_seen_at': {'type': 'ts'}, 'expires_at': {'type': 'ts'}, 'revoked_at': {'type': 'ts'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'user_id': {'type': 'ref', 'ref': 'app_user'}, 'session_hash': {'type': 'hash'}, 'active_grant_id': {'type': 'ref', 'ref': 'role_grant'}, 'device_label': {'type': 'str'}, 'is_trusted_device': {'type': 'bool'}, 'ip': {'type': 'ip'}, 'user_agent': {'type': 'str'}, 'mfa_at': {'type': 'ts'}, 'auth_method': {'type': 'code'}, 'started_at': {'type': 'ts'}, 'last_seen_at': {'type': 'ts'}, 'expires_at': {'type': 'ts'}, 'revoked_at': {'type': 'ts'}, 'ended_reason': {'type': 'enum', 'enum': 'session_end_reason'}, 'affiliation_scope_id': {'type': 'uuid'}, 'affiliation_name': {'type': 'str'}, 'affiliation_address': {'type': 'str'}, 'affiliation_confirmed_at': {'type': 'ts'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
 
     id = cf.UUID7Field(primary_key=True, default=uuid7)
     tenant_id = cf.UUID7Field()
@@ -542,6 +543,11 @@ class UserSession(CedaModel):
     last_seen_at = models.DateTimeField()
     expires_at = models.DateTimeField()
     revoked_at = models.DateTimeField(null=True, blank=True)
+    ended_reason = models.CharField(max_length=32, choices=[('signed_out', 'Signed out'), ('idle_timeout', 'Idle timeout'), ('expired', 'Expired'), ('replaced', 'Replaced'), ('ended_by_administrator', 'Ended by administrator'), ('account_inactive', 'Account inactive')], null=True, blank=True, help_text='Why the session ended (CR-007)')
+    affiliation_scope_id = cf.UUID7Field(null=True, blank=True, help_text='Scope node of the school or office the user signed in for (soft; CR-007)')
+    affiliation_name = models.CharField(max_length=300, null=True, blank=True, help_text='School or office name as shown at sign-in')
+    affiliation_address = models.CharField(max_length=500, null=True, blank=True, help_text='School or office address as shown at sign-in')
+    affiliation_confirmed_at = models.DateTimeField(null=True, blank=True, help_text='When the user confirmed the school or office after the password')
     created_at = models.DateTimeField(default=cf.utcnow)
     created_by = cf.UUID7Field(null=True, blank=True)
     updated_at = models.DateTimeField(default=cf.utcnow)

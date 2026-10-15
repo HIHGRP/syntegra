@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 
 from syntegra.core.errors import Forbidden
-from tests.conftest import FED_HOST
+from tests.conftest import FED_HOST, web_sign_in
 
 pytestmark = pytest.mark.django_db(databases="__all__")
 
@@ -185,7 +185,7 @@ def test_watchdog_and_federal_pages(fed: Any, client: Any, settings: Any) -> Non
     assert client.get("/api/v1/regulators", HTTP_HOST=FED_HOST).status_code == 200
     _, u = fed_ctx("FADM", "NG-FED")
     client.handler.enforce_csrf_checks = False
-    client.post("/sign-in", {"username": u.username, "password": "correct-horse-battery"}, HTTP_HOST=FED_HOST)
+    web_sign_in(client, {"username": u.username, "password": "correct-horse-battery"}, HTTP_HOST=FED_HOST)
     page = client.get("/federal-institutions?zone=south_west", HTTP_HOST=FED_HOST).content
     assert b"Queen&#39;s College, Lagos" in page or b"Queen's College, Lagos" in page
     assert b"Federal Government College, Kano" not in page

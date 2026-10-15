@@ -446,6 +446,56 @@
       ],
       "additionalProperties": false
     },
+    "AUTH.CONCURRENT_REFUSED": {
+      "type": "object",
+      "description": "Sign-in refused because the account already has a session in use (CR-007)",
+      "properties": {
+        "user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "active_session_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "user_id",
+        "active_session_id"
+      ],
+      "additionalProperties": false
+    },
+    "AUTH.SESSION_ENDED": {
+      "type": "object",
+      "description": "Session ended by sign-out",
+      "properties": {
+        "user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "session_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "signed_out",
+            "idle_timeout",
+            "expired",
+            "replaced",
+            "ended_by_administrator",
+            "account_inactive"
+          ]
+        }
+      },
+      "required": [
+        "user_id",
+        "session_id",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
     "ID.NIN_VERIFIED": {
       "type": "object",
       "description": "National identifier verification returned",
@@ -2333,6 +2383,25 @@
       "required": [
         "document_id",
         "category_id"
+      ],
+      "additionalProperties": false
+    },
+    "DOC.INDEXED": {
+      "type": "object",
+      "description": "Document metadata and text indexed for full-text search (CR-007)",
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "char_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "document_id",
+        "char_count"
       ],
       "additionalProperties": false
     },

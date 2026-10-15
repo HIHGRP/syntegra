@@ -106,7 +106,9 @@ Multi-factor authentication factor (TOTP, FIDO2 passkey, SMS/e-mail OTP fallback
 <a id="registry-user_session"></a>
 ## `user_session`
 
-Server-side session (idle timeout 30 min for restricted/special roles, 8 h otherwise)
+Server-side session (idle timeout 30 min for restricted/special roles, 8 h otherwise)  
+
+One account, one session (CR-007): a sign-in is refused while another session of the account is in use (last_seen_at within the in-use window); quieter sessions are ended with ended_reason = replaced. The school or office is copied from the confirmed grant's scope node — institution name and address for an institution node, otherwise the node's office address — so the session keeps what the user saw even if the address changes later.
 
 | | |
 |---|---|
@@ -118,9 +120,9 @@ Server-side session (idle timeout 30 min for restricted/special roles, 8 h other
 | Module | `iam` |
 | Origin | ceda |
 | Retention | `RS-SESSION` |
-| Requirements | FR-ADM-03, FR-AUT-05, FR-AUT-07 |
-| Pages | AUT-01, AUT-03, HOM-04 |
-| Events | AUTH.SIGNED_IN, AUTH.FAILED, AUTH.LOCKED, AUTH.MFA_PASSED, AUTH.MFA_FAILED |
+| Requirements | FR-ADM-03, FR-AUT-05, FR-AUT-07, FR-AUT-101, FR-AUT-102, FR-AUT-103 |
+| Pages | AUT-01, AUT-03, HOM-04, ADM-102 |
+| Events | AUTH.SIGNED_IN, AUTH.FAILED, AUTH.LOCKED, AUTH.MFA_PASSED, AUTH.MFA_FAILED, AUTH.CONCURRENT_REFUSED, AUTH.SESSION_ENDED |
 
 | Column | MySQL type | Null | Class | Description |
 |---|---|---|---|---|
@@ -139,6 +141,11 @@ Server-side session (idle timeout 30 min for restricted/special roles, 8 h other
 | `last_seen_at` | `DATETIME(6)` | no |  |  |
 | `expires_at` | `DATETIME(6)` | no |  |  |
 | `revoked_at` | `DATETIME(6)` | yes |  |  |
+| `ended_reason` | `VARCHAR(32)` | yes |  | Why the session ended (CR-007) · values: signed_out, idle_timeout, expired, replaced, ended_by_administrator, account_inactive |
+| `affiliation_scope_id` | `BINARY(16)` | yes |  | Scope node of the school or office the user signed in for (soft; CR-007) |
+| `affiliation_name` | `VARCHAR(300)` | yes |  | School or office name as shown at sign-in |
+| `affiliation_address` | `VARCHAR(500)` | yes |  | School or office address as shown at sign-in |
+| `affiliation_confirmed_at` | `DATETIME(6)` | yes |  | When the user confirmed the school or office after the password |
 | `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
 | `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
 | `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
@@ -238,8 +245,8 @@ Role template (41 built-in roles plus REV, ACG, OPF; built-ins cloneable, never 
 | Module | `iam` |
 | Origin | appj |
 | Retention | `RS-IAM` |
-| Requirements | FR-ADM-04 |
-| Pages | ADM-05 |
+| Requirements | FR-ADM-04, FR-ADM-201 |
+| Pages | ADM-05, ADM-101 |
 
 | Column | MySQL type | Null | Class | Description |
 |---|---|---|---|---|
@@ -247,7 +254,7 @@ Role template (41 built-in roles plus REV, ACG, OPF; built-ins cloneable, never 
 | `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
 | `code` | `VARCHAR(16)` | no |  | TCH, DSL, STA, PROP, REV … |
 | `name` | `VARCHAR(300)` | no |  |  |
-| `clearance` | `VARCHAR(32)` | no |  | Highest classification the role normally receives · values: public, internal, confidential, restricted, special |
+| `clearance` | `VARCHAR(32)` | no |  | Highest classification the role normally receives — its access level (1 public … 5 special, CR-007) · values: public, internal, confidential, restricted, special |
 | `is_builtin` | `BOOLEAN` | no |  |  |
 | `cloned_from_id` → `role` | `BINARY(16)` | yes |  |  |
 | `created_by_clearance` | `VARCHAR(32)` | yes |  | Custom role may never exceed its creator's clearance · values: public, internal, confidential, restricted, special |
@@ -309,8 +316,8 @@ Role granted to a user at a scope (role-at-scope), with clearance cap and access
 | Module | `iam` |
 | Origin | appj |
 | Retention | `RS-IAM` |
-| Requirements | FR-ADM-03, FR-CMD-119, FR-STF-106, FR-STF-03 |
-| Pages | ADM-04, AUT-03, CMD-104 |
+| Requirements | FR-ADM-03, FR-CMD-119, FR-STF-106, FR-STF-03, FR-ADM-202, FR-AUT-101 |
+| Pages | ADM-04, AUT-03, CMD-104, ADM-101 |
 | Events | IAM.GRANT_CHANGED |
 
 | Column | MySQL type | Null | Class | Description |
@@ -325,6 +332,7 @@ Role granted to a user at a scope (role-at-scope), with clearance cap and access
 | `review_due_on` | `DATE` | yes |  | Access review |
 | `delegation_of_id` → `role_grant` | `BINARY(16)` | yes |  | Delegated from another grant (Administrator 360 delegations) |
 | `supervised_until` | `DATE` | yes |  | Time-limited supervised exception approved by the head while mandatory checks are pending (FR-STF-03) |
+| `office_scope_id` | `BINARY(16)` | yes |  | School or office the holder works in when it differs from the grant's scope — e.g. a ministry official with state-wide scope works in the Ministry of Education (soft; CR-007) |
 | `status` | `VARCHAR(32)` | no |  | values: active, inactive, retired |
 | `valid_from` | `DATE` | no |  | Effective from (inclusive) — history: effective |
 | `valid_to` | `DATE` | yes |  | Effective to (inclusive); NULL = open-ended — history: effective |

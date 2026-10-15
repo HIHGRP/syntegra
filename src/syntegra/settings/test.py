@@ -1,9 +1,13 @@
 """Test settings: real MySQL 9.7 (MFS §16.7 — never SQLite); Django creates test_<schema> per zone alias."""
 
+import tempfile
+from pathlib import Path
+
 from .base import *  # noqa: F403
 from .base import DATABASES, REST_FRAMEWORK
 
 SYNTEGRA_TENANCY = "single"
+SYNTEGRA_OBJECT_STORE_DIR = Path(tempfile.mkdtemp(prefix="syntegra-objects-"))
 SYNTEGRA_AUDIT_LANES = 4
 CELERY_TASK_ALWAYS_EAGER = True
 REST_FRAMEWORK = {

@@ -212,3 +212,17 @@ def fed(django_db_setup: Any, django_db_blocker: Any) -> Iterator[Any]:
     tenancy.clear_caches()
     yield p, seeded
     tenancy.clear_caches()
+
+
+def web_sign_in(client: Any, data: dict[str, Any], **kw: Any) -> Any:
+    """Sign in through the page and confirm the school or office shown after the password (CR-007, AUT-03).
+    Returns the sign-in response, like ``client.post("/sign-in", ...)``."""
+    import re
+
+    r = client.post("/sign-in", data, **kw)
+    if r.status_code == 302 and r["Location"].startswith("/auth/context"):
+        page = client.get(r["Location"], **kw)
+        m = re.search(r'name="grant_id" value="([0-9a-f-]{36})"', page.content.decode())
+        if m:
+            client.post(r["Location"], {"grant_id": m.group(1)}, **kw)
+    return r

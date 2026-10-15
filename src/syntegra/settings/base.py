@@ -144,6 +144,12 @@ SYNTEGRA_SCHEMA_PATTERNS = {
 SYNTEGRA_CEDA_DDL_DIR = Path(env("SYNTEGRA_CEDA_DDL_DIR", str(REPO_DIR / "ceda" / "generated" / "mysql")))
 SYNTEGRA_CEDA_RELEASES_DIR = Path(env("SYNTEGRA_CEDA_RELEASES_DIR", str(REPO_DIR / "ceda" / "releases")))
 SYNTEGRA_DEFAULT_TENANT_CODE = env("SYNTEGRA_DEFAULT_TENANT_CODE", "ng-ab")
+# Object storage for document masters (CR-007): filesystem here; S3-compatible WORM buckets in production
+SYNTEGRA_OBJECT_STORE_DIR = Path(env("SYNTEGRA_OBJECT_STORE_DIR", str(REPO_DIR / "var" / "objects")))
+SYNTEGRA_DOCUMENT_MAX_BYTES = int(env("SYNTEGRA_DOCUMENT_MAX_BYTES", str(25 * 1024 * 1024)))
+SYNTEGRA_SESSION_IN_USE_MINUTES = int(env("SYNTEGRA_SESSION_IN_USE_MINUTES", "15"))
+DATA_UPLOAD_MAX_MEMORY_SIZE = 30 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 30 * 1024 * 1024
 
 # --------------------------------------------------------------------------- keys (CEDA §8.1)
 # Development uses the local key provider derived from SYNTEGRA_MASTER_KEY; production uses the

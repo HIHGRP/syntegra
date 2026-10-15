@@ -1,6 +1,6 @@
 # Requirement → data traceability
 
-595 functional requirements (SYN-MFS-002 v2.4 and change requests CR-001, CR-002, CR-003, CR-004, CR-005, CR-006): 588 are realised by CEDA entities or metrics; 7 are behavioural (UI, workflow or engine behaviour over data already modelled) and name the entity they operate on. Generated; do not edit.
+606 functional requirements (SYN-MFS-002 v2.4 and change requests CR-001, CR-002, CR-003, CR-004, CR-005, CR-006, CR-007): 599 are realised by CEDA entities or metrics; 7 are behavioural (UI, workflow or engine behaviour over data already modelled) and name the entity they operate on. Generated; do not edit.
 
 | Requirement | Source | Priority | Phase | Realised by | Text |
 |---|---|---|---|---|---|
@@ -48,6 +48,8 @@
 | FR-ADM-11 | MFS | SHALL | P1 | `subscription`, `subscription_plan` | Bill the platform itself per learner, institution, module, user, campus, enterprise, government contract, national deployment, trust or university-group licence, combinable. |
 | FR-ADM-12 | MFS | SHALL | P1 | `import_job`, `import_row_issue` | Import and migrate legacy data with mapping, validation, master matching, staged commit and 30-day rollback. |
 | FR-ADM-13 | MFS | SHALL | P1 | `backup_run`, `platform_user` | Show system health, backups and DR readiness to provider staff. |
+| FR-ADM-201 | CR-007 | SHALL | P1 | `role` | Define five access levels over the data classifications — 1 Public, 2 Internal, 3 Confidential, 4 Restricted, 5 Special — give every role a level, and withhold pages, menu items, fields and documents above the user's lev |
+| FR-ADM-202 | CR-007 | SHALL | P1 | `role_grant` | Show administrators every role with its access level and every user grant in their scope with its effective level; let them lower (cap) the level of a grant with a reason, never above the role's level or their own, audit |
 | FR-AGT-101 | MFS | SHALL | P3 | `agent`, `service_identity` | Provide an agent runtime that executes agents on events and schedules under scoped service identities bound to a human owner. |
 | FR-AGT-102 | MFS | SHALL | P3 | `agent` | Support autonomy levels A0–A3 with state maximums and institution overrides downward. |
 | FR-AGT-103 | MFS | SHALL | P3 | `agent_template` | Hard-code consequential decisions as human-only so no configuration can automate them. |
@@ -94,6 +96,9 @@
 | FR-AUT-05 | CR-003 | SHALL | P1 | `app_user`, `identity_provider_config`, `user_session` | Link a federated identity only to an existing active account whose e-mail the provider verified, in a domain allowed for that provider; later sign-ins match the provider's subject; record the authentication method on the |
 | FR-AUT-06 | CR-003 | SHALL | P1 | `app_user`, `identity_provider_config` | Accept the identity provider's MFA (amr/acr) as the second factor only for providers the state marks as trusted; otherwise ask for the local factor. Accounts linked to SSO cannot sign in with a password. |
 | FR-AUT-07 | CR-003 | SHALL | P1 | `user_session` | Let users see their MFA factors and active sessions, sign out other sessions and regenerate recovery codes (HOM-04). |
+| FR-AUT-101 | CR-007 | SHALL | P1 | `role_grant`, `scope_node`, `user_session` | After a correct username and password, show the name and address of the school, college or office of each of the user's active role grants; record the one the user confirms on the session (name and address as shown) and  |
+| FR-AUT-102 | CR-007 | SHALL | P1 | `user_session` | Refuse a sign-in with an account that already has a session in use (activity within the in-use window, 15 minutes by default) and tell the person why; end the account's sessions that have gone quiet when it signs in agai |
+| FR-AUT-103 | CR-007 | SHALL | P1 | `user_session` | Show administrators the active sessions of users in their scope — user, school or office, device, address, start and last activity — and let them end a session, with the reason recorded and audited. |
 | FR-BEH-01 | MFS | SHALL | P2 | `behaviour_event`, `behaviour_policy` | Log positive and concern events against the behaviour policy with categories, points, location, description and action. |
 | FR-BEH-02 | MFS | SHALL | P2 | `behaviour_event` | Route bullying events with target learners to the pastoral lead. |
 | FR-BEH-03 | MFS | SHALL | P2 | `behaviour_event` | Analyse patterns by learner, class, period, location, category and link to attendance. |
@@ -249,6 +254,12 @@
 | FR-DOC-116 | MFS | SHALL | P1 | `document`, `document_link`, `message` | Capture born-digital documents automatically against the right records (letters, messages, reports, invoices, receipts, forms, submissions). |
 | FR-DOC-117 | MFS | SHALL | P1 | `document_category` | Restrict special-category documents to cleared operators and named users throughout capture, QA and retrieval. |
 | FR-DOC-118 | MFS | SHALL | P1 | `digitisation_batch`, `metric:DIGITISATION` | Report digitisation progress to the central dashboard. |
+| FR-DOC-201 | CR-007 | SHALL | P2 | `document` | Show Documents in the main menu to every role that may view, upload or search documents. |
+| FR-DOC-202 | CR-007 | SHALL | P2 | `document` | Upload digitised paper documents (PDF, JPEG, PNG, TIFF or text) under the school or institution they come from, with category, title, dates or session, class or level, subject, the reference written on the paper original |
+| FR-DOC-203 | CR-007 | SHALL | P2 | `document_index` | Index every document's metadata and text (the text layer of PDFs, text files, and any transcription entered at upload) for full-text search, except special-category documents. |
+| FR-DOC-204 | CR-007 | SHALL | P2 | `document_index` | Search documents by words, reference number, school, category and year; results show reference, title, school, category, dates and classification, limited to the caller's scope and access level. |
+| FR-DOC-205 | CR-007 | SHALL | P2 | `document` | Give every school or institution one page listing its complete document register, grouped by category with reference numbers, with search within the school. |
+| FR-DOC-206 | CR-007 | SHALL | P2 | `document` | Let the Ministry of Education and other education administrators view and search the documents of every school in their scope only with the document search permission and an access level covering the document; restricted |
 | FR-EST-01 | CR-006 | SHALL | P3 | `property_site` | Register every government property site (land) used by an institution with owner, land title and reference, area, boundary, fencing and encroachment status, and valuation. |
 | FR-EST-02 | CR-006 | SHALL | P3 | `facility_assessment` | Record dated condition and usability assessments of sites, buildings, rooms and equipment (fully usable, usable with minor or major repairs, unsafe — restricted, unusable, condemned) with defects, working utilities, lear |
 | FR-EST-03 | CR-006 | SHALL | P3 | `maintenance_schedule` | Plan preventive maintenance per facility (servicing, statutory tests, generator, borehole, fire safety, roofing, plumbing, electrical) and raise work orders when tasks fall due. |

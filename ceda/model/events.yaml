@@ -30,6 +30,8 @@ events:
   AUTH.LOCKED: {producer: iam, aggregate: app_user, payload: {user_id: uuid!, locked_until: ts!}, consumers: [comms, security_monitoring], trigger: Account locked after repeated failures}
   AUTH.MFA_PASSED: {producer: iam, aggregate: user_session, payload: {user_id: uuid!, session_id: uuid!}, consumers: [analytics], trigger: MFA verified}
   AUTH.MFA_FAILED: {producer: iam, aggregate: user_session, payload: {user_id: uuid!}, consumers: [security_monitoring], trigger: MFA failed}
+  AUTH.CONCURRENT_REFUSED: {producer: iam, aggregate: user_session, payload: {user_id: uuid!, active_session_id: uuid!}, consumers: [security_monitoring], trigger: Sign-in refused because the account already has a session in use (CR-007)}
+  AUTH.SESSION_ENDED: {producer: iam, aggregate: user_session, payload: {user_id: uuid!, session_id: uuid!, reason: enum(session_end_reason)!}, consumers: [security_monitoring], trigger: Session ended by sign-out, replacement or an administrator (CR-007)}
 
   # ---------------------------------------------------------------- master data
   ID.NIN_VERIFIED: {producer: mdm, aggregate: identity_verification, payload: {identity_verification_id: uuid!, person_kind: enum(person_kind)!, person_id: uuid!, outcome: enum(verification_outcome)!}, consumers: [learners, certificates, providers], trigger: National identifier verification returned}
@@ -135,6 +137,7 @@ events:
   COM.MESSAGE_RECEIVED: {producer: comms, aggregate: message, payload: {message_id: uuid!, channel: enum(channel)!, conversation_id: uuid}, consumers: [comms, intelligence], trigger: Inbound message received and matched}
   FRM.SUBMITTED: {producer: forms, aggregate: form_response, payload: {form_response_id: uuid!, form_id: uuid!}, consumers: [governance, records, finance], trigger: Form submitted}
   DOC.INGESTED: {producer: records, aggregate: document, payload: {document_id: uuid!, category_id: uuid!}, consumers: [search, intelligence], trigger: Document stored (search indexed unless special category)}
+  DOC.INDEXED: {producer: records, aggregate: document_index, payload: {document_id: uuid!, char_count: int_u!}, consumers: [search], trigger: Document metadata and text indexed for full-text search (CR-007)}
   DOC.LINKED: {producer: records, aggregate: document_link, payload: {document_link_id: uuid!, record_kind: code(40)!, record_id: uuid!}, consumers: [search], trigger: Document linked to a record}
 
   # ---------------------------------------------------------------- finance & financing

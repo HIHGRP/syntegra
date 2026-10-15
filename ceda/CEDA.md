@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **Document** | SYN-CEDA-001 — Canonical Enterprise Data Architecture |
-| **Version** | 1.7.0 — adds institutional budgets and imprest, funding and loan platforms for institutions, staff and learners, the government property register with facility condition, usability and proactive maintenance, the infrastructure data warehouse for the Commissioner, and security-agency curricula through each agency's structure (change request CR-006; §28); documents the Abia State demonstration and school performance comparison (§29) and adds the End-User Guide (§30). 1.6.0 added the federal unity colleges and federal special training institutions, extends the security agencies' institutions, and links every institution to the education watchdogs and examination bodies it depends on (change request CR-005; §27). 1.5.0 added the security agencies' education and training institutions, each under its own agency structure with its own curricula (CR-004; §26). 1.4.0 modelled two-factor authentication and single sign-on (CR-003); 1.3.0 the national clearance network (CR-002; §25); 1.2.0 the HRMS and fee-clearance due diligence (CR-001; §23, §24). Change log in §22 |
-| **Date** | 14 October 2026 (1.0.0 and 1.1.0: 13–14 October 2026) |
-| **Derived from** | SYN-MFS-002 v2.4, Master Functional Specification (consolidated single volume: Books 1–3, 517 functional requirements, 260 pages, Appendix J MySQL schema of 174 tables), extended by change requests CR-001 (23 requirements, 13 pages), CR-002 (6 requirements, 1 page), CR-003 (7 requirements), CR-004 (8 requirements, 4 pages), CR-005 (8 requirements, 3 pages) and CR-006 (26 requirements, 7 pages) |
+| **Version** | 1.8.0 — after the password, the sign-in shows and records the school or office of the user (name and address); one account can be used by one person at a time; document management for digitised paper records, indexed for full-text search and filed under each school; five named access levels decide what each user sees (change request CR-007; §31). 1.7.0 added adds institutional budgets and imprest, funding and loan platforms for institutions, staff and learners, the government property register with facility condition, usability and proactive maintenance, the infrastructure data warehouse for the Commissioner, and security-agency curricula through each agency's structure (change request CR-006; §28); documents the Abia State demonstration and school performance comparison (§29) and adds the End-User Guide (§30). 1.6.0 added the federal unity colleges and federal special training institutions, extends the security agencies' institutions, and links every institution to the education watchdogs and examination bodies it depends on (change request CR-005; §27). 1.5.0 added the security agencies' education and training institutions, each under its own agency structure with its own curricula (CR-004; §26). 1.4.0 modelled two-factor authentication and single sign-on (CR-003); 1.3.0 the national clearance network (CR-002; §25); 1.2.0 the HRMS and fee-clearance due diligence (CR-001; §23, §24). Change log in §22 |
+| **Date** | 15 October 2026 (1.0.0 to 1.7.0: 13–14 October 2026) |
+| **Derived from** | SYN-MFS-002 v2.4, Master Functional Specification (consolidated single volume: Books 1–3, 517 functional requirements, 260 pages, Appendix J MySQL schema of 174 tables), extended by change requests CR-001 (23 requirements, 13 pages), CR-002 (6 requirements, 1 page), CR-003 (7 requirements), CR-004 (8 requirements, 4 pages), CR-005 (8 requirements, 3 pages) CR-006 (26 requirements, 7 pages) and CR-007 (11 requirements, 4 pages) |
 | **Platform** | Python 3.12 · Django 5.2 LTS (+ FastAPI for high-throughput services) · MySQL 9.7 LTS · Red Hat Enterprise Linux 10 / OpenShift |
 | **Machine-readable model** | `ceda/model/` (single source of truth) → `ceda/generated/` (DDL, dictionary, ERDs, JSON Schema, OpenAPI components, event schemas, metric catalogue, traceability) |
 | **Status of artefacts** | Model validates with 0 errors, 0 warnings; every zone's DDL loads into MySQL 9.7.2; 12 database-level guarantees verified on MySQL 9.7 (§18) |
@@ -46,13 +46,13 @@ CEDA is the **authoritative data blueprint** for Syntegra. The MFS says *what* t
 | Measure | Value |
 |---|---|
 | Domains (subject areas) | 37 operational + 1 warehouse |
-| Canonical entities | 522 (174 re-specified from Appendix J, 348 added to give MFS and change-request requirements a home) |
-| Physical tables | 552 across 6 data zones (platform 26, registry 198, ops 239, vault 26, records 19, warehouse 44) — 18 cross-cutting entities are replicated per zone |
-| Columns · enforced foreign keys · soft references | 8,515 · 726 · 365 |
+| Canonical entities | 523 (174 re-specified from Appendix J, 349 added to give MFS and change-request requirements a home) |
+| Physical tables | 553 across 6 data zones (platform 26, registry 198, ops 239, vault 26, records 20, warehouse 44) — 18 cross-cutting entities are replicated per zone |
+| Columns · enforced foreign keys · soft references | 8,541 · 727 · 365 |
 | Append-only tables · partitioned tables | 99 · 21 |
-| Fixed enumerations · jurisdiction code lists | 388 · 51 (Nigerian pack) |
-| Domain events · semantic-layer metrics · retention series | 166 · 74 · 33 |
-| Coverage | 288/288 pages (260 MFS + 13 CR-001 + 1 CR-002 + 4 CR-004 + 3 CR-005 + 7 CR-006); 595/595 functional requirements accounted for (517 MFS + 23 CR-001 + 6 CR-002 + 7 CR-003 + 8 CR-004 + 8 CR-005 + 26 CR-006; 588 realised in data, 7 behavioural); 174/174 Appendix J tables mapped |
+| Fixed enumerations · jurisdiction code lists | 390 · 51 (Nigerian pack) |
+| Domain events · semantic-layer metrics · retention series | 169 · 74 · 33 |
+| Coverage | 292/292 pages (260 MFS + 13 CR-001 + 1 CR-002 + 4 CR-004 + 3 CR-005 + 7 CR-006 + 4 CR-007); 606/606 functional requirements accounted for (517 MFS + 23 CR-001 + 6 CR-002 + 7 CR-003 + 8 CR-004 + 8 CR-005 + 26 CR-006 + 11 CR-007; 599 realised in data, 7 behavioural); 174/174 Appendix J tables mapped |
 
 ---
 
@@ -691,7 +691,7 @@ Fixed enums change only through a CEDA release. Jurisdiction code lists change t
 | `.github/workflows/ceda.yml` | Runs all of the above on every change under `ceda/`, with a `mysql:9.7` service |
 | `ceda/tools/extract_mfs.py` | Re-extracts the page catalogue and requirement register from the MFS when it is revised |
 
-Verified on MySQL 9.7.2 (15 October 2026): all 7 DDL files load (552 tables: platform 26, registry 198, ops 239, vault 26, records 19, warehouse 44); the 1.1.0 baseline plus the 1.2.0 to 1.7.0 deltas replays to a structurally identical schema in every zone, and upgrades a seeded database in place; the following hold in the database itself — one active primary enrolment per learner; tenant-consistent keys refuse cross-tenant references; UBE Act payer rule; enum CHECKs; append-only UPDATE and DELETE refused (registry and vault); four-eyes on policy exceptions; 12-month exception window; one-sided ledger entries; one open coverage gap per target per rule; partitioned attendance accepts marks; one open fee obligation per learner × creditor × kind; SDAF can never be a school obligation; a protected admission must state its reason; one active holder per establishment position; posting approver ≠ requester; leave balances refuse over-booking.
+Verified on MySQL 9.7.2 (15 October 2026): all 7 DDL files load (553 tables: platform 26, registry 198, ops 239, vault 26, records 20, warehouse 44); the 1.1.0 baseline plus the 1.2.0 to 1.8.0 deltas replays to a structurally identical schema in every zone, and upgrades a seeded database in place; the following hold in the database itself — one active primary enrolment per learner; tenant-consistent keys refuse cross-tenant references; UBE Act payer rule; enum CHECKs; append-only UPDATE and DELETE refused (registry and vault); four-eyes on policy exceptions; 12-month exception window; one-sided ledger entries; one open coverage gap per target per rule; partitioned attendance accepts marks; one open fee obligation per learner × creditor × kind; SDAF can never be a school obligation; a protected admission must state its reason; one active holder per establishment position; posting approver ≠ requester; leave balances refuse over-booking.
 
 ---
 
@@ -744,26 +744,26 @@ The Appendix J DDL (174 tables) was extracted from the MFS and loaded into MySQL
 
 | Path | Content |
 |---|---|
-| `ceda/model/_meta.yaml` | Zones (6), standard columns, vocabularies, naming; CEDA 1.7.0 |
+| `ceda/model/_meta.yaml` | Zones (6), standard columns, vocabularies, naming; CEDA 1.8.0 |
 | `ceda/model/types.yaml` | 45 canonical types → MySQL, Django, JSON Schema |
-| `ceda/model/enums.yaml` | 388 fixed enumerations |
+| `ceda/model/enums.yaml` | 390 fixed enumerations |
 | `ceda/model/reference/*.yaml` | Jurisdiction packs: 51 code lists |
-| `ceda/model/domains/*.yaml` | 38 domain models (522 entities, 552 tables) |
-| `ceda/model/events.yaml` | 166 domain events |
+| `ceda/model/domains/*.yaml` | 38 domain models (523 entities, 553 tables) |
+| `ceda/model/events.yaml` | 169 domain events |
 | `ceda/model/metrics.yaml` | 74 semantic-layer metrics |
 | `ceda/model/retention.yaml` | 33 retention series |
 | `ceda/model/traceability.yaml` | Behavioural requirements and Appendix J notes |
-| `ceda/model/change_requests/CR-*.yaml` | 6 change requests (CR-001, CR-002, CR-003, CR-004, CR-005, CR-006): 28 pages and 78 requirements beyond the MFS (CD-18) |
+| `ceda/model/change_requests/CR-*.yaml` | 7 change requests (CR-001, CR-002, CR-003, CR-004, CR-005, CR-006, CR-007): 32 pages and 89 requirements beyond the MFS (CD-18) |
 | `ceda/sources/` | Extracted MFS page catalogue (260) and requirement register (571), Appendix J table index (174), MySQL 9.7 reserved words (264) |
-| `ceda/generated/mysql/` | DDL per zone + jurisdiction code-list seed (7 files, 552 tables, 8,515 columns) |
+| `ceda/generated/mysql/` | DDL per zone + jurisdiction code-list seed (7 files, 553 tables, 8,541 columns) |
 | `ceda/generated/dictionary/` | Data dictionary per domain (39 files) |
 | `ceda/generated/erd/` | Mermaid ERDs per domain (38 files) |
 | `ceda/generated/jsonschema/`, `ceda/generated/openapi/components.yaml` | Canonical resource schemas (37 JSON Schema bundles + OpenAPI components) |
 | `ceda/generated/events/` | Event catalogue, envelope and payload schemas (3 files) |
 | `ceda/generated/metrics/catalog.md` | Metric catalogue |
-| `ceda/generated/traceability/` | Page (288/288), requirement (588/595 realised in data) and Appendix J (174/174) traceability |
+| `ceda/generated/traceability/` | Page (292/292), requirement (599/606 realised in data) and Appendix J (174/174) traceability |
 | `ceda/generated/summary.json` | Counts |
-| `ceda/releases/<version>/` | Frozen release DDL: 1.1.0 baseline; 1.2.0 to 1.7.0 deltas and expand scripts (CD-21) |
+| `ceda/releases/<version>/` | Frozen release DDL: 1.1.0 baseline; 1.2.0 to 1.8.0 deltas and expand scripts (CD-21) |
 | `ceda/templates/federal_institutions.csv` | Column layout of the federal institutions reference import (FR-FED-04) |
 | `ceda/guide/img/` | End-User Guide screenshots (31) (§30) |
 | `ceda/tools/gen_django.py` → `src/syntegra/*/models.py`, `src/syntegra/core/catalog/ceda_catalog.json` | Django models (`managed = False`) and the runtime catalogue (events, metrics, enums, code lists, pages) for the application |
@@ -788,6 +788,7 @@ Read from the files that pin them; `cedagen.py check` fails when this table no l
 | Runtime library — celery | 5.5.3 | `pyproject.toml` |
 | Runtime library — gunicorn | 23.0.0 | `pyproject.toml` |
 | Runtime library — segno | 1.6.6 | `pyproject.toml` |
+| Runtime library — pypdf | 6.19.0 | `pyproject.toml` |
 | Quality gate — pytest | 8.4.2 | `pyproject.toml` [dev] |
 | Quality gate — pytest-django | 4.11.1 | `pyproject.toml` [dev] |
 | Quality gate — ruff | 0.13.3 | `pyproject.toml` [dev] |
@@ -804,6 +805,18 @@ Read from the files that pin them; `cedagen.py check` fails when this table no l
 ---
 
 ## 22. Change log
+
+### 1.8.0 — 15 October 2026 (change request CR-007)
+
+| Change | Reason |
+|---|---|
+| `user_session`: `affiliation_scope_id`, `affiliation_name`, `affiliation_address`, `affiliation_confirmed_at`, `ended_reason`; `role_grant.office_scope_id`; `scope_node.address` (§31.1) | The school or office of the user, with its address, shown after the password and recorded on the session; offices of ministries, boards and LGA education authorities have addresses |
+| One account, one session; enum `session_end_reason`; events `AUTH.CONCURRENT_REFUSED`, `AUTH.SESSION_ENDED` (§31.2) | Two people cannot use the same credentials at the same time; administrators see and end sessions |
+| `document`: `reference_no` (unique), `description`, `source_reference`; new `document_index` with a FULLTEXT key over title, keywords and text; enum `text_source`; event `DOC.INDEXED` (§31.3) | Digitised paper documents filed under each school with reference numbers, indexed and searchable; an editable Word copy on demand |
+| Access levels 1–5 over the classifications, enforced on pages, menus, fields and documents; caps per grant (§31.4) | Different levels of access privileges for platform users |
+| `cedagen`: `fulltext:` physical hint (InnoDB FULLTEXT over utf8mb4 text columns; never special category) | Full-text search in MySQL without a separate search engine |
+| Release 1.8.0: expand scripts adding NULLable columns to `scope_node`, `user_session`, `role_grant` and `document` and two keys on `document`, plus the derived delta (`document_index`) | Upgrading a live 1.7.0 database in place |
+| Pages DOC-107, DOC-108, ADM-101, ADM-102; DOC-104 and DOC-105 built; roles RECM; purpose `records_retrieval` | Upload, school register, search, viewer, access-level and session administration |
 
 ### 1.7.0 — 14 October 2026 (change request CR-006)
 
@@ -1883,3 +1896,86 @@ Sign in with `POST /api/v1/auth/sign-in` and send the token as `Authorization: B
 | Assessments, maintenance | `POST /api/v1/estate/assessments`, `/schedules`, `/schedules/{id}/done` |
 | Actions, work orders | `GET /api/v1/estate/actions`, `POST /api/v1/estate/actions/{id}`, `…/{id}/work-order` |
 | Facilities workspace, infrastructure | `GET /api/v1/estate/institutions/{id}/workspace`, `GET /api/v1/estate/infrastructure` |
+
+---
+
+## 31. Sign-in identity, one session per account, documents and access levels (CR-007)
+
+### 31.1 The school or office at sign-in
+
+After a correct username and password, Syntegra shows the school, college or office of each of the user's active role
+grants — its name and address, taken from the registry, never typed — and the user confirms one (or chooses, when they
+hold several roles). Nothing else opens until they do. The name and address shown are copied onto the session
+(`user_session.affiliation_*`, with the time of confirmation, audited as `sign_in_affiliation_confirmed`) and appear in
+a bar under the menu on every page, with the user's access level.
+
+| The grant's node | Shown |
+|---|---|
+| An institution (school, college, university) | `institution.name` and `institution.address` (town, LGA, state) |
+| Any other node, or the grant's `office_scope_id` | The office's name and `scope_node.address` — e.g. a commissioner with state-wide scope works in the Abia State Ministry of Education, State Secretariat, Ogurube Layout, Umuahia |
+
+Nothing about the account or its school is revealed until the password has been verified.
+
+### 31.2 One account, one session
+
+A sign-in (page or API) is refused while another session of the same account is **in use** — activity within the last
+15 minutes (`SYNTEGRA_SESSION_IN_USE_MINUTES`). The refused person is told when the account was signed in and when it
+will be free; the person using the account sees a warning on every page that someone tried to sign in. Sessions quieter
+than the window end as `replaced` when the account signs in again, so nobody is locked out by a forgotten browser. Every
+session records why it ended: `signed_out`, `idle_timeout`, `expired`, `replaced`, `ended_by_administrator`,
+`account_inactive`; the person whose session ended is told why at the sign-in page. Administrators with
+`session:manage` see the sessions of users in their scope (ADM-102, `GET /api/v1/auth/sessions`) and end one with a
+reason (`POST /api/v1/auth/sessions/{id}/end`).
+
+### 31.3 Document management
+
+**Documents** is in the main menu for roles with `document:view`, `document:search` or `document:upload`.
+
+| Step | What happens |
+|---|---|
+| Upload (DOC-107, `POST /api/v1/documents`) | One or more scans (PDF, JPEG, PNG, TIFF or text; type checked from the bytes, 25 MB each) under a school, with category, title, dates or session, class, subject, the reference written on the paper and a description |
+| Reference number | `<institution code>/<category>/<year>/<sequence>`, e.g. `INS-NG-000129/ADM/1998/00001`, unique in the state |
+| Storage | Write-once, content-addressed object storage; the SHA-256 is recorded at upload and checked on every read; the same scan is stored once (a second upload is refused and points to the existing reference) |
+| Index | `document_index`: title, keywords (category, school, session, class, subject, paper reference, description) and the text — the PDF text layer, text files, OCR with Tesseract where installed, and any transcription typed at upload — under a MySQL FULLTEXT key; special-category documents are never indexed |
+| Search (DOC-104, `GET /api/v1/documents`) | Words (all must match, prefixes allowed), a reference number, school, category and year; results ranked by relevance, limited to the caller's scope and access level |
+| School register (DOC-108) | Each school's complete register on one page, grouped by category with reference numbers, storage used, and search within the school |
+| Viewer (DOC-105) | Metadata, the scan with an on-screen watermark (viewer and time), download, and **Download as Word** |
+
+**Word copies.** A scan is kept as the record — stamps, signatures and handwriting are evidence, and text read by OCR
+from old or handwritten pages contains errors. For editing, quoting and retyping, the viewer makes an editable Word
+(.docx) copy on demand from the indexed text, with the reference, school, category and dates at the top. It is never
+stored, so it takes no space. Space is saved where it matters: one copy per scan, scanning at 200–300 dpi greyscale,
+and storage used shown per school.
+
+**Who sees what.** Scope (the school's node in the governance tree) decides which schools; `document:view` opens the
+documents of one's schools; `document:search` (Ministry of Education, Commissioner, ASUBEB, LGA education authorities,
+records managers) searches across every school in scope; the document's classification must be within the user's
+access level; restricted documents (staff files, finance, discipline) also need a declared purpose
+(`records_retrieval`); every upload, search, view, download and Word copy is audited.
+
+### 31.4 Access levels
+
+| Level | Classification | What it covers |
+|---|---|---|
+| 1 · Public | public | Published information: certificate checks, regulators, public directories |
+| 2 · Internal | internal | Working information for staff: registers, timetables, aggregates, facilities, summary budgets |
+| 3 · Confidential | confidential | Personal records of learners, families and staff; school documents |
+| 4 · Restricted | restricted | HR and payroll, investigations, special needs, discipline, loans, restricted documents — a purpose is declared |
+| 5 · Special | special | Safeguarding and health — named, cleared users only, never indexed or exported |
+
+A role's `clearance` is its level; `role_grant.clearance_cap` lowers it for one person in one role (ADM-101,
+`PUT /api/v1/access/grants/{id}/level`), never above the role's level or the administrator's own, never on one's own
+grant, always with a reason. The effective level of the active role decides: pages (each page's catalogue
+classification, or a lower entry level for pages that withhold their sensitive parts per viewer — Learner 360,
+registration, fee clearance, funding agreements), menu items (hidden when the page is above the level), fields
+(`authz.visible_fields`) and documents.
+
+| Page | Route | Who |
+|---|---|---|
+| DOC-104 Documents | `/documents` | Roles with document permissions |
+| DOC-105 Document viewer | `/documents/{id}` | Within scope and level |
+| DOC-107 Upload documents | `/documents/upload` | `document:upload` |
+| DOC-108 School documents | `/institutions/{id}/documents` | Within scope and level |
+| ADM-101 Access levels | `/admin/access-levels` | `access:manage` |
+| ADM-102 Active sessions | `/admin/sessions` | `session:manage` |
+

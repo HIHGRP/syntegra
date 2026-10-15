@@ -1,6 +1,6 @@
 # Page → data traceability
 
-Every one of the 260 pages in SYN-MFS-002 v2.4 and the 28 pages added by change requests is served by at least one CEDA entity or metric. Generated; do not edit.
+Every one of the 260 pages in SYN-MFS-002 v2.4 and the 32 pages added by change requests is served by at least one CEDA entity or metric. Generated; do not edit.
 
 | Page | Source | Title | Module | Phase | CEDA entities and metrics | MFS master objects |
 |---|---|---|---|---|---|---|
@@ -23,6 +23,8 @@ Every one of the 260 pages in SYN-MFS-002 v2.4 and the 28 pages added by change 
 | ADM-08 | MFS | Integration marketplace | Platform administration | P1 | `api_client`, `integration_connection`, `webhook_delivery`, `webhook_subscription` | Integration |
 | ADM-09 | MFS | API clients & data exchange | Platform administration | P6 | `api_client`, `data_sharing_agreement`, `exchange_transfer`, `service_identity` | DataSharingAgreement, ApiClient |
 | ADM-10 | MFS | Data governance | Platform administration | P1 | `legal_hold`, `privacy_request`, `record_series` | DataSubjectRequest, RetentionRule |
+| ADM-101 | CR-007 | Access levels | Administration | P1 | `role`, `role_grant` |  |
+| ADM-102 | CR-007 | Active sessions | Administration | P1 | `user_session` |  |
 | ADM-11 | MFS | Audit log | Platform administration | P1 | `audit_anchor`, `audit_chain_head`, `audit_event`, `break_glass_grant`, `outbox_event` | AuditEvent |
 | ADM-12 | MFS | Languages | Platform administration | P1 | `config_version`, `translation` | Language |
 | ADM-13 | MFS | Branding | Platform administration | P1 | `config_version`, `tenant_domain` | Branding |
@@ -119,9 +121,11 @@ Every one of the 260 pages in SYN-MFS-002 v2.4 and the 28 pages added by change 
 | DOC-101 | MFS | Digitisation programme | Records & archives | P1 | `digitisation_batch`, `digitisation_site_survey`, `metric:DIGITISATION`, `qa_sample` |  |
 | DOC-102 | MFS | Batches and custody | Records & archives | P1 | `custody_event`, `digitisation_batch` |  |
 | DOC-103 | MFS | Indexing and QA workstation | Records & archives | P1 | `extracted_field`, `qa_sample`, `scanned_page` |  |
-| DOC-104 | MFS | Records search | Records & archives | P1 | `document`, `legacy_award`, `record_request` |  |
+| DOC-104 | MFS | Records search | Records & archives | P1 | `document`, `document_index`, `legacy_award`, `record_request` |  |
 | DOC-105 | MFS | Document viewer | Records & archives | P1 | `document`, `document_link`, `redaction` |  |
 | DOC-106 | MFS | File plan and retention | Records & archives | P1 | `disposal`, `document_category`, `legal_hold`, `record_series` |  |
+| DOC-107 | CR-007 | Upload documents | Records | P2 | `document` |  |
+| DOC-108 | CR-007 | School documents | Records | P2 | `document`, `document_index` |  |
 | EST-01 | CR-006 | Government property register | Estate | P3 | `facility_assessment`, `property_site` |  |
 | EST-02 | CR-006 | Facility actions | Estate | P3 | `facility_action`, `facility_assessment`, `maintenance_schedule`, `metric:EST-ACTIONS-ON-TIME`, `metric:EST-UNSAFE-IN-USE` |  |
 | EST-03 | CR-006 | State infrastructure overview | Estate | P3 | `facility_action`, `metric:EST-ACTIONS-ON-TIME`, `metric:EST-INFRA-INDEX`, `metric:EST-LEARNERS-PER-USABLE-CLASSROOM`, `metric:EST-REPAIR-BACKLOG`, `metric:EST-UNSAFE-IN-USE`, `metric:EST-USABLE-CLASSROOMS` |  |

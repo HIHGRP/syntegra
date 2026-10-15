@@ -500,6 +500,73 @@
             }
           ]
         },
+        "ended_reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "signed_out",
+                "idle_timeout",
+                "expired",
+                "replaced",
+                "ended_by_administrator",
+                "account_inactive"
+              ],
+              "description": "Why the session ended (CR-007)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "affiliation_scope_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Scope node of the school or office the user signed in for (soft; CR-007)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "affiliation_name": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 300,
+              "description": "School or office name as shown at sign-in"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "affiliation_address": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500,
+              "description": "School or office address as shown at sign-in"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "affiliation_confirmed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the user confirmed the school or office after the password"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "created_at": {
           "type": "string",
           "format": "date-time",
@@ -841,7 +908,7 @@
             "restricted",
             "special"
           ],
-          "description": "Highest classification the role normally receives"
+          "description": "Highest classification the role normally receives — its access level (1 public … 5 special, CR-007)"
         },
         "is_builtin": {
           "type": "boolean"
@@ -1132,6 +1199,18 @@
               "type": "string",
               "format": "date",
               "description": "Time-limited supervised exception approved by the head while mandatory checks are pending (FR-STF-03)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "office_scope_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "School or office the holder works in when it differs from the grant's scope — e.g. a ministry official with state-wide scope works in the Ministry of Education (soft; CR-007)"
             },
             {
               "type": "null"

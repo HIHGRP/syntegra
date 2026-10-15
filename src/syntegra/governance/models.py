@@ -402,7 +402,7 @@ class ScopeNode(CedaModel):
     ceda_append_only = False
     ceda_partition = None
     ceda_retention = 'RS-CONFIG'
-    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'parent_id': {'type': 'ref', 'ref': 'scope_node'}, 'level': {'type': 'enum', 'enum': 'scope_level'}, 'code': {'type': 'code'}, 'name': {'type': 'title'}, 'path': {'type': 'path'}, 'depth': {'type': 'smallint'}, 'ref_kind': {'type': 'enum', 'enum': 'scope_ref_kind'}, 'ref_id': {'type': 'uuid'}, 'ownership': {'type': 'cl', 'code_list': 'ownership'}, 'valid_from': {'type': 'date', 'standard': True}, 'valid_to': {'type': 'date', 'standard': True}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'parent_id': {'type': 'ref', 'ref': 'scope_node'}, 'level': {'type': 'enum', 'enum': 'scope_level'}, 'code': {'type': 'code'}, 'name': {'type': 'title'}, 'path': {'type': 'path'}, 'depth': {'type': 'smallint'}, 'ref_kind': {'type': 'enum', 'enum': 'scope_ref_kind'}, 'ref_id': {'type': 'uuid'}, 'ownership': {'type': 'cl', 'code_list': 'ownership'}, 'address': {'type': 'json'}, 'valid_from': {'type': 'date', 'standard': True}, 'valid_to': {'type': 'date', 'standard': True}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
 
     id = cf.UUID7Field(primary_key=True, default=uuid7)
     tenant_id = cf.UUID7Field()
@@ -415,6 +415,7 @@ class ScopeNode(CedaModel):
     ref_kind = models.CharField(max_length=32, choices=[('tenant', 'Tenant'), ('institution', 'Institution'), ('campus', 'Campus'), ('org_unit', 'Org unit'), ('class_group', 'Class group'), ('course_section', 'Course section'), ('programme', 'Programme'), ('network', 'Network'), ('security_agency', 'Security agency'), ('agency_unit', 'Agency unit')], null=True, blank=True, help_text='Entity the node represents')
     ref_id = cf.UUID7Field(null=True, blank=True, help_text='Institution, campus, org unit, class group or course section id (soft)')
     ownership = models.CharField(max_length=32, null=True, blank=True, help_text='Denormalised for oversight filters (public/private)')
+    address = models.JSONField(null=True, blank=True, help_text='Office address of a ministry, board, agency or LGA office (street, town, LGA, state); institutions keep theirs on institution (CR-007)')
     valid_from = models.DateField()
     valid_to = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(default=cf.utcnow)
