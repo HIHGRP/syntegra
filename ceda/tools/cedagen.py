@@ -1267,9 +1267,8 @@ def _versions() -> list:
     cf = repo / "deploy" / "Containerfile"
     if cf.exists():
         image = re.findall(r"^FROM\s+(\S+)", cf.read_text(encoding="utf-8"), re.M)[-1]
-        ubi = re.search(r"/ubi(\d+)/[^:]+(?::(\d+(?:\.\d+)?))?$", image)
-        release = (ubi.group(2) or f"{ubi.group(1)} (unpinned)") if ubi else ""
-        os_name = f"Red Hat Enterprise Linux {release} (UBI minimal)" if ubi else image
+        ubi = re.search(r"/ubi(\d+)/", image)
+        os_name = f"Red Hat Enterprise Linux {ubi.group(1)} (UBI {ubi.group(1)} minimal)" if ubi else image
         rows.append(("Operating system — application image", os_name, f"`deploy/Containerfile`: `{image}`"))
     rows.append(("Python", proj["requires-python"].replace(",", ", "), "`pyproject.toml`"))
     compose = repo / "deploy" / "compose.yaml"

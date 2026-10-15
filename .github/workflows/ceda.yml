@@ -9,7 +9,7 @@ on:
 jobs:
   model:
     name: Validate model, check generated artefacts, load into MySQL 9.7
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-24.04
     services:
       mysql:
         image: mysql:9.7

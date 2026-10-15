@@ -21,7 +21,7 @@ The stack is the one the MFS binds in §16:
 - Python 3.12
 - Django 5.2 LTS with Django REST Framework 3.16
 - MySQL 9.7 LTS
-- Red Hat Enterprise Linux 10.2 (UBI 10 images, pinned to the minor release); CI on Ubuntu 26.04 LTS
+- Red Hat Enterprise Linux 10 (UBI 10 images)
 - Valkey for cache and rate limits
 - Celery for background jobs
 
@@ -156,7 +156,7 @@ Configuration comes from environment variables:
 - `SYNTEGRA_KEY_PROVIDER`;
 - `SYNTEGRA_SECRET_KEY` (required in production).
 
-To build the image, run `podman build -f deploy/Containerfile .`. The image is based on UBI 10.2 Python 3.12 and runs
+To build the image, run `podman build -f deploy/Containerfile .`. The image is based on UBI 10 Python 3.12 and runs
 gunicorn as a non-root user.
 
 ## Tests and quality gates
@@ -216,6 +216,6 @@ src/syntegra/core     kernel: context, authz, uow, audit, outbox, policy, workfl
 src/syntegra/<module> one Django app per CEDA module: models.py (generated), domain/ (pure rules), services.py, api.py, urls.py
 src/syntegra/schema   migrations that apply the CEDA DDL to each zone
 src/syntegra/web      page registry, server-rendered pages (Jinja2), forms (forms.py, choices.py), design tokens
-deploy/               Containerfile (UBI 10.2), compose stack (MySQL 9.7, Valkey)
+deploy/               Containerfile (UBI 10), compose stack (MySQL 9.7, Valkey)
 tests/                unit (pure domain) and integration (MySQL) tests
 ```

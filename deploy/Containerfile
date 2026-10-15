@@ -1,7 +1,6 @@
-# Syntegra application image — RHEL 10.2 UBI (latest RHEL release, GA 19 May 2026), Python 3.12 (MFS §16 binding stack).
-# The base is pinned to a RHEL minor release so builds are reproducible; move the tag when Red Hat ships the next one.
+# Syntegra application image — RHEL 10 UBI, Python 3.12 (MFS §16 binding stack).
 # Build:  podman build -f deploy/Containerfile -t syntegra:$(git rev-parse --short HEAD) .
-FROM registry.access.redhat.com/ubi10/python-312-minimal:10.2 AS build
+FROM registry.access.redhat.com/ubi10/python-312-minimal AS build
 USER 0
 RUN microdnf install -y gcc mariadb-connector-c-devel pkgconf-pkg-config && microdnf clean all
 WORKDIR /opt/app-root/src
@@ -10,7 +9,7 @@ COPY src ./src
 RUN python -m venv /opt/venv && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
  && /opt/venv/bin/pip install --no-cache-dir . && /opt/venv/bin/pip uninstall -y syntegra  # dependencies only
 
-FROM registry.access.redhat.com/ubi10/python-312-minimal:10.2
+FROM registry.access.redhat.com/ubi10/python-312-minimal
 USER 0
 RUN microdnf install -y mariadb-connector-c && microdnf clean all
 COPY --from=build /opt/venv /opt/venv
