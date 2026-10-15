@@ -396,7 +396,10 @@ def open_commitments(_p: Mapping[str, Any]) -> Options:
     from syntegra.finance.models import BudgetCommitment
 
     rows = BudgetCommitment.objects.in_scope().filter(status__in=("open", "partly_spent")).order_by("-created_at")
-    return [(str(c.id), f"{c.description} — {naira(c.amount_minor - c.spent_minor)} open") for c in rows[:LIMIT]]
+    return [
+        (str(c.id), f"{c.description} — {naira(c.amount_minor - c.spent_minor - c.released_minor)} open")
+        for c in rows[:LIMIT]
+    ]
 
 
 def submitted_virements(_p: Mapping[str, Any]) -> Options:
