@@ -239,7 +239,7 @@ class SsoProvidersView(APIView):
 class ProviderSerializer(serializers.Serializer):  # type: ignore[type-arg]
     provider = serializers.ChoiceField(choices=sorted(sso.PROVIDERS))
     label = serializers.CharField(max_length=80)  # type: ignore[assignment]  # the field, not DRF's label
-    issuer = serializers.URLField(max_length=2048)
+    issuer = serializers.CharField(max_length=2048)  # https checked by the service (internal names allowed)
     client_id = serializers.CharField(max_length=255)
     client_secret = serializers.CharField(max_length=2000, required=False, allow_blank=True, trim_whitespace=False)
     scopes = serializers.CharField(max_length=200, required=False, default="openid email profile")

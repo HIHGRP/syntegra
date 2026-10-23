@@ -78,3 +78,40 @@ jobs:
           print(r.source, repr(r.text))
           assert r.source == 'ocr' and 'ADMISSION' in r.text.upper(), r
           "
+
+  staging:
+    name: Staging rehearsal (image on MySQL TLS, object lock, OIDC, backup and restore)
+    runs-on: ubuntu-24.04
+    needs: [tests]
+    env:
+      COMPOSE: docker compose -f deploy/staging/compose.yaml
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build the production image
+        run: docker build -f deploy/Containerfile -t syntegra:ci .
+      - name: Infrastructure (MySQL 9.7 with TLS, object store with object lock, identity provider)
+        run: |
+          deploy/staging/certs.sh
+          $COMPOSE up -d --wait db db-restore
+          $COMPOSE up -d objects idp
+      - name: Migrate, seed the state, create the locked bucket
+        run: $COMPOSE run --rm migrate
+      - name: Start the application with production settings
+        run: $COMPOSE up -d web
+      - name: Smoke test (MFA enrolment, upload, OCR, search, stamped release, WORM, single sign-on)
+        run: $COMPOSE run --rm smoke
+      - name: Back up (dumps over TLS, object mirror) with the application stopped
+        run: |
+          $COMPOSE stop web
+          $COMPOSE run --rm backup-db
+          $COMPOSE run --rm backup-objects
+      - name: Restore into an empty MySQL and verify every table and object
+        run: |
+          $COMPOSE run --rm restore-db
+          $COMPOSE run --rm verify
+      - name: Logs
+        if: failure()
+        run: $COMPOSE logs --no-color --tail=200 web idp objects db
+      - name: Tear down
+        if: always()
+        run: $COMPOSE down -v

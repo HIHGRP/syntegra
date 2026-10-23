@@ -1,0 +1,140 @@
+# Staging rehearsal (CR-008): the production image and settings against real infrastructure before a release goes to
+# production — MySQL 9.7 over verified TLS, S3-compatible object storage with compliance object lock (Versity Gateway),
+# an OpenID Connect identity provider (Keycloak) standing in for the state's, and backups restored into a second
+# MySQL and checked. Run by .github/workflows/app.yml (job "staging"); by hand:
+#   deploy/staging/certs.sh
+#   docker compose -f deploy/staging/compose.yaml up -d db objects idp db-restore
+#   docker compose -f deploy/staging/compose.yaml run --rm migrate && docker compose -f deploy/staging/compose.yaml up -d web
+#   docker compose -f deploy/staging/compose.yaml run --rm smoke
+#   docker compose -f deploy/staging/compose.yaml stop web
+#   for job in backup-db backup-objects restore-db verify; do docker compose -f deploy/staging/compose.yaml run --rm $job; done
+name: syntegra-staging
+
+x-app: &app
+  image: ${SYNTEGRA_IMAGE:-syntegra:ci}
+  environment: &app-env
+    DJANGO_SETTINGS_MODULE: syntegra.settings.staging
+    SYNTEGRA_ENVIRONMENT: staging
+    SYNTEGRA_SECRET_KEY: staging-secret-key-not-for-production-0123456789abcdef
+    SYNTEGRA_KEY_PROVIDER: syntegra.core.crypto.LocalKeyProvider
+    SYNTEGRA_STAGING_MASTER_KEY: staging-master-key-not-for-production-0123456789
+    SYNTEGRA_TENANCY: single
+    SYNTEGRA_DB_HOST: db
+    SYNTEGRA_DB_USER: syntegra
+    SYNTEGRA_DB_PASSWORD: staging-db-password
+    SYNTEGRA_DB_PREFIX: syn_stg
+    SYNTEGRA_DB_SSL_CA: /certs/ca.pem
+    SYNTEGRA_ALLOWED_HOSTS: web,localhost
+    SYNTEGRA_S3_BUCKET: syntegra-staging
+    SYNTEGRA_S3_ENDPOINT_URL: http://objects:7070
+    SYNTEGRA_S3_PATH_STYLE: "1"
+    AWS_ACCESS_KEY_ID: syntegra-staging
+    AWS_SECRET_ACCESS_KEY: staging-object-secret
+    SYNTEGRA_BOOTSTRAP_PASSWORD: Staging-admin-password-2026
+    SYNTEGRA_MFA_REQUIRED_CLEARANCE: restricted
+  volumes: ["./certs:/certs:ro", "./:/staging:ro"]
+
+services:
+  db:
+    image: docker.io/library/mysql:9.7
+    environment: {MYSQL_ROOT_PASSWORD: staging-root-password}
+    command:
+      - --ssl-ca=/certs/ca.pem
+      - --ssl-cert=/certs/server-cert.pem
+      - --ssl-key=/certs/server-key.pem
+      - --require-secure-transport=ON
+      - --transaction-isolation=READ-COMMITTED
+      - --binlog-format=ROW
+      - --log-bin-trust-function-creators=ON
+    volumes: ["./certs:/certs:ro", "./mysql-init.sql:/docker-entrypoint-initdb.d/init.sql:ro", "db:/var/lib/mysql"]
+    ports: ["127.0.0.1:3316:3306"]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-pstaging-root-password"]
+      interval: 5s
+      retries: 60
+
+  objects:  # S3 API with versioning and object lock on a POSIX volume
+    image: docker.io/versity/versitygw:v1.0.16
+    environment: {ROOT_ACCESS_KEY_ID: syntegra-staging, ROOT_SECRET_ACCESS_KEY: staging-object-secret}
+    command: ["posix", "--versioning-dir", "/versions", "/data"]
+    volumes: ["objects:/data", "versions:/versions"]
+    ports: ["127.0.0.1:7070:7070"]
+
+  idp:  # the state's identity provider for single sign-on (OpenID Connect)
+    image: docker.io/keycloak/keycloak:26.3.3
+    environment: {KC_BOOTSTRAP_ADMIN_USERNAME: admin, KC_BOOTSTRAP_ADMIN_PASSWORD: staging-idp-admin}
+    command: ["start-dev", "--import-realm", "--http-port=8080", "--hostname=http://idp:8080"]
+    volumes: ["./realm-abia.json:/opt/keycloak/data/import/realm-abia.json:ro"]
+    ports: ["127.0.0.1:8080:8080"]
+
+  migrate:  # schema, seed state, staging fixtures and the locked bucket
+    <<: *app
+    depends_on: {db: {condition: service_healthy}}
+    command:
+      - sh
+      - -c
+      - >-
+        python manage.py migrate --database=default &&
+        for z in platform registry ops vault records dw; do python manage.py migrate --database=$$z || exit 1; done &&
+        python manage.py syntegra_bootstrap --host web &&
+        python /staging/objects.py bucket
+    profiles: [jobs]
+
+  web:
+    <<: *app
+    ports: ["127.0.0.1:8000:8000"]
+
+  smoke:  # a browser and an API client going through the rehearsal, with TLS ended in front of web as in production
+    <<: *app
+    environment:
+      <<: *app-env
+      STAGING_WEB: http://web:8000
+    command: ["python", "/staging/smoke.py"]
+    profiles: [jobs]
+
+  backup-db:  # consistent dumps of every zone, taken over verified TLS with a least-privilege account
+    image: docker.io/library/mysql:9.7
+    entrypoint: ["sh", "/staging/db-backup.sh"]
+    volumes: ["./certs:/certs:ro", "./:/staging:ro", "./backups:/backups"]
+    depends_on: {db: {condition: service_healthy}}
+    profiles: [jobs]
+
+  backup-objects:  # a mirror of every object version, with the SHA-256 of each
+    <<: *app
+    environment:
+      <<: *app-env
+      STAGING_BACKUPS: /backups
+    command: ["python", "/staging/objects.py", "backup"]
+    volumes: ["./certs:/certs:ro", "./:/staging:ro", "./backups:/backups"]
+    profiles: [jobs]
+
+  db-restore:  # an empty MySQL the backup is restored into
+    image: docker.io/library/mysql:9.7
+    environment: {MYSQL_ROOT_PASSWORD: restore-root-password}
+    command: ["--log-bin-trust-function-creators=ON"]
+    ports: ["127.0.0.1:3317:3306"]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-prestore-root-password"]
+      interval: 5s
+      retries: 60
+
+  restore-db:  # load the dumps into the empty server
+    image: docker.io/library/mysql:9.7
+    entrypoint: ["sh", "/staging/db-restore.sh"]
+    volumes: ["./:/staging:ro", "./backups:/backups"]
+    depends_on: {db-restore: {condition: service_healthy}}
+    profiles: [jobs]
+
+  verify:  # every table's row count matches the live database; every document object matches its recorded hash
+    <<: *app
+    environment:
+      <<: *app-env
+      STAGING_BACKUPS: /backups
+    command: ["python", "/staging/objects.py", "verify"]
+    volumes: ["./certs:/certs:ro", "./:/staging:ro", "./backups:/backups"]
+    profiles: [jobs]
+
+volumes:
+  db: {}
+  objects: {}
+  versions: {}

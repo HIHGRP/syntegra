@@ -11,4 +11,5 @@ printf 'subjectAltName=DNS:db,DNS:localhost,IP:127.0.0.1\nextendedKeyUsage=serve
 openssl x509 -req -in server.csr -CA ca.pem -CAkey ca-key.pem -CAcreateserial -days 7 -extfile san.ext -out server-cert.pem 2>/dev/null
 chmod 0644 ca.pem server-cert.pem server-key.pem  # read by mysqld (uid 999) inside its container; staging only
 rm -f server.csr san.ext ca.srl
+mkdir -p ../backups && chmod 0777 ../backups  # written by the MySQL job (root) and the app image (uid 1001)
 echo "staging certificates in $dir"

@@ -359,11 +359,17 @@ def _sign_in(
                 raise SsoFailed("This account is linked to another sign-in provider.", "AUTH-SSO-LINKED")
             if user.idp == p.provider and user.idp_subject and user.idp_subject != subject:
                 raise SsoFailed("This account is linked to another identity at this provider.", "AUTH-SSO-LINKED")
-        if user.status != "active":
+        # an account the state created for single sign-on has no password and waits as "invited": a verified sign-in
+        # at the state's own provider accepts the invitation; suspended or deactivated accounts stay shut
+        if user.status not in ("active", "invited"):
             raise SsoFailed("This account cannot sign in. Contact your administrator.", "AUTH-ACCOUNT-INACTIVE")
         if user.locked_until and user.locked_until > now:
             raise SsoFailed("The account is locked after repeated failures. Try again later.", "AUTH-LOCKED")
         ctx = base.with_(actor_kind="user", actor_id=user.id)
+        if user.status == "invited":
+            user.status = "active"
+            user.save(using=alias)
+            audit.write_event(alias, ctx, action="sso_invitation_accepted", record_kind="app_user", record_id=user.id)
         if user.idp != p.provider or user.idp_subject != subject:
             user.idp, user.idp_subject = p.provider, subject
             user.save(using=alias)

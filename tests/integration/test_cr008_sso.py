@@ -298,3 +298,23 @@ def test_providers_through_the_api(world: Any, idp: FakeIdP) -> None:
     head, _ = make_user(world, "HEAD", world.institution.scope_node_id)
     other = Client(HTTP_AUTHORIZATION=f"Bearer {api_sign_in(Client(), head.username, PASSWORD)}")
     assert other.get("/api/v1/admin/sign-in-providers").status_code == 403
+
+
+def test_an_account_created_for_sso_is_activated_by_its_first_sign_in(world: Any, client: Any, idp: FakeIdP) -> None:
+    from syntegra.core import context
+    from syntegra.iam import services as iam
+    from syntegra.iam.models import AppUser
+
+    _configure(world)
+    with context.use(system_ctx()):
+        u = iam.create_user(system_ctx(), username="j.okeke@abiastate.gov.ng", display_name="J Okeke", password=None)
+        iam.grant_role(system_ctx(), user=u, role_code="TCH", scope_id=world.institution.scope_node_id)
+    assert u.status == "invited"
+    r = _sso(client, idp, **_claims(u))
+    assert r.status_code == 302 and r["Location"].startswith("/auth/context")
+    with context.use(system_ctx()):
+        assert AppUser.objects.get(pk=u.id).status == "active"
+        AppUser.objects.filter(pk=u.id).update(status="suspended")
+    client.post("/sign-out")
+    r = _sso(client, idp, **_claims(u))
+    assert r.status_code == 401 and b"cannot sign in" in r.content
