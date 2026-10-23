@@ -2,6 +2,7 @@
 {% block title %}Sign in{% endblock %}
 {% block content %}
 <section class="card narrow">
+  {% set emblem = state_emblem(tenant) %}{% if emblem %}<img class="sign-in-emblem" src="{{ emblem }}" alt="Coat of arms of {{ tenant.name }}" width="120" height="98">{% endif %}
   <h1>Sign in</h1>
   <p class="muted">{{ tenant.name if tenant else "" }}</p>
   {% if notice %}<div class="alert" role="status">{{ notice }}</div>{% endif %}

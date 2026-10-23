@@ -54,10 +54,21 @@ def _ctx(request: HttpRequest, **extra: Any) -> dict[str, Any]:
         "my_level": access.level(c.clearance) if signed_in and c is not None and c.grant_id else None,
         "can_open": lambda pid: signed_in and c is not None and access.covers(c.clearance, pages.entry_level(pid)),
         "tenant": getattr(request, "syntegra_tenant", None),
+        "government_office": _government_office(sess),
         "nav": pages.for_role(c.role_code if c else None),
         "page_status": pages.status,
         **extra,
     }
+
+
+def _government_office(sess: Any) -> bool:
+    """Whether the user signed in for a government office (a ministry, board or LGA office) rather than a school."""
+    if sess is None or not getattr(sess, "affiliation_scope_id", None):
+        return False
+    from syntegra.governance.models import ScopeNode
+
+    node = ScopeNode.objects.filter(pk=sess.affiliation_scope_id).only("ref_kind").first()
+    return node is not None and node.ref_kind != "institution"
 
 
 def _signed_out_redirect(request: HttpRequest) -> HttpResponse:

@@ -225,3 +225,9 @@ input.num4 { width: 6rem; }
 label.inline { display: block; font-weight: 400; margin: .2rem 0; }
 form.assign { min-width: 16rem; }
 #subjects summary { white-space: nowrap; }
+
+/* the state's coat of arms (static/img/emblems/<state code>.png) */
+.brand { display: inline-flex; align-items: center; gap: .5rem; }
+.brand .emblem { height: 36px; width: auto; background: #fff; border-radius: 6px; padding: 2px; }
+.affbar-emblem { height: 24px; width: auto; align-self: center; }
+.sign-in-emblem { display: block; height: 98px; width: auto; margin: 0 0 .5rem; }

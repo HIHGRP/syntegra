@@ -9,7 +9,8 @@
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="topbar">
-  <a class="brand" href="/">Syntegra <span>{{ tenant.name if tenant else "" }}</span></a>
+  {% set emblem = state_emblem(tenant) %}
+  <a class="brand" href="/">{% if emblem %}<img class="emblem" src="{{ emblem }}" alt="Coat of arms of {{ tenant.name }}" width="44" height="36">{% endif %}Syntegra <span>{{ tenant.name if tenant else "" }}</span></a>
   {% if signed_in %}
   <nav aria-label="Primary">
     <a href="/">Home</a>
@@ -44,6 +45,7 @@
 </header>
 {% if signed_in and session and session.affiliation_name %}
 <div class="affbar" id="affiliation-bar">
+  {% if emblem and government_office %}<img class="affbar-emblem" src="{{ emblem }}" alt="" width="30" height="24">{% endif %}
   <span class="affbar-name">{{ session.affiliation_name }}</span>
   {% if session.affiliation_address %}<span class="affbar-address">{{ session.affiliation_address }}</span>{% endif %}
   {% if my_level %}<span class="level level-{{ my_level.number }}" title="{{ my_level.sees }}">{{ my_level.label }}</span>{% endif %}

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import Any
 
+from django.contrib.staticfiles import finders
 from django.templatetags.static import static
 from django.urls import reverse
 from jinja2 import Environment, StrictUndefined
@@ -50,10 +52,22 @@ def _human(code: Any) -> str:
     return "—" if code is None else str(code).replace("_", " ").capitalize()
 
 
+@lru_cache(maxsize=64)
+def _emblem_for(state_code: str) -> str | None:
+    path = f"img/emblems/{state_code.upper()}.png"
+    return static(path) if finders.find(path) else None
+
+
+def state_emblem(tenant: Any) -> str | None:
+    """The state's coat of arms (``static/img/emblems/<ISO 3166-2 code>.png``, e.g. NG-AB.png) when it is installed."""
+    code = getattr(tenant, "state_code", None) if tenant is not None else None
+    return _emblem_for(code) if code else None
+
+
 def environment(**options: Any) -> Environment:
     options.setdefault("undefined", StrictUndefined)
     env = Environment(**options)  # noqa: S701 — autoescape is enabled in settings.TEMPLATES
-    env.globals.update({"static": static, "url": reverse})
+    env.globals.update({"static": static, "url": reverse, "state_emblem": state_emblem})
     env.filters["date"] = _date
     env.filters["naira"] = _naira
     env.filters["naira_short"] = _naira_short
