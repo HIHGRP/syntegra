@@ -64,21 +64,33 @@ def test_word_copy_is_a_valid_docx() -> None:
             ET.fromstring(z.read(name))  # noqa: S314 — every part is well-formed XML
 
 
-def test_scanned_pages_are_read_by_ocr_when_tesseract_is_installed(tmp_path: object) -> None:
-    import shutil
-    import subprocess
-    from pathlib import Path
-
-    import pytest
+def _scan(lines: list[str]) -> bytes:
+    """A flatbed-scanner style page: the demo PDF rendered to a PNG at 200 dpi — an image, no text layer."""
+    import pypdfium2 as pdfium
 
     from syntegra.platform.demo.abia import _pdf
 
-    if not (shutil.which("tesseract") and shutil.which("pdftoppm")):
-        pytest.skip("Tesseract OCR and pdftoppm are not installed")
-    pdf = _pdf("ADMISSION REGISTER", ["Admission number 1001 Chidi Okafor", "Admission number 1002 Ada Nwosu"])
-    src = Path(str(tmp_path)) / "page.pdf"
-    src.write_bytes(pdf)
-    subprocess.run(["pdftoppm", "-r", "200", "-png", "-singlefile", str(src), str(src.with_suffix(""))], check=True)  # noqa: S603, S607
-    scan = src.with_suffix(".png").read_bytes()  # an image: no text layer, as from a flatbed scanner
+    pdf = pdfium.PdfDocument(_pdf("ADMISSION REGISTER", lines))
+    buf = io.BytesIO()
+    pdf[0].render(scale=200 / 72).to_pil().save(buf, "PNG")
+    return buf.getvalue()
+
+
+def test_scanned_pages_are_read_by_ocr() -> None:
+    import pytest
+    from PIL import Image
+
+    if not text.ocr_available():
+        pytest.skip("No English Tesseract data (eng.traineddata) on this machine")
+    scan = _scan(["Admission number 1001 Chidi Okafor", "Admission number 1002 Ada Nwosu"])
     got = text.extract(scan, "image/png")
     assert got.source == "ocr" and "Okafor" in got.text and "Nwosu" in got.text
+    # a scanned PDF (pages are images) and a two-page TIFF are read page by page
+    page = Image.open(io.BytesIO(scan))
+    for fmt, mime in (("PDF", "application/pdf"), ("TIFF", "image/tiff")):
+        buf = io.BytesIO()
+        page.save(buf, fmt, save_all=True, append_images=[page.copy()])
+        got = text.extract(buf.getvalue(), mime)
+        assert got.source == "ocr" and got.text.count("Okafor") == 2, (fmt, got)
+    assert text.extract(b"%PDF-1.4 not really a pdf", "application/pdf").source == "none"
+    assert text.extract(b"\x89PNG\r\n\x1a\n broken", "image/png").source == "none"

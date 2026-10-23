@@ -49,8 +49,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - name: System libraries for mysqlclient
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends default-libmysqlclient-dev pkg-config tesseract-ocr poppler-utils
+      - name: System libraries for mysqlclient, English OCR data
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends default-libmysqlclient-dev pkg-config tesseract-ocr-eng
       - name: Install
         run: python -m pip install -e ".[dev]"
       - name: Django system checks

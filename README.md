@@ -159,16 +159,20 @@ Configuration comes from environment variables:
 - `SYNTEGRA_KEY_PROVIDER`;
 - `SYNTEGRA_SECRET_KEY` (required in production);
 - `SYNTEGRA_SESSION_IN_USE_MINUTES` (default 15) — how long after its last activity a session blocks a second sign-in;
+- `SYNTEGRA_TESSDATA_DIR` — the directory with Tesseract's `eng.traineddata` for OCR (set in the image);
 - `SYNTEGRA_OBJECT_STORE_DIR` and `SYNTEGRA_DOCUMENT_MAX_BYTES` (default 25 MB) — where document scans are kept
   (S3-compatible WORM buckets in production). Scans are the only copy of each master: point the directory at
   persistent storage that is backed up — `deploy/compose.yaml` mounts the `objects` volume at
   `/var/lib/syntegra/objects` — never at a path inside the container image.
 
-Scanned images and image-only PDFs are read for search by **Tesseract OCR** (English) and `pdftoppm`. The production
-image installs both — Tesseract from EPEL 10, poppler-utils from the UBI repositories — and its build fails if either
-is missing; CI builds the image and reads a scanned page inside it. For a local install: Ubuntu
-`apt install tesseract-ocr poppler-utils`. Where they are missing, PDFs with a text layer and the transcription typed
-at upload are still indexed, and everything else is found by its details.
+Scanned images and image-only PDFs are read for search by **Tesseract OCR** (English), in-process: the `tesserocr`
+wheel carries Tesseract 5 and Leptonica, `pypdfium2` renders scanned PDF pages and Pillow reads JPEG, PNG and
+multi-page TIFF, so no system packages are needed (the UBI and EPEL 10 repositories have no Tesseract). Only the
+English language data is needed on disk: the production image downloads `eng.traineddata` (tessdata_fast 4.1.0,
+checked against its SHA-256) and sets `SYNTEGRA_TESSDATA_DIR`; its build fails if OCR cannot load, and CI builds the
+image and reads a scanned page inside it. Elsewhere, install the data with `apt install tesseract-ocr-eng` (it is found
+in the usual locations) or point `SYNTEGRA_TESSDATA_DIR` at it. Without it, PDFs with a text layer and the
+transcription typed at upload are still indexed, and everything else is found by its details.
 
 To build the image, run `podman build -f deploy/Containerfile .`. The image is based on UBI 10 Python 3.12 and runs
 gunicorn as a non-root user.

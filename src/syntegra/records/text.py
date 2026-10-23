@@ -1,18 +1,23 @@
 """Text of a stored document for the search index (CR-007, FR-DOC-203).
 
 Sources, best first: the PDF's own text layer (searchable PDFs from scanners or word processors); plain text files;
-OCR of page images with Tesseract when it is installed (scanned PDFs are rasterised with ``pdftoppm``); and the
-transcription typed at upload. The scan itself stays the record — the text only makes it findable and exportable.
+OCR of page images with Tesseract; and the transcription typed at upload. The scan itself stays the record — the text
+only makes it findable and exportable.
+
+OCR runs in-process with Python wheels that carry their own native libraries, so it needs no system packages (the
+RHEL UBI image has none for it): ``tesserocr`` (Tesseract 5 and Leptonica), ``pypdfium2`` to render scanned PDF pages
+and Pillow to read JPEG, PNG and multi-page TIFF. Only the English language data (``eng.traineddata``) is needed on
+disk: ``SYNTEGRA_TESSDATA_DIR`` (set in the production image) or the usual system locations.
 """
 
 from __future__ import annotations
 
 import io
-import shutil
-import subprocess
-import tempfile
+import os
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 PDF = "application/pdf"
 IMAGES = {"image/jpeg", "image/png", "image/tiff"}
@@ -49,34 +54,85 @@ def sniff(data: bytes) -> str | None:
     return TEXT if sample and printable / len(sample) > 0.97 else None
 
 
+TESSDATA_DIRS = (
+    "/usr/share/tesseract-ocr/5/tessdata",
+    "/usr/share/tesseract-ocr/4.00/tessdata",
+    "/usr/share/tesseract/tessdata",
+    "/usr/share/tessdata",
+    "/usr/local/share/tessdata",
+)
+OCR_DPI = 200
+MAX_OCR_PIXELS = 40_000_000  # larger pages are scaled down first: OCR time grows with the area
+
+
+def tessdata_dir() -> str | None:
+    """The directory holding ``eng.traineddata``, or None."""
+    for d in (os.environ.get("SYNTEGRA_TESSDATA_DIR"), os.environ.get("TESSDATA_PREFIX"), *TESSDATA_DIRS):
+        if d and (Path(d) / "eng.traineddata").is_file():
+            return d
+    return None
+
+
 def ocr_available() -> bool:
-    return shutil.which("tesseract") is not None
+    if tessdata_dir() is None:
+        return False
+    try:
+        import tesserocr  # noqa: F401
+    except ImportError:
+        return False
+    return True
 
 
-def _ocr_image(path: Path) -> str:
-    exe = shutil.which("tesseract")
-    if not exe:
+def _ocr_images(images: Iterable[Any]) -> str:
+    """Text of each page image (Pillow images), pages separated by a form feed."""
+    import tesserocr
+    from PIL import Image
+
+    out: list[str] = []
+    with tesserocr.PyTessBaseAPI(path=tessdata_dir(), lang="eng", psm=tesserocr.PSM.AUTO) as api:
+        for img in images:
+            page = img.convert("L")
+            if page.width * page.height > MAX_OCR_PIXELS:
+                scale = (MAX_OCR_PIXELS / (page.width * page.height)) ** 0.5
+                page = page.resize((int(page.width * scale), int(page.height * scale)), Image.Resampling.LANCZOS)
+            api.SetImage(page)
+            out.append(api.GetUTF8Text() or "")
+    return "\n\f".join(out)
+
+
+def _ocr_image(data: bytes) -> str:
+    """A JPEG, PNG or (multi-page) TIFF scan."""
+    from PIL import Image, ImageSequence, UnidentifiedImageError
+
+    if not ocr_available():
         return ""
-    out = subprocess.run(  # noqa: S603
-        [exe, str(path), "stdout", "-l", "eng", "--psm", "3"], capture_output=True, timeout=120, check=False
-    )
-    return out.stdout.decode("utf-8", "replace") if out.returncode == 0 else ""
-
-
-def _ocr_pdf(data: bytes, pages: int) -> str:
-    exe = shutil.which("pdftoppm")
-    if not exe or not ocr_available():
+    try:
+        with Image.open(io.BytesIO(data)) as img:
+            frames = [f.copy() for _, f in zip(range(MAX_OCR_PAGES), ImageSequence.Iterator(img), strict=False)]
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
         return ""
-    with tempfile.TemporaryDirectory(prefix="syn-ocr-") as tmp:
-        src = Path(tmp) / "in.pdf"
-        src.write_bytes(data)
-        subprocess.run(  # noqa: S603
-            [exe, "-r", "200", "-gray", "-png", "-l", str(min(pages, MAX_OCR_PAGES)), str(src), str(Path(tmp) / "p")],
-            capture_output=True,
-            timeout=300,
-            check=False,
-        )
-        return "\n\f".join(_ocr_image(p) for p in sorted(Path(tmp).glob("p*.png")))
+    return _ocr_images(frames)
+
+
+def _ocr_pdf(data: bytes) -> str:
+    """A scanned PDF: each page rendered at 200 dpi, then read."""
+    import pypdfium2 as pdfium
+
+    if not ocr_available():
+        return ""
+    try:
+        pdf = pdfium.PdfDocument(data)
+    except pdfium.PdfiumError:
+        return ""
+    try:
+
+        def rendered() -> Iterator[Any]:
+            for i in range(min(len(pdf), MAX_OCR_PAGES)):
+                yield pdf[i].render(scale=OCR_DPI / 72, grayscale=True).to_pil()
+
+        return _ocr_images(rendered())
+    finally:
+        pdf.close()
 
 
 def extract(data: bytes, mime: str, transcription: str = "") -> Extracted:
@@ -93,15 +149,12 @@ def extract(data: bytes, mime: str, transcription: str = "") -> Extracted:
         if len(text.strip()) >= MIN_LAYER_CHARS * max(1, pages) // 2:
             source = "pdf_text_layer"
         else:
-            text = _ocr_pdf(data, pages)
+            text = _ocr_pdf(data)
             source = "ocr" if text.strip() else "none"
     elif mime == TEXT:
         text, source = data.decode("utf-8", "replace"), "text_file"
     elif mime in IMAGES:
-        with tempfile.TemporaryDirectory(prefix="syn-ocr-") as tmp:
-            p = Path(tmp) / f"in.{EXTENSIONS[mime]}"
-            p.write_bytes(data)
-            text = _ocr_image(p)
+        text = _ocr_image(data)
         source = "ocr" if text.strip() else "none"
     transcription = (transcription or "").strip()
     if transcription:
