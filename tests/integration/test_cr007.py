@@ -223,7 +223,8 @@ def test_documents_are_filed_under_the_school_with_references_and_a_word_copy(wo
     found = client.get(f"/documents?institution={world.institution.id}&q={ref.group(1)}").content.decode()
     doc_id = re.search(r'href="/documents/([0-9a-f-]{36})"', found).group(1)  # type: ignore[union-attr]
     page = client.get(f"/documents/{doc_id}").content.decode()
-    assert "Government Secondary School Aba" in page and "Pdf text layer" in page and "watermark-overlay" in page
+    assert "Government Secondary School Aba" in page and "watermark-overlay" in page
+    assert "from the PDF&#39;s text layer" in page
     scan = client.get(f"/documents/{doc_id}/file")
     assert scan.status_code == 200 and scan["Content-Type"] == "application/pdf" and scan.content == pdf
     word = client.get(f"/documents/{doc_id}/word")

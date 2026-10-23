@@ -21,9 +21,9 @@
       {% if d.subject_label %}<dt>Subject</dt><dd>{{ d.subject_label }}</dd>{% endif %}
       {% if d.source_reference %}<dt>Reference on the paper</dt><dd>{{ d.source_reference }}</dd>{% endif %}
       {% if d.description %}<dt>Description</dt><dd>{{ d.description }}</dd>{% endif %}
-      <dt>File</dt><dd>{{ d.mime_type }} · {{ d.size_bytes|filesize }} · pages {{ d.pages }}</dd>
+      <dt>File</dt><dd>{{ d.mime_type }} · {{ d.size_bytes|filesize }} · {% if d.pages in ("1–1", "1") %}1 page{% else %}pages {{ d.pages }}{% endif %}</dd>
       <dt>Captured</dt><dd>{{ d.captured_at|localtime }}</dd>
-      <dt>Search index</dt><dd>{% if d.indexed %}{{ "{:,}".format(d.char_count) }} characters from {{ d.text_source|human }}{% else %}Not indexed{% endif %}</dd>
+      <dt>Search index</dt><dd>{% if d.indexed %}{{ "{:,}".format(d.char_count) }} characters from {{ {"ocr": "OCR of the scanned pages", "pdf_text_layer": "the PDF's text layer", "text_file": "the text file", "transcription": "the typed transcription", "pdf_text_layer_and_transcription": "the PDF's text layer and the typed transcription"}.get(d.text_source, d.text_source|human) }}{% else %}Not indexed{% endif %}</dd>
       <dt>Integrity</dt><dd><span class="muted">SHA-256 {{ d.sha256[:16] }}… — checked on every read</span></dd>
     </dl>
   </section>
