@@ -138,6 +138,8 @@ events:
   FRM.SUBMITTED: {producer: forms, aggregate: form_response, payload: {form_response_id: uuid!, form_id: uuid!}, consumers: [governance, records, finance], trigger: Form submitted}
   DOC.INGESTED: {producer: records, aggregate: document, payload: {document_id: uuid!, category_id: uuid!}, consumers: [search, intelligence], trigger: Document stored (search indexed unless special category)}
   DOC.INDEXED: {producer: records, aggregate: document_index, payload: {document_id: uuid!, char_count: int_u!}, consumers: [search], trigger: Document metadata and text indexed for full-text search (CR-007)}
+  DOC.RENDITION_CREATED: {producer: records, aggregate: document_rendition, payload: {document_id: uuid!, kind: enum(rendition_kind)!}, consumers: [search], trigger: Searchable access copy made from the master (CR-008)}
+  DOC.RELEASED: {producer: records, aggregate: document_release, payload: {document_id: uuid!, kind: enum(release_kind)!, release_code: code(16)!}, consumers: [security_monitoring], trigger: A copy of a document left the system, stamped or certified (CR-008)}
   DOC.LINKED: {producer: records, aggregate: document_link, payload: {document_link_id: uuid!, record_kind: code(40)!, record_id: uuid!}, consumers: [search], trigger: Document linked to a record}
 
   # ---------------------------------------------------------------- finance & financing

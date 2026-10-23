@@ -28,6 +28,7 @@ IMPLEMENTED: dict[str, str] = {
     "STI-04": "security_intake",
     "AUT-02": "mfa_challenge",
     "AUT-03": "workspace",
+    "HOM-04": "profile",
     "CMD-101": "control_room",
     "CMD-102": "league",
     "FIN-02": "budget_execution",
@@ -48,6 +49,7 @@ IMPLEMENTED: dict[str, str] = {
     "DOC-105": "document_view",
     "DOC-107": "document_upload",
     "DOC-108": "school_documents",
+    "DOC-109": "releases_page",
 }
 # Pages served for any signed-in user, independent of role lists
 UNIVERSAL = {"home", "catalogue", "forms_hub", "form_page"}

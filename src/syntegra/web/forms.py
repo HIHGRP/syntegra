@@ -2114,6 +2114,19 @@ def level(form: Form) -> str:
     return pages.entry_level(page_id) if page_id else "internal"
 
 
+def write_levels() -> dict[str, str]:
+    """Each form permission's level (the highest of the forms that use it), for the API's writes (FR-ADM-203)."""
+    from syntegra.core.context import class_rank
+
+    out: dict[str, str] = {}
+    for f in FORMS:
+        lv = level(f)
+        for p in (f.permission,) if isinstance(f.permission, str) else f.permission:
+            if p not in out or class_rank(lv) > class_rank(out[p]):
+                out[p] = lv
+    return out
+
+
 def require_level(form: Form, ctx: context.Context) -> None:
     from syntegra.core import access
     from syntegra.core.errors import Forbidden

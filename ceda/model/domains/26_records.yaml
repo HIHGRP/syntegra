@@ -61,7 +61,7 @@ entities:
     history: lifecycle
     scope: owned
     origin: appj
-    reqs: [FR-DOC-103, FR-DOC-109, FR-DOC-110, FR-DOC-111, FR-DOC-112, FR-DOC-116, FR-INT-03, FR-INT-101, FR-DOC-201, FR-DOC-202, FR-DOC-205, FR-DOC-206]
+    reqs: [FR-DOC-103, FR-DOC-109, FR-DOC-110, FR-DOC-111, FR-DOC-112, FR-DOC-116, FR-INT-03, FR-INT-101, FR-DOC-201, FR-DOC-202, FR-DOC-205, FR-DOC-206, FR-DOC-301]
     pages: [DOC-105, DOC-104, AIX-02, HOM-05, DOC-107, DOC-108]
     events: [DOC.INGESTED, DOC.LINKED]
     notes: >
@@ -87,6 +87,9 @@ entities:
       - "batch_id: ref(digitisation_batch)"
       - "page_range: str(40)"
       - "master_object_key: object_key! | WORM bucket"
+      - "master_store: code(20) | Where the master is held: s3 (object storage) or fs (development only) (CR-008)"
+      - "master_lock_mode: enum(object_lock_mode) | Object lock on the master: compliance in production (CR-008)"
+      - "master_retain_until: date | The master cannot be changed or deleted before this date (CR-008)"
       - "access_object_key: object_key | Derived access copy (PDF/A-2b)"
       - "mime_type: mime!"
       - "size_bytes: bigint!"
@@ -127,6 +130,59 @@ entities:
       - "indexed_at: ts!"
     ix: [[institution_id]]
     fulltext: [[title, keywords, body_text]]
+
+  document_rendition:
+    title: Derived copy of a document's master — the searchable PDF access copy (page images with the OCR text laid invisibly over them)
+    kind: transaction
+    class: confidential
+    history: none
+    origin: ceda
+    scope_note: Inherits the document's scope and access level.
+    reqs: [FR-DOC-302]
+    pages: [DOC-105]
+    events: [DOC.RENDITION_CREATED]
+    notes: >
+      The master is never altered (CR-008). A rendition is a new write-once object with its own SHA-256, made from the
+      master whose hash it records, so the copy can always be traced back to the exact original it came from.
+    attrs:
+      - "document_id: ref(document)!"
+      - "kind: enum(rendition_kind)!"
+      - "object_key: object_key!"
+      - "store: code(20)! | s3 or fs"
+      - "mime_type: mime!"
+      - "size_bytes: bigint!"
+      - "sha256: hash! | Of the rendition"
+      - "source_sha256: hash! | Of the master it was made from"
+      - "pages: int_u!"
+      - "generator: str(120)! | Software and version that made it, e.g. Tesseract 5.5.3"
+    uq: [[document_id, kind]]
+
+  document_release:
+    title: Release register — every copy of a document that left the system, stamped with recipient, time, purpose and release code
+    kind: event
+    class: confidential
+    history: append
+    origin: ceda
+    scope_note: Inherits the document's scope.
+    reqs: [FR-DOC-303, FR-DOC-304, FR-DOC-305]
+    pages: [DOC-109, DOC-105]
+    events: [DOC.RELEASED]
+    notes: >
+      The release code printed on every page of a stamped copy is random and carries no personal data; looking it up
+      shows the document, recipient, purpose, time and the hash of the bytes released. Certified true copies (unstamped,
+      byte for byte the master) need document:certify and a reason (CR-008).
+    attrs:
+      - "document_id: ref(document)!"
+      - "release_code: code(16)! uq | Printed on every page of the copy"
+      - "kind: enum(release_kind)!"
+      - "released_to: uuid! | User who received the copy"
+      - "released_to_name: name! pii | As printed on the copy"
+      - "purpose: code(40) | Declared purpose (restricted documents)"
+      - "reason: str(500) | Why a certified true copy was needed"
+      - "sha256: hash! | Of the bytes released"
+      - "size_bytes: bigint!"
+      - "released_at: ts!"
+    ix: [[document_id, released_at], [released_to, released_at]]
 
   document_link:
     title: Link from a document to a person or record (learner, staff, guardian, institution, case …) — powers every 360 Documents tab

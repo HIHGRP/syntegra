@@ -42,6 +42,9 @@ erDiagram
         BINARY_16_ batch_id FK
         VARCHAR_40_ page_range
         VARCHAR_1024_ master_object_key
+        VARCHAR_20_ master_store
+        VARCHAR_32_ master_lock_mode
+        DATE master_retain_until
         VARCHAR_1024_ access_object_key
         VARCHAR_127_ mime_type
         BIGINT size_bytes
@@ -64,6 +67,32 @@ erDiagram
         VARCHAR_32_ text_source
         INT char_count
         DATETIME_6_ indexed_at
+    }
+    document_rendition {
+        BINARY_16_ id PK
+        BINARY_16_ document_id FK
+        VARCHAR_32_ kind
+        VARCHAR_1024_ object_key
+        VARCHAR_20_ store
+        VARCHAR_127_ mime_type
+        BIGINT size_bytes
+        BINARY_32_ sha256
+        BINARY_32_ source_sha256
+        INT pages
+        VARCHAR_120_ generator
+    }
+    document_release {
+        BINARY_16_ id PK
+        BINARY_16_ document_id FK
+        VARCHAR_16_ release_code
+        VARCHAR_32_ kind
+        BINARY_16_ released_to
+        VARCHAR_200_ released_to_name
+        VARCHAR_40_ purpose
+        VARCHAR_500_ reason
+        BINARY_32_ sha256
+        BIGINT size_bytes
+        DATETIME_6_ released_at
     }
     document_link {
         BINARY_16_ id PK
@@ -195,6 +224,8 @@ erDiagram
     digitisation_batch ||--o{ scanned_page : "batch_id"
     digitisation_site_survey ||--o{ digitisation_batch : "survey_id"
     document ||--o{ document_link : "document_id"
+    document ||--o{ document_release : "document_id"
+    document ||--o{ document_rendition : "document_id"
     document ||--o{ redaction : "document_id"
     document ||--o{ scanned_page : "document_id"
     document ||--o| document_index : "document_id"

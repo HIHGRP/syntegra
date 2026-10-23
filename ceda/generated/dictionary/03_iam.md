@@ -8,6 +8,7 @@ Module (system of record): `iam` · default zone: **registry** · default retent
 |---|---|---|---|---|---|
 | [`app_user`](#registry-app_user) | registry | master | confidential | lifecycle | Sign-in identity (a person may also be a learner, guardian or staff member) — Administrator 360 root |
 | [`mfa_factor`](#registry-mfa_factor) | registry | master | restricted | lifecycle | Multi-factor authentication factor (TOTP, FIDO2 passkey, SMS/e-mail OTP fallback) |
+| [`mfa_recovery_code`](#registry-mfa_recovery_code) | registry | transaction | restricted | lifecycle | Single-use recovery code for the second factor (ten issued at enrolment, shown once, stored as keyed hashes) |
 | [`user_session`](#registry-user_session) | registry | transaction | confidential | lifecycle | Server-side session (idle timeout 30 min for restricted/special roles, 8 h otherwise) |
 | [`credential_reset`](#registry-credential_reset) | registry | transaction | confidential | lifecycle | Password-reset or magic-link token (hashed, single use, short expiry; generic responses) |
 | [`identity_provider_config`](#registry-identity_provider_config) | registry | config | restricted | lifecycle | Federated sign-in provider of a state (OpenID Connect — government IdP, Microsoft Entra ID, Google Workspace) |
@@ -82,7 +83,7 @@ Multi-factor authentication factor (TOTP, FIDO2 passkey, SMS/e-mail OTP fallback
 | Module | `iam` |
 | Origin | ceda |
 | Retention | `RS-IAM` |
-| Requirements | FR-ADM-03, FR-AUT-01, FR-AUT-02, FR-AUT-03 |
+| Requirements | FR-ADM-03, FR-AUT-01, FR-AUT-02, FR-AUT-03, FR-AUT-104, FR-AUT-105 |
 | Pages | AUT-02, HOM-04 |
 
 | Column | MySQL type | Null | Class | Description |
@@ -102,6 +103,41 @@ Multi-factor authentication factor (TOTP, FIDO2 passkey, SMS/e-mail OTP fallback
 | `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
 | `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
 | `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
+
+<a id="registry-mfa_recovery_code"></a>
+## `mfa_recovery_code`
+
+Single-use recovery code for the second factor (ten issued at enrolment, shown once, stored as keyed hashes)
+
+| | |
+|---|---|
+| Zone | registry |
+| Kind | transaction |
+| Classification | restricted |
+| History | lifecycle |
+| Scope | none |
+| Module | `iam` |
+| Origin | ceda |
+| Retention | `RS-IAM` |
+| Requirements | FR-AUT-02, FR-AUT-105 |
+| Pages | AUT-02, HOM-04 |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `id` **PK** | `BINARY(16)` | no |  | Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap |
+| `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `user_id` → `app_user` | `BINARY(16)` | no |  |  |
+| `code_hash` | `BINARY(32)` | no |  | Keyed hash of the code; the code itself is never stored |
+| `used_at` | `DATETIME(6)` | yes |  |  |
+| `status` | `VARCHAR(32)` | no |  | values: active, inactive, retired |
+| `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
+| `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+| `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
+| `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
+| `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
+
+- Unique: (tenant_id, code_hash)
+- Index: (tenant_id, user_id, status)
 
 <a id="registry-user_session"></a>
 ## `user_session`
@@ -205,8 +241,8 @@ Federated sign-in provider of a state (OpenID Connect — government IdP, Micros
 | Module | `iam` |
 | Origin | ceda |
 | Retention | `RS-IAM` |
-| Requirements | FR-AUT-04, FR-AUT-05, FR-AUT-06 |
-| Pages | AUT-01 |
+| Requirements | FR-AUT-04, FR-AUT-05, FR-AUT-06, FR-AUT-106 |
+| Pages | AUT-01, ADM-103 |
 
 | Column | MySQL type | Null | Class | Description |
 |---|---|---|---|---|

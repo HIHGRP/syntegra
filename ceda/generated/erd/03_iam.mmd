@@ -27,6 +27,13 @@ erDiagram
         BIGINT last_step
         VARCHAR_32_ status
     }
+    mfa_recovery_code {
+        BINARY_16_ id PK
+        BINARY_16_ user_id FK
+        BINARY_32_ code_hash
+        DATETIME_6_ used_at
+        VARCHAR_32_ status
+    }
     user_session {
         BINARY_16_ id PK
         BINARY_16_ user_id FK
@@ -156,6 +163,7 @@ erDiagram
     app_user ||--o{ break_glass_grant : "user_id"
     app_user ||--o{ credential_reset : "user_id"
     app_user ||--o{ mfa_factor : "user_id"
+    app_user ||--o{ mfa_recovery_code : "user_id"
     app_user ||--o{ role_grant : "granted_by"
     app_user ||--o{ role_grant : "user_id"
     app_user ||--o{ service_identity : "owner_user_id"

@@ -105,6 +105,8 @@ def page(
             sess = getattr(request, "syntegra_session", None)
             if not public and mfa and sess is not None and getattr(sess, "mfa_pending", False):
                 return HttpResponseRedirect(f"/auth/mfa?{urlencode({'next': request.get_full_path()})}")
+            if not public and mfa and sess is not None and getattr(sess, "mfa_setup_pending", False):
+                return HttpResponseRedirect(f"/me/authenticator?{urlencode({'next': request.get_full_path()})}")
             if (
                 not public
                 and confirm
@@ -165,6 +167,8 @@ def sign_in(request: HttpRequest) -> HttpResponse:
             nxt = f"/auth/context?{urlencode({'next': _safe_next(request.GET.get('next'))})}"
             if r.mfa_required:
                 nxt = f"/auth/mfa?{urlencode({'next': nxt})}"
+            elif r.mfa_setup_required:  # roles that need a second factor, and none set up yet (FR-AUT-104)
+                nxt = f"/me/authenticator?{urlencode({'next': nxt})}"
             resp = HttpResponseRedirect(nxt)
             resp.set_cookie(
                 settings.SESSION_COOKIE_NAME,
@@ -799,6 +803,91 @@ def mfa_challenge(request: HttpRequest) -> HttpResponse:
     )
 
 
+# --------------------------------------------------------------------------- my profile and second factor (HOM-04)
+def _token(request: HttpRequest) -> str:
+    from syntegra.core.middleware import session_token
+
+    token, _ = session_token(request)
+    return token or ""
+
+
+@require_http_methods(["GET"])
+@page("HOM-04")
+def profile(request: HttpRequest) -> HttpResponse:
+    """HOM-04: my account — roles, this session, and the second factor (authenticators and recovery codes)."""
+    from syntegra.iam import mfa
+    from syntegra.iam import services as iam
+    from syntegra.iam.models import AppUser
+
+    c = context.require()
+    u = AppUser.objects.get(pk=c.actor_id)
+    return render(
+        request,
+        "profile.html",
+        _ctx(request, me=u, grants=iam.user_grants(u), mfa=mfa.status(_token(request)), page=pages.page("HOM-04")),
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page(confirm=False, mfa=False)
+def authenticator(request: HttpRequest) -> HttpResponse:
+    """Set up an authenticator app: scan the QR code, type its first code, keep the ten recovery codes (FR-AUT-105).
+    Straight after the password for users whose roles need a second factor and who have none (FR-AUT-104)."""
+    from syntegra.iam import mfa
+
+    sess = getattr(request, "syntegra_session", None)
+    nxt = _safe_next(request.GET.get("next") or "/me")
+    if sess is not None and getattr(sess, "mfa_pending", False):  # an account with a factor proves it first
+        return HttpResponseRedirect(f"/auth/mfa?{urlencode({'next': request.get_full_path()})}")
+    token = _token(request)
+    error = None
+    if request.method == "POST":
+        try:
+            factor = _uuid_or_fail(request.POST.get("factor_id", ""), "factor")
+            codes = mfa.confirm(token, factor, request.POST.get("code", ""))
+            page_meta = pages.page("HOM-04")
+            return render(
+                request, "recovery_codes.html", _ctx(request, codes=codes, next=nxt, enrolled=True, page=page_meta)
+            )
+        except DomainError as exc:
+            error = f"{exc.title}. {exc.detail}" if exc.detail else exc.title
+    try:
+        enrol = mfa.begin(token, request.POST.get("label") or "Authenticator app")
+    except DomainError as exc:
+        return render(request, "error.html", _ctx(request, problem=exc.problem()), status=exc.status)
+    return render(
+        request,
+        "authenticator.html",
+        _ctx(
+            request,
+            enrol=enrol,
+            next=nxt,
+            error=error,
+            required=getattr(sess, "mfa_setup_pending", False),
+            page=pages.page("HOM-04"),
+        ),
+        status=422 if error else 200,
+    )
+
+
+@require_http_methods(["POST"])
+@page("HOM-04")
+def authenticator_remove(request: HttpRequest, factor_id: uuid.UUID) -> HttpResponse:
+    from syntegra.iam import mfa
+
+    mfa.remove(_token(request), factor_id)
+    return HttpResponseRedirect("/me?removed=1")
+
+
+@require_http_methods(["POST"])
+@page("HOM-04")
+def recovery_codes(request: HttpRequest) -> HttpResponse:
+    from syntegra.iam import mfa
+
+    codes = mfa.regenerate(_token(request))
+    return render(request, "recovery_codes.html", _ctx(request, codes=codes, next="/me", page=pages.page("HOM-04")))
+
+
 @require_http_methods(["GET", "POST"])
 @page("AUT-03", confirm=False)
 def workspace(request: HttpRequest) -> HttpResponse:
@@ -1373,12 +1462,16 @@ def document_view(request: HttpRequest, document_id: uuid.UUID) -> HttpResponse:
 @require_http_methods(["GET"])
 @page("DOC-105")
 def document_file(request: HttpRequest, document_id: uuid.UUID) -> HttpResponse:
-    """The scan itself (hash-verified), shown inline or downloaded; every read is audited."""
-    from syntegra.records import services as rec
+    """A stamped copy of the scan (or of its searchable copy), shown inline or downloaded; each one is entered in the
+    release register (CR-008)."""
+    from syntegra.records import evidence
 
     c = context.require()
-    data, mime, name = rec.content(c, document_id, request.GET.get("purpose") or None)
+    kind = "stamped_searchable" if request.GET.get("kind") == "searchable" else "stamped_original"
+    r = evidence.release(c, document_id, kind, purpose=request.GET.get("purpose") or None)
+    data, mime, name = r.data, r.mime, r.filename
     resp = HttpResponse(data, content_type=mime)
+    resp["X-Syntegra-Release"] = r.code
     disposition = "attachment" if request.GET.get("download") else "inline"
     resp["Content-Disposition"] = f'{disposition}; filename="{name}"'
     resp["Cache-Control"] = "no-store"
@@ -1386,6 +1479,53 @@ def document_file(request: HttpRequest, document_id: uuid.UUID) -> HttpResponse:
     if mime == "text/plain":
         resp["Content-Security-Policy"] = "default-src 'none'; sandbox"
     return resp
+
+
+@require_http_methods(["POST"])
+@page("DOC-105")
+def document_certified(request: HttpRequest, document_id: uuid.UUID) -> HttpResponse:
+    """A certified true copy of the master — byte for byte, unstamped — with a reason (CR-008, FR-DOC-305)."""
+    from syntegra.records import evidence
+
+    c = context.require()
+    r = evidence.release(
+        c,
+        document_id,
+        "certified_original",
+        purpose=request.GET.get("purpose") or None,
+        reason=request.POST.get("reason", ""),
+    )
+    resp = HttpResponse(r.data, content_type=r.mime)
+    resp["Content-Disposition"] = f'attachment; filename="{r.filename}"'
+    resp["Cache-Control"] = "no-store"
+    resp["X-Syntegra-Release"] = r.code
+    return resp
+
+
+@require_http_methods(["GET", "POST"])
+@page("DOC-109")
+def releases_page(request: HttpRequest) -> HttpResponse:
+    """DOC-109: copies of documents that left the system, and checking a presented copy by its release code."""
+    from syntegra.records import evidence
+
+    c = context.require()
+    code = (request.POST.get("code") or request.GET.get("code") or "").strip()
+    doc = request.GET.get("document") or ""
+    found = None
+    error = None
+    if code:
+        up = request.FILES.get("file")
+        try:
+            found = evidence.lookup(c, code, up.read() if up else None)
+        except DomainError as exc:
+            error = exc.detail or exc.title
+    rows = evidence.releases(c, document_id=_uuid_or_fail(doc, "document") if doc else None)
+    return render(
+        request,
+        "releases.html",
+        _ctx(request, rows=rows, found=found, code=code, error=error, document=doc, page=pages.page("DOC-109")),
+        status=404 if error else 200,
+    )
 
 
 @require_http_methods(["GET"])

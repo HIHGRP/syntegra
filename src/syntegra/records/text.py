@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import io
 import os
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -29,10 +29,28 @@ MIN_LAYER_CHARS = 40  # a PDF with less text than this per page is treated as a 
 
 
 @dataclass(frozen=True)
+class OcrWord:
+    text: str
+    box: tuple[int, int, int, int]  # left, top, right, bottom in page pixels
+
+
+@dataclass(frozen=True)
+class OcrPage:
+    """One page as OCR saw it: the greyscale image, its resolution and the words with their positions — enough to
+    lay the text invisibly over the image in a searchable PDF (CR-008)."""
+
+    image: Any  # PIL.Image.Image, greyscale
+    dpi: float
+    words: tuple[OcrWord, ...]
+    text: str
+
+
+@dataclass(frozen=True)
 class Extracted:
     text: str
     source: str  # text_source enum: none, pdf_text_layer, text_file, transcription, …, ocr
     pages: int
+    ocr: tuple[OcrPage, ...] = ()  # the OCR'd pages, when the text came from OCR
 
 
 def sniff(data: bytes) -> str | None:
@@ -83,60 +101,71 @@ def ocr_available() -> bool:
     return True
 
 
-def _ocr_images(images: Iterable[Any]) -> str:
-    """Text of each page image (Pillow images), pages separated by a form feed."""
+def ocr_pages(images: Iterable[tuple[Any, float]]) -> list[OcrPage]:
+    """OCR each (Pillow image, dpi): its text and the position of every word."""
     import tesserocr
     from PIL import Image
 
-    out: list[str] = []
+    out: list[OcrPage] = []
     with tesserocr.PyTessBaseAPI(path=tessdata_dir(), lang="eng", psm=tesserocr.PSM.AUTO) as api:
-        for img in images:
+        for img, dpi in images:
             page = img.convert("L")
             if page.width * page.height > MAX_OCR_PIXELS:
                 scale = (MAX_OCR_PIXELS / (page.width * page.height)) ** 0.5
                 page = page.resize((int(page.width * scale), int(page.height * scale)), Image.Resampling.LANCZOS)
+                dpi *= scale
             api.SetImage(page)
-            out.append(api.GetUTF8Text() or "")
-    return "\n\f".join(out)
+            api.Recognize()
+            words: list[OcrWord] = []
+            level = tesserocr.RIL.WORD
+            for r in tesserocr.iterate_level(api.GetIterator(), level):
+                word = (r.GetUTF8Text(level) or "").strip()
+                box = r.BoundingBox(level)
+                if word and box:
+                    words.append(OcrWord(word, tuple(int(v) for v in box)))  # type: ignore[arg-type]
+            out.append(OcrPage(page, dpi, tuple(words), api.GetUTF8Text() or ""))
+    return out
 
 
-def _ocr_image(data: bytes) -> str:
-    """A JPEG, PNG or (multi-page) TIFF scan."""
+def page_images(data: bytes, mime: str) -> list[tuple[Any, float]]:
+    """The pages of a scan as (Pillow image, dpi): PDF pages rendered at 200 dpi; image frames as they are."""
     from PIL import Image, ImageSequence, UnidentifiedImageError
 
-    if not ocr_available():
-        return ""
+    if mime == PDF:
+        import pypdfium2 as pdfium
+
+        try:
+            pdf = pdfium.PdfDocument(data)
+        except pdfium.PdfiumError:
+            return []
+        try:
+            return [
+                (pdf[i].render(scale=OCR_DPI / 72, grayscale=True).to_pil(), float(OCR_DPI))
+                for i in range(min(len(pdf), MAX_OCR_PAGES))
+            ]
+        finally:
+            pdf.close()
     try:
         with Image.open(io.BytesIO(data)) as img:
-            frames = [f.copy() for _, f in zip(range(MAX_OCR_PAGES), ImageSequence.Iterator(img), strict=False)]
+            out = []
+            for _, f in zip(range(MAX_OCR_PAGES), ImageSequence.Iterator(img), strict=False):
+                dpi = f.info.get("dpi", (OCR_DPI, OCR_DPI))[0] or OCR_DPI
+                out.append((f.copy(), float(dpi if 50 <= dpi <= 1200 else OCR_DPI)))
+            return out
     except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
-        return ""
-    return _ocr_images(frames)
+        return []
 
 
-def _ocr_pdf(data: bytes) -> str:
-    """A scanned PDF: each page rendered at 200 dpi, then read."""
-    import pypdfium2 as pdfium
-
+def _ocr(data: bytes, mime: str) -> list[OcrPage]:
     if not ocr_available():
-        return ""
-    try:
-        pdf = pdfium.PdfDocument(data)
-    except pdfium.PdfiumError:
-        return ""
-    try:
-
-        def rendered() -> Iterator[Any]:
-            for i in range(min(len(pdf), MAX_OCR_PAGES)):
-                yield pdf[i].render(scale=OCR_DPI / 72, grayscale=True).to_pil()
-
-        return _ocr_images(rendered())
-    finally:
-        pdf.close()
+        return []
+    images = page_images(data, mime)
+    return ocr_pages(images) if images else []
 
 
 def extract(data: bytes, mime: str, transcription: str = "") -> Extracted:
     text, source, pages = "", "none", 1
+    ocr: list[OcrPage] = []
     if mime == PDF:
         from pypdf import PdfReader
 
@@ -149,12 +178,14 @@ def extract(data: bytes, mime: str, transcription: str = "") -> Extracted:
         if len(text.strip()) >= MIN_LAYER_CHARS * max(1, pages) // 2:
             source = "pdf_text_layer"
         else:
-            text = _ocr_pdf(data)
+            ocr = _ocr(data, mime)
+            text = "\n\f".join(p.text for p in ocr)
             source = "ocr" if text.strip() else "none"
     elif mime == TEXT:
         text, source = data.decode("utf-8", "replace"), "text_file"
     elif mime in IMAGES:
-        text = _ocr_image(data)
+        ocr = _ocr(data, mime)
+        text = "\n\f".join(p.text for p in ocr)
         source = "ocr" if text.strip() else "none"
     transcription = (transcription or "").strip()
     if transcription:
@@ -163,7 +194,9 @@ def extract(data: bytes, mime: str, transcription: str = "") -> Extracted:
         else:
             text = f"{text}\n\n{transcription}"
             source = "pdf_text_layer_and_transcription" if source == "pdf_text_layer" else source
-    return Extracted(text=_clean(text), source=source, pages=pages)
+    if ocr and mime in IMAGES:
+        pages = len(ocr)
+    return Extracted(text=_clean(text), source=source, pages=pages, ocr=tuple(ocr) if source == "ocr" else ())
 
 
 def _clean(text: str) -> str:

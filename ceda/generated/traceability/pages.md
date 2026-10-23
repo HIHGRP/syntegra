@@ -1,6 +1,6 @@
 # Page → data traceability
 
-Every one of the 260 pages in SYN-MFS-002 v2.4 and the 32 pages added by change requests is served by at least one CEDA entity or metric. Generated; do not edit.
+Every one of the 260 pages in SYN-MFS-002 v2.4 and the 34 pages added by change requests is served by at least one CEDA entity or metric. Generated; do not edit.
 
 | Page | Source | Title | Module | Phase | CEDA entities and metrics | MFS master objects |
 |---|---|---|---|---|---|---|
@@ -25,6 +25,7 @@ Every one of the 260 pages in SYN-MFS-002 v2.4 and the 32 pages added by change 
 | ADM-10 | MFS | Data governance | Platform administration | P1 | `legal_hold`, `privacy_request`, `record_series` | DataSubjectRequest, RetentionRule |
 | ADM-101 | CR-007 | Access levels | Administration | P1 | `role`, `role_grant` |  |
 | ADM-102 | CR-007 | Active sessions | Administration | P1 | `user_session` |  |
+| ADM-103 | CR-008 | Sign-in providers | Administration | P1 | `identity_provider_config` |  |
 | ADM-11 | MFS | Audit log | Platform administration | P1 | `audit_anchor`, `audit_chain_head`, `audit_event`, `break_glass_grant`, `outbox_event` | AuditEvent |
 | ADM-12 | MFS | Languages | Platform administration | P1 | `config_version`, `translation` | Language |
 | ADM-13 | MFS | Branding | Platform administration | P1 | `config_version`, `tenant_domain` | Branding |
@@ -52,7 +53,7 @@ Every one of the 260 pages in SYN-MFS-002 v2.4 and the 32 pages added by change 
 | ATT-102 | MFS | Register compliance | Attendance | P1 | `attendance_register`, `metric:REG-COMPLIANCE` |  |
 | ATT-103 | MFS | Parent-reported absences | Attendance | P1 | `absence_report` |  |
 | AUT-01 | MFS | Sign in | Access | P1 | `app_user`, `credential_reset`, `identity_provider_config`, `tenant_domain`, `user_session` | User, Session |
-| AUT-02 | MFS | Multi-factor verification | Access | P1 | `mfa_factor` |  |
+| AUT-02 | MFS | Multi-factor verification | Access | P1 | `mfa_factor`, `mfa_recovery_code` |  |
 | AUT-03 | MFS | Choose workspace | Access | P1 | `app_user`, `role_grant`, `scope_node`, `user_session` | User, RoleGrant, Scope |
 | AUT-04 | MFS | Reset password | Access | P1 | `credential_reset` |  |
 | BEH-01 | MFS | Log behaviour | Behaviour | P2 | `behaviour_event`, `behaviour_type` | BehaviourEvent, Learner 360 |
@@ -122,10 +123,11 @@ Every one of the 260 pages in SYN-MFS-002 v2.4 and the 32 pages added by change 
 | DOC-102 | MFS | Batches and custody | Records & archives | P1 | `custody_event`, `digitisation_batch` |  |
 | DOC-103 | MFS | Indexing and QA workstation | Records & archives | P1 | `extracted_field`, `qa_sample`, `scanned_page` |  |
 | DOC-104 | MFS | Records search | Records & archives | P1 | `document`, `document_index`, `legacy_award`, `record_request` |  |
-| DOC-105 | MFS | Document viewer | Records & archives | P1 | `document`, `document_link`, `redaction` |  |
+| DOC-105 | MFS | Document viewer | Records & archives | P1 | `document`, `document_link`, `document_release`, `document_rendition`, `redaction` |  |
 | DOC-106 | MFS | File plan and retention | Records & archives | P1 | `disposal`, `document_category`, `legal_hold`, `record_series` |  |
 | DOC-107 | CR-007 | Upload documents | Records | P2 | `document` |  |
 | DOC-108 | CR-007 | School documents | Records | P2 | `document`, `document_index` |  |
+| DOC-109 | CR-008 | Release register | Records | P2 | `document_release` |  |
 | EST-01 | CR-006 | Government property register | Estate | P3 | `facility_assessment`, `property_site` |  |
 | EST-02 | CR-006 | Facility actions | Estate | P3 | `facility_action`, `facility_assessment`, `maintenance_schedule`, `metric:EST-ACTIONS-ON-TIME`, `metric:EST-UNSAFE-IN-USE` |  |
 | EST-03 | CR-006 | State infrastructure overview | Estate | P3 | `facility_action`, `metric:EST-ACTIONS-ON-TIME`, `metric:EST-INFRA-INDEX`, `metric:EST-LEARNERS-PER-USABLE-CLASSROOM`, `metric:EST-REPAIR-BACKLOG`, `metric:EST-UNSAFE-IN-USE`, `metric:EST-USABLE-CLASSROOMS` |  |
@@ -168,7 +170,7 @@ Every one of the 260 pages in SYN-MFS-002 v2.4 and the 32 pages added by change 
 | HOM-01 | MFS | My briefing | Home | P6 | `alert`, `user_pin` | Alert, Education Administrator 360 |
 | HOM-02 | MFS | Notifications | Home | P1 | `message`, `notification` | Notification |
 | HOM-03 | MFS | My tasks | Home | P1 | `workflow_instance`, `workflow_task`, `workflow_transition` | WorkflowInstance, Task |
-| HOM-04 | MFS | My profile & preferences | Home | P1 | `app_user`, `mfa_factor`, `user_pin`, `user_session` |  |
+| HOM-04 | MFS | My profile & preferences | Home | P1 | `app_user`, `mfa_factor`, `mfa_recovery_code`, `user_pin`, `user_session` |  |
 | HOM-05 | MFS | Search | Home | P1 | `document`, `institution`, `learner`, `staff` |  |
 | HOM-06 | MFS | Education assistant | Intelligence | P7 | `assistant_conversation` | All permitted 360 objects |
 | HRM-01 | CR-001 | Establishment and vacancies | Human resources | P2 | `metric:HR-ESTAB-FILL`, `metric:HR-VACANCIES`, `position` |  |

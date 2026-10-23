@@ -34,6 +34,7 @@ from syntegra.core.errors import DomainError, Forbidden
 from syntegra.core.fields import utcnow
 from syntegra.core.tenancy import TenantInfo
 from syntegra.core.zones import current_alias
+from syntegra.iam import mfa as mfa_mod
 from syntegra.iam.models import AppUser, MfaFactor, Role, RoleGrant, UserSession
 
 _hasher = PasswordHasher(time_cost=3, memory_cost=65536, parallelism=2)
@@ -111,6 +112,7 @@ class SignIn:
     user_id: uuid.UUID
     mfa_required: bool
     grants: list[dict[str, object]]
+    mfa_setup_required: bool = False  # roles need a second factor and the account has none: enrol first (FR-AUT-104)
 
 
 def _alias() -> str:
@@ -272,11 +274,14 @@ def sign_in(
                 )
             else:
                 token, session_id, mfa, grants = _open_session(alias, user, ctx, password, ip, ua, now)
+                setup = not mfa and mfa_mod.required_for(alias, user)
     if failed:
         raise AuthFailed()
     if refused is not None:
         raise SessionInUse(refused, in_use_window())
-    return SignIn(token=token, session_id=session_id, user_id=user.id, mfa_required=mfa, grants=grants)
+    return SignIn(
+        token=token, session_id=session_id, user_id=user.id, mfa_required=mfa, grants=grants, mfa_setup_required=setup
+    )
 
 
 def in_use_window() -> dt.timedelta:
@@ -369,7 +374,8 @@ def totp_step(secret_b32: str, code: str, at: float | None = None) -> int | None
 
 def verify_mfa(token: str, code: str) -> None:
     """Second factor for a signed-in session. Wrong codes count with wrong passwords towards the account lock (five
-    within ten minutes lock it for fifteen), and a code is accepted once only (``mfa_factor.last_step``)."""
+    within ten minutes lock it for fifteen), and a code is accepted once only (``mfa_factor.last_step``). A recovery
+    code (``XXXXX-XXXXX``) stands in for the app once (FR-AUT-105)."""
     alias = _alias()
     now = utcnow()
     failed = False
@@ -387,11 +393,13 @@ def verify_mfa(token: str, code: str) -> None:
         if user.locked_until and user.locked_until > now:
             raise AuthFailed("The account is locked after repeated failures. Try again later.", "AUTH-LOCKED")
         ctx = Context(tenant_id=s.tenant_id, state_tenant_id=s.tenant_id, actor_kind="user", actor_id=user.id)
-        for f in (
+        factors = list(
             MfaFactor.unscoped.using(alias)
             .select_for_update()
             .filter(tenant_id=s.tenant_id, user_id=s.user_id, status="active", factor_type="totp")
-        ):
+        )
+        has_active = bool(factors)
+        for f in factors:
             seed = crypto.decrypt(bytes(f.secret_enc or b""), purpose="mfa", tenant_id=s.tenant_id)
             step = totp_step(seed, code)
             if step is not None and (f.last_step is None or step > f.last_step):
@@ -403,6 +411,17 @@ def verify_mfa(token: str, code: str) -> None:
                 user.failed_attempts = 0
                 user.save(using=alias)
                 audit.write_event(alias, ctx, action="mfa_verified", record_kind="user_session", record_id=s.id)
+                return
+        if mfa_mod.looks_like_recovery_code(code) and has_active:
+            rc = mfa_mod.use_recovery_code(alias, user, code, now)
+            if rc is not None:
+                s.mfa_at = now
+                s.save(using=alias)
+                user.failed_attempts = 0
+                user.save(using=alias)
+                audit.write_event(
+                    alias, ctx, action="mfa_recovery_code_used", record_kind="mfa_recovery_code", record_id=rc.id
+                )
                 return
         recent = now - (user.updated_at or now) <= LOCK_WINDOW
         user.failed_attempts = (user.failed_attempts if recent else 0) + 1
@@ -529,12 +548,21 @@ def resolve(token: str, base: Context) -> tuple[Context, UserSession] | None:
     if user is None or user.status != "active":
         _end(alias, s, "account_inactive")
         return None
-    mfa_needed = (
-        MfaFactor.unscoped.using(alias).filter(tenant_id=user.tenant_id, user_id=user.id, status="active").exists()
-    )
-    s.mfa_pending = bool(mfa_needed and not s.mfa_at)  # type: ignore[attr-defined]  # read by the page wrapper
+    has = mfa_mod.has_factor(alias, user)
+    # roles that need a second factor and none set up: enrolment first (FR-AUT-104); asked only until it is done
+    setup = not has and not s.mfa_at and mfa_mod.required_for(alias, user)
+    mfa_needed = has or setup
+    code_owed = bool(has and not s.mfa_at)
+    s.mfa_pending = code_owed  # type: ignore[attr-defined]  # read by the page wrapper
+    s.mfa_setup_pending = setup  # type: ignore[attr-defined]
+    pending = "mfa_setup" if setup else "mfa" if code_owed else None
     ctx = base.with_(
-        actor_kind="user", actor_id=user.id, clearance="public", permissions=frozenset(), scope_ids=frozenset()
+        actor_kind="user",
+        actor_id=user.id,
+        clearance="public",
+        permissions=frozenset(),
+        scope_ids=frozenset(),
+        auth_pending=pending,
     )
     # The grant applies once MFA is done and the school or office has been confirmed (FR-AUT-101) — on the pages
     # and the API alike. A grant that has ended since (revoked, expired, moved by a posting) is dropped from the

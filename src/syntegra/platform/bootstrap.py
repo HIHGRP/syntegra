@@ -108,8 +108,10 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "document:view",
             "document:search",
             "document:upload",
+            "document:releases",
             "access:manage",
             "session:manage",
+            "sso:manage",
         ],
     ),
     "LGA": (

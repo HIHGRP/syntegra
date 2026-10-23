@@ -26,6 +26,7 @@ from syntegra.core.context import CLASS_ORDER, Context, class_rank
 from syntegra.core.errors import Forbidden, HardValidation, NotFound
 from syntegra.core.fields import utcnow
 from syntegra.core.zones import current_alias
+from syntegra.records import evidence
 from syntegra.records import text as textmod
 from syntegra.records.models import Document, DocumentCategory, DocumentIndex, RecordSeries
 
@@ -288,8 +289,16 @@ def upload(
     prefix = f"{inst.institution_code}/{cat.code}/{year}"
     out: list[Document] = []
     with uow.command("records", "document:upload", action="upload", record_kind="document", ctx=ctx) as cmd:
+        captured = utcnow()
+        locked_until = evidence.retain_until(cat.code, captured.date())
         for f, mime in prepared:
-            stored = storage.put(f.data, prefix=f"records/{ctx.tenant_id}", ext=textmod.EXTENSIONS[mime])
+            stored = storage.put(
+                f.data,
+                prefix=f"records/{ctx.tenant_id}",
+                ext=textmod.EXTENSIONS[mime],
+                retain_until=locked_until,
+                content_type=mime,
+            )
             dup = Document.objects.filter(sha256=stored.sha256).exclude(status="disposed").first()
             if dup is not None:
                 raise HardValidation("DOC-DUPLICATE", "Already stored", _duplicate_detail(ctx, f.name, dup))
@@ -315,10 +324,13 @@ def upload(
                     origin="digitised",
                     page_range=f"1–{extracted.pages}",
                     master_object_key=stored.key,
+                    master_store=stored.store,
+                    master_lock_mode=stored.lock_mode,
+                    master_retain_until=stored.retain_until,
                     mime_type=mime,
                     size_bytes=stored.size,
                     sha256=stored.sha256,
-                    captured_at=utcnow(),
+                    captured_at=captured,
                     qa_status="pending",
                     status="active",
                 ),
@@ -349,6 +361,8 @@ def upload(
                     aggregate_kind="document_index",
                     payload={"document_id": str(doc.id), "char_count": len(extracted.text)},
                 )
+            if cls != "special":  # FR-DOC-302: a searchable access copy of a scan, beside the untouched master
+                evidence.make_searchable(cmd, doc, extracted)
             cmd.note("reference_no", None, doc.reference_no)
             out.append(doc)
     return out
@@ -603,42 +617,67 @@ def detail(ctx: Context, document_id: uuid.UUID, purpose: str | None = None) -> 
             "text_preview": (idx.body_text or "")[:1500] if idx else "",
             "indexed": idx is not None,
             "purpose": purpose,
+            "master": {
+                "store": d.master_store or "fs",
+                "lock_mode": d.master_lock_mode or "none",
+                "retain_until": d.master_retain_until,
+            },
+            "searchable": _rendition_info(d.id),
+            "can_certify": ctx.has("document:certify"),
+            "can_see_releases": ctx.has("document:releases"),
         }
     )
     return row
 
 
+def _rendition_info(document_id: uuid.UUID) -> dict[str, Any] | None:
+    r = evidence.searchable_copy(document_id)
+    if r is None:
+        return None
+    return {
+        "pages": r.pages,
+        "size_bytes": r.size_bytes,
+        "sha256": bytes(r.sha256).hex(),
+        "source_sha256": bytes(r.source_sha256).hex(),
+        "generator": r.generator,
+        "store": r.store,
+    }
+
+
 def content(ctx: Context, document_id: uuid.UUID, purpose: str | None = None) -> tuple[bytes, str, str]:
-    """The master file (hash-verified), its type and a download name."""
-    d = _load(ctx, document_id, purpose, "document_download")
-    data = storage.get(d.master_object_key, bytes(d.sha256))
-    name = f"{(d.reference_no or str(d.id)).replace('/', '-')}.{textmod.EXTENSIONS.get(d.mime_type, 'bin')}"
-    return data, d.mime_type, name
+    """A stamped copy of the scan for viewing or download, entered in the release register (CR-008)."""
+    r = evidence.release(ctx, document_id, "stamped_original", purpose=purpose)
+    return r.data, r.mime, r.filename
 
 
 def word_copy(ctx: Context, document_id: uuid.UUID, purpose: str | None = None) -> tuple[bytes, str]:
-    """An editable Word copy of the document's text, made on demand and never stored (the scan stays the record)."""
+    """An editable Word copy of the document's text, stamped and entered in the release register (the scan stays
+    the record)."""
+    r = evidence.release(ctx, document_id, "word_copy", purpose=purpose)
+    return r.data, r.filename
+
+
+def word_copy_bytes(d: Document, stamp: Any) -> bytes:
+    """The Word copy of one document's text, made on demand and never stored, carrying the release stamp."""
+    from syntegra.iam.services import format_address
     from syntegra.records import docx
 
-    info = detail(ctx, document_id, purpose)
-    d = Document.objects.get(pk=document_id)
+    inst = _institution(d.institution_id) if d.institution_id else None
     idx = DocumentIndex.objects.filter(document_id=d.id).first()
     body = (idx.body_text or "") if idx else ""
-    inst = info["institution"] or {}
+    cat = _cats().get(d.category_id)
     facts = [
         ("Reference", d.reference_no or ""),
-        ("School or institution", f"{inst.get('name', '')} ({inst.get('code', '')})"),
-        ("Address", inst.get("address", "")),
-        ("Category", info["category"]),
+        ("School or institution", f"{inst.name} ({inst.institution_code})" if inst else ""),
+        ("Address", format_address(inst.address) if inst else ""),
+        ("Category", cat.title if cat else ""),
         ("Dates", " – ".join(x.isoformat() for x in (d.date_from, d.date_to) if x)),
         ("Session / class / subject", " · ".join(x for x in (d.session_label, d.level_or_class, d.subject_label) if x)),
         ("Paper reference", d.source_reference or ""),
         ("Access level", access.level(d.classification).label),
     ]
     note = (
-        f"Word copy made by Syntegra on {utcnow():%d %b %Y %H:%M} UTC for {context.require().actor_label()}. "
-        "The scanned original is the record; text read by OCR may contain errors — check against the scan."
+        "The scanned original is the record; text read by OCR may contain errors — check against the scan. "
+        f"Master SHA-256 {bytes(d.sha256).hex()}."
     )
-    data = docx.build(d.title, facts, body, note)
-    _audit(ctx, "document_export_word", d.id)
-    return data, f"{(d.reference_no or str(d.id)).replace('/', '-')}.docx"
+    return docx.build(d.title, facts, body, note, stamp=stamp.lines())

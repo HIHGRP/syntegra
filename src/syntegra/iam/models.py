@@ -269,6 +269,44 @@ class MfaFactor(CedaModel):
         verbose_name = 'Multi-factor authentication factor (TOTP, FIDO2 passkey, SMS/e-mail OTP fallback'
 
 
+class MfaRecoveryCode(CedaModel):
+    """Single-use recovery code for the second factor (ten issued at enrolment, shown once, stored as keyed hashes)"""
+
+    ceda_entity = 'mfa_recovery_code'
+    ceda_zones = ('registry',)
+    ceda_domain = 'IAM'
+    ceda_kind = 'transaction'
+    ceda_class = 'restricted'
+    ceda_history = 'lifecycle'
+    ceda_scope = 'none'
+    ceda_append_only = False
+    ceda_partition = None
+    ceda_retention = 'RS-IAM'
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'user_id': {'type': 'ref', 'ref': 'app_user'}, 'code_hash': {'type': 'hmac'}, 'used_at': {'type': 'ts'}, 'status': {'type': 'enum', 'enum': 'record_status'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
+
+    id = cf.UUID7Field(primary_key=True, default=uuid7)
+    tenant_id = cf.UUID7Field()
+    user = models.ForeignKey("iam.AppUser", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='user_id')
+    code_hash = models.BinaryField(help_text='Keyed hash of the code; the code itself is never stored')
+    used_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=32, choices=[('active', 'Active'), ('inactive', 'Inactive'), ('retired', 'Retired')])
+    created_at = models.DateTimeField(default=cf.utcnow)
+    created_by = cf.UUID7Field(null=True, blank=True)
+    updated_at = models.DateTimeField(default=cf.utcnow)
+    updated_by = cf.UUID7Field(null=True, blank=True)
+    row_version = models.PositiveIntegerField(default=1)
+
+    objects = TenantScopedManager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'mfa_recovery_code'
+        app_label = 'iam'
+        base_manager_name = 'unscoped'
+        verbose_name = 'Single-use recovery code for the second factor (ten issued at enrolment, shown o'
+
+
 class PurposeCode(CedaModel):
     """Purpose recorded when restricted fields are revealed or special-category records opened"""
 

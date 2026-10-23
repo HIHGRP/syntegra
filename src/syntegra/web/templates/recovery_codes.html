@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Your recovery codes{% endblock %}
+{% block content %}
+<section class="card narrow" id="recovery">
+  {% if enrolled %}<p class="alert alert-ok" role="status" id="enrolled">Your authenticator app is on. From now on Syntegra asks for its code after your password.</p>{% endif %}
+  <h1>Your recovery codes</h1>
+  <p>If you lose your phone, each of these codes lets you in <strong>once</strong> in place of the app's code. Write them down or print this page and keep it somewhere safe — they are shown only now and cannot be shown again.</p>
+  <ol class="codes" id="codes">{% for c in codes %}<li><code>{{ c }}</code></li>{% endfor %}</ol>
+  <p class="hint">Making new codes stops these from working. Used them all? Sign in with the app and make new ones on your profile.</p>
+  <p><button type="button" class="link" onclick="window.print()">Print</button> · <a class="button primary" href="{{ next }}" id="continue">I have kept them — continue</a></p>
+</section>
+{% endblock %}

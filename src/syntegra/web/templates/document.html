@@ -5,10 +5,13 @@
 <h1>{{ d.title }}</h1>
 {% set pq = ("&purpose=" ~ purpose) if purpose else "" %}
 <div class="doc-actions">
-  <a class="button" href="/documents/{{ d.id }}/file?download=1{{ pq }}">Download the scan</a>
+  <a class="button" href="/documents/{{ d.id }}/file?download=1{{ pq }}" id="scan-link">Download the scan (stamped)</a>
+  {% if d.searchable %}<a class="button" href="/documents/{{ d.id }}/file?kind=searchable&amp;download=1{{ pq }}" id="searchable-link">Download searchable PDF (stamped)</a>{% endif %}
   <a class="button" href="/documents/{{ d.id }}/word{{ ('?purpose=' ~ purpose) if purpose else '' }}" id="word-link">Download as Word (editable text)</a>
+  {% if d.can_see_releases %}<a href="/records/releases?document={{ d.id }}" id="releases-link">Copies released</a>{% endif %}
   {% if d.institution %}<a href="/institutions/{{ d.institution_id }}/documents">All documents of this school</a>{% endif %}
 </div>
+<p class="hint">Every copy you download is stamped on each page with your name, the time, the purpose and a release code, and entered in the release register.</p>
 <div class="doc-layout">
   <section class="card doc-meta">
     <dl>
@@ -27,16 +30,32 @@
       <dt>Integrity</dt><dd><span class="muted">SHA-256 {{ d.sha256[:16] }}… — checked on every read</span></dd>
     </dl>
   </section>
+  <section class="card doc-evidence" id="evidence">
+    <h2>The record and its copies</h2>
+    <dl>
+      <dt>Master</dt><dd>{% if d.master.lock_mode == "compliance" %}<strong>Locked</strong> in object storage (compliance mode) until {{ d.master.retain_until|date }} — it cannot be changed or deleted, by anyone, before then.{% elif d.master.lock_mode == "governance" %}Locked (governance mode) until {{ d.master.retain_until|date }}.{% else %}Stored write-once on the {{ "development file store" if d.master.store == "fs" else d.master.store }}{% if d.master.retain_until %}; retention until {{ d.master.retain_until|date }}{% endif %} — not under object lock.{% endif %}</dd>
+      <dt>Master SHA-256</dt><dd><code class="hash">{{ d.sha256 }}</code></dd>
+      {% if d.searchable %}<dt>Searchable copy</dt><dd>{{ d.searchable.pages }} page{{ "s" if d.searchable.pages != 1 else "" }} · {{ d.searchable.size_bytes|filesize }} · made by {{ d.searchable.generator }} from the master above (source hash matches: {{ "yes" if d.searchable.source_sha256 == d.sha256 else "NO" }})<br><code class="hash">{{ d.searchable.sha256 }}</code></dd>
+      {% else %}<dt>Searchable copy</dt><dd class="muted">None — {{ "the PDF already has a text layer" if d.text_source.startswith("pdf_text_layer") else "no text was read from the scan" }}.</dd>{% endif %}
+    </dl>
+    {% if d.can_certify %}<details id="certify"><summary>Certified true copy of the master</summary>
+      <form method="post" action="/documents/{{ d.id }}/certified{{ ('?purpose=' ~ purpose) if purpose else '' }}" class="stack">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        <p class="hint">Byte for byte the master, unstamped, with its SHA-256 — for a court, tribunal or examination body. The copy, the reason and the person are entered in the release register.</p>
+        <label>Reason<input name="reason" required minlength="10" placeholder="e.g. Subpoena HC/AB/2026/114 dated 20 Oct 2026"></label>
+        <button class="primary">Release a certified true copy</button>
+      </form>
+    </details>{% endif %}
+  </section>
   <section class="card doc-view">
     <div class="viewer">
-      {% if d.mime_type.startswith("image/") and d.mime_type != "image/tiff" %}<img src="/documents/{{ d.id }}/file{{ ('?purpose=' ~ purpose) if purpose else '' }}" alt="Scan of {{ d.title }}">
-      {% elif d.mime_type == "application/pdf" %}<iframe src="/documents/{{ d.id }}/file{{ ('?purpose=' ~ purpose) if purpose else '' }}" title="Scan of {{ d.title }}"></iframe>
+      {% if d.mime_type == "application/pdf" or d.mime_type.startswith("image/") %}<iframe src="/documents/{{ d.id }}/file?kind={{ 'searchable' if d.searchable else 'scan' }}{{ pq }}" title="Scan of {{ d.title }}"></iframe>
       {% else %}<pre class="doc-text">{{ d.text_preview }}</pre>{% endif %}
       <div class="watermark-overlay" aria-hidden="true">{% for _ in range(6) %}<span>For {{ user.display_name }} · {{ stamp }} · {{ d.level.name|lower }}</span>{% endfor %}</div>
     </div>
     {% if d.text_preview and d.mime_type != "text/plain" %}<details><summary>Text found in the document</summary><pre class="doc-text">{{ d.text_preview }}{% if d.char_count > 1500 %}
 …{% endif %}</pre></details>{% endif %}
-    <p class="hint">Viewing and downloading are recorded. The scan is the record; the Word copy is made from the text found in it and may contain reading errors.</p>
+    <p class="hint">Viewing and downloading are recorded. The master scan is the record; the searchable copy and the Word copy are made from the text found in it, which may contain reading errors.</p>
   </section>
 </div>
 {% endblock %}

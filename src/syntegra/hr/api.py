@@ -168,6 +168,7 @@ class Separations(APIView):
 
 class LeaveRequests(APIView):
     required_permission = None  # own leave (hr:leave_request) or on behalf (hr:leave_manage) — checked in service
+    level_permissions = ("hr:leave_request", "hr:leave_manage")
 
     def post(self, request: Request) -> Response:
         s = LeaveSerializer(data=request.data)

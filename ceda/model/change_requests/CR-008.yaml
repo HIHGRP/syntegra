@@ -1,0 +1,45 @@
+# CEDA change request register entry (see CR-001.yaml for the format).
+
+id: CR-008
+title: Evidence-grade document masters (write-once object lock, searchable copies, stamped releases); completing CR-003 sign-in (authenticator enrolment, enforcement, single sign-on); access levels on API writes; staging
+received: 2026-10-23
+status: adopted
+ceda_version: 1.9.0
+summary: >
+  (1) Digitised masters are held in S3-compatible object storage under object lock (compliance mode) until the end
+  of the file plan's retention, so no one — including administrators — can change or delete them; the hash recorded
+  at capture is checked on every read. (2) Each scanned document gets a searchable PDF access copy: the page images
+  of the master with the text OCR found laid invisibly over them, so a reader can search, select and copy; the
+  master is never altered and the copy is hashed, locked and linked to it. (3) Every copy that leaves the system — the
+  original, the searchable copy or the Word copy — is released stamped on every page with the person, the time, the
+  purpose and a release code, and entered in a release register; anyone holding a copy can check its code. A records
+  manager may release a certified true copy of the master, unstamped, with a reason. Completes CR-003: users enrol
+  an authenticator app themselves, with recovery codes; the second factor is enforced at sign-in for roles at the
+  restricted level and above; and single sign-on by OpenID Connect is built. Access levels apply to writes through
+  the API exactly as they do to the web forms. A staging run in CI exercises the production image against MySQL,
+  object-locked storage, an OpenID provider and backups before anything is released.
+constraints:
+  - "The master is never modified, replaced or deleted while locked; derived copies are new objects with their own hash, linked to the master's."
+  - "Filesystem storage is for development and tests only; production and staging use object storage with object lock in compliance mode."
+  - "Release codes are random, unique in the state and carry no personal data; the register holds who, when, why and the hash of the bytes released."
+  - "An unstamped certified copy of a master needs the document:certify permission and a reason, and is entered in the release register like any other copy."
+  - "SSO links only to existing active accounts with a verified e-mail in an allowed domain (CR-003); the provider never grants roles."
+  - "A write through the API needs the same access level as the web form that performs the same action."
+
+requirements:
+  # ------------------------------------------------------------------ evidence-grade masters and copies
+  - {id: FR-DOC-301, module: DOC, priority: SHALL, phase: P2, text: "Store every digitised master in object storage under object lock in compliance mode until the end of its file plan retention (permanent records for a configured long period), record the store, lock mode and retain-until date on the document, and verify the SHA-256 on every read."}
+  - {id: FR-DOC-302, module: DOC, priority: SHALL, phase: P2, text: "Make a searchable PDF access copy of each scanned document — the master's page images with the OCR text laid invisibly over them — store it write-once beside the master with its own hash, and never alter the master."}
+  - {id: FR-DOC-303, module: DOC, priority: SHALL, phase: P2, text: "Release every downloaded copy (original, searchable copy, Word copy) stamped on each page with the recipient, date and time, purpose and a unique release code, and record each release (document, kind, recipient, purpose, time, hash of the released bytes) in a release register."}
+  - {id: FR-DOC-304, module: DOC, priority: SHALL, phase: P2, text: "Let records managers and administrators look up a release code to see which document was released, to whom, when, for what purpose and the hash of the copy, and compare a presented file against it."}
+  - {id: FR-DOC-305, module: DOC, priority: SHALL, phase: P2, text: "Let a holder of the document:certify permission release a certified true copy of a master, byte for byte and unstamped, with a reason, recorded in the release register."}
+  # ------------------------------------------------------------------ completing CR-003
+  - {id: FR-AUT-104, module: AUT, priority: SHALL, phase: P1, text: "After the password, take a user whose roles need a second factor and who has none straight to authenticator enrolment; no role applies until enrolment and the first code are complete."}
+  - {id: FR-AUT-105, module: AUT, priority: SHALL, phase: P1, text: "Let users enrol and remove an authenticator app on their own profile page with a QR code, confirm it with a first code, and receive ten single-use recovery codes shown once and stored hashed; a recovery code can stand in for the app once."}
+  - {id: FR-AUT-106, module: AUT, priority: SHALL, phase: P1, text: "Let state and platform administrators configure single sign-on providers (issuer, client, allowed domains, whether the provider's MFA is trusted) with the client secret stored encrypted, and show each enabled provider on the sign-in page."}
+  # ------------------------------------------------------------------ access levels on API writes
+  - {id: FR-ADM-203, module: ADM, priority: SHALL, phase: P1, text: "Refuse a write through the API when the active grant's access level is below that of the web form that performs the same action, so that pages, forms and the API apply one rule."}
+
+pages:
+  - {id: DOC-109, title: Release register, module: Records, pattern: Register / list, route: "/records/releases", classification: Confidential, phase: P2, roles: [RECM (Records Manager), STA (State Ministry Administrator), DPO (Data Protection Officer)], purpose: "Every copy of a document that left the system — stamped downloads, Word copies and certified true copies — with recipient, purpose, time and release code; check a presented copy by its code."}
+  - {id: ADM-103, title: Sign-in providers, module: Administration, pattern: Settings / configuration, route: "/admin/sign-in-providers", classification: Restricted, phase: P1, roles: [STA (State Ministry Administrator), PLAT (Platform Administrator)], purpose: "Configure single sign-on with the state's government identity provider, Microsoft Entra ID or Google Workspace: issuer, client, allowed e-mail domains and whether the provider's MFA is trusted."}

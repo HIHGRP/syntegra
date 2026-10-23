@@ -10,6 +10,8 @@ Module (system of record): `records` · default zone: **records** · default ret
 | [`document_category`](#records-document_category) | records | config | internal | lifecycle | Document type/category with its own view, download and share permissions (on top of role and scope) |
 | [`document`](#records-document) | records | master | confidential | lifecycle | Stored document — born-digital or digitised (object-storage pointer, metadata, classification, retention, hash) |
 | [`document_index`](#records-document_index) | records | projection | confidential | none | Full-text search entry of a document — title, keywords and extracted text (never for special category) |
+| [`document_rendition`](#records-document_rendition) | records | transaction | confidential | none | Derived copy of a document's master — the searchable PDF access copy (page images with the OCR text laid invisibly over them) |
+| [`document_release`](#records-document_release) | records | event | confidential | append | Release register — every copy of a document that left the system, stamped with recipient, time, purpose and release code |
 | [`document_link`](#records-document_link) | records | link | confidential | none | Link from a document to a person or record (learner, staff, guardian, institution, case …) — powers every 360 Documents tab |
 | [`legal_hold`](#records-legal_hold) | records | transaction | restricted | lifecycle | Legal hold suspending disposal for named people, institutions or series |
 | [`disposal`](#records-disposal) | records | event | internal | lifecycle | Approved disposal of documents or originals with disposal/destruction certificate (refused while a legal hold applies) |
@@ -119,7 +121,7 @@ Metadata (MFS §13.4): title, type, institution, LGA, date or range, people refe
 | Module | `records` |
 | Origin | appj |
 | Retention | `RS-DOC` |
-| Requirements | FR-DOC-103, FR-DOC-109, FR-DOC-110, FR-DOC-111, FR-DOC-112, FR-DOC-116, FR-INT-03, FR-INT-101, FR-DOC-201, FR-DOC-202, FR-DOC-205, FR-DOC-206 |
+| Requirements | FR-DOC-103, FR-DOC-109, FR-DOC-110, FR-DOC-111, FR-DOC-112, FR-DOC-116, FR-INT-03, FR-INT-101, FR-DOC-201, FR-DOC-202, FR-DOC-205, FR-DOC-206, FR-DOC-301 |
 | Pages | DOC-105, DOC-104, AIX-02, HOM-05, DOC-107, DOC-108 |
 | Events | DOC.INGESTED, DOC.LINKED |
 
@@ -146,6 +148,9 @@ Metadata (MFS §13.4): title, type, institution, LGA, date or range, people refe
 | `batch_id` → `digitisation_batch` | `BINARY(16)` | yes |  |  |
 | `page_range` | `VARCHAR(40)` | yes |  |  |
 | `master_object_key` | `VARCHAR(1024)` | no |  | WORM bucket |
+| `master_store` | `VARCHAR(20)` | yes |  | Where the master is held: s3 (object storage) or fs (development only) (CR-008) |
+| `master_lock_mode` | `VARCHAR(32)` | yes |  | Object lock on the master: compliance in production (CR-008) · values: none, governance, compliance |
+| `master_retain_until` | `DATE` | yes |  | The master cannot be changed or deleted before this date (CR-008) |
 | `access_object_key` | `VARCHAR(1024)` | yes |  | Derived access copy (PDF/A-2b) |
 | `mime_type` | `VARCHAR(127)` | no |  |  |
 | `size_bytes` | `BIGINT` | no |  |  |
@@ -212,6 +217,91 @@ One row per indexed document, rebuilt when the document's metadata or text chang
 - Unique: (tenant_id, document_id)
 - Index: (tenant_id, institution_id)
 - Full-text index: (title, keywords, body_text)
+
+<a id="records-document_rendition"></a>
+## `document_rendition`
+
+Derived copy of a document's master — the searchable PDF access copy (page images with the OCR text laid invisibly over them)  
+
+The master is never altered (CR-008). A rendition is a new write-once object with its own SHA-256, made from the master whose hash it records, so the copy can always be traced back to the exact original it came from.
+
+| | |
+|---|---|
+| Zone | records |
+| Kind | transaction |
+| Classification | confidential |
+| History | none |
+| Scope | none |
+| Module | `records` |
+| Origin | ceda |
+| Retention | `RS-DOC` |
+| Requirements | FR-DOC-302 |
+| Pages | DOC-105 |
+| Events | DOC.RENDITION_CREATED |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `id` **PK** | `BINARY(16)` | no |  | Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap |
+| `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `document_id` → `document` | `BINARY(16)` | no |  |  |
+| `kind` | `VARCHAR(32)` | no |  | values: searchable_pdf |
+| `object_key` | `VARCHAR(1024)` | no |  |  |
+| `store` | `VARCHAR(20)` | no |  | s3 or fs |
+| `mime_type` | `VARCHAR(127)` | no |  |  |
+| `size_bytes` | `BIGINT` | no |  |  |
+| `sha256` | `BINARY(32)` | no |  | Of the rendition |
+| `source_sha256` | `BINARY(32)` | no |  | Of the master it was made from |
+| `pages` | `INT UNSIGNED` | no |  |  |
+| `generator` | `VARCHAR(120)` | no |  | Software and version that made it, e.g. Tesseract 5.5.3 |
+| `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
+| `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+| `updated_at` | `DATETIME(6)` | no |  | UTC time of last change (mutable entities only) |
+| `updated_by` | `BINARY(16)` | yes |  | Actor of last change (mutable entities only) |
+| `row_version` | `INT UNSIGNED` | no |  | Optimistic-lock counter; exposed as the API ETag (mutable entities only) |
+
+- Unique: (tenant_id, document_id, kind)
+
+<a id="records-document_release"></a>
+## `document_release`
+
+Release register — every copy of a document that left the system, stamped with recipient, time, purpose and release code  
+
+The release code printed on every page of a stamped copy is random and carries no personal data; looking it up shows the document, recipient, purpose, time and the hash of the bytes released. Certified true copies (unstamped, byte for byte the master) need document:certify and a reason (CR-008).
+
+| | |
+|---|---|
+| Zone | records |
+| Kind | event |
+| Classification | confidential |
+| History | append |
+| Scope | none |
+| Module | `records` |
+| Origin | ceda |
+| Retention | `RS-DOC` |
+| Requirements | FR-DOC-303, FR-DOC-304, FR-DOC-305 |
+| Pages | DOC-109, DOC-105 |
+| Events | DOC.RELEASED |
+
+| Column | MySQL type | Null | Class | Description |
+|---|---|---|---|---|
+| `id` **PK** | `BINARY(16)` | no |  | Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap |
+| `tenant_id` | `BINARY(16)` | no |  | Owning tenant (zones with tenant_column = true) |
+| `document_id` → `document` | `BINARY(16)` | no |  |  |
+| `release_code` | `VARCHAR(16)` | no |  | Printed on every page of the copy |
+| `kind` | `VARCHAR(32)` | no |  | values: stamped_original, stamped_searchable, word_copy, certified_original |
+| `released_to` | `BINARY(16)` | no |  | User who received the copy |
+| `released_to_name` | `VARCHAR(200)` | no |  | As printed on the copy |
+| `purpose` | `VARCHAR(40)` | yes |  | Declared purpose (restricted documents) |
+| `reason` | `VARCHAR(500)` | yes |  | Why a certified true copy was needed |
+| `sha256` | `BINARY(32)` | no |  | Of the bytes released |
+| `size_bytes` | `BIGINT` | no |  |  |
+| `released_at` | `DATETIME(6)` | no |  |  |
+| `created_at` | `DATETIME(6)` | no |  | UTC time the row was written |
+| `created_by` | `BINARY(16)` | yes |  | Actor: app_user.id or service_identity.id (agents, integrations) |
+
+- Unique: (tenant_id, release_code)
+- Index: (tenant_id, document_id, released_at)
+- Index: (tenant_id, released_to, released_at)
 
 <a id="records-document_link"></a>
 ## `document_link`

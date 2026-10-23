@@ -196,7 +196,7 @@ class Document(CedaModel):
     ceda_append_only = False
     ceda_partition = None
     ceda_retention = 'RS-DOC'
-    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'scope_node_id': {'type': 'uuid', 'standard': True}, 'category_id': {'type': 'ref', 'ref': 'document_category'}, 'reference_no': {'type': 'code'}, 'title': {'type': 'title'}, 'description': {'type': 'str'}, 'source_reference': {'type': 'str'}, 'classification': {'type': 'enum', 'enum': 'classification'}, 'institution_id': {'type': 'uuid'}, 'lga_scope_id': {'type': 'uuid'}, 'date_from': {'type': 'date'}, 'date_to': {'type': 'date'}, 'session_label': {'type': 'code'}, 'level_or_class': {'type': 'str'}, 'subject_label': {'type': 'str'}, 'origin': {'type': 'enum', 'enum': 'document_origin'}, 'origin_module': {'type': 'code'}, 'batch_id': {'type': 'ref', 'ref': 'digitisation_batch'}, 'page_range': {'type': 'str'}, 'master_object_key': {'type': 'object_key'}, 'access_object_key': {'type': 'object_key'}, 'mime_type': {'type': 'mime'}, 'size_bytes': {'type': 'bigint'}, 'sha256': {'type': 'hash'}, 'captured_at': {'type': 'ts'}, 'qa_status': {'type': 'enum', 'enum': 'qa_status'}, 'ocr_text_ref': {'type': 'object_key'}, 'legal_hold_count': {'type': 'smallint'}, 'disposal_due_on': {'type': 'date'}, 'status': {'type': 'enum', 'enum': 'document_status'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'scope_node_id': {'type': 'uuid', 'standard': True}, 'category_id': {'type': 'ref', 'ref': 'document_category'}, 'reference_no': {'type': 'code'}, 'title': {'type': 'title'}, 'description': {'type': 'str'}, 'source_reference': {'type': 'str'}, 'classification': {'type': 'enum', 'enum': 'classification'}, 'institution_id': {'type': 'uuid'}, 'lga_scope_id': {'type': 'uuid'}, 'date_from': {'type': 'date'}, 'date_to': {'type': 'date'}, 'session_label': {'type': 'code'}, 'level_or_class': {'type': 'str'}, 'subject_label': {'type': 'str'}, 'origin': {'type': 'enum', 'enum': 'document_origin'}, 'origin_module': {'type': 'code'}, 'batch_id': {'type': 'ref', 'ref': 'digitisation_batch'}, 'page_range': {'type': 'str'}, 'master_object_key': {'type': 'object_key'}, 'master_store': {'type': 'code'}, 'master_lock_mode': {'type': 'enum', 'enum': 'object_lock_mode'}, 'master_retain_until': {'type': 'date'}, 'access_object_key': {'type': 'object_key'}, 'mime_type': {'type': 'mime'}, 'size_bytes': {'type': 'bigint'}, 'sha256': {'type': 'hash'}, 'captured_at': {'type': 'ts'}, 'qa_status': {'type': 'enum', 'enum': 'qa_status'}, 'ocr_text_ref': {'type': 'object_key'}, 'legal_hold_count': {'type': 'smallint'}, 'disposal_due_on': {'type': 'date'}, 'status': {'type': 'enum', 'enum': 'document_status'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
 
     id = cf.UUID7Field(primary_key=True, default=uuid7)
     tenant_id = cf.UUID7Field()
@@ -219,6 +219,9 @@ class Document(CedaModel):
     batch = models.ForeignKey("records.DigitisationBatch", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='batch_id', null=True, blank=True)
     page_range = models.CharField(max_length=40, null=True, blank=True)
     master_object_key = models.CharField(max_length=1024, help_text='WORM bucket')
+    master_store = models.CharField(max_length=20, null=True, blank=True, help_text='Where the master is held: s3 (object storage) or fs (development only) (CR-008)')
+    master_lock_mode = models.CharField(max_length=32, choices=[('none', 'None'), ('governance', 'Governance'), ('compliance', 'Compliance')], null=True, blank=True, help_text='Object lock on the master: compliance in production (CR-008)')
+    master_retain_until = models.DateField(null=True, blank=True, help_text='The master cannot be changed or deleted before this date (CR-008)')
     access_object_key = models.CharField(max_length=1024, null=True, blank=True, help_text='Derived access copy (PDF/A-2b)')
     mime_type = models.CharField(max_length=127)
     size_bytes = models.BigIntegerField()
@@ -368,6 +371,91 @@ class DocumentLink(CedaModel):
         app_label = 'records'
         base_manager_name = 'unscoped'
         verbose_name = 'Link from a document to a person or record (learner, staff, guardian, institutio'
+
+
+class DocumentRelease(CedaModel):
+    """Release register — every copy of a document that left the system, stamped with recipient, time, purpose and release code"""
+
+    ceda_entity = 'document_release'
+    ceda_zones = ('records',)
+    ceda_domain = 'DOC'
+    ceda_kind = 'event'
+    ceda_class = 'confidential'
+    ceda_history = 'append'
+    ceda_scope = 'none'
+    ceda_append_only = True
+    ceda_partition = None
+    ceda_retention = 'RS-DOC'
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'document_id': {'type': 'ref', 'ref': 'document'}, 'release_code': {'type': 'code'}, 'kind': {'type': 'enum', 'enum': 'release_kind'}, 'released_to': {'type': 'uuid'}, 'released_to_name': {'type': 'name', 'pii': True}, 'purpose': {'type': 'code'}, 'reason': {'type': 'str'}, 'sha256': {'type': 'hash'}, 'size_bytes': {'type': 'bigint'}, 'released_at': {'type': 'ts'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}}
+
+    id = cf.UUID7Field(primary_key=True, default=uuid7)
+    tenant_id = cf.UUID7Field()
+    document = models.ForeignKey("records.Document", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='document_id')
+    release_code = models.CharField(max_length=16, help_text='Printed on every page of the copy')
+    kind = models.CharField(max_length=32, choices=[('stamped_original', 'Stamped original'), ('stamped_searchable', 'Stamped searchable'), ('word_copy', 'Word copy'), ('certified_original', 'Certified original')])
+    released_to = cf.UUID7Field(help_text='User who received the copy')
+    released_to_name = models.CharField(max_length=200, help_text='As printed on the copy')
+    purpose = models.CharField(max_length=40, null=True, blank=True, help_text='Declared purpose (restricted documents)')
+    reason = models.CharField(max_length=500, null=True, blank=True, help_text='Why a certified true copy was needed')
+    sha256 = models.BinaryField(help_text='Of the bytes released')
+    size_bytes = models.BigIntegerField()
+    released_at = models.DateTimeField()
+    created_at = models.DateTimeField(default=cf.utcnow)
+    created_by = cf.UUID7Field(null=True, blank=True)
+
+    objects = TenantScopedManager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'document_release'
+        app_label = 'records'
+        base_manager_name = 'unscoped'
+        verbose_name = 'Release register — every copy of a document that left the system, stamped with r'
+
+
+class DocumentRendition(CedaModel):
+    """Derived copy of a document's master — the searchable PDF access copy (page images with the OCR text laid invisibly over them)"""
+
+    ceda_entity = 'document_rendition'
+    ceda_zones = ('records',)
+    ceda_domain = 'DOC'
+    ceda_kind = 'transaction'
+    ceda_class = 'confidential'
+    ceda_history = 'none'
+    ceda_scope = 'none'
+    ceda_append_only = False
+    ceda_partition = None
+    ceda_retention = 'RS-DOC'
+    ceda_fields = {'id': {'type': 'uuid', 'standard': True}, 'tenant_id': {'type': 'uuid', 'standard': True}, 'document_id': {'type': 'ref', 'ref': 'document'}, 'kind': {'type': 'enum', 'enum': 'rendition_kind'}, 'object_key': {'type': 'object_key'}, 'store': {'type': 'code'}, 'mime_type': {'type': 'mime'}, 'size_bytes': {'type': 'bigint'}, 'sha256': {'type': 'hash'}, 'source_sha256': {'type': 'hash'}, 'pages': {'type': 'int_u'}, 'generator': {'type': 'str'}, 'created_at': {'type': 'ts', 'standard': True}, 'created_by': {'type': 'uuid', 'standard': True}, 'updated_at': {'type': 'ts', 'standard': True}, 'updated_by': {'type': 'uuid', 'standard': True}, 'row_version': {'type': 'int_u', 'standard': True}}
+
+    id = cf.UUID7Field(primary_key=True, default=uuid7)
+    tenant_id = cf.UUID7Field()
+    document = models.ForeignKey("records.Document", on_delete=models.DO_NOTHING, db_constraint=False, related_name='+', db_column='document_id')
+    kind = models.CharField(max_length=32, choices=[('searchable_pdf', 'Searchable pdf')])
+    object_key = models.CharField(max_length=1024)
+    store = models.CharField(max_length=20, help_text='s3 or fs')
+    mime_type = models.CharField(max_length=127)
+    size_bytes = models.BigIntegerField()
+    sha256 = models.BinaryField(help_text='Of the rendition')
+    source_sha256 = models.BinaryField(help_text='Of the master it was made from')
+    pages = models.PositiveIntegerField()
+    generator = models.CharField(max_length=120, help_text='Software and version that made it, e.g. Tesseract 5.5.3')
+    created_at = models.DateTimeField(default=cf.utcnow)
+    created_by = cf.UUID7Field(null=True, blank=True)
+    updated_at = models.DateTimeField(default=cf.utcnow)
+    updated_by = cf.UUID7Field(null=True, blank=True)
+    row_version = models.PositiveIntegerField(default=1)
+
+    objects = TenantScopedManager()
+    unscoped = models.Manager()
+
+    class Meta:
+        managed = False
+        db_table = 'document_rendition'
+        app_label = 'records'
+        base_manager_name = 'unscoped'
+        verbose_name = "Derived copy of a document's master — the searchable PDF access copy (page image"
 
 
 class ExtractedField(CedaModel):

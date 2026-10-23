@@ -2405,6 +2405,56 @@
       ],
       "additionalProperties": false
     },
+    "DOC.RENDITION_CREATED": {
+      "type": "object",
+      "description": "Searchable access copy made from the master (CR-008)",
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "searchable_pdf"
+          ]
+        }
+      },
+      "required": [
+        "document_id",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "DOC.RELEASED": {
+      "type": "object",
+      "description": "A copy of a document left the system",
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "stamped_original",
+            "stamped_searchable",
+            "word_copy",
+            "certified_original"
+          ]
+        },
+        "release_code": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        }
+      },
+      "required": [
+        "document_id",
+        "kind",
+        "release_code"
+      ],
+      "additionalProperties": false
+    },
     "DOC.LINKED": {
       "type": "object",
       "description": "Document linked to a record",

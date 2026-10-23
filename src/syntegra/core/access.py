@@ -74,3 +74,26 @@ def covers(clearance: str | None, classification: str | None) -> bool:
 def lower_or_equal(clearance: str | None) -> list[Level]:
     """Levels at or below a clearance — the caps an administrator at that level may set."""
     return [lv for lv in LEVELS if lv.number <= level(clearance).number]
+
+
+# ------------------------------------------------------------------------- API writes (CR-008, FR-ADM-203)
+# The level each write permission needs, taken from the web form that performs the same action (``web.forms``
+# registers it at start-up: the kernel does not import the web layer). The API refuses a write below it, so pages,
+# forms and the API apply one rule; the services' own data-level checks still apply on top.
+_WRITE_LEVELS: dict[str, str] = {}
+
+
+def register_write_levels(levels: dict[str, str]) -> None:
+    for permission, classification in levels.items():
+        current = _WRITE_LEVELS.get(permission)
+        if current is None or class_rank(classification) > class_rank(current):
+            _WRITE_LEVELS[permission] = classification
+
+
+def write_level(permission: str | None) -> str | None:
+    """The access level a write with this permission needs, or None when no form sets one."""
+    return _WRITE_LEVELS.get(permission) if permission else None
+
+
+def write_levels() -> dict[str, str]:
+    return dict(_WRITE_LEVELS)

@@ -328,6 +328,9 @@ enums:
   session_end_reason: {title: Why a sign-in session ended (CR-007), values: [signed_out, idle_timeout, expired, replaced, ended_by_administrator, account_inactive]}
   text_source: {title: Source of a document's indexed text (CR-007), values: [none, pdf_text_layer, text_file, transcription, pdf_text_layer_and_transcription, ocr]}
   document_status: {title: Document status, values: [ingested, active, on_hold, disposal_due, disposed]}
+  object_lock_mode: {title: Object lock on a stored master (CR-008), values: [none, governance, compliance]}
+  rendition_kind: {title: Derived copy of a document (CR-008), values: [searchable_pdf]}
+  release_kind: {title: Kind of copy released from the system (CR-008), values: [stamped_original, stamped_searchable, word_copy, certified_original]}
   qa_status: {title: QA status, values: [pending, auto_accepted, needs_review, verified, rejected]}
   link_basis: {title: Document link basis, values: [explicit, matched, extracted, inherited]}
   physical_disposition: {title: Physical disposition, values: [returned_to_site, transferred_to_archive, destroyed]}

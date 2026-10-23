@@ -47,7 +47,7 @@ entities:
     class: restricted
     history: lifecycle
     origin: ceda
-    reqs: [FR-ADM-03, FR-AUT-01, FR-AUT-02, FR-AUT-03]
+    reqs: [FR-ADM-03, FR-AUT-01, FR-AUT-02, FR-AUT-03, FR-AUT-104, FR-AUT-105]
     pages: [AUT-02, HOM-04]
     attrs:
       - "user_id: ref(app_user)!"
@@ -58,6 +58,22 @@ entities:
       - "last_used_at: ts"
       - "last_step: bigint | TOTP time step of the last accepted code — a code is never accepted twice (FR-AUT-03)"
       - "status: enum(record_status)!"
+
+  mfa_recovery_code:
+    title: Single-use recovery code for the second factor (ten issued at enrolment, shown once, stored as keyed hashes)
+    scope_note: "Belongs to one user account."
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    origin: ceda
+    reqs: [FR-AUT-02, FR-AUT-105]
+    pages: [AUT-02, HOM-04]
+    attrs:
+      - "user_id: ref(app_user)!"
+      - "code_hash: hmac! uq | Keyed hash of the code; the code itself is never stored"
+      - "used_at: ts"
+      - "status: enum(record_status)!"
+    ix: [[user_id, status]]
 
   user_session:
     title: Server-side session (idle timeout 30 min for restricted/special roles, 8 h otherwise)
@@ -121,8 +137,8 @@ entities:
     history: lifecycle
     origin: ceda
     scope_note: Tenant-level configuration managed by the state or platform administrator.
-    reqs: [FR-AUT-04, FR-AUT-05, FR-AUT-06]
-    pages: [AUT-01]
+    reqs: [FR-AUT-04, FR-AUT-05, FR-AUT-06, FR-AUT-106]
+    pages: [AUT-01, ADM-103]
     attrs:
       - "provider: enum(identity_provider)!"
       - "label: str(80)! | Button text, e.g. Sign in with Abia Government ID"

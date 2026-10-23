@@ -7,6 +7,7 @@ from .base import *  # noqa: F403
 from .base import DATABASES, REST_FRAMEWORK
 
 SYNTEGRA_TENANCY = "single"
+SYNTEGRA_MFA_REQUIRED_CLEARANCE = ""  # tests that need it switch it on with the settings fixture
 SYNTEGRA_OBJECT_STORE_DIR = Path(tempfile.mkdtemp(prefix="syntegra-objects-"))
 SYNTEGRA_AUDIT_LANES = 4
 CELERY_TASK_ALWAYS_EAGER = True

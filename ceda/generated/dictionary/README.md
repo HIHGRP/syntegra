@@ -1,12 +1,12 @@
 # CEDA data dictionary
 
-Generated from the CEDA model (SYN-CEDA-001 v1.8.0). Do not edit by hand.
+Generated from the CEDA model (SYN-CEDA-001 v1.9.0). Do not edit by hand.
 
 | Domain | Code | Module (Django app) | Default zone | Entities |
 |---|---|---|---|---|
 | [Platform, tenancy and operator commercial records](01_platform.md) | PLT | `platform` | platform | 17 |
 | [Governance hierarchy, configuration, reference data, policy and workflow](02_governance.md) | GOV | `governance` | registry | 18 |
-| [Identity, access, permissions and service identities](03_iam.md) | IAM | `iam` | registry | 13 |
+| [Identity, access, permissions and service identities](03_iam.md) | IAM | `iam` | registry | 14 |
 | [Master data management, identity matching and data quality](04_mdm.md) | MDM | `mdm` | registry | 9 |
 | [Institution 360, state institution register, licensing, inspection and compliance](05_institutions.md) | INS | `institutions` | registry | 17 |
 | [Private education provider admission and regulation](06_providers.md) | PVT | `providers` | registry | 13 |
@@ -29,7 +29,7 @@ Generated from the CEDA model (SYN-CEDA-001 v1.8.0). Do not edit by hand.
 | [Programme financing — Student Digital Access Fee (SDAF) rates, census, payers, exemptions, demand, collection, remittance and reconciliation](23_financing.md) | SUB | `financing` | registry | 18 |
 | [Operations — estate, rooms, assets, maintenance, safety incidents, capital plan, transport, clubs, trips, meals, library and learning resources](24_operations.md) | OPS | `operations` | ops | 21 |
 | [Forms and Daybook engine and parents' meetings](25_forms_meetings.md) | FRM | `forms` | ops | 4 |
-| [Records and archives — document store, file plan, retention, legal holds, disposal and the digitisation pipeline](26_records.md) | DOC | `records` | records | 15 |
+| [Records and archives — document store, file plan, retention, legal holds, disposal and the digitisation pipeline](26_records.md) | DOC | `records` | records | 17 |
 | [Intelligence and automation — alerts, investigations, improvement, recommendations, early warning, model register, agents, assistant and planning](27_intelligence.md) | INT | `intelligence` | ops | 24 |
 | [Reporting, semantic layer registry, government returns, scheduled reports and lineage](28_reporting.md) | RPT | `reporting` | registry | 6 |
 | [Integration, data exchange, imports, webhooks, idempotency and data-subject requests](29_integration.md) | INTG | `integration` | registry | 16 |

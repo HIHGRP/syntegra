@@ -744,26 +744,26 @@ The Appendix J DDL (174 tables) was extracted from the MFS and loaded into MySQL
 
 | Path | Content |
 |---|---|
-| `ceda/model/_meta.yaml` | Zones (6), standard columns, vocabularies, naming; CEDA 1.8.0 |
+| `ceda/model/_meta.yaml` | Zones (6), standard columns, vocabularies, naming; CEDA 1.9.0 |
 | `ceda/model/types.yaml` | 45 canonical types → MySQL, Django, JSON Schema |
-| `ceda/model/enums.yaml` | 390 fixed enumerations |
+| `ceda/model/enums.yaml` | 393 fixed enumerations |
 | `ceda/model/reference/*.yaml` | Jurisdiction packs: 51 code lists |
-| `ceda/model/domains/*.yaml` | 38 domain models (523 entities, 553 tables) |
-| `ceda/model/events.yaml` | 169 domain events |
+| `ceda/model/domains/*.yaml` | 38 domain models (526 entities, 556 tables) |
+| `ceda/model/events.yaml` | 171 domain events |
 | `ceda/model/metrics.yaml` | 74 semantic-layer metrics |
 | `ceda/model/retention.yaml` | 33 retention series |
 | `ceda/model/traceability.yaml` | Behavioural requirements and Appendix J notes |
-| `ceda/model/change_requests/CR-*.yaml` | 7 change requests (CR-001, CR-002, CR-003, CR-004, CR-005, CR-006, CR-007): 32 pages and 89 requirements beyond the MFS (CD-18) |
+| `ceda/model/change_requests/CR-*.yaml` | 8 change requests (CR-001, CR-002, CR-003, CR-004, CR-005, CR-006, CR-007, CR-008): 34 pages and 98 requirements beyond the MFS (CD-18) |
 | `ceda/sources/` | Extracted MFS page catalogue (260) and requirement register (571), Appendix J table index (174), MySQL 9.7 reserved words (264) |
-| `ceda/generated/mysql/` | DDL per zone + jurisdiction code-list seed (7 files, 553 tables, 8,541 columns) |
+| `ceda/generated/mysql/` | DDL per zone + jurisdiction code-list seed (7 files, 556 tables, 8,586 columns) |
 | `ceda/generated/dictionary/` | Data dictionary per domain (39 files) |
 | `ceda/generated/erd/` | Mermaid ERDs per domain (38 files) |
 | `ceda/generated/jsonschema/`, `ceda/generated/openapi/components.yaml` | Canonical resource schemas (37 JSON Schema bundles + OpenAPI components) |
 | `ceda/generated/events/` | Event catalogue, envelope and payload schemas (3 files) |
 | `ceda/generated/metrics/catalog.md` | Metric catalogue |
-| `ceda/generated/traceability/` | Page (292/292), requirement (599/606 realised in data) and Appendix J (174/174) traceability |
+| `ceda/generated/traceability/` | Page (294/294), requirement (607/615 realised in data) and Appendix J (174/174) traceability |
 | `ceda/generated/summary.json` | Counts |
-| `ceda/releases/<version>/` | Frozen release DDL: 1.1.0 baseline; 1.2.0 to 1.8.0 deltas and expand scripts (CD-21) |
+| `ceda/releases/<version>/` | Frozen release DDL: 1.1.0 baseline; 1.2.0 to 1.9.0 deltas and expand scripts (CD-21) |
 | `ceda/templates/federal_institutions.csv` | Column layout of the federal institutions reference import (FR-FED-04) |
 | `ceda/guide/img/` | End-User Guide screenshots (31) (§30) |
 | `ceda/tools/gen_django.py` → `src/syntegra/*/models.py`, `src/syntegra/core/catalog/ceda_catalog.json` | Django models (`managed = False`) and the runtime catalogue (events, metrics, enums, code lists, pages) for the application |
@@ -792,6 +792,8 @@ Read from the files that pin them; `cedagen.py check` fails when this table no l
 | Runtime library — tesserocr | 2.12.0 | `pyproject.toml` |
 | Runtime library — pypdfium2 | 5.14.0 | `pyproject.toml` |
 | Runtime library — pillow | 13.0.0 | `pyproject.toml` |
+| Runtime library — boto3 | 1.43.105 | `pyproject.toml` |
+| Runtime library — botocore | 1.43.105 | `pyproject.toml` |
 | Quality gate — pytest | 8.4.2 | `pyproject.toml` [dev] |
 | Quality gate — pytest-django | 4.11.1 | `pyproject.toml` [dev] |
 | Quality gate — ruff | 0.13.3 | `pyproject.toml` [dev] |
@@ -800,6 +802,7 @@ Read from the files that pin them; `cedagen.py check` fails when this table no l
 | Quality gate — djangorestframework-stubs | 3.16.4 | `pyproject.toml` [dev] |
 | Quality gate — import-linter | 2.5 | `pyproject.toml` [dev] |
 | Quality gate — types-PyYAML | unpinned | `pyproject.toml` [dev] |
+| Quality gate — moto[s3] | 5.2.3 | `pyproject.toml` [dev] |
 | Continuous integration — app | ubuntu-24.04, Python 3.12, mysql:9.7 | `.github/workflows/app.yml` |
 | Continuous integration — ceda | ubuntu-24.04, Python 3.12, mysql:9.7 | `.github/workflows/ceda.yml` |
 

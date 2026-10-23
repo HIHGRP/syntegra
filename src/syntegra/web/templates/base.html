@@ -34,7 +34,7 @@
     <a href="/verify">Verify</a>
   </nav>
   <div class="who">
-    <span>{{ user.display_name }} · <strong>{{ ctx.role_code or "no role" }}</strong> · <a href="/auth/context?next={{ request.path|urlencode }}">Switch</a></span>
+    <span><a href="/me" id="me-link">{{ user.display_name }}</a> · <strong>{{ ctx.role_code or "no role" }}</strong> · <a href="/auth/context?next={{ request.path|urlencode }}">Switch</a></span>
     <form method="post" action="/sign-out"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><button class="link">Sign out</button></form>
   </div>
   {% else %}

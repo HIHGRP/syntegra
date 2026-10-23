@@ -259,4 +259,4 @@ def test_generic_ceda_api_trims_and_scopes(world, api) -> None:  # type: ignore[
     assert str(world.institution.id) in ids and str(world.institution2.id) not in ids
     assert lga("get", "/api/v1/ceda/safeguarding_concern").status_code in (403, 404)
     assert lga("get", "/api/v1/ceda/learner").status_code == 403  # derived scope → module endpoint only
-    assert lga("get", "/api/v1/ceda").json()["ceda"]["version"] == "1.8.0"
+    assert lga("get", "/api/v1/ceda").json()["ceda"]["version"] == "1.9.0"

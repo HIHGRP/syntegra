@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Syntegra CEDA canonical component schemas
-  version: 1.8.0
+  version: 1.9.0
   description: Generated from the CEDA model. API resources compose these schemas; fields marked x-classification restricted/special
     are only serialised for callers whose grant clearance covers them and who supplied X-Syntegra-Purpose.
 paths: {}
@@ -3667,6 +3667,83 @@ components:
       - tenant_id
       - user_id
       - factor_type
+      - status
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    MfaRecoveryCode:
+      title: MfaRecoveryCode
+      description: Single-use recovery code for the second factor (ten issued at enrolment, shown once, stored as keyed hashes)
+      type: object
+      x-ceda:
+        entity: mfa_recovery_code
+        zone: registry
+        domain: IAM
+        kind: transaction
+        classification: restricted
+        history: lifecycle
+        module: iam
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        user_id:
+          type: string
+          format: uuid
+          x-ref: app_user
+        code_hash:
+          type: string
+          contentEncoding: base64
+          description: Keyed hash of the code; the code itself is never stored
+        used_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - active
+          - inactive
+          - retired
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - user_id
+      - code_hash
       - status
       - created_at
       - updated_at
@@ -38776,6 +38853,28 @@ components:
           type: string
           maxLength: 1024
           description: WORM bucket
+        master_store:
+          anyOf:
+          - type: string
+            maxLength: 20
+            pattern: ^[A-Za-z0-9_.:/-]*$
+            description: 'Where the master is held: s3 (object storage) or fs (development only) (CR-008)'
+          - type: 'null'
+        master_lock_mode:
+          anyOf:
+          - type: string
+            enum:
+            - none
+            - governance
+            - compliance
+            description: 'Object lock on the master: compliance in production (CR-008)'
+          - type: 'null'
+        master_retain_until:
+          anyOf:
+          - type: string
+            format: date
+            description: The master cannot be changed or deleted before this date (CR-008)
+          - type: 'null'
         access_object_key:
           anyOf:
           - type: string
@@ -38972,6 +39071,202 @@ components:
       - created_at
       - updated_at
       - row_version
+      additionalProperties: false
+    DocumentRendition:
+      title: DocumentRendition
+      description: Derived copy of a document's master — the searchable PDF access copy (page images with the OCR text laid
+        invisibly over them)
+      type: object
+      x-ceda:
+        entity: document_rendition
+        zone: records
+        domain: DOC
+        kind: transaction
+        classification: confidential
+        history: none
+        module: records
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        document_id:
+          type: string
+          format: uuid
+          x-ref: document
+        kind:
+          type: string
+          enum:
+          - searchable_pdf
+        object_key:
+          type: string
+          maxLength: 1024
+        store:
+          type: string
+          maxLength: 20
+          pattern: ^[A-Za-z0-9_.:/-]*$
+          description: s3 or fs
+        mime_type:
+          type: string
+          maxLength: 127
+        size_bytes:
+          type: integer
+        sha256:
+          type: string
+          contentEncoding: base64
+          description: Of the rendition
+        source_sha256:
+          type: string
+          contentEncoding: base64
+          description: Of the master it was made from
+        pages:
+          type: integer
+          minimum: 0
+        generator:
+          type: string
+          maxLength: 120
+          description: Software and version that made it, e.g. Tesseract 5.5.3
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: UTC time of last change (mutable entities only)
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          description: Actor of last change (mutable entities only)
+          readOnly: true
+        row_version:
+          type: integer
+          minimum: 0
+          description: Optimistic-lock counter; exposed as the API ETag (mutable entities only)
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - document_id
+      - kind
+      - object_key
+      - store
+      - mime_type
+      - size_bytes
+      - sha256
+      - source_sha256
+      - pages
+      - generator
+      - created_at
+      - updated_at
+      - row_version
+      additionalProperties: false
+    DocumentRelease:
+      title: DocumentRelease
+      description: Release register — every copy of a document that left the system, stamped with recipient, time, purpose
+        and release code
+      type: object
+      x-ceda:
+        entity: document_release
+        zone: records
+        domain: DOC
+        kind: event
+        classification: confidential
+        history: append
+        module: records
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap'
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          description: Owning tenant (zones with tenant_column = true)
+          readOnly: true
+        document_id:
+          type: string
+          format: uuid
+          x-ref: document
+        release_code:
+          type: string
+          maxLength: 16
+          pattern: ^[A-Za-z0-9_.:/-]*$
+          description: Printed on every page of the copy
+        kind:
+          type: string
+          enum:
+          - stamped_original
+          - stamped_searchable
+          - word_copy
+          - certified_original
+        released_to:
+          type: string
+          format: uuid
+          description: User who received the copy
+        released_to_name:
+          type: string
+          maxLength: 200
+          description: As printed on the copy
+          x-personal-data: true
+        purpose:
+          anyOf:
+          - type: string
+            maxLength: 40
+            pattern: ^[A-Za-z0-9_.:/-]*$
+            description: Declared purpose (restricted documents)
+          - type: 'null'
+        reason:
+          anyOf:
+          - type: string
+            maxLength: 500
+            description: Why a certified true copy was needed
+          - type: 'null'
+        sha256:
+          type: string
+          contentEncoding: base64
+          description: Of the bytes released
+        size_bytes:
+          type: integer
+        released_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+          description: UTC time the row was written
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          description: 'Actor: app_user.id or service_identity.id (agents, integrations)'
+          readOnly: true
+      required:
+      - id
+      - tenant_id
+      - document_id
+      - release_code
+      - kind
+      - released_to
+      - released_to_name
+      - sha256
+      - size_bytes
+      - released_at
+      - created_at
       additionalProperties: false
     DocumentLink:
       title: DocumentLink

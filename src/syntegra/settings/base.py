@@ -146,8 +146,23 @@ SYNTEGRA_CEDA_RELEASES_DIR = Path(env("SYNTEGRA_CEDA_RELEASES_DIR", str(REPO_DIR
 SYNTEGRA_DEFAULT_TENANT_CODE = env("SYNTEGRA_DEFAULT_TENANT_CODE", "ng-ab")
 # Object storage for document masters (CR-007): filesystem here; S3-compatible WORM buckets in production
 SYNTEGRA_OBJECT_STORE_DIR = Path(env("SYNTEGRA_OBJECT_STORE_DIR", str(REPO_DIR / "var" / "objects")))
+# CR-008: "s3" — S3-compatible object storage, bucket created with object lock (production, staging); "fs" — files
+# under SYNTEGRA_OBJECT_STORE_DIR (development and tests only). Credentials come from the usual AWS_* variables.
+SYNTEGRA_OBJECT_STORE = env("SYNTEGRA_OBJECT_STORE", "fs")
+SYNTEGRA_S3_BUCKET = env("SYNTEGRA_S3_BUCKET", "")
+SYNTEGRA_S3_ENDPOINT_URL = env("SYNTEGRA_S3_ENDPOINT_URL", "") or None
+SYNTEGRA_S3_REGION = env("SYNTEGRA_S3_REGION", "us-east-1")
+SYNTEGRA_S3_PATH_STYLE = env("SYNTEGRA_S3_PATH_STYLE", "0") == "1"
+SYNTEGRA_S3_LOCK_MODE = env("SYNTEGRA_S3_LOCK_MODE", "COMPLIANCE")
+SYNTEGRA_PERMANENT_RETENTION_YEARS = int(env("SYNTEGRA_PERMANENT_RETENTION_YEARS", "100"))
+SYNTEGRA_RELEASE_ISSUER = env("SYNTEGRA_RELEASE_ISSUER", "Syntegra")
 SYNTEGRA_DOCUMENT_MAX_BYTES = int(env("SYNTEGRA_DOCUMENT_MAX_BYTES", str(25 * 1024 * 1024)))
 SYNTEGRA_SESSION_IN_USE_MINUTES = int(env("SYNTEGRA_SESSION_IN_USE_MINUTES", "15"))
+# A second factor is required for anyone whose roles act at this access level or above (CR-003 FR-AUT-01; CR-008
+# FR-AUT-104): after the password they are taken to authenticator enrolment and no role applies until it is done.
+# Empty turns the requirement off (development only); users who set up a factor are always asked for it.
+SYNTEGRA_MFA_REQUIRED_CLEARANCE = env("SYNTEGRA_MFA_REQUIRED_CLEARANCE", "restricted")
+SYNTEGRA_MFA_ISSUER = env("SYNTEGRA_MFA_ISSUER", "Syntegra")
 DATA_UPLOAD_MAX_MEMORY_SIZE = 30 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 30 * 1024 * 1024
 

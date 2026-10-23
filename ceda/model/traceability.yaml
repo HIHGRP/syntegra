@@ -14,6 +14,7 @@ behavioural_requirements:
   - {id: FR-FAM-104, uses: guardian, note: "Parent app is a channel over Family 360, timetable, LMS, results, fees, consents, meetings and messages."}
   - {id: FR-INT-05, uses: agent_template, note: "Prohibited autonomous decisions are enforced in code: the services that expel, reject, dismiss, deny access or set safeguarding outcomes accept only human-authored commands; agent_template.human_only_actions records them."}
   - {id: FR-STF-101, uses: staff, note: "Staff app (iOS, Android, PWA) is a channel over registers, timetable, cover, learner reports, medical alerts, incidents and messages."}
+  - {id: FR-ADM-203, uses: role_grant, note: "Guardrail (CR-008): an API write needs the access level of the web form that performs the same action — the grant's effective level (role clearance lowered by clearance_cap) is checked before the service runs; one rule for pages, forms and API."}
   - {id: FR-SUB-116, uses: subscription, note: "Guardrail: subscription and SDAF status are never read by register, lesson, LMS, results, exam, transfer or certificate services; enforced by import contracts and tests."}
 
 appj_superseded: {}

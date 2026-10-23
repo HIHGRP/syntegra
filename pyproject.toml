@@ -25,6 +25,9 @@ dependencies = [
   "tesserocr==2.12.0",
   "pypdfium2==5.14.0",
   "pillow==13.0.0",
+  # write-once document masters in S3-compatible object storage with object lock (CR-008)
+  "boto3==1.43.105",
+  "botocore==1.43.105",
 ]
 
 [project.optional-dependencies]
@@ -37,6 +40,7 @@ dev = [
   "djangorestframework-stubs==3.16.4",
   "import-linter==2.5",
   "types-PyYAML",
+  "moto[s3]==5.2.3",
 ]
 
 [tool.setuptools.packages.find]

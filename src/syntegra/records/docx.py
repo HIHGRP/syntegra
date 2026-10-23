@@ -62,10 +62,14 @@ def _page_break() -> str:
     return '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
 
 
-def build(title: str, facts: list[tuple[str, str]], text: str, note: str) -> bytes:
+def build(
+    title: str, facts: list[tuple[str, str]], text: str, note: str, stamp: tuple[str, ...] | None = None
+) -> bytes:
     """A .docx with the title, a facts block (label: value), a note, and the text — one paragraph per line, a page
-    break wherever the text has a form feed (one per scanned page)."""
-    body = [_p(title, "Title")]
+    break wherever the text has a form feed (one per scanned page). ``stamp`` (the release lines: recipient, time,
+    purpose, release code) opens and closes the document (CR-008)."""
+    body = [_p(line, "Note") for line in stamp or ()]
+    body.append(_p(title, "Title"))
     body += [_p(value or "—", None, f"{label}:") for label, value in facts]
     body.append(_p(note, "Note"))
     body.append(_p("Text of the document", "Heading1"))
@@ -76,6 +80,7 @@ def build(title: str, facts: list[tuple[str, str]], text: str, note: str) -> byt
             body.append(_page_break())
         for line in page.split("\n"):
             body.append(_p(line))
+    body += [_p(line, "Note") for line in stamp or ()]
     document = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'

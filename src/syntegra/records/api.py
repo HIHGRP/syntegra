@@ -15,7 +15,7 @@ from rest_framework.views import APIView
 from syntegra.core import context
 from syntegra.core.api import views as v
 from syntegra.core.context import CLASS_ORDER
-from syntegra.records import services
+from syntegra.records import evidence, services
 
 
 def _purpose(request: Request) -> str | None:
@@ -106,17 +106,76 @@ class DocumentDetail(APIView):
         return Response(v.jsonable(d))
 
 
+def _released(r: evidence.Released) -> HttpResponse:
+    resp = HttpResponse(r.data, content_type=r.mime)
+    resp["Content-Disposition"] = f'attachment; filename="{r.filename}"'
+    resp["Cache-Control"] = "no-store"
+    resp["X-Syntegra-Release"] = r.code
+    return resp
+
+
 class DocumentContent(APIView):
-    """GET the scan itself, hash-verified."""
+    """GET a stamped copy of the scan (``?kind=searchable`` for the searchable copy), entered in the release
+    register; the release code is in the ``X-Syntegra-Release`` header (CR-008)."""
 
     required_permission = "document:view"
 
     def get(self, request: Request, pk: uuid.UUID) -> HttpResponse:
-        data, mime, name = services.content(context.require(), pk, _purpose(request))
-        resp = HttpResponse(data, content_type=mime)
-        resp["Content-Disposition"] = f'attachment; filename="{name}"'
-        resp["Cache-Control"] = "no-store"
-        return resp
+        kind = "stamped_searchable" if request.query_params.get("kind") == "searchable" else "stamped_original"
+        return _released(evidence.release(context.require(), pk, kind, purpose=_purpose(request)))
+
+
+class CertifySerializer(serializers.Serializer):  # type: ignore[type-arg]
+    reason = serializers.CharField(min_length=10, max_length=500)
+
+
+class DocumentCertified(APIView):
+    """POST: a certified true copy of the master, byte for byte, with a reason (document:certify, FR-DOC-305)."""
+
+    required_permission = "document:certify"
+
+    def post(self, request: Request, pk: uuid.UUID) -> HttpResponse:
+        s = CertifySerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        return _released(
+            evidence.release(
+                context.require(),
+                pk,
+                "certified_original",
+                purpose=_purpose(request),
+                reason=s.validated_data["reason"],
+            )
+        )
+
+
+class Releases(APIView):
+    """GET the release register for documents in scope (``?document=<id>`` for one document) — DOC-109."""
+
+    required_permission = "document:releases"
+
+    def get(self, request: Request) -> Response:
+        doc = request.query_params.get("document")
+        try:
+            document_id = uuid.UUID(doc) if doc else None
+        except ValueError as exc:
+            raise serializers.ValidationError({"document": "Not a document id."}) from exc
+        return Response(v.jsonable({"results": evidence.releases(context.require(), document_id=document_id)}))
+
+
+class ReleaseCheck(APIView):
+    """GET one release by its code; POST a file (``file``) to check whether it is exactly the copy released."""
+
+    required_permission = "document:releases"
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get(self, request: Request, code: str) -> Response:
+        return Response(v.jsonable(evidence.lookup(context.require(), code)))
+
+    def post(self, request: Request, code: str) -> Response:
+        up = request.FILES.get("file")
+        if up is None:
+            raise serializers.ValidationError({"file": "Attach the copy to check."})
+        return Response(v.jsonable(evidence.lookup(context.require(), code, up.read())))
 
 
 class DocumentWord(APIView):

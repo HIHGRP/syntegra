@@ -95,6 +95,7 @@ class Overview(APIView):
 
 class Applications(APIView):
     required_permission = None  # funding:apply, or funding:apply_own for a member of staff's own — in the service
+    level_permissions = ("funding:apply", "funding:apply_own")
 
     def post(self, request: Request) -> Response:
         s = ApplicationSerializer(data=request.data)

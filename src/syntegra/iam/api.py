@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from typing import Any
 
 from django.conf import settings
@@ -12,9 +13,10 @@ from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
 from syntegra.core import context
+from syntegra.core.api import views as v
 from syntegra.core.api.permissions import Authenticated, Public
 from syntegra.core.middleware import session_token
-from syntegra.iam import services
+from syntegra.iam import mfa, services
 
 
 class SignInSerializer(serializers.Serializer):  # type: ignore[type-arg]
@@ -53,11 +55,13 @@ class SignInView(APIView):
             current_token=current,
         )
         # Nothing else opens until the school or office is confirmed with POST /auth/role (FR-AUT-101), after the
-        # code with POST /auth/mfa when mfa_required.
+        # code with POST /auth/mfa when mfa_required, or after setting up an authenticator (POST /me/mfa/totp, then
+        # its confirm) when mfa_setup_required.
         resp = Response(
             {
                 "token": r.token,
                 "mfa_required": r.mfa_required,
+                "mfa_setup_required": r.mfa_setup_required,
                 "confirm_required": True,
                 "grants": r.grants,
                 "session_id": str(r.session_id),
@@ -150,6 +154,69 @@ class MeView(APIView):
         )
 
 
+# --------------------------------------------------------------------------- my second factor (CR-008, FR-AUT-104/105)
+def _token(request: Request) -> str:
+    token, _ = session_token(request._request)
+    return token or ""
+
+
+class MyMfaView(APIView):
+    """GET my second factor: authenticators, recovery codes left, and whether my roles require one."""
+
+    permission_classes = [Authenticated]
+
+    def get(self, request: Request) -> Response:
+        return Response(v.jsonable(mfa.status(_token(request))))
+
+
+class NewFactorSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    name = serializers.CharField(max_length=80, required=False, default="Authenticator app")
+
+
+class MyTotpView(APIView):
+    """POST: start setting up an authenticator app; returns the key and the otpauth:// URI to show as a QR code."""
+
+    permission_classes = [Authenticated]
+
+    def post(self, request: Request) -> Response:
+        s = NewFactorSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        e = mfa.begin(_token(request), s.validated_data["name"])
+        return Response({"factor_id": str(e.factor_id), "secret": e.secret, "otpauth_uri": e.uri}, status=201)
+
+
+class CodeSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    code = serializers.RegexField(r"^\s*\d{3}\s?\d{3}\s*$", max_length=8)
+
+
+class MyTotpConfirmView(APIView):
+    """POST the first code from the app: the authenticator is on, and the ten recovery codes are returned once."""
+
+    permission_classes = [Authenticated]
+
+    def post(self, request: Request, pk: uuid.UUID) -> Response:
+        s = CodeSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        return Response({"recovery_codes": mfa.confirm(_token(request), pk, s.validated_data["code"])})
+
+
+class MyMfaRemoveView(APIView):
+    permission_classes = [Authenticated]
+
+    def post(self, request: Request, pk: uuid.UUID) -> Response:
+        mfa.remove(_token(request), pk)
+        return Response(status=204)
+
+
+class MyRecoveryCodesView(APIView):
+    """POST: ten new recovery codes (the old ones stop working); needs a session that has passed the second factor."""
+
+    permission_classes = [Authenticated]
+
+    def post(self, request: Request) -> Response:
+        return Response({"recovery_codes": mfa.regenerate(_token(request))}, status=201)
+
+
 # --------------------------------------------------------------------------- administration (CR-007)
 class ReasonSerializer(serializers.Serializer):  # type: ignore[type-arg]
     reason = serializers.CharField(min_length=5, max_length=1000)
@@ -174,11 +241,9 @@ class SessionEndView(APIView):
     permission_classes = [Authenticated]
 
     def post(self, request: Request, pk: str) -> Response:
-        import uuid as _uuid
-
         s = ReasonSerializer(data=request.data)
         s.is_valid(raise_exception=True)
-        services.end_session(context.require(), _uuid.UUID(str(pk)), s.validated_data["reason"])
+        services.end_session(context.require(), uuid.UUID(str(pk)), s.validated_data["reason"])
         return Response(status=204)
 
 
@@ -232,12 +297,10 @@ class GrantLevelView(APIView):
     permission_classes = [Authenticated]
 
     def put(self, request: Request, pk: str) -> Response:
-        import uuid as _uuid
-
         s = GrantLevelSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         services.set_grant_cap(
-            context.require(), _uuid.UUID(str(pk)), s.validated_data["level"], s.validated_data["reason"]
+            context.require(), uuid.UUID(str(pk)), s.validated_data["level"], s.validated_data["reason"]
         )
         return Response(status=204)
 
@@ -267,13 +330,11 @@ class OfficeAddressView(APIView):
     permission_classes = [Authenticated]
 
     def put(self, request: Request, pk: str) -> Response:
-        import uuid as _uuid
-
         s = OfficeAddressSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         d = dict(s.validated_data)
         reason = d.pop("reason")
-        services.set_office_address(context.require(), _uuid.UUID(str(pk)), d, reason)
+        services.set_office_address(context.require(), uuid.UUID(str(pk)), d, reason)
         return Response(status=204)
 
 
@@ -288,11 +349,9 @@ class GrantOfficeView(APIView):
     permission_classes = [Authenticated]
 
     def put(self, request: Request, pk: str) -> Response:
-        import uuid as _uuid
-
         s = GrantOfficeSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         services.set_grant_office(
-            context.require(), _uuid.UUID(str(pk)), s.validated_data["office_id"], s.validated_data["reason"]
+            context.require(), uuid.UUID(str(pk)), s.validated_data["office_id"], s.validated_data["reason"]
         )
         return Response(status=204)

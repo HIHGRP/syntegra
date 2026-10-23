@@ -113,6 +113,8 @@ Generated from `ceda/model/events.yaml`. Events are named `<DOMAIN>.<PAST_TENSE_
 | `FRM.SUBMITTED` | `forms` | `form_response` | `syn.{region}.frm.v1` | `form_response_id`, `form_id` | governance, records, finance | Form submitted |
 | `DOC.INGESTED` | `records` | `document` | `syn.{region}.doc.v1` | `document_id`, `category_id` | search, intelligence | Document stored (search indexed unless special category) |
 | `DOC.INDEXED` | `records` | `document_index` | `syn.{region}.doc.v1` | `document_id`, `char_count` | search | Document metadata and text indexed for full-text search (CR-007) |
+| `DOC.RENDITION_CREATED` | `records` | `document_rendition` | `syn.{region}.doc.v1` | `document_id`, `kind` | search | Searchable access copy made from the master (CR-008) |
+| `DOC.RELEASED` | `records` | `document_release` | `syn.{region}.doc.v1` | `document_id`, `kind`, `release_code` | security_monitoring | A copy of a document left the system |
 | `DOC.LINKED` | `records` | `document_link` | `syn.{region}.doc.v1` | `document_link_id`, `record_kind`, `record_id` | search | Document linked to a record |
 | `BIL.RUN_ISSUED` | `finance` | `billing_run` | `syn.{region}.bil.v1` | `billing_run_id`, `invoices` | comms, analytics | Billing run issued |
 | `BIL.INVOICE_ISSUED` | `finance` | `invoice` | `syn.{region}.bil.v1` | `invoice_id`, `account_id` | comms, records | Invoice issued |

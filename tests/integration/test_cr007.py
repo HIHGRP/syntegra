@@ -225,8 +225,10 @@ def test_documents_are_filed_under_the_school_with_references_and_a_word_copy(wo
     page = client.get(f"/documents/{doc_id}").content.decode()
     assert "Government Secondary School Aba" in page and "watermark-overlay" in page
     assert "from the PDF&#39;s text layer" in page
+    # the download is a stamped copy entered in the release register (CR-008); the master is never served as is
     scan = client.get(f"/documents/{doc_id}/file")
-    assert scan.status_code == 200 and scan["Content-Type"] == "application/pdf" and scan.content == pdf
+    assert scan.status_code == 200 and scan["Content-Type"] == "application/pdf"
+    assert scan.content.startswith(b"%PDF") and scan.content != pdf and scan["X-Syntegra-Release"]
     word = client.get(f"/documents/{doc_id}/word")
     assert word.status_code == 200 and word["Content-Disposition"].endswith('.docx"')
     xml = zipfile.ZipFile(io.BytesIO(word.content)).read("word/document.xml").decode()

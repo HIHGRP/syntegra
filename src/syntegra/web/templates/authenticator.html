@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Set up your authenticator app{% endblock %}
+{% block content %}
+<section class="card narrow" id="enrol">
+  <p class="eyebrow">{% if required %}One more step before you start{% else %}My profile · security{% endif %}</p>
+  <h1>Set up your authenticator app</h1>
+  {% if required %}<p class="alert" role="status" id="enrol-required">Your role can open restricted information, so Syntegra asks for a code from an authenticator app every time you sign in. Set it up now — it takes a minute. Nothing else opens until it is done.</p>{% endif %}
+  <ol class="steps">
+    <li>Install an authenticator app on your phone if you do not have one — Microsoft Authenticator, Google Authenticator, Authy or any app that supports time-based codes.</li>
+    <li>In the app, add an account and scan this code:
+      <div class="qr" id="qr" aria-label="QR code for your authenticator app">{{ enrol.qr_svg()|safe }}</div>
+      <details><summary>Cannot scan? Type this key instead</summary>
+        <p>Account <strong>{{ enrol.account }}</strong>, issuer <strong>{{ enrol.issuer }}</strong>, time-based, six digits:</p>
+        <p><code class="hash" id="secret">{{ enrol.grouped_secret() }}</code></p>
+      </details>
+    </li>
+    <li>Type the six-digit code the app now shows for Syntegra.</li>
+  </ol>
+  {% if error %}<div class="alert alert-error" role="alert" id="enrol-error">{{ error }}</div>{% endif %}
+  <form method="post" action="/me/authenticator?next={{ next|urlencode }}">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+    <input type="hidden" name="factor_id" value="{{ enrol.factor_id }}">
+    <label>Six-digit code<input name="code" type="text" inputmode="numeric" pattern="[0-9 ]{6,7}" maxlength="7" autocomplete="one-time-code" required autofocus></label>
+    <button class="primary">Turn on</button>
+  </form>
+  <p class="hint">The code changes every 30 seconds. If it is refused, check that the phone sets its clock automatically.</p>
+  {% if required %}<form method="post" action="/sign-out"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><button class="link">Sign out and do this later</button></form>{% else %}<p><a href="/me">Back to my profile</a></p>{% endif %}
+</section>
+{% endblock %}

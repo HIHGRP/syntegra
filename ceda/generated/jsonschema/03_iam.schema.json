@@ -367,6 +367,104 @@
       ],
       "additionalProperties": false
     },
+    "MfaRecoveryCode": {
+      "title": "MfaRecoveryCode",
+      "description": "Single-use recovery code for the second factor (ten issued at enrolment, shown once, stored as keyed hashes)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "mfa_recovery_code",
+        "zone": "registry",
+        "domain": "IAM",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "iam"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "code_hash": {
+          "type": "string",
+          "contentEncoding": "base64",
+          "description": "Keyed hash of the code; the code itself is never stored"
+        },
+        "used_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "user_id",
+        "code_hash",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
     "UserSession": {
       "title": "UserSession",
       "description": "Server-side session (idle timeout 30 min for restricted/special roles, 8 h otherwise)",

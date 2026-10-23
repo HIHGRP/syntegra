@@ -2,12 +2,12 @@
  "ceda": {
   "application": "Python 3.12, Django 5.2 LTS (+ FastAPI for high-throughput services)",
   "database": "MySQL 9.7 LTS (InnoDB, utf8mb4)",
-  "date": "2026-10-15",
+  "date": "2026-10-23",
   "derived_from": "SYN-MFS-002 v2.4 (Master Functional Specification, consolidated single volume, 13 Oct 2026)",
   "id": "SYN-CEDA-001",
   "platform": "Red Hat Enterprise Linux 10 / OpenShift",
   "status": "Baseline for build",
-  "version": "1.8.0"
+  "version": "1.9.0"
  },
  "code_lists": {
   "absence_reason": [
@@ -2361,6 +2361,11 @@
    "hidden",
    "removed"
   ],
+  "object_lock_mode": [
+   "none",
+   "governance",
+   "compliance"
+  ],
   "obligation_kind": [
    "tuition_fees",
    "boarding",
@@ -2932,6 +2937,15 @@
    "delivered",
    "rejected",
    "withdrawn"
+  ],
+  "release_kind": [
+   "stamped_original",
+   "stamped_searchable",
+   "word_copy",
+   "certified_original"
+  ],
+  "rendition_kind": [
+   "searchable_pdf"
   ],
   "repayment_basis": [
    "none",
@@ -4293,6 +4307,32 @@
    },
    "producer": "records",
    "trigger": "Document linked to a record"
+  },
+  "DOC.RELEASED": {
+   "aggregate": "document_release",
+   "consumers": [
+    "security_monitoring"
+   ],
+   "payload": {
+    "document_id": "uuid!",
+    "kind": "enum(release_kind)!",
+    "release_code": "code(16)!"
+   },
+   "producer": "records",
+   "stamped or certified (CR-008)": null,
+   "trigger": "A copy of a document left the system"
+  },
+  "DOC.RENDITION_CREATED": {
+   "aggregate": "document_rendition",
+   "consumers": [
+    "search"
+   ],
+   "payload": {
+    "document_id": "uuid!",
+    "kind": "enum(rendition_kind)!"
+   },
+   "producer": "records",
+   "trigger": "Searchable access copy made from the master (CR-008)"
   },
   "ENR.ENDED": {
    "aggregate": "enrolment",
@@ -12259,6 +12299,37 @@
    ],
    "route": "/admin/sessions",
    "title": "Active sessions"
+  },
+  {
+   "change_request": "CR-008",
+   "classification": "confidential",
+   "id": "DOC-109",
+   "module": "Records",
+   "pattern": "Register / list",
+   "phase": "P2",
+   "purpose": "Every copy of a document that left the system — stamped downloads, Word copies and certified true copies — with recipient, purpose, time and release code; check a presented copy by its code.",
+   "roles": [
+    "RECM",
+    "STA",
+    "DPO"
+   ],
+   "route": "/records/releases",
+   "title": "Release register"
+  },
+  {
+   "change_request": "CR-008",
+   "classification": "restricted",
+   "id": "ADM-103",
+   "module": "Administration",
+   "pattern": "Settings / configuration",
+   "phase": "P1",
+   "purpose": "Configure single sign-on with the state's government identity provider, Microsoft Entra ID or Google Workspace: issuer, client, allowed e-mail domains and whether the provider's MFA is trusted.",
+   "roles": [
+    "STA",
+    "PLAT"
+   ],
+   "route": "/admin/sign-in-providers",
+   "title": "Sign-in providers"
   }
  ],
  "retention": {
