@@ -58,7 +58,7 @@ jobs:
       - name: Unit and integration tests (real MySQL, all six zones)
         run: python -m pytest tests -q --create-db
 
-  image:
+  container-image:
     name: Production image builds, with OCR
     runs-on: ubuntu-24.04
     steps:
