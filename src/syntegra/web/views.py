@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import re
 import uuid
 from collections.abc import Callable
 from functools import wraps
@@ -164,31 +165,170 @@ def sign_in(request: HttpRequest) -> HttpResponse:
             )
             # then the code from the authenticator app (AUT-02) when the account has one, then confirm the school or
             # office (and the role, when there are several) — AUT-03
-            nxt = f"/auth/context?{urlencode({'next': _safe_next(request.GET.get('next'))})}"
-            if r.mfa_required:
-                nxt = f"/auth/mfa?{urlencode({'next': nxt})}"
-            elif r.mfa_setup_required:  # roles that need a second factor, and none set up yet (FR-AUT-104)
-                nxt = f"/me/authenticator?{urlencode({'next': nxt})}"
-            resp = HttpResponseRedirect(nxt)
-            resp.set_cookie(
-                settings.SESSION_COOKIE_NAME,
-                r.token,
-                httponly=True,
-                samesite="Lax",
-                secure=not settings.DEBUG,
-                max_age=int(iam.SESSION_MAX.total_seconds()),
-            )
-            return resp
+            return _after_sign_in(r, request.GET.get("next") or "/")
         except DomainError as exc:
             error = exc.detail or exc.title
             in_use = exc.code == "AUTH-SESSION-IN-USE"
             return render(
                 request,
                 "sign_in.html",
-                _ctx(request, error=error, in_use=in_use),
+                _ctx(request, error=error, in_use=in_use, providers=_sso_buttons(request)),
                 status=exc.status if in_use else 401,
             )
-    return render(request, "sign_in.html", _ctx(request, error=error, notice=notice))
+    return render(request, "sign_in.html", _ctx(request, error=error, notice=notice, providers=_sso_buttons(request)))
+
+
+def _sso_buttons(request: HttpRequest) -> list[Any]:
+    from syntegra.iam import sso
+
+    tenant = getattr(request, "syntegra_tenant", None)
+    return sso.enabled(tenant) if tenant is not None else []
+
+
+def _after_sign_in(r: Any, nxt: str) -> HttpResponse:
+    """Where the browser goes after the password or the provider: the code, or enrolment, then the school or office
+    (AUT-03); the session cookie is set here."""
+    from syntegra.iam import services as iam
+
+    target = f"/auth/context?{urlencode({'next': _safe_next(nxt)})}"
+    if r.mfa_required:
+        target = f"/auth/mfa?{urlencode({'next': target})}"
+    elif r.mfa_setup_required:  # roles that need a second factor, and none set up yet (FR-AUT-104)
+        target = f"/me/authenticator?{urlencode({'next': target})}"
+    resp = HttpResponseRedirect(target)
+    resp.set_cookie(
+        settings.SESSION_COOKIE_NAME,
+        r.token,
+        httponly=True,
+        samesite="Lax",
+        secure=not settings.DEBUG,
+        max_age=int(iam.SESSION_MAX.total_seconds()),
+    )
+    return resp
+
+
+@require_http_methods(["GET"])
+@page(public=True)
+def sso_start(request: HttpRequest, provider: str) -> HttpResponse:
+    """AUT-01: send the browser to the state's identity provider (OpenID Connect, code flow with PKCE)."""
+    from syntegra.iam import sso
+
+    tenant = getattr(request, "syntegra_tenant")  # noqa: B009 — set by ContextMiddleware
+    redirect_uri = request.build_absolute_uri(f"/auth/sso/{provider}/callback")
+    try:
+        started = sso.start(tenant, provider, redirect_uri, _safe_next(request.GET.get("next")))
+    except DomainError as exc:
+        return render(request, "sign_in.html", _ctx(request, error=exc.detail or exc.title), status=exc.status)
+    resp = HttpResponseRedirect(started.url)
+    resp.set_cookie(
+        sso.COOKIE,
+        started.cookie,
+        max_age=sso.COOKIE_AGE,
+        httponly=True,
+        samesite="Lax",  # sent on the provider's top-level redirect back to the callback
+        secure=not settings.DEBUG,
+        path="/auth/sso/",
+    )
+    return resp
+
+
+@require_http_methods(["GET"])
+@page(public=True)
+def sso_callback(request: HttpRequest, provider: str) -> HttpResponse:
+    """The provider sends the browser back here with a code: verify, match the account, open the session."""
+    from syntegra.core.middleware import session_token
+    from syntegra.iam import sso
+
+    tenant = getattr(request, "syntegra_tenant")  # noqa: B009 — set by ContextMiddleware
+    c = context.require()
+    current, _ = session_token(request)
+    try:
+        done = sso.finish(
+            tenant,
+            provider,
+            cookie=request.COOKIES.get(sso.COOKIE),
+            code=request.GET.get("code"),
+            state=request.GET.get("state"),
+            error=request.GET.get("error"),
+            ip=c.ip,
+            ua=c.user_agent,
+            current_token=current,
+        )
+    except DomainError as exc:
+        in_use = exc.code == "AUTH-SESSION-IN-USE"
+        resp = render(
+            request,
+            "sign_in.html",
+            _ctx(request, error=exc.detail or exc.title, in_use=in_use, providers=_sso_buttons(request)),
+            status=exc.status,
+        )
+        resp.delete_cookie(sso.COOKIE, path="/auth/sso/")
+        return resp
+    resp = _after_sign_in(done.sign_in, done.next_url)
+    resp.delete_cookie(sso.COOKIE, path="/auth/sso/")
+    return resp
+
+
+@require_http_methods(["GET", "POST"])
+@page("ADM-103")
+def sign_in_providers(request: HttpRequest) -> HttpResponse:
+    """ADM-103: the state's single sign-on providers — issuer, client, allowed domains, whether their MFA is trusted
+    (CR-008, FR-AUT-106). The client secret is stored encrypted and never shown again."""
+    from syntegra.iam import sso
+
+    c = context.require()
+    if not c.has("sso:manage"):
+        raise Forbidden("Missing permission sso:manage.", code="AUTH-PERMISSION")
+    error = done = None
+    status = 200
+    checked = None
+    form: dict[str, Any] = {}
+    if request.method == "POST":
+        if request.POST.get("action") == "check":
+            try:
+                checked = sso.check(c, _uuid_or_fail(request.POST.get("id"), "provider"))
+                done = "The provider answered: its discovery document and keys were read."
+            except DomainError as exc:
+                error, status = exc.detail or exc.title, exc.status
+            except OSError as exc:
+                error, status = f"The provider could not be reached: {exc}", 502
+        else:
+            form = {k: request.POST.get(k, "") for k in ("provider", "label", "issuer", "client_id", "scopes")}
+            form["allowed_domains"] = request.POST.get("allowed_domains", "")
+            try:
+                sso.save(
+                    c,
+                    provider=form["provider"],
+                    label=form["label"],
+                    issuer=form["issuer"],
+                    client_id=form["client_id"],
+                    client_secret=request.POST.get("client_secret") or None,
+                    scopes=form["scopes"] or "openid email profile",
+                    allowed_domains=re.split(r"[\s,;]+", form["allowed_domains"]),
+                    trust_idp_mfa=request.POST.get("trust_idp_mfa") == "on",
+                    sort_order=_int_or_none(request.POST.get("sort_order")),
+                    status=request.POST.get("status") or "active",
+                )
+                done = "Saved. Enabled providers appear on the sign-in page straight away."
+                form = {}
+            except DomainError as exc:
+                error, status = exc.detail or exc.title, exc.status
+    return render(
+        request,
+        "sign_in_providers.html",
+        _ctx(
+            request,
+            rows=sso.configs(c),
+            kinds=sso.PROVIDERS,
+            form=form,
+            error=error,
+            done=done,
+            checked=checked,
+            redirect_base=request.build_absolute_uri("/auth/sso/"),
+            page=pages.page("ADM-103"),
+        ),
+        status=status,
+    )
 
 
 @require_http_methods(["POST"])

@@ -29,6 +29,7 @@ IMPLEMENTED: dict[str, str] = {
     "AUT-02": "mfa_challenge",
     "AUT-03": "workspace",
     "HOM-04": "profile",
+    "ADM-103": "sign_in_providers",
     "CMD-101": "control_room",
     "CMD-102": "league",
     "FIN-02": "budget_execution",

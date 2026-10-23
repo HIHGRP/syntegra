@@ -16,6 +16,9 @@ SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SYNTEGRA_KEY_PROVIDER = os.environ["SYNTEGRA_KEY_PROVIDER"]
+# keys derived from one configured secret are for development and the staging rehearsal only, never production
+if SYNTEGRA_KEY_PROVIDER.endswith(".LocalKeyProvider") and os.environ.get("SYNTEGRA_ENVIRONMENT") != "staging":
+    raise RuntimeError("SYNTEGRA_KEY_PROVIDER must be the HSM-backed provider in production")
 for _cfg in DATABASES.values():  # noqa: F405
     _cfg["OPTIONS"]["ssl_mode"] = "VERIFY_IDENTITY"  # type: ignore[index]
 # CR-008: masters are held only in object storage under object lock in production (FR-DOC-301)

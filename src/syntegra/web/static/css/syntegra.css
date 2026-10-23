@@ -206,3 +206,5 @@ input.num4 { width: 6rem; }
 .qr { margin: .75rem 0; } .qr svg { width: 220px; height: 220px; background: #fff; padding: 4px; border-radius: 6px; }
 .codes { columns: 2; font-size: 1.1rem; line-height: 1.9; padding-left: 1.5rem; }
 @media print { header, footer, .affbar, #continue, .hint { display: none; } }
+/* single sign-on buttons (AUT-01, CR-008) */
+.sso { margin-top: 1rem; display: grid; gap: .5rem; text-align: center; } .sso a.button { display: block; }

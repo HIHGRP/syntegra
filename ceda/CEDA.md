@@ -789,6 +789,7 @@ Read from the files that pin them; `cedagen.py check` fails when this table no l
 | Runtime library — gunicorn | 23.0.0 | `pyproject.toml` |
 | Runtime library — segno | 1.6.6 | `pyproject.toml` |
 | Runtime library — pypdf | 6.19.0 | `pyproject.toml` |
+| Runtime library — PyJWT | 2.15.1 | `pyproject.toml` |
 | Runtime library — tesserocr | 2.12.0 | `pyproject.toml` |
 | Runtime library — pypdfium2 | 5.14.0 | `pyproject.toml` |
 | Runtime library — pillow | 13.0.0 | `pyproject.toml` |

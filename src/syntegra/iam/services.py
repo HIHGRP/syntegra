@@ -266,6 +266,12 @@ def sign_in(
             user.save(using=alias)
             audit.write_event(alias, ctx, action="sign_in_failed", record_kind="app_user", record_id=user.id)
             failed = True  # commit the failure count and audit event, then refuse
+        elif user.idp and user.idp != "local":
+            # linked to single sign-on: the password no longer opens it (CR-003 FR-AUT-06); said only to its owner
+            raise AuthFailed(
+                "This account signs in through your organisation's sign-in. Use its button on the sign-in page.",
+                "AUTH-SSO-ONLY",
+            )
         else:
             refused = _claim_sessions(alias, user, ctx, now, current_token)
             if refused is not None:
@@ -330,15 +336,26 @@ def _claim_sessions(
 
 
 def _open_session(
-    alias: str, user: AppUser, ctx: Context, password: str, ip: str | None, ua: str | None, now: dt.datetime
+    alias: str,
+    user: AppUser,
+    ctx: Context,
+    password: str | None,
+    ip: str | None,
+    ua: str | None,
+    now: dt.datetime,
+    *,
+    auth_method: str = "password",
+    mfa_at: dt.datetime | None = None,
 ) -> tuple[str, uuid.UUID, bool, list[dict[str, object]]]:
-    if _hasher.check_needs_rehash(user.password_hash or ""):
+    """Open the account's session. ``mfa_at`` is set when the sign-in already proved a second factor (a trusted
+    identity provider's MFA, CR-003 FR-AUT-06); the returned flag says whether the local code is still owed."""
+    if password is not None and _hasher.check_needs_rehash(user.password_hash or ""):
         user.password_hash = _hasher.hash(password)
     user.failed_attempts = 0
     user.locked_until = None
     user.last_sign_in_at = now
     user.save(using=alias)
-    mfa = MfaFactor.unscoped.using(alias).filter(tenant_id=user.tenant_id, user_id=user.id, status="active").exists()
+    mfa = mfa_at is None and mfa_mod.has_factor(alias, user)
     grants = user_grants(user)
     token = secrets.token_urlsafe(32)
     single = grants[0] if len(grants) == 1 and not mfa else None
@@ -353,6 +370,8 @@ def _open_session(
         affiliation_address=aff.get("address") or None,
         ip=ip,
         user_agent=(ua or "")[:400] or None,
+        auth_method=auth_method[:40],
+        mfa_at=mfa_at,
         started_at=now,
         last_seen_at=now,
         expires_at=now + SESSION_MAX,
@@ -404,6 +423,7 @@ def verify_mfa(token: str, code: str) -> None:
             step = totp_step(seed, code)
             if step is not None and (f.last_step is None or step > f.last_step):
                 s.mfa_at = now
+                s.auth_method = f"{s.auth_method or 'password'}+totp"[:40]
                 f.last_used_at = now
                 f.last_step = step
                 f.save(using=alias)
@@ -416,6 +436,7 @@ def verify_mfa(token: str, code: str) -> None:
             rc = mfa_mod.use_recovery_code(alias, user, code, now)
             if rc is not None:
                 s.mfa_at = now
+                s.auth_method = f"{s.auth_method or 'password'}+recovery"[:40]
                 s.save(using=alias)
                 user.failed_attempts = 0
                 user.save(using=alias)

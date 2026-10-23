@@ -120,6 +120,16 @@ def _mysql(name: str) -> dict[str, object]:
     }
 
 
+if env("SYNTEGRA_DB_SSL_CA", ""):  # the CA that signed the database server's certificate (production, staging)
+    _ssl_ca = env("SYNTEGRA_DB_SSL_CA")
+    _mysql_plain = _mysql
+
+    def _mysql(name: str) -> dict[str, object]:
+        cfg = _mysql_plain(name)
+        cfg["OPTIONS"]["ssl"] = {"ca": _ssl_ca}  # type: ignore[index]
+        return cfg
+
+
 DATABASES = {
     "default": _mysql(f"{DB_PREFIX}_django"),
     "platform": _mysql(f"{DB_PREFIX}_platform"),
@@ -163,6 +173,8 @@ SYNTEGRA_SESSION_IN_USE_MINUTES = int(env("SYNTEGRA_SESSION_IN_USE_MINUTES", "15
 # Empty turns the requirement off (development only); users who set up a factor are always asked for it.
 SYNTEGRA_MFA_REQUIRED_CLEARANCE = env("SYNTEGRA_MFA_REQUIRED_CLEARANCE", "restricted")
 SYNTEGRA_MFA_ISSUER = env("SYNTEGRA_MFA_ISSUER", "Syntegra")
+# Single sign-on providers must be reached over https; staging's local test provider may use http.
+SYNTEGRA_SSO_ALLOW_HTTP = env("SYNTEGRA_SSO_ALLOW_HTTP", "0") == "1"
 DATA_UPLOAD_MAX_MEMORY_SIZE = 30 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 30 * 1024 * 1024
 

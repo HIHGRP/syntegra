@@ -12,6 +12,13 @@
     <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
     <button class="primary">Sign in</button>
   </form>
+  {% if providers is defined and providers %}
+  <div class="sso" id="sso">
+    <p class="muted">or</p>
+    {% for p in providers %}<a class="button" href="/auth/sso/{{ p.provider }}/start?next={{ (request.GET.get('next') or '/')|urlencode }}" id="sso-{{ p.provider }}">{{ p.label }}</a>{% endfor %}
+    <p class="hint">Uses your official account at your organisation. It works only for addresses the state has given a Syntegra account.</p>
+  </div>
+  {% endif %}
   <p class="hint">After your password, Syntegra shows the school or office your account belongs to, with its address, for you to confirm. One account can be signed in on one device at a time.</p>
 </section>
 {% endblock %}

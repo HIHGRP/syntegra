@@ -16,7 +16,7 @@ from syntegra.core import context
 from syntegra.core.api import views as v
 from syntegra.core.api.permissions import Authenticated, Public
 from syntegra.core.middleware import session_token
-from syntegra.iam import mfa, services
+from syntegra.iam import mfa, services, sso
 
 
 class SignInSerializer(serializers.Serializer):  # type: ignore[type-arg]
@@ -215,6 +215,65 @@ class MyRecoveryCodesView(APIView):
 
     def post(self, request: Request) -> Response:
         return Response({"recovery_codes": mfa.regenerate(_token(request))}, status=201)
+
+
+# --------------------------------------------------------------------------- single sign-on (CR-003, CR-008)
+class SsoProvidersView(APIView):
+    """GET the enabled sign-in providers (button text and start URL) — public, for sign-in screens."""
+
+    authentication_classes: list[Any] = []
+    permission_classes = [Public]
+
+    def get(self, request: Request) -> Response:
+        tenant = request._request.syntegra_tenant  # type: ignore[attr-defined]
+        return Response(
+            {
+                "providers": [
+                    {"provider": p.provider, "label": p.label, "start": f"/auth/sso/{p.provider}/start"}
+                    for p in sso.enabled(tenant)
+                ]
+            }
+        )
+
+
+class ProviderSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    provider = serializers.ChoiceField(choices=sorted(sso.PROVIDERS))
+    label = serializers.CharField(max_length=80)  # type: ignore[assignment]  # the field, not DRF's label
+    issuer = serializers.URLField(max_length=2048)
+    client_id = serializers.CharField(max_length=255)
+    client_secret = serializers.CharField(max_length=2000, required=False, allow_blank=True, trim_whitespace=False)
+    scopes = serializers.CharField(max_length=200, required=False, default="openid email profile")
+    allowed_domains = serializers.ListField(child=serializers.CharField(max_length=253), min_length=1, max_length=50)
+    trust_idp_mfa = serializers.BooleanField(default=False)
+    sort_order = serializers.IntegerField(min_value=0, max_value=99, required=False, allow_null=True)
+    status = serializers.ChoiceField(choices=["active", "inactive"], default="active")
+
+
+class AdminProvidersView(APIView):
+    """GET the state's sign-in providers; POST to create or change one (ADM-103, sso:manage). The client secret is
+    write-only and stored encrypted."""
+
+    required_permission = "sso:manage"
+
+    def get(self, request: Request) -> Response:
+        return Response(v.jsonable({"results": sso.configs(context.require())}))
+
+    def post(self, request: Request) -> Response:
+        s = ProviderSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = dict(s.validated_data)
+        d["client_secret"] = d.get("client_secret") or None
+        d.setdefault("sort_order", None)
+        return Response(v.jsonable(sso.save(context.require(), **d)), status=201)
+
+
+class AdminProviderCheckView(APIView):
+    """POST: read the provider's discovery document and keys now."""
+
+    required_permission = "sso:manage"
+
+    def post(self, request: Request, pk: uuid.UUID) -> Response:
+        return Response(v.jsonable(sso.check(context.require(), pk)))
 
 
 # --------------------------------------------------------------------------- administration (CR-007)

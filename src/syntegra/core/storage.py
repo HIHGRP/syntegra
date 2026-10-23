@@ -240,13 +240,14 @@ def _s3_put(key: str, digest: bytes, data: bytes, retain_until: dt.date | None, 
     try:
         s3.put_object(**args)
         return Stored(key, digest, len(data), True, S3, mode.lower(), retain_until)
-    except ClientError as exc:
-        status = exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode")
-        code = exc.response.get("Error", {}).get("Code")
-        if status not in (409, 412) and code not in ("PreconditionFailed", "ConditionalRequestConflict"):
+    except ClientError:
+        # Refused because the key exists — AWS answers 412 to the conditional write; some S3-compatible stores
+        # instead refuse to overwrite a locked object. Either way nothing was overwritten. Anything else is a real
+        # failure: re-raise it unless an object is in fact there.
+        existing = _s3_get(key)
+        if existing is None:
             raise
     # the key exists: the same bytes were stored before (keys are content hashes) — prove it, never overwrite
-    existing = _s3_get(key)
     if existing is None or hashlib.sha256(existing).digest() != digest:
         raise IntegrityFailure(key)
     status_now = lock_status(key, S3)
