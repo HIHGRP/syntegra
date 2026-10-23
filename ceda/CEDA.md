@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **Document** | SYN-CEDA-001 — Canonical Enterprise Data Architecture |
-| **Version** | 1.8.0 — after the password, the sign-in shows and records the school or office of the user (name and address); one account can be used by one person at a time; document management for digitised paper records, indexed for full-text search and filed under each school; five named access levels decide what each user sees (change request CR-007; §31). 1.7.0 added adds institutional budgets and imprest, funding and loan platforms for institutions, staff and learners, the government property register with facility condition, usability and proactive maintenance, the infrastructure data warehouse for the Commissioner, and security-agency curricula through each agency's structure (change request CR-006; §28); documents the Abia State demonstration and school performance comparison (§29) and adds the End-User Guide (§30). 1.6.0 added the federal unity colleges and federal special training institutions, extends the security agencies' institutions, and links every institution to the education watchdogs and examination bodies it depends on (change request CR-005; §27). 1.5.0 added the security agencies' education and training institutions, each under its own agency structure with its own curricula (CR-004; §26). 1.4.0 modelled two-factor authentication and single sign-on (CR-003); 1.3.0 the national clearance network (CR-002; §25); 1.2.0 the HRMS and fee-clearance due diligence (CR-001; §23, §24). Change log in §22 |
+| **Version** | 1.9.0 — document masters kept write-once under compliance object lock until the end of their retention, a searchable PDF copy of each scan beside the untouched original, and every copy that leaves the system stamped and entered in a release register that checks a copy presented later; authenticator self-enrolment enforced at sign-in for roles that need it; single sign-on by OpenID Connect built (CR-003); API writes need the same access level as the form; a staging rehearsal against real infrastructure before production (change request CR-008; §32). 1.8.0 added: after the password, the sign-in shows and records the school or office of the user (name and address); one account can be used by one person at a time; document management for digitised paper records, indexed for full-text search and filed under each school; five named access levels decide what each user sees (change request CR-007; §31). 1.7.0 added adds institutional budgets and imprest, funding and loan platforms for institutions, staff and learners, the government property register with facility condition, usability and proactive maintenance, the infrastructure data warehouse for the Commissioner, and security-agency curricula through each agency's structure (change request CR-006; §28); documents the Abia State demonstration and school performance comparison (§29) and adds the End-User Guide (§30). 1.6.0 added the federal unity colleges and federal special training institutions, extends the security agencies' institutions, and links every institution to the education watchdogs and examination bodies it depends on (change request CR-005; §27). 1.5.0 added the security agencies' education and training institutions, each under its own agency structure with its own curricula (CR-004; §26). 1.4.0 modelled two-factor authentication and single sign-on (CR-003); 1.3.0 the national clearance network (CR-002; §25); 1.2.0 the HRMS and fee-clearance due diligence (CR-001; §23, §24). Change log in §22 |
 | **Date** | 15 October 2026 (1.0.0 to 1.7.0: 13–14 October 2026) |
-| **Derived from** | SYN-MFS-002 v2.4, Master Functional Specification (consolidated single volume: Books 1–3, 517 functional requirements, 260 pages, Appendix J MySQL schema of 174 tables), extended by change requests CR-001 (23 requirements, 13 pages), CR-002 (6 requirements, 1 page), CR-003 (7 requirements), CR-004 (8 requirements, 4 pages), CR-005 (8 requirements, 3 pages) CR-006 (26 requirements, 7 pages) and CR-007 (11 requirements, 4 pages) |
+| **Derived from** | SYN-MFS-002 v2.4, Master Functional Specification (consolidated single volume: Books 1–3, 517 functional requirements, 260 pages, Appendix J MySQL schema of 174 tables), extended by change requests CR-001 (23 requirements, 13 pages), CR-002 (6 requirements, 1 page), CR-003 (7 requirements), CR-004 (8 requirements, 4 pages), CR-005 (8 requirements, 3 pages) CR-006 (26 requirements, 7 pages), CR-007 (11 requirements, 4 pages) and CR-008 (9 requirements, 2 pages) |
 | **Platform** | Python 3.12 · Django 5.2 LTS (+ FastAPI for high-throughput services) · MySQL 9.7 LTS · Red Hat Enterprise Linux 10 / OpenShift |
 | **Machine-readable model** | `ceda/model/` (single source of truth) → `ceda/generated/` (DDL, dictionary, ERDs, JSON Schema, OpenAPI components, event schemas, metric catalogue, traceability) |
 | **Status of artefacts** | Model validates with 0 errors, 0 warnings; every zone's DDL loads into MySQL 9.7.2; 12 database-level guarantees verified on MySQL 9.7 (§18) |
@@ -46,13 +46,13 @@ CEDA is the **authoritative data blueprint** for Syntegra. The MFS says *what* t
 | Measure | Value |
 |---|---|
 | Domains (subject areas) | 37 operational + 1 warehouse |
-| Canonical entities | 523 (174 re-specified from Appendix J, 349 added to give MFS and change-request requirements a home) |
-| Physical tables | 553 across 6 data zones (platform 26, registry 198, ops 239, vault 26, records 20, warehouse 44) — 18 cross-cutting entities are replicated per zone |
-| Columns · enforced foreign keys · soft references | 8,541 · 727 · 365 |
-| Append-only tables · partitioned tables | 99 · 21 |
-| Fixed enumerations · jurisdiction code lists | 390 · 51 (Nigerian pack) |
-| Domain events · semantic-layer metrics · retention series | 169 · 74 · 33 |
-| Coverage | 292/292 pages (260 MFS + 13 CR-001 + 1 CR-002 + 4 CR-004 + 3 CR-005 + 7 CR-006 + 4 CR-007); 606/606 functional requirements accounted for (517 MFS + 23 CR-001 + 6 CR-002 + 7 CR-003 + 8 CR-004 + 8 CR-005 + 26 CR-006 + 11 CR-007; 599 realised in data, 7 behavioural); 174/174 Appendix J tables mapped |
+| Canonical entities | 526 (174 re-specified from Appendix J, 352 added to give MFS and change-request requirements a home) |
+| Physical tables | 556 across 6 data zones (platform 26, registry 199, ops 239, vault 26, records 22, warehouse 44) — 18 cross-cutting entities are replicated per zone |
+| Columns · enforced foreign keys · soft references | 8,586 · 730 · 365 |
+| Append-only tables · partitioned tables | 100 · 21 |
+| Fixed enumerations · jurisdiction code lists | 393 · 51 (Nigerian pack) |
+| Domain events · semantic-layer metrics · retention series | 171 · 74 · 33 |
+| Coverage | 294/294 pages (260 MFS + 13 CR-001 + 1 CR-002 + 4 CR-004 + 3 CR-005 + 7 CR-006 + 4 CR-007 + 2 CR-008); 615/615 functional requirements accounted for (517 MFS + 23 CR-001 + 6 CR-002 + 7 CR-003 + 8 CR-004 + 8 CR-005 + 26 CR-006 + 11 CR-007 + 9 CR-008; 607 realised in data, 8 behavioural); 174/174 Appendix J tables mapped |
 
 ---
 
@@ -812,6 +812,18 @@ Read from the files that pin them; `cedagen.py check` fails when this table no l
 ---
 
 ## 22. Change log
+
+### 1.9.0 — 23 October 2026 (change request CR-008)
+
+| Change | Reason |
+|---|---|
+| `document`: `master_store`, `master_lock_mode` (enum `object_lock_mode`), `master_retain_until` (§32.1) | Masters are held write-once in object storage under compliance object lock until the end of their file-plan retention; the record says where and until when |
+| New `document_rendition` (enum `rendition_kind`), event `DOC.RENDITION_CREATED` (§32.2) | A searchable PDF copy of each scan — the page images with the OCR words laid invisibly over them — beside the untouched master, with its own hash and the master's |
+| New `document_release` (append-only; enum `release_kind`), event `DOC.RELEASED`; page DOC-109 (§32.3) | Every copy that leaves the system is stamped and registered; a copy presented later is checked against the register; certified true copies need `document:certify` and a reason |
+| New `mfa_recovery_code`; requirements FR-AUT-104, FR-AUT-105 on `mfa_factor` (§32.4) | Authenticator self-enrolment with a QR code and ten single-use recovery codes, enforced after the password for roles that need a second factor |
+| Page ADM-103 on `identity_provider_config`; FR-AUT-106 (§32.5) | Single sign-on by OpenID Connect, configured per state; the CR-003 model is now built |
+| Behavioural FR-ADM-203 (§32.6) | Writes through the API need the access level of the web form that performs the same action |
+| Release 1.9.0: an expand script adding the three NULLable `document` columns (INSTANT) and their CHECK, plus the derived delta | Upgrading a live 1.8.0 database in place |
 
 ### 1.8.0 — 15 October 2026 (change request CR-007)
 
@@ -1954,7 +1966,7 @@ reason (`POST /api/v1/auth/sessions/{id}/end`).
 |---|---|
 | Upload (DOC-107, `POST /api/v1/documents`) | One or more scans (PDF, JPEG, PNG, TIFF or text; type checked from the bytes, 25 MB each) under a school, with category, title, dates or session, class, subject, the reference written on the paper and a description |
 | Reference number | `<institution code>/<category>/<year>/<sequence>`, e.g. `INS-NG-000129/ADM/1998/00001`, unique in the state |
-| Storage | Write-once, content-addressed object storage; each object is written to a temporary file and linked into place only when complete, so no partial object is ever kept; the SHA-256 is recorded at upload and checked on every read; the same scan is stored once (a second upload is refused and points to the existing reference when the uploader could open it) |
+| Storage | Write-once, content-addressed object storage (in production under compliance object lock, §32.1); each object is written to a temporary file and linked into place only when complete, so no partial object is ever kept; the SHA-256 is recorded at upload and checked on every read; the same scan is stored once (a second upload is refused and points to the existing reference when the uploader could open it) |
 | Index | `document_index`: title, keywords (category, school, session, class, subject, paper reference, description) and the text — the PDF text layer, text files, OCR with Tesseract (installed in the production image), and any transcription typed at upload — under a MySQL FULLTEXT key; special-category documents are never indexed |
 | Search (DOC-104, `GET /api/v1/documents`) | Words (all must match, prefixes allowed), a reference number, school, category and year; results ranked by relevance, limited to the caller's scope and access level inside the full-text query itself; restricted documents only with a declared purpose, recorded with the search |
 | School register (DOC-108) | Each school's complete register on one page, grouped by category with reference numbers, storage used, and search within the school; restricted documents are counted, and listed once a purpose is declared |
@@ -2000,3 +2012,108 @@ registration, fee clearance, funding agreements), menu items (hidden when the pa
 | ADM-101 Access levels | `/admin/access-levels` | `access:manage` |
 | ADM-102 Active sessions | `/admin/sessions` | `session:manage` |
 
+## 32. Evidence-grade documents, the second factor, single sign-on and staging (CR-008)
+
+### 32.1 Write-once masters under object lock
+
+A document's master — the scan as captured — is evidence. In production (and staging) it is stored only in
+S3-compatible object storage, in a bucket created with **object lock** (`SYNTEGRA_OBJECT_STORE=s3`; production refuses
+to start without `SYNTEGRA_S3_BUCKET`):
+
+| Guarantee | How |
+|---|---|
+| Written once | A conditional write (`If-None-Match: *`) under the content-addressed key `<prefix>/<aa>/<sha256>.<ext>`; when the store refuses because the key exists, the existing object is read back and must be byte-identical |
+| Arrives intact | The SHA-256 computed at upload is sent as the object's checksum; the store refuses bytes that differ |
+| Cannot be changed or deleted | Object lock in **compliance** mode (`SYNTEGRA_S3_LOCK_MODE`) until `document.master_retain_until`: the end of the category's file-plan retention, or `SYNTEGRA_PERMANENT_RETENTION_YEARS` (100) for permanent records. Nobody, administrators included, can shorten it |
+| Read back verified | Every read recomputes the SHA-256 and withholds an object that no longer matches |
+
+`document.master_store`, `master_lock_mode` and `master_retain_until` record where the master is and until when; the
+viewer (DOC-105, *Evidence*) shows the lock and the master's hash. Development and tests use the filesystem store
+(`fs`), which keeps the write-once and hash rules but not the lock.
+
+### 32.2 A searchable copy beside the original
+
+When OCR reads a scan, the same pass produces a **searchable PDF copy**: each page image with the words laid
+invisibly (PDF text render mode 3) where they were read. A reader sees the scan exactly as captured and can search,
+select and copy its words. The copy is a `document_rendition` (`kind=searchable_pdf`) with its own SHA-256, the SHA-256
+of the master it was made from (`source_sha256`), its page count and the OCR engine, stored write-once under the same
+lock. The master is never altered; the viewer shows the searchable copy and offers both for download.
+
+### 32.3 Stamped releases and the release register
+
+Every copy that leaves the system is a **release** (`document_release`, append-only):
+
+| Copy | What is released |
+|---|---|
+| Stamped copy of the scan | A PDF (images are first placed on pages) with a band on every page: released to whom, when, for what purpose, and a release code such as `K7Q2-M9XD-4TPA`, with the code faintly across the page |
+| Stamped searchable copy | The searchable copy, stamped the same way |
+| Word copy | The editable copy (§31.3), with the stamp at the top and bottom |
+| Certified true copy | The master byte for byte, unstamped — only with `document:certify` and a reason of at least ten characters (e.g. the court order), registered like every other copy |
+
+The register records the release code, the copy's kind, who received it, when, the purpose or reason, and the
+SHA-256 of the exact bytes released. On DOC-109 (`document:releases`: state administrators, records managers) a release
+code typed from paper resolves to its release; a file presented with it is reported as **identical to the copy
+released**, **identical to the master**, or **not the copy released**. API: `GET /api/v1/records/releases`,
+`GET|POST /api/v1/records/releases/{code}`; every download carries its code in `X-Syntegra-Release`.
+
+### 32.4 The second factor, enrolled by the user and enforced at sign-in
+
+Anyone whose roles act at or above `SYNTEGRA_MFA_REQUIRED_CLEARANCE` (Restricted by default; production refuses to
+start without it) must have an authenticator app. After the password, such a user without one is taken straight to
+enrolment; no role applies, on the pages or through the API, until it is done:
+
+1. **Enrol** (`/me/authenticator`, `POST /api/v1/me/mfa/totp`): a new TOTP seed, shown as a QR code drawn on the page
+   and as a key to type, kept as an *inactive* factor;
+2. **Confirm** with the first code from the app (`POST /api/v1/me/mfa/totp/{id}/confirm`): the factor becomes active,
+   the session counts as having passed the second factor, and **ten recovery codes** (`XXXXX-XXXXX`) are shown once and
+   stored only as keyed hashes (`mfa_recovery_code`);
+3. **Every later sign-in** asks for the app's code (AUT-02); a recovery code stands in for it once.
+
+Adding another authenticator, removing one or making new recovery codes needs a session that has passed the second
+factor; the last authenticator of an account whose roles need one cannot be removed. Users below the threshold may
+enrol and are then always asked. Sessions record how they were authenticated (`password`, `password+totp`,
+`password+recovery`, `sso:<provider>`, `sso:<provider>+idp_mfa`). HOM-04 `/me` shows the account's roles,
+authenticators and recovery codes left.
+
+### 32.5 Single sign-on (OpenID Connect)
+
+The CR-003 model is built. Each state configures its providers on ADM-103 (`sso:manage`): the state's government ID,
+Microsoft Entra ID or Google Workspace, with issuer, client id, client secret (envelope-encrypted, never shown again),
+allowed e-mail domains and whether the provider's MFA is trusted. Enabled providers appear as buttons on the sign-in
+page.
+
+| Step | Rule |
+|---|---|
+| Start | Authorization code flow with PKCE (S256); `state`, `nonce` and the verifier in a signed cookie valid for ten minutes |
+| Token | The code is exchanged at the provider's token endpoint with the verifier and the client secret |
+| ID token | Signature checked against the provider's published keys (RS256, PS256, ES256; keys re-read once on rotation); issuer, audience, `azp`, expiry and nonce checked |
+| Account | Only an account the state created: matched by the provider's subject once linked, otherwise by an e-mail address the provider marks verified (Entra: `xms_edov`) in an allowed domain. An account created for single sign-on (no password, *invited*) is activated by its first verified sign-in; suspended or deactivated accounts stay shut. Nothing is created and no role comes from the provider |
+| After linking | The password no longer opens the account |
+| Second factor | The provider's MFA (`amr`) counts only where the state trusts that provider; otherwise the local code, or enrolment, follows |
+| Session | As for a password: one session per account, then the school or office is confirmed |
+
+### 32.6 One rule for pages, forms and the API
+
+A write through the API needs the access level of the web form that performs the same action (FR-ADM-203). The forms
+register each write permission's level at start-up (`web.forms.write_levels`: the level of the page each form writes
+through); the API refuses an unsafe request below it with `AUTH-LEVEL`, as the form does, before the services' own
+data-level checks. A test walks every API route and checks that the level of every form action is enforced there.
+
+### 32.7 Staging: the production image against real infrastructure
+
+Before a release goes to production, CI (`.github/workflows/app.yml`, job *staging*; `deploy/staging/`) runs the
+production image and settings against:
+
+| Component | Staging |
+|---|---|
+| Database | MySQL 9.7 requiring TLS; the application connects with `ssl_mode=VERIFY_IDENTITY` (`SYNTEGRA_DB_SSL_CA`) as a least-privilege account |
+| Object storage | An S3-compatible store (Versity Gateway) with versioning and compliance object lock |
+| Identity provider | Keycloak, standing in for the state's OpenID Connect provider |
+| Keys | The one difference from production: `LocalKeyProvider` with a staging-only secret, because the HSM-backed provider is configured per state (production refuses `LocalKeyProvider`) |
+
+The smoke test signs the administrator in and enrols their authenticator, uploads a scan (OCR, full-text search),
+checks the master's compliance lock, the stamped release and its check in the register, the searchable copy, that the
+store itself refuses overwriting and deleting, and signs a person in through the identity provider. With the
+application stopped, every zone is dumped over TLS by a read-only backup account and every object version mirrored
+with its hash; the dumps are restored into an empty MySQL, every table's row count is compared with the live database,
+and every recorded master and searchable copy is checked against its recorded SHA-256.

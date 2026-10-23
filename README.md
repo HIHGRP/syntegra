@@ -98,6 +98,9 @@ Module boundaries are enforced by `import-linter`:
 | Sign-in identity and sessions (CR-007) | After the password, the school, college or office of each role grant is shown with its address — never typed — and the one confirmed is recorded on the session and shown under the menu on every page. One account, one session: a sign-in is refused while another session of the account is in use (15 minutes), the person using it is warned, quieter sessions end as `replaced`, and every session records why it ended. Administrators see and end sessions in their scope and record office addresses. Authenticator codes on the page (AUT-02), used once, counted towards the lock; API clients confirm with `auth/role` before anything else opens | `auth/sign-in` (grants with their school or office), `auth/mfa`, `auth/role`, `me`, `auth/sessions`, `auth/sessions/{id}/end`, `access/offices`, `access/offices/{id}/address`, `access/grants/{id}/office` | AUT-02 `/auth/mfa`, AUT-03 `/auth/context`, ADM-102 `/admin/sessions` |
 | Document management (CR-007) | Digitised paper documents filed under each school with a reference number (`INS-NG-000129/ADM/1998/00001`); write-once storage with a SHA-256 checked on every read; one copy per scan; text from the PDF layer, OCR (Tesseract, in the production image) and transcriptions indexed with a MySQL FULLTEXT key; search by words, reference, school, category and year; each school's complete register; viewer with an on-screen watermark; an editable Word copy made on demand (never stored). Ministry, boards, LGAs and records managers search every school in scope with `document:search`; restricted documents are listed and opened only for a declared purpose; everything is audited | `documents`, `documents/categories`, `documents/{id}`, `documents/{id}/content`, `documents/{id}/word`, `institutions/{id}/documents` | DOC-104 `/documents`, DOC-105 `/documents/{id}`, DOC-107 `/documents/upload`, DOC-108 `/institutions/{id}/documents` |
 | Access levels (CR-007) | Five levels over the classifications (1 Public, 2 Internal, 3 Confidential, 4 Restricted, 5 Special); each role has one; an administrator can lower one person's level for one role with a reason (never above the role or their own, never their own grant). Pages and forms above the level are refused, their menu items hidden, fields trimmed and documents withheld | `access/levels`, `access/grants/{id}/level` | ADM-101 `/admin/access-levels` |
+| Evidence-grade documents (CR-008) | Masters write-once in S3-compatible object storage under compliance object lock until the end of their retention (conditional writes, SHA-256 checksums); a searchable PDF copy of each scan beside the untouched original; every download a stamped copy (recipient, time, purpose, release code) entered in the release register, which checks a copy presented later; certified true copies of the master with `document:certify` and a reason | `documents/{id}/content` (`?kind=searchable`), `documents/{id}/certified`, `records/releases`, `records/releases/{code}` | DOC-105 `/documents/{id}`, DOC-109 `/records/releases` |
+| Second factor and single sign-on (CR-003, CR-008) | Authenticator enrolment on the profile page with a QR code, a first code and ten single-use recovery codes, enforced after the password for roles at or above `SYNTEGRA_MFA_REQUIRED_CLEARANCE`; single sign-on by OpenID Connect (code flow with PKCE) with the state's government ID, Entra ID or Google, linked only to accounts the state created; the provider's MFA counts only where trusted | `me/mfa`, `me/mfa/totp`, `me/mfa/totp/{id}/confirm`, `me/mfa/{id}/remove`, `me/mfa/recovery-codes`, `auth/sso/providers`, `admin/sign-in-providers`, `admin/sign-in-providers/{id}/check` | HOM-04 `/me`, `/me/authenticator`, `/auth/sso/{provider}/start`, ADM-103 `/admin/sign-in-providers` |
+| API write levels (CR-008) | A write through the API needs the access level of the web form that does the same thing (`AUTH-LEVEL`), so pages, forms and the API apply one rule | every unsafe API route with a form counterpart | — |
 | School performance | Control room and school comparison for every school in scope: mean score, pass rate, attendance and a performance index ranked within primary, secondary and tertiary; best school and best student overall and per group; by-LGA charts | — | CMD-101 `/command/control-room`, CMD-102 `/command/compare` |
 | Bulk roll import | A school's whole roll in one audited command (all or nothing, same validation as single registration, guardians for minors, duplicates checked); Global Learner IDs leased in national blocks | — | used by the demonstration loader |
 | Metrics | Semantic layer (`ENR-COUNT`, `ATT-RATE`, `CUR-GAPS-OPEN`) limited to the caller's scope; small-number suppression set by policy | `metrics/{id}` | Home tiles |
@@ -224,7 +227,36 @@ The integration tests cover:
   state registries cannot see the sector registry; intakes, trainees and outcomes; syllabus headings only; the pages;
 - federal institutions and watchdogs: the directory and its dependencies; every institution's regulatory profile
   (state schools on registration, unity colleges, tertiary, technical, nursing, security institutions) and its gaps;
-  zone-level access to unity colleges; the official-list import (validation, additions, corrections); the pages.
+  zone-level access to unity colleges; the official-list import (validation, additions, corrections); the pages;
+- evidence-grade documents (CR-008): masters written once under compliance object lock (S3 through moto: a second
+  write and deletion refused), the searchable copy beside the untouched master, stamped downloads and their codes,
+  the release register telling the released copy, the master and an altered copy apart, certified copies;
+- the second factor: enrolment before anything opens for roles that need it, QR code and first code, recovery codes
+  used once, removal and new codes only after the code, the API enrolling and refusing alike;
+- single sign-on against an in-process provider signing real RS256 tokens: linking, invited accounts activated,
+  refusals (unverified e-mail, domain, unknown account, wrong key, audience, expiry, nonce, state), trusted MFA;
+- API writes refused below the level of the matching form, for every route.
+## Staging rehearsal
+
+Before a release goes to production, CI (job *staging*) runs the production image and settings in
+[`deploy/staging/`](deploy/staging/) against MySQL 9.7 over verified TLS, an S3-compatible store with compliance
+object lock (Versity Gateway) and an OpenID Connect provider (Keycloak). A smoke test enrols the administrator's
+authenticator, uploads a scan (OCR and search), checks the lock, stamped releases, the searchable copy and that the
+store refuses changes, and signs in through the provider; then the zones are dumped over TLS, the objects mirrored, the
+dumps restored into an empty MySQL and every table and object verified (CEDA §32.7). To run it by hand:
+
+```bash
+deploy/staging/certs.sh
+docker build -f deploy/Containerfile -t syntegra:ci .
+docker compose -f deploy/staging/compose.yaml up -d --wait db db-restore && docker compose -f deploy/staging/compose.yaml up -d objects idp
+docker compose -f deploy/staging/compose.yaml run --rm migrate && docker compose -f deploy/staging/compose.yaml up -d web
+docker compose -f deploy/staging/compose.yaml run --rm smoke
+docker compose -f deploy/staging/compose.yaml stop web
+for job in backup-db backup-objects restore-db verify; do docker compose -f deploy/staging/compose.yaml run --rm $job; done
+```
+
+Production differs from staging only in its key provider: the HSM-backed provider configured for each state
+(`SYNTEGRA_KEY_PROVIDER`); production refuses the local one.
 
 ## Layout
 
