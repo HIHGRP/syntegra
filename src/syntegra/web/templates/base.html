@@ -21,6 +21,7 @@
     {% if ctx.has("federal_institutions:view") and can_open("FED-01") %}<a href="/federal-institutions">Federal institutions</a>{% endif %}
     <a href="/regulators">Regulators</a>
     {% if ctx.has("hr:view") and can_open("HRM-01") %}<a href="/hr/establishment">HR</a>{% endif %}
+    {% if ctx.has("lesson:plan") and can_open("CUR-09") %}<a href="/teaching/plans"{% if request.path.startswith("/teaching") %} aria-current="page"{% endif %}>Lessons</a>{% endif %}
     {% if ctx.has("exam:view") and can_open("EXM-01") %}<a href="/exams/series">Exams</a>{% endif %}
     {% if (ctx.has("document:view") or ctx.has("document:search") or ctx.has("document:upload")) and can_open("DOC-104") %}<a href="/documents"{% if request.path.startswith("/documents") or request.path.endswith("/documents") %} aria-current="page"{% endif %}>Documents</a>{% endif %}
     {% if ctx.has("budget:view") and can_open("FIN-02") %}<a href="/finance/performance">Budgets</a>{% endif %}

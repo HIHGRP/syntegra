@@ -44,6 +44,8 @@ IMPLEMENTED: dict[str, str] = {
     "EXM-01": "exam_series",
     "EXM-03": "exam_seating",
     "BEH-102": "seating",
+    "ACA-101": "class_plan",
+    "CUR-09": "lesson_plans",
     "ADM-101": "access_levels",
     "ADM-102": "sessions_admin",
     "DOC-104": "documents",

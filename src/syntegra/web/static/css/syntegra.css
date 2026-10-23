@@ -211,3 +211,17 @@ input.num4 { width: 6rem; }
 @media print { header, footer, .affbar, #continue, .hint { display: none; } }
 /* single sign-on buttons (AUT-01, CR-008) */
 .sso { margin-top: 1rem; display: grid; gap: .5rem; text-align: center; } .sso a.button { display: block; }
+
+/* lesson plans (CUR-09) and class subject plan (ACA-101) */
+.weeknav { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; align-items: center; margin: .5rem 0 1rem; }
+.lessons { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); margin-bottom: 1rem; }
+.lesson header { display: flex; flex-wrap: wrap; gap: .25rem .75rem; align-items: baseline; margin-bottom: .5rem; }
+.lesson header h2 { margin: 0; font-size: 1.1rem; }
+.lesson h3 { font-size: .9rem; margin: .75rem 0 .25rem; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+.lesson.done { border-left: 4px solid var(--ok); }
+.objectives { margin: 0; padding-left: 1.1rem; }
+.objectives li { margin: .2rem 0; }
+.objectives code, .lesson code, #scheme code { font-size: .8rem; color: var(--muted); }
+label.inline { display: block; font-weight: 400; margin: .2rem 0; }
+form.assign { min-width: 16rem; }
+#subjects summary { white-space: nowrap; }

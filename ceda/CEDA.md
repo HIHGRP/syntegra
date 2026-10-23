@@ -2117,3 +2117,64 @@ store itself refuses overwriting and deleting, and signs a person in through the
 application stopped, every zone is dumped over TLS by a read-only backup account and every object version mirrored
 with its hash; the dumps are restored into an empty MySQL, every table's row count is compared with the live database,
 and every recorded master and searchable copy is checked against its recorded SHA-256.
+
+## 33. Subjects and teachers, the timetable and lessons linked to the curriculum
+
+### 33.1 Subjects and teachers (ACA-101)
+
+Each class's page (`/classes/{id}/plan`, heads; `class:view` to open, `class:manage` to change) lists its subjects with
+the periods a week, the curriculum version that applies and the teacher of record, and checks the teaching chain on
+every row:
+
+| Check | Rule |
+|---|---|
+| G2 | A mandatory subject has exactly one teacher of record |
+| G3 | The teacher of record holds a verified, unexpired teaching authorisation (`staff_qualification`, TRCN) for the subject at the class's level |
+
+The head assigns a teacher from the staff posted to the school, as teacher of record or co-teacher. A second teacher
+of record is refused unless the head asks to **replace**: the current assignment then ends and the new one starts in
+the same change. A teacher without the authorisation can be assigned only with a written reason (at least ten
+characters), which is kept on the assignment (`justification`) and shown on the row; the row stays flagged G3 until
+an authorisation is verified. An assignment ended today is no longer current — the hand-over takes effect at once —
+but still counts for lessons already taught today. Every change emits `CUR.ASSIGNMENT_CHANGED`. The page also shows
+each teacher's subjects and load (teacher-of-record periods a week across the school). The coverage engine (CUR-101)
+opens gaps from the same rules.
+
+### 33.2 The timetable
+
+The school's week (`timetable`, `period_structure`, `timetable_lesson`) is built from the class subject plans and their
+teachers of record (`timetable:manage`): a bell schedule of nine 35-minute periods with a break and lunch; each lesson
+placed so that no class, teacher or room is in two places at once, a subject at most once a day while days remain, in
+the class's home room when it is free and otherwise another classroom not assessed unsafe. A class-subject that cannot
+be placed in full is recorded in `unmet_requirements` and the timetable stays a draft; a complete one is published and
+supersedes the previous version. Dated lessons (`lesson_occurrence`) are materialised only when a delivery log refers
+to them.
+
+### 33.3 Lessons linked to the curriculum (CUR-09)
+
+A class-subject carries the curriculum version adopted by the school for its level (`curriculum_adoption`,
+`class_subject_plan.curriculum_version_id`). For its teacher of record the **scheme of work** is drafted from that
+version: the term's objectives, in curriculum order, spread over the term's teaching weeks in proportion to their
+minimum hours, the last two weeks kept for revision and examinations (`scheme_of_work`, `scheme_week`). Within a week the
+objectives are shared out over the week's timetabled lessons in order, so **each lesson shows the objectives planned for
+it**. After a hand-over the new teacher works from the class-subject's latest scheme.
+
+On `/teaching/plans` (teachers: `lesson:plan`, `lesson:deliver`; heads see every class-subject of the school) the
+teacher picks a class and subject and a week and sees each lesson with its day, period, time and room, the planned
+objectives with their topic, and what was delivered. After the lesson the teacher logs the objectives actually covered
+(the planned ones ticked; the rest of the week's and any the class is behind on offered), the minutes taught, the
+learners present and a note (`delivery_log`, append-only, `CUR.LESSON_DELIVERED`). A lesson is logged once, only by the
+teacher it is timetabled for, only on its own day, never before it has taken place, and only with objectives of its
+class-subject's curriculum; `is_as_planned` records whether every planned objective was covered. The page counts the
+term's objectives, those planned up to the week and those delivered, and lists the objectives behind the scheme.
+
+### 33.4 Demonstration data
+
+At the sample secondary schools the demonstration load adds three junior-secondary teachers, every teacher's TRCN
+authorisations, a teacher of record for every class-subject from the start of the session (in JSS 1B Basic Science a
+Chemistry teacher covers without the authorisation, with the head's reason, so G3 shows; a co-teacher for SS 2A
+Biology practicals), the NERDC SS 2 first-term curricula for Mathematics, English Language, Biology, Civic Education and
+Igbo Language (authored and approved by two different state curriculum officers) adopted for SS 2, the published
+timetable, the SS 2 schemes of work, and the SS 2 Mathematics lessons logged by the teacher (`teacher.<school
+code>@abia.demo`, now linked to the Mathematics teacher) up to the day of the load, leaving a lesson unlogged this
+week and last.

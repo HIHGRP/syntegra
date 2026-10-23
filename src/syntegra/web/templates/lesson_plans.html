@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Lessons{% if d %} — {{ d.class.name }} {{ d.subject }}{% endif %}{% endblock %}
+{% block content %}
+<div class="head-row">
+  <h1>Lessons{% if d %} — {{ d.class.name }}, {{ d.subject }}{% endif %}</h1>
+  {% if options %}<form method="get" class="inline-form" id="pick"><label>Class and subject <select name="assignment" onchange="this.form.submit()">
+    {% set mine = options|selectattr("mine")|list %}{% set others = options|rejectattr("mine")|list %}
+    {% if mine %}<optgroup label="Your classes">{% for o in mine %}<option value="{{ o.assignment_id }}"{% if d and o.assignment_id == d.assignment_id %} selected{% endif %}>{{ o.label }}{% if not o.has_curriculum %} (no curriculum){% endif %}</option>{% endfor %}</optgroup>{% endif %}
+    {% if others %}<optgroup label="Classes at your school">{% for o in others %}<option value="{{ o.assignment_id }}"{% if d and o.assignment_id == d.assignment_id %} selected{% endif %}>{{ o.label }}{% if not o.has_curriculum %} (no curriculum){% endif %}</option>{% endfor %}</optgroup>{% endif %}
+  </select></label><noscript><button>Open</button></noscript></form>{% endif %}
+</div>
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+{% if not d %}
+<p class="muted">You have no class-subjects assigned to you yet. The head assigns teachers on each class's <em>Subjects and teachers</em> page.</p>
+{% else %}
+<p class="muted">{{ d.teacher }}{% if not d.mine %} (teacher of record){% endif %} · {% if d.curriculum %}{{ d.curriculum.title }} — {{ d.curriculum.authority }}, version {{ d.curriculum.version }}{% else %}no curriculum adopted{% endif %} · {{ d.term.name }}, week {{ d.week.no }} of {{ d.week.of }}</p>
+{% if not d.curriculum %}
+<div class="alert">No curriculum applies to this class-subject yet. Lessons can be linked to objectives once the school adopts the curriculum for {{ d.class.level }}.</div>
+{% elif not d.scheme %}
+<section class="card"><h2>Scheme of work</h2><p>There is no scheme of work yet. It is drafted from the curriculum: the term's {{ d.curriculum.objectives }} objectives are spread over the teaching weeks by their hours, keeping the last two weeks for revision and examinations.</p>
+{% if d.can_draft and ctx.has("lesson:plan") %}<form method="post"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="draft"><input type="hidden" name="assignment" value="{{ d.assignment_id }}"><button class="primary">Draft the scheme of work</button></form>{% endif %}</section>
+{% else %}
+<section class="kpis" aria-label="Progress">
+  <div class="kpi"><span class="v">{{ d.curriculum.objectives }}</span><span class="k">objectives this term</span></div>
+  <div class="kpi"><span class="v">{{ d.progress.planned_to_date }}</span><span class="k">planned up to this week</span></div>
+  <div class="kpi"><span class="v">{{ d.progress.delivered }}</span><span class="k">delivered (logged)</span></div>
+  <div class="kpi"><span class="v">{{ d.progress.behind|length }}</span><span class="k">behind the scheme</span></div>
+</section>
+{% endif %}
+<nav class="weeknav" aria-label="Week">
+  {% if d.week.prev %}<a href="?assignment={{ d.assignment_id }}&amp;week={{ d.week.prev }}">← Previous week</a>{% else %}<span class="muted">← Previous week</span>{% endif %}
+  <strong>{{ d.week.monday|date("%a %d %b") }} – {{ d.week.friday|date("%a %d %b %Y") }}</strong>
+  {% if d.week.next %}<a href="?assignment={{ d.assignment_id }}&amp;week={{ d.week.next }}">Next week →</a>{% else %}<span class="muted">Next week →</span>{% endif %}
+</nav>
+<section class="lessons" aria-label="This week's lessons">
+{% for ls in d.lessons %}
+  <article class="card lesson{% if ls.log %} done{% endif %}" id="lesson-{{ ls.lesson_id }}-{{ ls.on }}">
+    <header><h2>{{ ls.day }} {{ ls.on|date("%d %b") }}</h2><span class="muted">{{ ls.period }} · {{ ls.starts.strftime("%H:%M") }}–{{ ls.ends.strftime("%H:%M") }} · {{ ls.room or "room to be confirmed" }}</span>
+      {% if ls.log %}<span class="pill {{ 'pill-ok' if ls.log.as_planned else '' }}">{{ "Taught as planned" if ls.log.as_planned else "Taught — differs from plan" }}</span>{% elif ls.future %}<span class="pill">Upcoming</span>{% else %}<span class="pill pill-bad">Not logged</span>{% endif %}</header>
+    <h3>Planned from the curriculum</h3>
+    {% if ls.planned %}<ul class="objectives">{% for o in ls.planned %}<li><code>{{ o.code }}</code> {{ o.statement }}{% if o.topic %} <span class="muted">— {{ o.topic }}</span>{% endif %}</li>{% endfor %}</ul>{% else %}<p class="muted">Nothing planned{% if d.scheme %} — revision or examination week{% endif %}.</p>{% endif %}
+    {% if ls.log %}
+      <h3>Delivered</h3>
+      <ul class="objectives">{% for o in ls.log.objectives %}<li><code>{{ o.code }}</code> {{ o.statement }}</li>{% endfor %}</ul>
+      <p class="muted">{{ ls.log.minutes }} minutes · {{ ls.log.present if ls.log.present is not none else "—" }} of {{ d.class.learners }} learners present{% if ls.log.note %} · “{{ ls.log.note }}”{% endif %}</p>
+    {% elif ls.can_log and ctx.has("lesson:deliver") %}
+      <details{% if open_lesson == ls.lesson_id|string %} open{% endif %}><summary>Log this lesson</summary>
+        <form method="post">
+          <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="log"><input type="hidden" name="assignment" value="{{ d.assignment_id }}"><input type="hidden" name="week" value="{{ d.week.monday }}">
+          <input type="hidden" name="lesson_id" value="{{ ls.lesson_id }}"><input type="hidden" name="occurs_on" value="{{ ls.on }}">
+          <fieldset><legend>Objectives covered</legend>
+            {% for o in ls.options %}<label class="inline"><input type="checkbox" name="node_ids" value="{{ o.id }}"{% if o.planned %} checked{% endif %}> <code>{{ o.code }}</code> {{ o.statement }}{% if not o.planned %} <span class="muted">(not planned for this lesson)</span>{% endif %}</label>{% endfor %}
+          </fieldset>
+          <div class="grid3"><label>Learners present<input type="number" name="learners_present" min="0" max="{{ d.class.learners }}" value="{{ d.class.learners }}"></label>
+          <label>Minutes taught<input type="number" name="minutes" min="1" max="{{ ls.minutes * 4 }}" value="{{ ls.minutes }}"></label></div>
+          <label>Note <span class="hint opt">— optional</span><input name="note" maxlength="1000" placeholder="e.g. completed worked examples; homework set on page 42"></label>
+          <p><button class="primary">Save the log</button> <span class="muted">A log cannot be changed afterwards.</span></p>
+        </form>
+      </details>
+    {% endif %}
+  </article>
+{% else %}
+  <p class="muted">No lessons of this class-subject on the published timetable this week.</p>
+{% endfor %}
+</section>
+{% if d.progress.behind %}
+<section class="card"><h2>Behind the scheme</h2><p class="muted">Planned up to this week but not yet logged as delivered.</p>
+  <ul class="objectives">{% for o in d.progress.behind %}<li><code>{{ o.code }}</code> {{ o.statement }}</li>{% endfor %}</ul></section>
+{% endif %}
+{% if d.scheme %}
+<details class="card scroll-x" id="scheme"><summary><strong>Scheme of work</strong> — version {{ d.scheme.version }}, {{ d.scheme.weeks|length }} teaching weeks</summary>
+  <table class="compact"><thead><tr><th scope="col">Week</th><th scope="col">Starts</th><th scope="col">Objectives</th></tr></thead>
+  <tbody>{% for w in d.scheme.weeks %}<tr{% if w.current %} class="row-new"{% endif %}><td>{{ w.week_no }}</td><td>{{ w.starts|date("%d %b") }}</td><td>{% for o in w.objectives %}<span class="{{ 'pill pill-ok' if o.delivered else '' }}"><code>{{ o.code }}</code> {{ o.statement }}</span>{{ "" if loop.last else "; " }}{% endfor %}</td></tr>{% endfor %}</tbody></table>
+  <p class="muted">Highlighted objectives have been delivered. The last two weeks of the term are kept for revision and examinations.</p>
+</details>
+{% endif %}
+{% endif %}
+{% endblock %}

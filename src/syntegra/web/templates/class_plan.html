@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Subjects and teachers — {{ d.class.name }}{% endblock %}
+{% block content %}
+<h1>Subjects and teachers — {{ d.class.name }}</h1>
+<p class="muted">{{ d.institution }} · {{ d.class.level }} · {{ d.class.learners }} learners · {{ d.totals.periods }} periods a week</p>
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<nav class="tabs" aria-label="Classes">{% for c in d.classes %}<a href="/classes/{{ c.id }}/plan"{% if c.id == d.class.id %} aria-current="page"{% endif %}>{{ c.name }}</a>{% endfor %}</nav>
+<section class="kpis" aria-label="Summary">
+  <div class="kpi"><span class="v">{{ d.totals.subjects }}</span><span class="k">subjects</span></div>
+  <div class="kpi"><span class="v">{{ d.totals.assigned }}</span><span class="k">with a teacher of record</span></div>
+  <div class="kpi"><span class="v">{{ d.totals.flagged }}</span><span class="k">flagged (no teacher or not authorised)</span></div>
+  <div class="kpi"><span class="v">{{ d.totals.periods }}</span><span class="k">periods a week</span></div>
+</section>
+<section class="card scroll-x">
+  <h2>Subjects</h2>
+  <table class="compact" id="subjects">
+    <thead><tr><th scope="col">Subject</th><th scope="col" class="num">Periods a week</th><th scope="col">Curriculum</th><th scope="col">Teacher of record</th><th scope="col">Check</th><th scope="col"><span class="sr">Change</span></th></tr></thead>
+    <tbody>
+    {% for r in d.rows %}
+      <tr>
+        <td>{{ r.subject }}{% if not r.mandatory %} <span class="pill">optional</span>{% endif %}</td>
+        <td class="num">{{ r.periods or "—" }}</td>
+        <td>{% if r.curriculum %}version {{ r.curriculum }}{% else %}<span class="muted">none adopted</span>{% endif %}</td>
+        <td>{% if r.teacher %}<strong>{{ r.teacher.name }}</strong> <span class="muted">since {{ r.teacher.since|date }}</span>{% else %}<span class="muted">—</span>{% endif %}
+          {% for t in r.co_teachers %}<br><span class="muted">Co-teacher:</span> {{ t.name }}{% endfor %}
+          {% if r.teacher and r.teacher.justification %}<br><span class="hint">Reason given: {{ r.teacher.justification }}</span>{% endif %}</td>
+        <td>{% if r.breaches %}{% for b in r.breaches %}<span class="sev sev-{{ b.severity }}" title="{{ b.detail }}">{{ b.rule }} — {{ "no teacher of record" if b.rule == "G2" else "not authorised for this subject and level" }}</span> {% endfor %}{% elif r.teacher %}<span class="pill pill-ok">Authorised</span>{% else %}<span class="muted">optional, not taught</span>{% endif %}</td>
+        <td>{% if ctx.has("class:manage") %}
+          <details{% if open_plan == r.plan_id|string %} open{% endif %}><summary>{{ "Change" if r.teacher else "Assign" }}</summary>
+            <form method="post" class="assign">
+              <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="assign"><input type="hidden" name="plan_id" value="{{ r.plan_id }}">
+              <label>Teacher<select name="staff_id" required>{% for t in d.teachers %}<option value="{{ t.staff_id }}">{{ t.name }} — {{ "authorised" if r.subject in t.authorised else "NOT authorised" }} · {{ t.load }} periods a week</option>{% endfor %}</select></label>
+              <label>Role<select name="role">{% for k, v in roles.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+              {% if r.teacher %}<label class="inline"><input type="checkbox" name="replace" value="1"> Replace {{ r.teacher.name }} as teacher of record</label>{% endif %}
+              <label>Reason <span class="hint opt">— needed only for a teacher not authorised for {{ r.subject }} at {{ d.class.level }}</span><input name="justification" maxlength="300" placeholder="e.g. TRCN authorisation route started; supervised by the head of department"></label>
+              <p><button class="primary">Save</button></p>
+            </form>
+            {% if r.teacher %}<form method="post"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="end"><input type="hidden" name="assignment_id" value="{{ r.teacher.assignment_id }}"><p><button>End {{ r.teacher.name }}'s assignment</button></p></form>{% endif %}
+          </details>{% endif %}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="muted">No subjects are planned for this class yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted">G2: every mandatory subject needs exactly one teacher of record. G3: the teacher of record needs a verified teaching authorisation for the subject at this level. Flags here are live; the coverage dashboard opens a gap for the head when they persist.</p>
+</section>
+<section class="card scroll-x">
+  <h2>Teachers at {{ d.institution }}</h2>
+  <table class="compact" id="teachers">
+    <thead><tr><th scope="col">Teacher</th><th scope="col">Post</th><th scope="col">Authorised to teach</th><th scope="col">Load</th></tr></thead>
+    <tbody>{% for t in d.teachers %}<tr><td>{{ t.name }}</td><td>{{ t.job_title or "—" }}</td><td>{{ t.authorised|join(", ") or "—" }}</td><td><span class="meter" aria-hidden="true"><span style="width: {{ [t.load * 100 // 35, 100]|min }}%"></span></span>{{ t.load }} periods a week · {{ t.classes }} class{{ "" if t.classes == 1 else "es" }}</td></tr>{% endfor %}</tbody>
+  </table>
+  <p class="muted">Load counts teacher-of-record periods across every class of the school; the bar is full at 35 periods.</p>
+</section>
+{% endblock %}

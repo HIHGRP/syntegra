@@ -1301,6 +1301,100 @@ def seating(request: HttpRequest, class_id: uuid.UUID) -> HttpResponse:
     )
 
 
+# ------------------------------------------------------------------------- class subject plan and teachers (ACA-101)
+@require_http_methods(["GET", "POST"])
+@page("ACA-101")
+def class_plan(request: HttpRequest, class_id: uuid.UUID) -> HttpResponse:
+    """Each subject of the class with its teacher of record, validated live (G2/G3); assign, replace or end."""
+    from syntegra.academic import teaching
+
+    message, problem = None, None
+    if request.method == "POST":
+        try:
+            if request.POST.get("action") == "assign":
+                ta = teaching.assign(
+                    _uuid_or_fail(request.POST.get("plan_id"), "subject"),
+                    _uuid_or_fail(request.POST.get("staff_id"), "teacher"),
+                    role=request.POST.get("role", "teacher_of_record"),
+                    replace=request.POST.get("replace") == "1",
+                    justification=request.POST.get("justification"),
+                )
+                message = "Teacher assigned." if ta.role == "teacher_of_record" else "Co-teacher added."
+            elif request.POST.get("action") == "end":
+                teaching.end(_uuid_or_fail(request.POST.get("assignment_id"), "assignment"))
+                message = "Assignment ended."
+        except DomainError as exc:
+            if isinstance(exc, Forbidden):
+                raise
+            problem = exc.problem()
+    return render(
+        request,
+        "class_plan.html",
+        _ctx(
+            request,
+            d=teaching.class_plan(class_id),
+            roles=teaching.ROLES,
+            open_plan=request.POST.get("plan_id") if problem else None,
+            message=message,
+            problem=problem,
+            page=pages.page("ACA-101"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+# --------------------------------------------------------------------- lesson plan and delivery log (CUR-09)
+@require_http_methods(["GET", "POST"])
+@page("CUR-09")
+def lesson_plans(request: HttpRequest) -> HttpResponse:
+    """Each lesson of a class-subject linked to its curriculum objectives; the teacher logs what was delivered."""
+    from syntegra.curriculum import lessons
+
+    message, problem = None, None
+    picked = request.POST.get("assignment") or request.GET.get("assignment")
+    week = _date_or_none(request.POST.get("week") or request.GET.get("week"), "week")
+    if request.method == "POST":
+        try:
+            if request.POST.get("action") == "draft":
+                lessons.draft_scheme(_uuid_or_fail(picked, "class-subject"))
+                message = "Scheme of work drafted from the curriculum."
+            elif request.POST.get("action") == "log":
+                on = _date_or_none(request.POST.get("occurs_on"), "lesson date")
+                if on is None:
+                    raise HardValidation("PAGE-PARAM", "Invalid lesson date", "")
+                lessons.log_delivery(
+                    _uuid_or_fail(request.POST.get("lesson_id"), "lesson"),
+                    on,
+                    request.POST.getlist("node_ids"),
+                    learners_present=_int_or_none(request.POST.get("learners_present")),
+                    minutes=_int_or_none(request.POST.get("minutes")),
+                    note=request.POST.get("note"),
+                )
+                message = "Lesson logged."
+        except DomainError as exc:
+            if isinstance(exc, Forbidden):
+                raise
+            problem = exc.problem()
+    options = lessons.choices()
+    if not picked and options:
+        picked = str(options[0]["assignment_id"])
+    d = lessons.plan_view(_uuid_or_fail(picked, "class-subject"), week) if picked else None
+    return render(
+        request,
+        "lesson_plans.html",
+        _ctx(
+            request,
+            d=d,
+            options=options,
+            open_lesson=request.POST.get("lesson_id") if problem else None,
+            message=message,
+            problem=problem,
+            page=pages.page("CUR-09"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
 # ---------------------------------------------------------------------------------- administration (CR-007)
 @require_http_methods(["GET", "POST"])
 @page("ADM-102")

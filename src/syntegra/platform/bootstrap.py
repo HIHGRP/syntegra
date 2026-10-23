@@ -176,6 +176,8 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "assessment:*",
             "exam:*",
             "seating:*",
+            "lesson:*",
+            "timetable:*",
             "document:view",
             "document:upload",
         ],
@@ -209,6 +211,8 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "assessment:view",
             "exam:view",
             "seating:*",
+            "lesson:plan",
+            "lesson:deliver",
         ],
     ),
     "REG": (

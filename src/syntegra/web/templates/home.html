@@ -20,7 +20,7 @@
 {% if classes %}
 <section class="card">
   <h2>Today's registers</h2>
-  <ul class="list">{% for c in classes %}<li><a href="/registers/class/{{ c.id }}">{{ c.name }}</a> <span class="muted">{{ c.education_level }}</span>{% if ctx.has("seating:view") %} · <a href="/classes/{{ c.id }}/seating">seating plan</a>{% endif %}</li>{% endfor %}</ul>
+  <ul class="list">{% for c in classes %}<li><a href="/registers/class/{{ c.id }}">{{ c.name }}</a> <span class="muted">{{ c.education_level }}</span>{% if ctx.has("class:manage") %} · <a href="/classes/{{ c.id }}/plan">subjects &amp; teachers</a>{% endif %}{% if ctx.has("seating:view") %} · <a href="/classes/{{ c.id }}/seating">seating plan</a>{% endif %}</li>{% endfor %}</ul>
 </section>
 {% endif %}
 <section class="card">

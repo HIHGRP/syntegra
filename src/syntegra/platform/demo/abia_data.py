@@ -170,3 +170,138 @@ COLLEGE_RANKS = (("Chief Lecturer", 14), ("Principal Lecturer", 13), ("Senior Le
 SUPPORT_POSTS = (("Registry Officer", 8), ("Accountant", 9), ("Laboratory Technologist", 8), ("Librarian", 10),
                  ("Executive Officer", 7), ("Secretary", 6), ("Driver", 4), ("Security Officer", 4),
                  ("ICT Officer", 8), ("Works Officer", 7))  # fmt: skip
+
+# ---------------------------------------------------------------- timetable and curriculum (ACA-101, CUR-09)
+# periods a week per subject (35-minute periods); the core subjects get a period every day
+PERIODS = {"ENG": 5, "MTH": 5, "BST": 3, "NVE": 3, "IGB": 3, "CIV": 3, "BIO": 3}
+# teaching authorisations (TRCN) the sample schools' teachers hold, by the subject in their post title
+JSS = ("JSS1", "JSS2", "JSS3")
+SSS = ("SSS1", "SSS2", "SSS3")
+AUTHORISED = {
+    "Mathematics": (("MTH", SSS),),
+    "English Language": (("ENG", SSS),),
+    "Basic Science": (("BST", JSS),),
+    "Civic Education": (("CIV", SSS),),
+    "Biology": (("BIO", SSS),),
+    "Igbo Language": (("IGB", SSS),),
+    "Physics": (("MTH", JSS),),
+    "Chemistry": (("BIO", SSS),),
+}
+# junior-secondary teachers appointed in addition to the eight subject teachers
+JSS_TEACHERS = ("English Language", "Civic Education", "Igbo Language")
+JSS_AUTHORISED = {"English Language": "ENG", "Civic Education": "CIV", "Igbo Language": "IGB"}
+# which teacher (by post title) teaches each subject: (senior secondary, junior secondary)
+TEACHES = {
+    "MTH": ("Mathematics", "Physics"),
+    "ENG": ("English Language", "English Language (JSS)"),
+    "BIO": ("Biology", None),
+    "CIV": ("Civic Education", "Civic Education (JSS)"),
+    "IGB": ("Igbo Language", "Igbo Language (JSS)"),
+    "BST": (None, "Basic Science"),
+}
+
+# NERDC senior secondary curriculum, SS 2 first term (topics, and the objectives under each with minimum hours)
+SSS2_CURRICULA: dict[str, tuple[str, list[tuple[str, list[tuple[str, float]]]]]] = {
+    "MTH": ("Senior Secondary Mathematics — SS 2", [
+        ("Approximation", [
+            ("Round off numbers to given significant figures and decimal places", 2),
+            ("Calculate the percentage error in a measurement", 2)]),
+        ("Logarithms", [
+            ("Use logarithm tables to multiply and divide numbers greater than one", 3),
+            ("Evaluate powers and roots using logarithms", 2)]),
+        ("Sequences and series", [
+            ("Find the nth term and the sum of an arithmetic progression", 3),
+            ("Find the nth term and the sum of a geometric progression, including the sum to infinity", 3)]),
+        ("Quadratic equations", [
+            ("Solve quadratic equations by factorisation and by completing the square", 3),
+            ("Derive and apply the quadratic formula", 2),
+            ("Form quadratic equations from given roots and from word problems", 2)]),
+        ("Simultaneous equations", [
+            ("Solve a linear and a quadratic equation simultaneously, algebraically and graphically", 3)]),
+        ("Gradient of a curve", [
+            ("Find the gradient of a straight line, and of a curve at a point by drawing a tangent", 3)]),
+        ("Linear inequalities", [
+            ("Solve linear inequalities in two variables and show the solution region on a graph", 3),
+            ("Apply linear inequalities to simple linear programming problems", 3)]),
+    ]),
+    "ENG": ("Senior Secondary English Language — SS 2", [
+        ("Speech work", [
+            ("Distinguish the vowels /ɪ/ and /iː/, and /ʊ/ and /uː/, in listening and speaking", 2),
+            ("Identify and produce consonant clusters at the start and end of words", 2)]),
+        ("Vocabulary development", [
+            ("Use vocabulary associated with agriculture and the environment", 2),
+            ("Use idioms and phrasal verbs correctly in context", 2)]),
+        ("Grammar", [
+            ("Identify and use adjectival and adverbial clauses", 3),
+            ("Keep the sequence of tenses in reported speech", 3)]),
+        ("Comprehension and summary", [
+            ("Read a passage for its main ideas, implied meanings and the writer's mood", 3),
+            ("Summarise a passage in a stated number of sentences", 3)]),
+        ("Writing", [
+            ("Write a formal letter of complaint or application", 3),
+            ("Write an argumentative essay for a debate", 3),
+            ("Write a speech for a school occasion", 2)]),
+        ("Reading for pleasure", [
+            ("Read and discuss a prescribed African prose text", 3)]),
+    ]),
+    "BIO": ("Senior Secondary Biology — SS 2", [
+        ("Nutrient cycling in nature", [
+            ("Describe the carbon cycle and the effect of human activity on it", 2),
+            ("Describe the nitrogen cycle and the part bacteria play in it", 2),
+            ("Describe the water cycle", 1)]),
+        ("Ecological management", [
+            ("Explain tolerance, adaptation and associations between organisms", 2),
+            ("Construct food chains, food webs and pyramids of numbers and energy", 2)]),
+        ("Pollution", [
+            ("Identify air, water and soil pollutants and their sources", 2),
+            ("Suggest ways of controlling pollution in the local community", 1)]),
+        ("Micro-organisms around us", [
+            ("Culture and observe micro-organisms in air, water and food (practical)", 3),
+            ("Explain the useful and harmful effects of micro-organisms", 2)]),
+        ("Conservation of natural resources", [
+            ("Explain the need to conserve soil, water, forests and wildlife in Nigeria", 2),
+            ("Describe the work of conservation agencies and the laws that protect wildlife", 1)]),
+    ]),
+    "CIV": ("Senior Secondary Civic Education — SS 2", [
+        ("Human rights", [
+            ("State the characteristics of human rights and the rights in the 1999 Constitution", 2),
+            ("Identify ways of protecting human rights and the bodies that do so", 2)]),
+        ("Citizenship", [
+            ("Explain the duties and obligations of citizens", 2),
+            ("Describe the ways of becoming a Nigerian citizen", 1)]),
+        ("Democracy and the rule of law", [
+            ("Explain the pillars of democracy and the features of the rule of law", 2),
+            ("Identify the factors that limit the rule of law", 2)]),
+        ("Cultism", [
+            ("Explain the causes and consequences of cultism and how to prevent it", 2)]),
+        ("Drug and substance abuse", [
+            ("Identify commonly abused drugs, their effects and the work of the NDLEA", 3)]),
+        ("The public service", [
+            ("Describe the structure of the public service and its shortcomings", 2),
+            ("Suggest ways of improving the public service", 1)]),
+    ]),
+    "IGB": ("Senior Secondary Igbo Language — SS 2", [
+        ("Sounds and spelling", [
+            ("Explain vowel harmony (ndakọrịta ụdaume) with examples", 2),
+            ("Mark tone (akara ụda) correctly in writing", 2)]),
+        ("Grammar (ụtọasụsụ)", [
+            ("Identify and use nouns and pronouns (aha na nnọchiaha) in sentences", 2),
+            ("Form and use compound words", 2)]),
+        ("Literature (agụmagụ)", [
+            ("Explain and use common proverbs (ilu) in context", 2),
+            ("Read and discuss a prescribed Igbo prose text", 3)]),
+        ("Culture (omenala)", [
+            ("Describe the New Yam festival (Iri ji) and its significance", 2),
+            ("Describe the traditional marriage rites (igba nkwụ)", 2)]),
+        ("Composition", [
+            ("Write a letter (akwụkwọ ozi) in Igbo", 2)]),
+    ]),
+}  # fmt: skip
+LESSON_NOTES = (
+    "Worked examples on the board; class exercise marked in the lesson.",
+    "Group work went well; homework set from the textbook.",
+    "Short quiz at the start; most of the class followed.",
+    "Revisited last lesson's difficulties before moving on.",
+    None,
+    None,
+)

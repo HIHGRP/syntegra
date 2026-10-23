@@ -684,7 +684,7 @@ def load_school(
             for code in codes:
                 p = ClassSubjectPlan(
                     id=uuid7(), class_group_id=c.id, subject_id=subjects[code].id,
-                    is_mandatory=True, periods_per_week=5, valid_from=session.starts_on,
+                    is_mandatory=True, periods_per_week=D.PERIODS.get(code, 5), valid_from=session.starts_on,
                 )  # fmt: skip
                 plans.append(p)
                 name = subjects[code].name
@@ -1231,6 +1231,228 @@ def _classrooms(schools: list[Any], out: Loaded, log: Log) -> None:
         log(f"  classroom seating samples at {done} secondary schools (teacher sign-in, home rooms, SS 2A)")
 
 
+def _curricula(subjects: dict[str, Any], out: Loaded) -> dict[str, Any]:
+    """The NERDC SS 2 first-term curricula as published versions — authored and approved by two different state
+    curriculum officers (author ≠ approver) — with their topics and objectives."""
+    import hashlib
+
+    from syntegra.curriculum.models import Curriculum, CurriculumNode, CurriculumVersion
+
+    state = _node(STATE)
+    author = _user("curriculum.officer@abia.gov.ng", "Curriculum Officer, Ministry of Education", "STA", state.id,
+                   out, "Abia State")  # fmt: skip
+    approver = _user("director.curriculum@abia.gov.ng", "Director of Curriculum, Ministry of Education", "STA",
+                     state.id, out, "Abia State")  # fmt: skip
+    versions: dict[str, Any] = {}
+    for code, (title, topics) in D.SSS2_CURRICULA.items():
+        with context.use(author):
+            cur = Curriculum.objects.filter(scope_node_id=state.id, code=f"NERDC-SSS2-{code}").first()
+            if cur is not None:
+                versions[code] = CurriculumVersion.objects.filter(curriculum_id=cur.id, status="published").first()
+                continue
+        with context.use(author), uow.command("registry", "curriculum:manage", action="publish",
+                                              record_kind="curriculum_version") as cmd:  # fmt: skip
+            cur = cmd.add(Curriculum(scope_node_id=state.id, code=f"NERDC-SSS2-{code}", title=title,
+                                     framework="national", subject_id=subjects[code].id, levels=["SSS2"],
+                                     authority="NERDC", status="active"))  # fmt: skip
+            v = cmd.add(CurriculumVersion(curriculum_id=cur.id, version_label="1.0", language="en", status="published",
+                                          effective_from=dt.date(2026, 9, 1), authored_by_id=author.actor_id,
+                                          approved_by_id=approver.actor_id,
+                                          approval_reason="Adopted from the NERDC senior secondary curriculum for the "
+                                                          "2026/2027 session"))  # fmt: skip
+            digest = hashlib.sha256()
+            k = 0
+            for ti, (topic, objectives) in enumerate(topics, 1):
+                k += 1
+                t = cmd.add(CurriculumNode(version_id=v.id, node_code=f"{code}2.{ti}", kind="topic", statement=topic,
+                                           requirement="mandatory", min_hours=Decimal(str(sum(h for _s, h in objectives))),
+                                           is_assessment_required=True, term_hint=1, sort_key=k * 10))  # fmt: skip
+                for oi, (statement, hours) in enumerate(objectives, 1):
+                    k += 1
+                    cmd.add(CurriculumNode(version_id=v.id, parent_id=t.id, node_code=f"{code}2.{ti}.{oi}",
+                                           kind="objective", statement=statement, requirement="mandatory",
+                                           min_hours=Decimal(str(hours)), term_hint=1, sort_key=k * 10))  # fmt: skip
+                    digest.update(f"{code}2.{ti}.{oi}|{statement}|{hours}\n".encode())
+            cmd.update(v, content_hash=digest.digest())
+            cmd.emit("CUR.PUBLISHED", aggregate_id=v.id, aggregate_kind="curriculum_version", scope_node_id=state.id,
+                     payload={"curriculum_id": cur.id, "curriculum_version_id": v.id,
+                              "effective_from": v.effective_from})  # fmt: skip
+        versions[code] = v
+    return versions
+
+
+def _teaching(schools: list[Any], subjects: dict[str, Any], session: Any, names: _Names, out: Loaded, log: Log) -> None:
+    """At the sample secondary schools: three more junior-secondary teachers, every teacher's TRCN authorisations,
+    a teacher of record for every class-subject (one deliberately not authorised, with the head's reason, so the
+    G3 check shows), the SS 2 curricula adopted, the timetable built and published, the teachers' schemes of work
+    drafted and the SS 2 Mathematics lessons logged by the teacher — for the teacher-assignment (ACA-101) and lesson
+    (CUR-09) demonstrations."""
+    from syntegra.academic.models import ClassGroup, ClassSubjectPlan, TeachingAssignment
+    from syntegra.curriculum import lessons
+    from syntegra.curriculum.models import CurriculumAdoption
+    from syntegra.estate.models import PropertySite
+    from syntegra.hr import establishment as est
+    from syntegra.iam.models import AppUser, Role, RoleGrant
+    from syntegra.people import services as people
+    from syntegra.people.models import Staff, StaffPost, StaffQualification
+    from syntegra.timetable import services as timetable
+    from syntegra.timetable.models import Timetable
+
+    versions = _curricula(subjects, out)
+    state = _node(STATE)
+    curriculum_officer = _user("curriculum.officer@abia.gov.ng", "Curriculum Officer, Ministry of Education", "STA",
+                               state.id, out, "Abia State")  # fmt: skip
+    hr = _user("hr.ministry@abia.gov.ng", "Director of Establishments, Ministry of Education", "HR", state.id, out,
+               "Abia State")  # fmt: skip
+    board = _node("AB-ASUBEB")
+    head_role = Role.objects.get(code="HEAD")
+    rng = names.rng
+    done = 0
+    for inst in schools:
+        if inst.category != "combined_secondary" or not PropertySite.objects.filter(institution_id=inst.id).exists():
+            continue
+        if Timetable.objects.filter(institution_id=inst.id).exists():
+            continue
+        grant = RoleGrant.objects.filter(scope_id=inst.scope_node_id, role_id=head_role.id, status="active").first()
+        if grant is None:
+            continue
+        head_user = AppUser.objects.get(pk=grant.user_id)
+        head = _user(head_user.username, head_user.display_name, "HEAD", inst.scope_node_id, out, inst.name)
+        # 1. three junior-secondary teachers (ASUBEB)
+        posts = {p.job_title: p for p in StaffPost.objects.filter(institution_id=inst.id, valid_to__isnull=True)}
+        with context.use(hr):
+            for subject in D.JSS_TEACHERS:
+                title = f"Teacher, {subject} (JSS)"
+                if title in posts:
+                    continue
+                sex = "female" if rng.random() < 0.6 else "male"
+                given, _m, family, dob = names.person(sex, dt.date(1985, 1, 1), 365 * 12)
+                gl = rng.randrange(7, 11)
+                pos = est.create_position(est.NewPosition(title=title, cadre_code="TEACHER", employer_scope_id=board.id,
+                                                          grade_level_min=max(7, gl - 1), grade_level_max=gl + 1,
+                                                          institution_id=inst.id))  # fmt: skip
+                staff = people.create_staff_master(given, family, date_of_birth=dob, sex=sex)
+                first = dt.date(rng.randrange(2018, 2024), rng.randrange(1, 13), 1)
+                est.appoint(est.Appointment(staff_id=staff.id, position_id=pos.id, appointment_type="first_appointment",
+                                            first_appointment_on=first, grade_level=gl, step=rng.randrange(1, 4),
+                                            confirmed_on=first + dt.timedelta(days=730)))  # fmt: skip
+                out.staff += 1
+        posts = {p.job_title.removeprefix("Teacher, "): p
+                 for p in StaffPost.objects.filter(institution_id=inst.id, valid_to__isnull=True)}  # fmt: skip
+        # 2. authorisations (TRCN, verified)
+        with context.use(head):
+            have = set(StaffQualification.objects.filter(staff_id__in=[p.staff_id for p in posts.values()],
+                                                         kind="teaching_authorisation").values_list("staff_id", flat=True))  # fmt: skip
+            for title, p in posts.items():
+                if p.staff_id in have:
+                    continue
+                grants = D.AUTHORISED.get(title, ())
+                if title.endswith(" (JSS)"):
+                    grants = ((D.JSS_AUTHORISED[title.removesuffix(" (JSS)")], D.JSS),)
+                for code, levels in grants:
+                    people.add_authorisation(p.staff_id, subjects[code].id, list(levels))
+        # 3. periods a week, the SS 2 curricula and a teacher of record for every class-subject (from the session start)
+        classes = {c.id: c for c in ClassGroup.objects.filter(institution_id=inst.id, period_id=session.id)}
+        plans = list(ClassSubjectPlan.objects.filter(class_group_id__in=list(classes)))
+        code_of = {s.id: code for code, s in subjects.items()}
+        with context.use(curriculum_officer), uow.command("registry", "curriculum:manage", action="adopt",
+                                                          record_kind="curriculum_adoption") as cmd:  # fmt: skip
+            for v in versions.values():
+                if v is None or CurriculumAdoption.objects.filter(institution_id=inst.id, version_id=v.id).exists():
+                    continue
+                a = cmd.add(CurriculumAdoption(scope_node_id=inst.scope_node_id, institution_id=inst.id,
+                                               version_id=v.id, education_level="SSS2", resolved_by="automatic",
+                                               valid_from=session.starts_on))  # fmt: skip
+                cmd.emit("CUR.ADOPTION_RESOLVED", aggregate_id=a.id, scope_node_id=inst.scope_node_id,
+                         payload={"curriculum_adoption_id": a.id, "institution_id": inst.id, "version_id": v.id})  # fmt: skip
+        with context.use(head), uow.command("ops", "class:manage", action="demo_teaching",
+                                            record_kind="class_group") as cmd:  # fmt: skip
+            for p in plans:
+                code = code_of.get(p.subject_id, "")
+                changes: dict[str, Any] = {}
+                if p.periods_per_week != D.PERIODS.get(code, p.periods_per_week):
+                    changes["periods_per_week"] = D.PERIODS[code]
+                cls = classes[p.class_group_id]
+                v = versions.get(code)
+                if cls.education_level == "SSS2" and v is not None and p.curriculum_version_id != v.id:
+                    changes["curriculum_version_id"] = v.id
+                if changes:
+                    cmd.update(p, **changes)
+            ordered = sorted(plans, key=lambda p: (classes[p.class_group_id].name, code_of.get(p.subject_id, "")))
+            for p in ordered:
+                if TeachingAssignment.objects.filter(class_subject_plan_id=p.id).exists():
+                    continue
+                cls = classes[p.class_group_id]
+                code = code_of.get(p.subject_id, "")
+                senior, junior = D.TEACHES.get(code, (None, None))
+                teacher_title = senior if cls.education_level.startswith("SSS") else junior
+                reason = None
+                if cls.name == "JSS 1B" and code == "BST":
+                    # the Basic Science teacher is on leave this term; the Chemistry teacher covers, unauthorised
+                    teacher_title = "Chemistry"
+                    reason = ("Basic Science teacher on study leave this term; Chemistry graduate covering, "
+                              "TRCN Basic Science authorisation applied for")  # fmt: skip
+                post = posts.get(teacher_title or "")
+                if post is None:
+                    continue
+                cmd.add(TeachingAssignment(scope_node_id=cls.scope_node_id, class_subject_plan_id=p.id,
+                                           staff_id=post.staff_id, staff_post_id=post.id, role="teacher_of_record",
+                                           justification=reason, valid_from=session.starts_on))  # fmt: skip
+            ss2a = next((c for c in classes.values() if c.name == "SS 2A"), None)
+            bio = next((p for p in plans if ss2a and p.class_group_id == ss2a.id and code_of.get(p.subject_id) == "BIO"),
+                       None)  # fmt: skip
+            if ss2a is not None and bio is not None and "Chemistry" in posts:
+                cmd.add(TeachingAssignment(scope_node_id=ss2a.scope_node_id, class_subject_plan_id=bio.id,
+                                           staff_id=posts["Chemistry"].staff_id, staff_post_id=posts["Chemistry"].id,
+                                           role="co_teacher", justification="Biology practicals (laboratory)",
+                                           valid_from=session.starts_on))  # fmt: skip
+        # 4. the timetable, then each teacher's scheme of work for the SS 2 class-subjects
+        with context.use(head):
+            timetable.build(inst.id, session.id)
+            ss2 = [p.id for p in plans if classes[p.class_group_id].education_level == "SSS2"]
+            for ta in TeachingAssignment.objects.filter(class_subject_plan_id__in=ss2, role="teacher_of_record"):
+                lessons.draft_scheme(ta.id)
+        # 5. the teacher's account belongs to the Mathematics teacher, who logs the SS 2 lessons taught so far
+        maths = posts.get("Mathematics")
+        tch = AppUser.objects.filter(username=f"teacher.{inst.institution_code.lower()}@abia.demo").first()
+        if maths is None or tch is None:
+            done += 1
+            continue
+        teacher = Staff.objects.get(pk=maths.staff_id)
+        with context.use(_sys()):
+            AppUser.objects.filter(pk=tch.id).update(person_kind="staff", person_id=teacher.id,
+                                                     display_name=f"{teacher.given_name} {teacher.family_name}, teacher")  # fmt: skip
+        me = _user(tch.username, tch.display_name, "TCH", inst.scope_node_id, out, inst.name)
+        today = dt.date.today()
+        with context.use(me):
+            mine = [p for p in plans if p.id in ss2 and code_of.get(p.subject_id) == "MTH"]
+            for p in sorted(mine, key=lambda p: classes[p.class_group_id].name):
+                week = timetable.monday(session.starts_on)
+                while week <= today:
+                    rows = timetable.week(inst.id, week, class_subject_plan_id=p.id)
+                    view = lessons.plan_view(
+                        TeachingAssignment.objects.get(class_subject_plan_id=p.id, role="teacher_of_record").id, week
+                    )
+                    by_lesson = {(r["lesson_id"], r["on"]): r for r in view["lessons"]}
+                    current_week = week == timetable.monday(today)
+                    last_week = week == timetable.monday(today) - dt.timedelta(days=7)
+                    for i, r in enumerate(rows):
+                        if r["on"] >= today:
+                            continue
+                        planned = [o["id"] for o in by_lesson[(r["lesson_id"], r["on"])]["planned"]]
+                        if not planned or (current_week and i == 1) or (last_week and i == 3):
+                            continue  # a lesson left unlogged this week and last, so the gap shows
+                        covered = planned[:-1] if len(planned) > 1 and i == 2 else planned  # one ran short
+                        roll = view["class"]["learners"]
+                        lessons.log_delivery(r["lesson_id"], r["on"], covered,
+                                             learners_present=max(0, roll - rng.randrange(0, 4)),
+                                             note=rng.choice(D.LESSON_NOTES))  # fmt: skip
+                    week += dt.timedelta(days=7)
+        done += 1
+    if done:
+        log(f"  teaching at {done} secondary schools: teachers of record, SS 2 curricula, timetable, schemes of work")
+
+
 def _funding_samples(absu: Any, out: Loaded, log: Log) -> None:
     """Imprest, a staff co-operative loan and a TETFund intervention at ABSU, each through its full approval chain."""
     from syntegra.finance import budgets
@@ -1328,6 +1550,7 @@ def run(scale: Scale | None = None, log: Log = print) -> Loaded:
             _extras(schools, tertiary, names, out, log)
             _teachers(schools, names, out, log)
             _classrooms(schools, out, log)
+            _teaching(schools, subjects, session, names, out, log)
             _documents(names, out, log)
             log("6/6 daily jobs: facility rules and the warehouse")
             from syntegra.analytics import warehouse
