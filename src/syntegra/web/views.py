@@ -1608,11 +1608,12 @@ def document_file(request: HttpRequest, document_id: uuid.UUID) -> HttpResponse:
 
     c = context.require()
     kind = "stamped_searchable" if request.GET.get("kind") == "searchable" else "stamped_original"
-    r = evidence.release(c, document_id, kind, purpose=request.GET.get("purpose") or None)
+    downloading = bool(request.GET.get("download"))
+    r = evidence.release(c, document_id, kind, purpose=request.GET.get("purpose") or None, on_screen=not downloading)
     data, mime, name = r.data, r.mime, r.filename
     resp = HttpResponse(data, content_type=mime)
     resp["X-Syntegra-Release"] = r.code
-    disposition = "attachment" if request.GET.get("download") else "inline"
+    disposition = "attachment" if downloading else "inline"
     resp["Content-Disposition"] = f'{disposition}; filename="{name}"'
     resp["Cache-Control"] = "no-store"
     resp["X-Content-Type-Options"] = "nosniff"  # the type was sniffed from the bytes at upload: PDF, image or text

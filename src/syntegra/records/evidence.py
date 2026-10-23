@@ -141,9 +141,11 @@ def release(
     *,
     purpose: str | None = None,
     reason: str | None = None,
+    on_screen: bool = False,
 ) -> Released:
     """Release one copy of a document: stamped (scan, searchable copy or Word) or a certified true copy of the
-    master. Access is checked as for viewing; the copy and its hash are entered in the release register."""
+    master. Access is checked as for viewing; the copy and its hash are entered in the release register. A copy shown
+    in the viewer (``on_screen``) is stamped and registered too — its bytes reach the browser — and says so."""
     from syntegra.records import services as rec
 
     if kind not in KINDS:
@@ -164,7 +166,7 @@ def release(
     stamp = pdfcopy.Stamp(
         recipient=_recipient(ctx),
         released_at=_local(now),
-        purpose=purpose or "",
+        purpose=purpose or ("viewed on screen" if on_screen else ""),
         code=code,
         reference=d.reference_no or str(d.id),
         issuer=str(getattr(settings, "SYNTEGRA_RELEASE_ISSUER", "Syntegra")),
@@ -190,6 +192,8 @@ def release(
     else:  # a text file: the stamp leads the text
         head = "\n".join(stamp.lines()) + "\n" + "-" * 72 + "\n"
         data, mime, filename = head.encode() + master, "text/plain; charset=utf-8", f"{base}-{code}.txt"
+    if on_screen and not reason:
+        reason = "Viewed on screen in Syntegra"
     with uow.command("records", None, action="document_release", record_kind="document_release", ctx=ctx) as cmd:
         if reason:
             cmd.reason = reason.strip()[:500]

@@ -196,6 +196,9 @@ def test_every_download_is_stamped_and_registered(world: Any, client: Any) -> No
     assert set(rows) >= {code1, code2} and len(rows) == 3
     assert bytes(rows[code1].sha256) == hashlib.sha256(one.content).digest() and rows[code1].released_to == head.id
     assert {r.kind for r in rows.values()} == {"stamped_original", "word_copy"}
+    assert rows[code1].reason == "Viewed on screen in Syntegra"  # shown in the viewer: stamped and registered too
+    dl = client.get(f"/documents/{doc.id}/file?download=1")
+    assert dl["Content-Disposition"].startswith("attachment") and "viewed on screen" not in _text_of(dl.content)
 
 
 def test_the_register_checks_a_copy_presented_later(world: Any, client: Any) -> None:
