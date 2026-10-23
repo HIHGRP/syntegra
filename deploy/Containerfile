@@ -2,7 +2,7 @@
 # Build:  podman build -f deploy/Containerfile -t syntegra:$(git rev-parse --short HEAD) .
 FROM registry.access.redhat.com/ubi10/python-312-minimal AS build
 USER 0
-RUN microdnf install -y gcc mariadb-connector-c-devel pkgconf-pkg-config && microdnf clean all
+RUN microdnf install -y gcc python3-devel mariadb-connector-c-devel pkgconf-pkg-config && microdnf clean all
 WORKDIR /opt/app-root/src
 COPY pyproject.toml README.md ./
 COPY src ./src
