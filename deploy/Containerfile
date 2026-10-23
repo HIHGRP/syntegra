@@ -12,6 +12,15 @@ RUN python -m venv /opt/venv && /opt/venv/bin/pip install --no-cache-dir --upgra
 FROM registry.access.redhat.com/ubi10/python-312-minimal
 USER 0
 RUN microdnf install -y mariadb-connector-c && microdnf clean all
+# OCR for scanned documents (CR-007, FR-DOC-203): Tesseract with English and poppler-utils (pdftoppm, to rasterise
+# image-only PDFs). Tesseract is not in the UBI repositories, so it comes from EPEL 10, signature-checked.
+RUN printf '%s\n' '[epel]' 'name=Extra Packages for Enterprise Linux 10 - $basearch' \
+      'baseurl=https://dl.fedoraproject.org/pub/epel/10/Everything/$basearch/' 'enabled=1' 'gpgcheck=1' \
+      'gpgkey=https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-10' > /etc/yum.repos.d/epel.repo \
+ && microdnf install -y --setopt=install_weak_deps=0 tesseract poppler-utils \
+ && { rpm -q tesseract-langpack-eng >/dev/null || microdnf install -y --setopt=install_weak_deps=0 tesseract-langpack-eng; } \
+ && microdnf clean all \
+ && tesseract --version && pdftoppm -v && tesseract --list-langs 2>&1 | grep -qx eng
 COPY --from=build /opt/venv /opt/venv
 WORKDIR /opt/app-root/src
 # The CEDA DDL is the physical schema authority applied by `manage.py migrate --database=<zone>`.
@@ -26,8 +35,6 @@ ENV PATH=/opt/venv/bin:$PATH PYTHONPATH=/opt/app-root/src/src \
     SYNTEGRA_CEDA_RELEASES_DIR=/opt/app-root/src/ceda/releases
 RUN python manage.py collectstatic --noinput --settings=syntegra.settings.dev >/dev/null
 # Document scans (CR-007) are the only copy of each master: they live on a mounted volume, not in the image.
-# OCR of image-only scans needs tesseract and poppler-utils (EPEL); without them the PDF text layer and typed
-# transcriptions are still indexed (README, "Documents").
 RUN mkdir -p /var/lib/syntegra/objects && chown 1001:0 /var/lib/syntegra/objects && chmod 0770 /var/lib/syntegra/objects
 ENV SYNTEGRA_OBJECT_STORE_DIR=/var/lib/syntegra/objects
 VOLUME ["/var/lib/syntegra/objects"]

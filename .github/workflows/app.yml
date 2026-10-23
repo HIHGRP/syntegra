@@ -57,3 +57,24 @@ jobs:
         run: python manage.py check --settings=syntegra.settings.test
       - name: Unit and integration tests (real MySQL, all six zones)
         run: python -m pytest tests -q --create-db
+
+  image:
+    name: Production image builds, with OCR
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build the RHEL 10 UBI image
+        run: docker build -f deploy/Containerfile -t syntegra:ci .
+      - name: A scanned page is read by OCR inside the image
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends imagemagick fonts-dejavu-core
+          mkdir -p /tmp/ocr
+          convert -size 1200x200 xc:white -font DejaVu-Sans -fill black -pointsize 72 \
+            -annotate +40+130 'ADMISSION REGISTER 1998' /tmp/ocr/scan.png
+          docker run --rm -v /tmp/ocr:/data:ro syntegra:ci python -c "
+          from syntegra.records import text
+          assert text.ocr_available()
+          r = text.extract(open('/data/scan.png', 'rb').read(), 'image/png')
+          print(r.source, repr(r.text))
+          assert r.source == 'ocr' and 'ADMISSION' in r.text.upper(), r
+          "
