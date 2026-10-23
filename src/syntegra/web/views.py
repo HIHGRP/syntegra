@@ -88,10 +88,13 @@ def _check_level(page_id: str) -> None:
         )
 
 
-def page(page_id: str | None = None, *, public: bool = False, confirm: bool = True) -> Callable[[View], View]:
-    """Wrap a page: sign-in required unless public; the school or office must have been confirmed after the password
-    (``confirm=False`` only for the confirmation page itself and sign-out); the page's access level is enforced;
-    domain errors render the problem page."""
+def page(
+    page_id: str | None = None, *, public: bool = False, confirm: bool = True, mfa: bool = True
+) -> Callable[[View], View]:
+    """Wrap a page: sign-in required unless public; the second factor must have been entered when the account has
+    one (``mfa=False`` only for the code page itself and sign-out); the school or office must have been confirmed
+    after the password (``confirm=False`` only for the confirmation page, the code page and sign-out); the page's
+    access level is enforced; domain errors render the problem page."""
 
     def deco(fn: View) -> View:
         @wraps(fn)
@@ -100,6 +103,8 @@ def page(page_id: str | None = None, *, public: bool = False, confirm: bool = Tr
             if not public and (c is None or c.actor_kind != "user"):
                 return _signed_out_redirect(request)
             sess = getattr(request, "syntegra_session", None)
+            if not public and mfa and sess is not None and getattr(sess, "mfa_pending", False):
+                return HttpResponseRedirect(f"/auth/mfa?{urlencode({'next': request.get_full_path()})}")
             if (
                 not public
                 and confirm
@@ -142,18 +147,24 @@ def sign_in(request: HttpRequest) -> HttpResponse:
     error = None
     notice = ENDED_MESSAGES.get(request.GET.get("ended", ""))
     if request.method == "POST":
+        from syntegra.core.middleware import session_token
+
         try:
             c = context.require()
+            current, _ = session_token(request)
             r = iam.sign_in(
                 getattr(request, "syntegra_tenant"),  # noqa: B009 — set by ContextMiddleware
                 request.POST.get("username", ""),
                 request.POST.get("password", ""),
                 ip=c.ip,
                 ua=c.user_agent,
+                current_token=current,
             )
-            nxt = _safe_next(request.GET.get("next"))
-            if not r.mfa_required:  # confirm the school or office (and the role, when there are several) — AUT-03
-                nxt = f"/auth/context?{urlencode({'next': nxt})}"
+            # then the code from the authenticator app (AUT-02) when the account has one, then confirm the school or
+            # office (and the role, when there are several) — AUT-03
+            nxt = f"/auth/context?{urlencode({'next': _safe_next(request.GET.get('next'))})}"
+            if r.mfa_required:
+                nxt = f"/auth/mfa?{urlencode({'next': nxt})}"
             resp = HttpResponseRedirect(nxt)
             resp.set_cookie(
                 settings.SESSION_COOKIE_NAME,
@@ -177,7 +188,7 @@ def sign_in(request: HttpRequest) -> HttpResponse:
 
 
 @require_http_methods(["POST"])
-@page(confirm=False)
+@page(confirm=False, mfa=False)
 def sign_out(request: HttpRequest) -> HttpResponse:
     from syntegra.core.middleware import session_token
     from syntegra.iam import services as iam
@@ -711,8 +722,10 @@ def form_page(request: HttpRequest, key: str) -> HttpResponse:
     form = forms.REGISTRY.get(key)
     if form is None:
         raise NotFound("form", key)
-    if not form.allowed(context.require()):
+    c = context.require()
+    if not form.permitted(c):
         raise Forbidden()
+    forms.require_level(form, c)
     posted = request.method == "POST"
     params = request.POST if posted else request.GET
     opts = forms.options(form, params)
@@ -747,7 +760,43 @@ def form_page(request: HttpRequest, key: str) -> HttpResponse:
 
 # ------------------------------------------------------------------------------------- workspace (role) chooser
 def _safe_next(value: str | None) -> str:
-    return value if value and value.startswith("/") and not value.startswith("//") else "/"
+    """A local path to return to after signing in; anything that a browser could read as another site gives '/'.
+    Browsers treat a backslash as a slash (``/\\evil.example``) and drop tabs and newlines, so those are refused too."""
+    from django.utils.http import url_has_allowed_host_and_scheme
+
+    if not value or not value.startswith("/") or value.startswith("//"):
+        return "/"
+    if any(ch in value for ch in "\\\t\r\n") or not url_has_allowed_host_and_scheme(value, allowed_hosts=None):
+        return "/"
+    return value
+
+
+@require_http_methods(["GET", "POST"])
+@page("AUT-02", confirm=False, mfa=False)
+def mfa_challenge(request: HttpRequest) -> HttpResponse:
+    """AUT-02: the six-digit code from the authenticator app, for accounts with a second factor. Wrong codes count
+    towards the account lock with wrong passwords; a code is accepted once only."""
+    from syntegra.core.middleware import session_token
+    from syntegra.iam import services as iam
+
+    nxt = _safe_next(request.GET.get("next"))
+    sess = getattr(request, "syntegra_session", None)
+    if sess is not None and not getattr(sess, "mfa_pending", False):
+        return HttpResponseRedirect(nxt)
+    error = None
+    if request.method == "POST":
+        token, _ = session_token(request)
+        try:
+            iam.verify_mfa(token or "", request.POST.get("code", ""))
+            return HttpResponseRedirect(nxt)
+        except DomainError as exc:
+            error = exc.detail or exc.title
+    return render(
+        request,
+        "mfa.html",
+        _ctx(request, error=error, next=nxt, page=pages.page("AUT-02")),
+        status=401 if error else 200,
+    )
 
 
 @require_http_methods(["GET", "POST"])
@@ -1070,26 +1119,38 @@ def access_levels(request: HttpRequest) -> HttpResponse:
     error = done = None
     status = 200
     if request.method == "POST":
+        action = request.POST.get("action") or "level"
+        reason = request.POST.get("reason", "")
         try:
-            cap = request.POST.get("cap") or None
-            iam.set_grant_cap(
-                c, _uuid_or_fail(request.POST.get("grant_id"), "role grant"), cap, request.POST.get("reason", "")
-            )
-            done = "The access level was changed. It applies from the person's next page."
+            if action == "office":
+                office = request.POST.get("office_id") or ""
+                iam.set_grant_office(
+                    c,
+                    _uuid_or_fail(request.POST.get("grant_id"), "role grant"),
+                    _uuid_or_fail(office, "office") if office else None,
+                    reason,
+                )
+                done = "The office was changed. The person sees it the next time they sign in."
+            elif action == "address":
+                iam.set_office_address(
+                    c,
+                    _uuid_or_fail(request.POST.get("node_id"), "office"),
+                    {k: request.POST.get(k, "") for k in iam.ADDRESS_FIELDS},
+                    reason,
+                )
+                done = "The office address was saved. People who work there see it when they sign in."
+            else:
+                cap = request.POST.get("cap") or None
+                iam.set_grant_cap(c, _uuid_or_fail(request.POST.get("grant_id"), "role grant"), cap, reason)
+                done = "The access level was changed. It applies from the person's next page."
         except DomainError as exc:
             error = exc.detail or exc.title
             status = exc.status
-    data = iam.access_overview(c)
-    q = (request.GET.get("q") or "").strip().lower()
-    grants = [
-        g
-        for g in data["grants"]  # type: ignore[attr-defined]
-        if not q
-        or q in str(g["user"]).lower()
-        or q in str(g["username"]).lower()
-        or q in str(g["role"]).lower()
-        or q in str(g["scope"]).lower()
-    ]
+    per_page = 300
+    offices = iam.offices(c)
+    data = iam.access_overview(
+        c, q=request.GET.get("q") or "", offset=_int_or_none(request.GET.get("from")) or 0, limit=per_page
+    )
     return render(
         request,
         "access_levels.html",
@@ -1097,9 +1158,13 @@ def access_levels(request: HttpRequest) -> HttpResponse:
             request,
             levels=data["levels"],
             roles=data["roles"],
-            grants=grants[:300],
-            total=len(grants),
-            q=q,
+            grants=data["grants"],
+            offices=offices,
+            office_names={o["id"]: o["office"] for o in offices},
+            total=data["total"],
+            offset=data["offset"],
+            per_page=per_page,
+            q=data["q"],
             error=error,
             done=done,
             page=pages.page("ADM-101"),
@@ -1149,10 +1214,11 @@ def documents(request: HttpRequest) -> HttpResponse:
     q = (request.GET.get("q") or "").strip()
     cat = request.GET.get("category") or ""
     year = _int_or_none(request.GET.get("year"))
+    purpose = request.GET.get("purpose") or None
     searched = bool(q or institution_id or cat or year)
     result = None
     if searched and (c.has("document:view") or c.has("document:search")):
-        result = rec.search(c, q=q, institution_id=institution_id, category_code=cat, year=year)
+        result = rec.search(c, q=q, institution_id=institution_id, category_code=cat, year=year, purpose=purpose)
     by_school = rec.institutions_with_documents(c) if c.has("document:view") or c.has("document:search") else []
     names = {str(s.id): s.name for s in schools}
     return render(
@@ -1171,6 +1237,8 @@ def documents(request: HttpRequest) -> HttpResponse:
             searched=searched,
             by_school=by_school,
             ocr=rec.ocr_available(),
+            purpose=purpose or "",
+            purposes=_purposes(c) if rec.restricted_needs_purpose(c) else [],
             page=pages.page("DOC-104"),
         ),
     )
@@ -1244,12 +1312,21 @@ def school_documents(request: HttpRequest, institution_id: uuid.UUID) -> HttpRes
 
     c = context.require()
     q = (request.GET.get("q") or "").strip()
-    reg = rec.register(c, institution_id, q=q)
+    purpose = request.GET.get("purpose") or None
+    reg = rec.register(c, institution_id, q=q, purpose=purpose)
     added = {x for x in (request.GET.get("added") or "").split(",") if x}
     return render(
         request,
         "school_documents.html",
-        _ctx(request, reg=reg, q=q, added=added, page=pages.page("DOC-108")),
+        _ctx(
+            request,
+            reg=reg,
+            q=q,
+            added=added,
+            purpose=purpose or "",
+            purposes=_purposes(c) if rec.restricted_needs_purpose(c) else [],
+            page=pages.page("DOC-108"),
+        ),
     )
 
 

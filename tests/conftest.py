@@ -165,6 +165,13 @@ def api(world: World, client: Any) -> Any:
         )
         assert r.status_code == 201, r.content
         token = r.json()["token"]
+        confirm = client.post(  # confirm the school or office, as every API client must (FR-AUT-101)
+            "/api/v1/auth/role",
+            {"grant_id": r.json()["grants"][0]["grant_id"]},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        assert confirm.status_code == 200, confirm.content
 
         class Caller:
             user = u
@@ -226,3 +233,20 @@ def web_sign_in(client: Any, data: dict[str, Any], **kw: Any) -> Any:
         if m:
             client.post(r["Location"], {"grant_id": m.group(1)}, **kw)
     return r
+
+
+def api_sign_in(client: Any, username: str, password: str, **kw: Any) -> str:
+    """Sign in through the API and confirm the first grant's school or office (FR-AUT-101); returns the token."""
+    r = client.post(
+        "/api/v1/auth/sign-in", {"username": username, "password": password}, content_type="application/json", **kw
+    )
+    assert r.status_code == 201, r.content
+    token = str(r.json()["token"])
+    confirm = client.post(
+        "/api/v1/auth/role",
+        {"grant_id": r.json()["grants"][0]["grant_id"]},
+        content_type="application/json",
+        HTTP_AUTHORIZATION=f"Bearer {token}",
+    )
+    assert confirm.status_code == 200, confirm.content
+    return token

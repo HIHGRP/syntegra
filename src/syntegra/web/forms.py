@@ -54,11 +54,17 @@ class Form:
     submit: str = "Save"
     caution: str = ""  # shown beside the button for consequential actions
 
-    def allowed(self, ctx: context.Context | None) -> bool:
+    def permitted(self, ctx: context.Context | None) -> bool:
         if ctx is None:
             return False
         perms = (self.permission,) if isinstance(self.permission, str) else self.permission
         return any(ctx.has(p) for p in perms)
+
+    def allowed(self, ctx: context.Context | None) -> bool:
+        """The role holds the permission and its access level covers the form's (CR-007, FR-ADM-201)."""
+        from syntegra.core import access
+
+        return self.permitted(ctx) and ctx is not None and access.covers(ctx.clearance, level(self))
 
 
 class Invalid(Exception):
@@ -2021,6 +2027,103 @@ FORMS: tuple[Form, ...] = (
 )
 
 REGISTRY: dict[str, Form] = {f.key: f for f in FORMS}
+
+# The catalogue page whose records each form writes. A form needs the same access level as that page (CR-007,
+# FR-ADM-201), so a grant capped below it can neither see the form in /forms nor submit it.
+FORM_PAGES: dict[str, str] = {
+    "institution-register": "INS-03",
+    "learner-transfer": "LRN-05",
+    "class-create": "LRN-07",
+    "class-member": "LRN-07",
+    "certificate-reissue": "CER-101",
+    "certificate-reissue-decision": "CER-102",
+    "obligation-publish": "FCL-01",
+    "obligation-dispute": "FCL-01",
+    "obligation-dispute-resolve": "FCL-01",
+    "coverage-evaluate": "CUR-101",
+    "coverage-gap-accept": "CUR-103",
+    "census-take": "FIN-01",
+    "census-freeze": "FIN-01",
+    "census-demand": "FIN-01",
+    "hr-position": "HRM-01",
+    "hr-appoint": "HRM-02",
+    "hr-posting": "HRM-03",
+    "hr-posting-decision": "HRM-03",
+    "hr-separation": "HRM-07",
+    "hr-leave": "HRM-04",
+    "hr-leave-decision": "HRM-04",
+    "hr-promotion": "HRM-05",
+    "hr-promotion-decision": "HRM-05",
+    "hr-relations": "HRM-06",
+    "hr-integrity-scan": "HRM-08",
+    "hr-integrity-hold": "HRM-08",
+    "hr-payroll-run": "PAY-01",
+    "hr-payroll-approve": "PAY-01",
+    "regulation-link": "REG-02",
+    "regulation-end": "REG-02",
+    "federal-import": "FED-01",
+    "security-intake": "STI-04",
+    "security-trainee": "STI-04",
+    "security-outcome": "STI-04",
+    "budget-cost-centre": "FIN-01",
+    "budget-prepare": "FIN-01",
+    "budget-approve": "FIN-01",
+    "budget-commit": "FIN-02",
+    "budget-spend": "FIN-02",
+    "budget-virement": "FIN-02",
+    "budget-virement-decision": "FIN-02",
+    "imprest-request": "ACC-01",
+    "imprest-approve": "ACC-01",
+    "imprest-retire": "ACC-01",
+    "funding-apply": "FND-01",
+    "funding-recommend": "FND-02",
+    "funding-decide": "FND-02",
+    "funding-sign": "FND-02",
+    "funding-disburse": "FND-02",
+    "funding-repay": "FND-02",
+    "estate-site": "EST-01",
+    "estate-building": "EST-01",
+    "estate-room": "EST-01",
+    "estate-asset": "EST-01",
+    "estate-assess": "EST-02",
+    "estate-schedule": "EST-02",
+    "estate-done": "EST-02",
+    "estate-action": "EST-02",
+    "estate-work-order": "EST-02",
+    "exam-series": "EXM-01",
+    "exam-paper": "EXM-01",
+    "exam-entries": "EXM-02",
+    "exam-sitting": "EXM-03",
+}
+
+
+# Forms entered below their page's level, as pages are in ``pages.ENTRY_LEVEL``: the service still applies its own
+# data-level checks. Obligation forms are mapped to FCL-01 (entered at confidential) for the same reason.
+FORM_LEVEL: dict[str, str] = {
+    "hr-payroll-approve": "confidential",  # the finance officer approves the run's totals; pay lines stay restricted
+}
+
+
+def level(form: Form) -> str:
+    """The access level needed to use a form: that of the page it writes through (``internal`` when unmapped)."""
+    from syntegra.web import pages
+
+    if form.key in FORM_LEVEL:
+        return FORM_LEVEL[form.key]
+    page_id = FORM_PAGES.get(form.key)
+    return pages.entry_level(page_id) if page_id else "internal"
+
+
+def require_level(form: Form, ctx: context.Context) -> None:
+    from syntegra.core import access
+    from syntegra.core.errors import Forbidden
+
+    needed = access.level(level(form))
+    if not access.covers(ctx.clearance, needed.classification):
+        raise Forbidden(
+            f"This form needs {needed.label}. Your access level in this role is {access.level(ctx.clearance).label}.",
+            code="AUTH-LEVEL",
+        )
 
 
 def available(ctx: context.Context | None) -> dict[str, list[Form]]:

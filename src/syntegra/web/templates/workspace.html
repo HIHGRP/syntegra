@@ -2,7 +2,7 @@
 {% block title %}Confirm your school or office{% endblock %}
 {% block content %}
 <section class="card narrow">
-  <p class="eyebrow">Step 2 of 2 · after your password</p>
+  <p class="eyebrow">After your password</p>
   <h1>{% if grants|length > 1 %}Choose your school or office{% else %}Confirm your school or office{% endif %}</h1>
   <p class="muted">{{ user.display_name }}, your account is registered to {% if grants|length > 1 %}the schools or offices below. Choose the one you are working for now; you can switch later from the top bar.{% else %}the school or office below. Check the name and address before you continue.{% endif %}</p>
   {% if error %}<div class="alert alert-error" role="alert">{{ error }}</div>{% endif %}

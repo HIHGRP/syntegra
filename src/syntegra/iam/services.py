@@ -192,12 +192,21 @@ def affiliation(scope_id: uuid.UUID | None, office_scope_id: uuid.UUID | None = 
     }
 
 
+def effective_clearance(role_clearance: str, cap: str | None) -> str:
+    """The level a grant acts at: the role's clearance, lowered by the grant's cap (as ``authz.grant_context``)."""
+    return cap if cap and class_rank(cap) < class_rank(role_clearance) else role_clearance
+
+
+def _grant_in_date(g: RoleGrant, today: dt.date) -> bool:
+    return g.status == "active" and g.valid_from <= today and not (g.valid_to and g.valid_to < today)
+
+
 def user_grants(user: AppUser, today: dt.date | None = None) -> list[dict[str, object]]:
     today = today or dt.date.today()
     alias = _alias()
     out: list[dict[str, object]] = []
     for g in RoleGrant.unscoped.using(alias).filter(tenant_id=user.tenant_id, user_id=user.id, status="active"):
-        if g.valid_from > today or (g.valid_to and g.valid_to < today):
+        if not _grant_in_date(g, today):
             continue
         role = Role.unscoped.using(alias).get(pk=g.role_id)
         out.append(
@@ -206,7 +215,7 @@ def user_grants(user: AppUser, today: dt.date | None = None) -> list[dict[str, o
                 "role": role.code,
                 "role_name": role.name,
                 "scope_id": str(g.scope_id),
-                "access_level": role.clearance,
+                "access_level": effective_clearance(role.clearance, g.clearance_cap),
                 "affiliation": affiliation(g.scope_id, getattr(g, "office_scope_id", None)),
             }
         )
@@ -214,8 +223,16 @@ def user_grants(user: AppUser, today: dt.date | None = None) -> list[dict[str, o
 
 
 def sign_in(
-    tenant: TenantInfo, username: str, password: str, *, ip: str | None = None, ua: str | None = None
+    tenant: TenantInfo,
+    username: str,
+    password: str,
+    *,
+    ip: str | None = None,
+    ua: str | None = None,
+    current_token: str | None = None,
 ) -> SignIn:
+    """Password sign-in. ``current_token`` is the session the request already carries (the browser's cookie or the
+    client's bearer token): signing in again from the same browser or client replaces it rather than being refused."""
     alias = _alias()
     now = utcnow()
     base = Context(
@@ -248,7 +265,7 @@ def sign_in(
             audit.write_event(alias, ctx, action="sign_in_failed", record_kind="app_user", record_id=user.id)
             failed = True  # commit the failure count and audit event, then refuse
         else:
-            refused = _claim_sessions(alias, user, ctx, now)
+            refused = _claim_sessions(alias, user, ctx, now, current_token)
             if refused is not None:
                 audit.write_event(
                     alias, ctx, action="sign_in_refused_concurrent", record_kind="user_session", record_id=refused.id
@@ -282,8 +299,13 @@ def _end(alias: str, s: UserSession, reason: str, ctx: Context | None = None, no
         )
 
 
-def _claim_sessions(alias: str, user: AppUser, ctx: Context, now: dt.datetime) -> UserSession | None:
-    """One account, one session (FR-AUT-102): the session in use, if any, else end the account's quiet sessions."""
+def _claim_sessions(
+    alias: str, user: AppUser, ctx: Context, now: dt.datetime, current_token: str | None = None
+) -> UserSession | None:
+    """One account, one session (FR-AUT-102): the session in use, if any, else end the account's sessions.
+
+    Not "in use": the session this request already carries (the same browser or client signing in again), and a
+    session whose school or office was never confirmed — it never got past sign-in, so nothing can be done with it."""
     live = list(
         UserSession.unscoped.using(alias)
         .select_for_update()
@@ -291,7 +313,10 @@ def _claim_sessions(alias: str, user: AppUser, ctx: Context, now: dt.datetime) -
         .order_by("-last_seen_at")
     )
     window = in_use_window()
+    mine = _token_hash(current_token) if current_token else None
     for s in live:
+        if bytes(s.session_hash) == mine or s.affiliation_confirmed_at is None:
+            continue
         if now - s.last_seen_at <= window:
             return s
     for s in live:
@@ -332,22 +357,63 @@ def _open_session(
     return token, s.id, mfa, grants
 
 
+def totp_step(secret_b32: str, code: str, at: float | None = None) -> int | None:
+    """The time step of the window (previous, current, next) whose code matches, or None."""
+    now = at if at is not None else time.time()
+    for d in (-1, 0, 1):
+        t = now + d * 30
+        if hmac.compare_digest(totp(secret_b32, t), code.strip()):
+            return int(t // 30)
+    return None
+
+
 def verify_mfa(token: str, code: str) -> None:
+    """Second factor for a signed-in session. Wrong codes count with wrong passwords towards the account lock (five
+    within ten minutes lock it for fifteen), and a code is accepted once only (``mfa_factor.last_step``)."""
     alias = _alias()
-    s = UserSession.unscoped.using(alias).filter(session_hash=_token_hash(token), revoked_at__isnull=True).first()
-    if s is None:
-        raise AuthFailed("Session not found.", "AUTH-SESSION")
-    for f in MfaFactor.unscoped.using(alias).filter(
-        tenant_id=s.tenant_id, user_id=s.user_id, status="active", factor_type="totp"
-    ):
-        seed = crypto.decrypt(bytes(f.secret_enc or b""), purpose="mfa", tenant_id=s.tenant_id)
-        if totp_valid(seed, code):
-            s.mfa_at = utcnow()
-            f.last_used_at = s.mfa_at
-            f.save(using=alias)
-            s.save(using=alias)
-            return
-    raise AuthFailed("The code is not valid.", "AUTH-MFA")
+    now = utcnow()
+    failed = False
+    with transaction.atomic(using=alias):
+        s = (
+            UserSession.unscoped.using(alias)
+            .filter(session_hash=_token_hash(token), revoked_at__isnull=True, expires_at__gt=now)
+            .first()
+        )
+        if s is None:
+            raise AuthFailed("Session not found.", "AUTH-SESSION")
+        user = AppUser.unscoped.using(alias).select_for_update().filter(pk=s.user_id).first()
+        if user is None or user.status != "active":
+            raise AuthFailed("This account cannot sign in. Contact your administrator.", "AUTH-ACCOUNT-INACTIVE")
+        if user.locked_until and user.locked_until > now:
+            raise AuthFailed("The account is locked after repeated failures. Try again later.", "AUTH-LOCKED")
+        ctx = Context(tenant_id=s.tenant_id, state_tenant_id=s.tenant_id, actor_kind="user", actor_id=user.id)
+        for f in (
+            MfaFactor.unscoped.using(alias)
+            .select_for_update()
+            .filter(tenant_id=s.tenant_id, user_id=s.user_id, status="active", factor_type="totp")
+        ):
+            seed = crypto.decrypt(bytes(f.secret_enc or b""), purpose="mfa", tenant_id=s.tenant_id)
+            step = totp_step(seed, code)
+            if step is not None and (f.last_step is None or step > f.last_step):
+                s.mfa_at = now
+                f.last_used_at = now
+                f.last_step = step
+                f.save(using=alias)
+                s.save(using=alias)
+                user.failed_attempts = 0
+                user.save(using=alias)
+                audit.write_event(alias, ctx, action="mfa_verified", record_kind="user_session", record_id=s.id)
+                return
+        recent = now - (user.updated_at or now) <= LOCK_WINDOW
+        user.failed_attempts = (user.failed_attempts if recent else 0) + 1
+        if user.failed_attempts >= LOCK_AFTER:
+            user.locked_until = now + LOCK_FOR
+            user.failed_attempts = 0
+        user.save(using=alias)
+        audit.write_event(alias, ctx, action="mfa_failed", record_kind="user_session", record_id=s.id)
+        failed = True  # commit the failure count and audit event, then refuse
+    if failed:
+        raise AuthFailed("The code is not valid.", "AUTH-MFA")
 
 
 def enrol_totp(user: AppUser) -> str:
@@ -375,6 +441,8 @@ def select_grant(token: str, grant_id: uuid.UUID, *, confirm: bool = True) -> di
     g = RoleGrant.unscoped.using(alias).filter(pk=grant_id, user_id=s.user_id, status="active").first()
     if g is None:
         raise Forbidden("That role is not yours.", code="AUTH-GRANT")
+    if not _grant_in_date(g, dt.date.today()):
+        raise Forbidden("That role is not in force today.", code="AUTH-GRANT-INACTIVE")
     aff = affiliation(g.scope_id, getattr(g, "office_scope_id", None))
     s.active_grant_id = grant_id
     s.affiliation_scope_id = uuid.UUID(aff["scope_id"]) if aff.get("scope_id") else None
@@ -430,6 +498,13 @@ def refused_attempts(s: UserSession) -> int:
     return int(row[0]) if row else 0
 
 
+def _drop_grant(alias: str, s: UserSession) -> None:
+    """The session's grant is no longer in force: clear it and the confirmation, so the next page is AUT-03."""
+    s.active_grant_id = None
+    s.affiliation_confirmed_at = None
+    UserSession.unscoped.using(alias).filter(pk=s.id).update(active_grant_id=None, affiliation_confirmed_at=None)
+
+
 def _idle_limit(clearance: str) -> dt.timedelta:
     limits = getattr(settings, "SYNTEGRA_SESSION_IDLE_MINUTES", {})
     key = "restricted" if class_rank(clearance) >= class_rank("restricted") else "default"
@@ -457,11 +532,18 @@ def resolve(token: str, base: Context) -> tuple[Context, UserSession] | None:
     mfa_needed = (
         MfaFactor.unscoped.using(alias).filter(tenant_id=user.tenant_id, user_id=user.id, status="active").exists()
     )
+    s.mfa_pending = bool(mfa_needed and not s.mfa_at)  # type: ignore[attr-defined]  # read by the page wrapper
     ctx = base.with_(
         actor_kind="user", actor_id=user.id, clearance="public", permissions=frozenset(), scope_ids=frozenset()
     )
-    if s.active_grant_id and (s.mfa_at or not mfa_needed):
-        ctx = authz.grant_context(ctx, s.active_grant_id)
+    # The grant applies once MFA is done and the school or office has been confirmed (FR-AUT-101) — on the pages
+    # and the API alike. A grant that has ended since (revoked, expired, moved by a posting) is dropped from the
+    # session: the person is asked to choose again instead of every request being refused.
+    if s.active_grant_id and (s.mfa_at or not mfa_needed) and s.affiliation_confirmed_at:
+        try:
+            ctx = authz.grant_context(ctx, s.active_grant_id)
+        except Forbidden:
+            _drop_grant(alias, s)
     if now - s.last_seen_at > _idle_limit(ctx.clearance):
         _end(alias, s, "idle_timeout")
         return None
@@ -506,16 +588,27 @@ def create_user(
 
 
 def grant_role(
-    ctx: Context, *, user: AppUser, role_code: str, scope_id: uuid.UUID, valid_from: dt.date | None = None
+    ctx: Context,
+    *,
+    user: AppUser,
+    role_code: str,
+    scope_id: uuid.UUID,
+    valid_from: dt.date | None = None,
+    office_scope_id: uuid.UUID | None = None,
 ) -> RoleGrant:
+    """Grant a role at a scope. ``office_scope_id`` is the office the person works in when the scope is wider (a
+    ministry official with state-wide scope): its name and address are shown at sign-in (CR-007, FR-AUT-101)."""
     alias = _alias()
     role = Role.unscoped.using(alias).get(tenant_id=ctx.state_tenant_id, code=role_code)
+    if office_scope_id is not None:
+        _office_node(ctx, office_scope_id)
     with transaction.atomic(using=alias):
         g = RoleGrant(
             tenant_id=ctx.state_tenant_id,
             user_id=user.id,
             role_id=role.id,
             scope_id=scope_id,
+            office_scope_id=office_scope_id,
             granted_by_id=ctx.actor_id if ctx.actor_kind == "user" else None,
             status="active",
             valid_from=valid_from or dt.date.today(),
@@ -527,9 +620,112 @@ def grant_role(
             action="grant",
             record_kind="role_grant",
             record_id=g.id,
-            field_changes=[{"field": "role", "new": role_code}, {"field": "scope_id", "new": str(scope_id)}],
+            field_changes=[
+                {"field": "role", "new": role_code},
+                {"field": "scope_id", "new": str(scope_id)},
+                *([{"field": "office_scope_id", "new": str(office_scope_id)}] if office_scope_id else []),
+            ],
         )
     return g
+
+
+# --------------------------------------------------------------------------- offices shown at sign-in (CR-007)
+OFFICE_LEVELS = ("state", "authority", "agency", "formation", "lga", "network")
+ADDRESS_FIELDS = ("office", "street", "town", "lga", "state", "postcode")
+
+
+def _office_node(ctx: Context, node_id: uuid.UUID) -> object:
+    """An office (a scope node that is not an institution) in the caller's scope."""
+    from syntegra.core.errors import NotFound
+    from syntegra.governance.models import ScopeNode
+
+    node = ScopeNode.unscoped.using(_alias()).filter(pk=node_id, tenant_id=ctx.state_tenant_id).first()
+    if node is None or node.level not in OFFICE_LEVELS:
+        raise NotFound("Office", node_id)
+    if ctx.scope_ids is not None and not ctx.is_system and node.id not in ctx.scope_ids:
+        raise NotFound("Office", node_id)
+    return node
+
+
+def offices(ctx: Context) -> list[dict[str, object]]:
+    """Offices in the caller's scope — the state, its boards and agencies, LGA education offices — with the
+    address shown at sign-in to people who work there."""
+    from syntegra.governance.models import ScopeNode
+
+    authz.require("access:manage", ctx)
+    q = ScopeNode.unscoped.using(_alias()).filter(tenant_id=ctx.state_tenant_id, level__in=OFFICE_LEVELS)
+    if ctx.scope_ids is not None and not ctx.is_system:
+        q = q.filter(id__in=list(ctx.scope_ids))
+    out: list[dict[str, object]] = []
+    for n in q.order_by("depth", "name")[:1000]:
+        addr = n.address if isinstance(n.address, dict) else {}
+        out.append(
+            {
+                "id": str(n.id),
+                "code": n.code,
+                "name": n.name,
+                "level": n.level,
+                "office": str(addr.get("office") or n.name),
+                "address": format_address(addr),
+                "fields": {k: str(addr.get(k) or "") for k in ADDRESS_FIELDS},
+            }
+        )
+    return out
+
+
+def set_office_address(ctx: Context, node_id: uuid.UUID, fields: dict[str, str], reason: str) -> None:
+    """Record an office's name and address as shown at sign-in (FR-AUT-101), audited with the reason."""
+    from syntegra.core import uow
+    from syntegra.core.errors import HardValidation
+    from syntegra.governance.models import ScopeNode
+
+    authz.require("access:manage", ctx)
+    if len((reason or "").strip()) < 5:
+        raise HardValidation("OFFICE-REASON", "Give a reason", "Say why the address is changing.")
+    clean = {k: " ".join(str(fields.get(k) or "").split())[:160] for k in ADDRESS_FIELDS}
+    if not clean["street"] or not clean["town"]:
+        raise HardValidation("OFFICE-ADDRESS", "Give the address", "Enter at least the street and the town.")
+    node = _office_node(ctx, node_id)
+    with uow.command("registry", "access:manage", action="office_address", record_kind="scope_node", ctx=ctx) as cmd:
+        cmd.reason = reason.strip()
+        locked = cmd.lock(ScopeNode, getattr(node, "id"))  # noqa: B009
+        before = locked.address if isinstance(locked.address, dict) else {}
+        cmd.update(locked, address={**before, **{k: v for k, v in clean.items() if v or k in before}})
+
+
+def set_grant_office(ctx: Context, grant_id: uuid.UUID, office_id: uuid.UUID | None, reason: str) -> None:
+    """Set the office a grant's holder works in (shown at sign-in instead of the grant's scope), or clear it."""
+    from syntegra.core.errors import HardValidation, NotFound
+
+    authz.require("access:manage", ctx)
+    if len((reason or "").strip()) < 5:
+        raise HardValidation("OFFICE-REASON", "Give a reason", "Say why the office is changing.")
+    if office_id is not None:
+        _office_node(ctx, office_id)
+    alias = _alias()
+    with transaction.atomic(using=alias):
+        g = (
+            RoleGrant.unscoped.using(alias)
+            .select_for_update()
+            .filter(pk=grant_id, tenant_id=ctx.state_tenant_id)
+            .first()
+        )
+        if g is None or (ctx.scope_ids is not None and not ctx.is_system and g.scope_id not in ctx.scope_ids):
+            raise NotFound("Role grant", grant_id)
+        before = g.office_scope_id
+        g.office_scope_id = office_id
+        g.save(using=alias)
+        audit.write_event(
+            alias,
+            ctx,
+            action="office_changed",
+            record_kind="role_grant",
+            record_id=g.id,
+            field_changes=[
+                {"field": "office_scope_id", "old": str(before) if before else None, "new": str(office_id or "")}
+            ],
+            reason=reason.strip(),
+        )
 
 
 # --------------------------------------------------------------------------- administration (CR-007)
@@ -607,33 +803,42 @@ def end_session(ctx: Context, session_id: uuid.UUID, reason: str) -> None:
         _end(alias, s, "ended_by_administrator", ctx, note=reason.strip())
 
 
-def access_overview(ctx: Context) -> dict[str, object]:
-    """Roles with their access level and the grants in scope with their effective level (FR-ADM-202)."""
+def access_overview(ctx: Context, *, q: str = "", offset: int = 0, limit: int = 300) -> dict[str, object]:
+    """Roles with their access level and the grants in scope with their effective level (FR-ADM-202). The search
+    (person, username, role or school) and the per-role holder counts run in the database over every grant in scope;
+    one page of ``limit`` grants from ``offset`` is returned with the total."""
+    from django.db.models import Count, Q
+
     from syntegra.core import access
-    from syntegra.governance.models import ScopeNode
 
     authz.require("access:manage", ctx)
     alias = _alias()
     roles = list(Role.unscoped.using(alias).filter(tenant_id=ctx.state_tenant_id, status="active").order_by("code"))
-    q = RoleGrant.unscoped.using(alias).filter(tenant_id=ctx.state_tenant_id, status="active")
+    base = RoleGrant.unscoped.using(alias).filter(tenant_id=ctx.state_tenant_id, status="active")
     if ctx.scope_ids is not None and not ctx.is_system:
-        q = q.filter(scope_id__in=list(ctx.scope_ids))
-    grants = list(q.order_by("role_id")[:2000])
-    people = {u.id: u for u in AppUser.unscoped.using(alias).filter(id__in=[g.user_id for g in grants])}
-    nodes = {n.id: n for n in ScopeNode.unscoped.using(alias).filter(id__in=[g.scope_id for g in grants])}
-    by_role = {r.id: r for r in roles}
+        base = base.filter(scope_id__in=list(ctx.scope_ids))
+    holders = dict(base.values_list("role_id").annotate(n=Count("id")).values_list("role_id", "n"))
+    found = base
+    q = (q or "").strip()
+    if q:
+        found = base.filter(
+            Q(user__username__icontains=q)
+            | Q(user__display_name__icontains=q)
+            | Q(role__code__icontains=q)
+            | Q(role__name__icontains=q)
+            | Q(scope__name__icontains=q)
+        )
+    total = found.count()
+    offset = max(0, offset)
+    grants = list(
+        found.select_related("user", "role", "scope").order_by("role__code", "user__display_name", "id")[
+            offset : offset + max(1, min(limit, 1000))
+        ]
+    )
     rows = []
     for g in grants:
-        r = by_role.get(g.role_id)
-        if r is None:
-            continue
-        eff = (
-            g.clearance_cap
-            if g.clearance_cap and class_rank(g.clearance_cap) < class_rank(r.clearance)
-            else r.clearance
-        )
-        u = people.get(g.user_id)
-        n = nodes.get(g.scope_id)
+        r, u, n = g.role, g.user, g.scope
+        eff = effective_clearance(r.clearance, g.clearance_cap)
         rows.append(
             {
                 "grant_id": str(g.id),
@@ -642,6 +847,7 @@ def access_overview(ctx: Context) -> dict[str, object]:
                 "role": r.code,
                 "role_name": r.name,
                 "scope": n.name if n else "",
+                "office_id": str(g.office_scope_id) if g.office_scope_id else "",
                 "role_level": access.level(r.clearance),
                 "cap": access.level(g.clearance_cap) if g.clearance_cap else None,
                 "effective": access.level(eff),
@@ -653,18 +859,19 @@ def access_overview(ctx: Context) -> dict[str, object]:
                 "is_me": g.user_id == ctx.actor_id,
             }
         )
-    rows.sort(key=lambda x: (str(x["role"]), str(x["user"])))
     role_rows = [
-        {
-            "code": r.code,
-            "name": r.name,
-            "level": access.level(r.clearance),
-            "holders": sum(1 for x in rows if x["role"] == r.code),
-        }
+        {"code": r.code, "name": r.name, "level": access.level(r.clearance), "holders": holders.get(r.id, 0)}
         for r in roles
     ]
-    role_rows.sort(key=lambda x: (-x["level"].number, str(x["code"])))  # type: ignore[attr-defined]
-    return {"levels": access.LEVELS, "roles": role_rows, "grants": rows}
+    role_rows.sort(key=lambda x: (-x["level"].number, str(x["code"])))
+    return {
+        "levels": access.LEVELS,
+        "roles": role_rows,
+        "grants": rows,
+        "total": total,
+        "offset": offset,
+        "q": q,
+    }
 
 
 def set_grant_cap(ctx: Context, grant_id: uuid.UUID, cap: str | None, reason: str) -> None:
@@ -694,7 +901,9 @@ def set_grant_cap(ctx: Context, grant_id: uuid.UUID, cap: str | None, reason: st
             raise HardValidation(
                 "ACCESS-ABOVE-ROLE", "Above the role's level", "A grant can only be lowered below its role's level."
             )
-        if cap is not None and class_rank(cap) > class_rank(ctx.clearance):
+        # the level the grant will act at — restoring (no cap) gives the role's own level, which must not be above
+        # the administrator's either
+        if class_rank(effective_clearance(role.clearance, cap)) > class_rank(ctx.clearance):
             raise Forbidden("You cannot set a level above your own.", code="ACCESS-ABOVE-OWN")
         before = g.clearance_cap
         g.clearance_cap = None if cap == role.clearance else cap
@@ -705,6 +914,6 @@ def set_grant_cap(ctx: Context, grant_id: uuid.UUID, cap: str | None, reason: st
             action="access_level_changed",
             record_kind="role_grant",
             record_id=g.id,
-            field_changes=[{"field": "clearance_cap", "from": before, "to": g.clearance_cap}],
+            field_changes=[{"field": "clearance_cap", "old": before, "new": g.clearance_cap}],
             reason=reason.strip(),
         )

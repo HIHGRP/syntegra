@@ -16,7 +16,7 @@ import re
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from django.conf import settings
 from django.db import connections
@@ -128,8 +128,29 @@ def _in_scope(ctx: Context, scope_node_id: uuid.UUID | None) -> bool:
     return ctx.is_system or ctx.scope_ids is None or (scope_node_id is not None and scope_node_id in ctx.scope_ids)
 
 
-def _visible_classes(ctx: Context) -> list[str]:
-    return [c for c in CLASS_ORDER if ctx.cleared_for(c) and c != "special"] if not ctx.is_system else list(CLASS_ORDER)
+def _visible_classes(ctx: Context, *, restricted: bool = True) -> list[str]:
+    """Classifications listed to the caller: up to their level, never special; restricted only with a purpose."""
+    if ctx.is_system:
+        return list(CLASS_ORDER)
+    return [
+        c
+        for c in CLASS_ORDER
+        if ctx.cleared_for(c) and c != "special" and (restricted or class_rank(c) < class_rank("restricted"))
+    ]
+
+
+def _listing_purpose(ctx: Context, purpose: str | None) -> tuple[str | None, bool]:
+    """(validated purpose, whether restricted documents are listed). Restricted documents appear in searches and
+    registers only with a declared purpose (FR-DOC-206, CEDA §5.5), as they open only with one."""
+    if ctx.is_system:
+        return purpose, True
+    purpose = authz.validate_purpose(ctx, purpose) if purpose else None
+    return purpose, bool(purpose) and ctx.cleared_for("restricted")
+
+
+def restricted_needs_purpose(ctx: Context) -> bool:
+    """The caller's level covers restricted documents, which are listed only once a purpose is declared."""
+    return not ctx.is_system and ctx.cleared_for("restricted")
 
 
 def _require_any(ctx: Context, *perms: str) -> None:
@@ -162,16 +183,36 @@ def _keywords(doc: Document, cat: DocumentCategory, inst: Any) -> str:
 
 
 def _next_reference(alias: str, tenant_id: uuid.UUID, prefix: str) -> str:
-    """``prefix/00001``: the next sequence under the prefix, taken under a lock on the reference key range."""
+    """``prefix/00001``: the next sequence under the prefix. Two uploads for the same school, category and year can
+    read the same last number (the database runs at READ COMMITTED, so the read takes no range lock); the unique key
+    ``uq_document_reference_no`` refuses the second insert and ``_add_with_reference`` takes the next number."""
     with connections[alias].cursor() as cur:
         cur.execute(
             "SELECT reference_no FROM document WHERE tenant_id = %s AND reference_no LIKE %s "
-            "ORDER BY reference_no DESC LIMIT 1 FOR UPDATE",
+            "ORDER BY reference_no DESC LIMIT 1",
             [tenant_id.bytes, prefix + "/%"],
         )
         row = cur.fetchone()
     last = int(str(row[0]).rsplit("/", 1)[1]) if row else 0
     return f"{prefix}/{last + 1:05d}"
+
+
+REFERENCE_ATTEMPTS = 8
+
+
+def _add_with_reference(cmd: Any, doc: Document, tenant_id: uuid.UUID, prefix: str) -> Document:
+    """Insert ``doc`` with the next free reference number, retrying in a savepoint when another upload took it."""
+    from django.db import IntegrityError, transaction
+
+    for attempt in range(REFERENCE_ATTEMPTS):
+        doc.reference_no = _next_reference(cmd.alias, tenant_id, prefix)
+        try:
+            with transaction.atomic(using=cmd.alias):
+                return cast(Document, cmd.add(doc))
+        except IntegrityError as exc:
+            if "reference_no" not in str(exc) or attempt == REFERENCE_ATTEMPTS - 1:
+                raise
+    raise AssertionError("unreachable")
 
 
 # --------------------------------------------------------------------------- upload
@@ -247,23 +288,19 @@ def upload(
     prefix = f"{inst.institution_code}/{cat.code}/{year}"
     out: list[Document] = []
     with uow.command("records", "document:upload", action="upload", record_kind="document", ctx=ctx) as cmd:
-        alias = cmd.alias
         for f, mime in prepared:
             stored = storage.put(f.data, prefix=f"records/{ctx.tenant_id}", ext=textmod.EXTENSIONS[mime])
             dup = Document.objects.filter(sha256=stored.sha256).exclude(status="disposed").first()
             if dup is not None:
-                raise HardValidation(
-                    "DOC-DUPLICATE",
-                    "Already stored",
-                    f"{f.name} is already stored as {dup.reference_no} ({dup.title}) — the same scan is kept once.",
-                )
+                raise HardValidation("DOC-DUPLICATE", "Already stored", _duplicate_detail(ctx, f.name, dup))
             extracted = textmod.extract(f.data, mime, transcription)
-            doc = cmd.add(
+            assert ctx.tenant_id is not None
+            doc = _add_with_reference(
+                cmd,
                 Document(
                     tenant_id=ctx.tenant_id,
                     scope_node_id=inst.scope_node_id,
                     category_id=cat.id,
-                    reference_no=_next_reference(alias, ctx.tenant_id, prefix),  # type: ignore[arg-type]
                     title=title if len(prepared) == 1 else f"{title} ({f.name})",
                     description=description.strip() or None,
                     source_reference=source_reference.strip() or None,
@@ -285,6 +322,8 @@ def upload(
                     qa_status="pending",
                     status="active",
                 ),
+                ctx.tenant_id,
+                prefix,
             )
             cmd.emit(
                 "DOC.INGESTED", aggregate_id=doc.id, payload={"document_id": str(doc.id), "category_id": str(cat.id)}
@@ -315,22 +354,41 @@ def upload(
     return out
 
 
+def _duplicate_detail(ctx: Context, name: str, dup: Document) -> str:
+    """The duplicate's reference and title only when the uploader could open it; otherwise nothing about it."""
+    if _in_scope(ctx, dup.scope_node_id) and dup.classification in _visible_classes(ctx):
+        return f"{name} is already stored as {dup.reference_no} ({dup.title}) — the same scan is kept once."
+    return f"{name} is already stored — the same scan is kept once. Ask the records manager if you cannot find it."
+
+
 # --------------------------------------------------------------------------- search and registers
-def _fulltext_ids(tenant_id: uuid.UUID, q: str, institution_id: uuid.UUID | None, limit: int = 1000) -> list[bytes]:
+def _fulltext_ids(
+    ctx: Context, q: str, institution_id: uuid.UUID | None, classes: list[str], limit: int = 1000
+) -> list[bytes]:
+    """Document ids matching the words, best first. The caller's scope and the listed classifications are applied
+    inside the query, before the limit, so documents elsewhere in the state never crowd out the caller's own."""
     words = [w.strip("'’-") for w in WORD_RE.findall(q)]
     words = [w for w in words if len(w) >= 3][:12]
-    if not words:
+    if not words or not classes:
         return []
+    assert ctx.tenant_id is not None
     boolean = " ".join(f"+{w}*" for w in words)
     sql = (
-        "SELECT document_id FROM document_index WHERE tenant_id = %s AND "
-        "MATCH(title, keywords, body_text) AGAINST (%s IN BOOLEAN MODE)"
+        "SELECT i.document_id FROM document_index i "
+        "JOIN document d ON d.id = i.document_id AND d.tenant_id = i.tenant_id "
+        "WHERE i.tenant_id = %s AND MATCH(i.title, i.keywords, i.body_text) AGAINST (%s IN BOOLEAN MODE) "
+        "AND d.status <> 'disposed' AND d.classification IN (" + ", ".join(["%s"] * len(classes)) + ")"
     )
-    params: list[Any] = [tenant_id.bytes, boolean]
+    params: list[Any] = [ctx.tenant_id.bytes, boolean, *classes]
     if institution_id:
-        sql += " AND institution_id = %s"
+        sql += " AND i.institution_id = %s"
         params.append(institution_id.bytes)
-    sql += " ORDER BY MATCH(title, keywords, body_text) AGAINST (%s IN BOOLEAN MODE) DESC LIMIT %s"
+    if ctx.scope_ids is not None and not ctx.is_system:
+        if not ctx.scope_ids:
+            return []
+        sql += " AND d.scope_node_id IN (" + ", ".join(["%s"] * len(ctx.scope_ids)) + ")"
+        params += [n.bytes for n in ctx.scope_ids]
+    sql += " ORDER BY MATCH(i.title, i.keywords, i.body_text) AGAINST (%s IN BOOLEAN MODE) DESC LIMIT %s"
     params += [boolean, limit]
     with connections[current_alias("records")].cursor() as cur:
         cur.execute(sql, params)
@@ -345,10 +403,14 @@ def search(
     category_code: str = "",
     year: int | None = None,
     limit: int = 100,
+    purpose: str | None = None,
 ) -> dict[str, Any]:
     """Documents matching words, a reference number, a school, category and year (FR-DOC-204), within the caller's
-    scope and access level. Searching across schools needs ``document:search`` (FR-DOC-206)."""
+    scope and access level. Searching across schools needs ``document:search``; restricted documents are included
+    only with a declared purpose, which is audited with the search (FR-DOC-206)."""
     _require_any(ctx, "document:view", "document:search")
+    purpose, with_restricted = _listing_purpose(ctx, purpose)
+    classes = _visible_classes(ctx, restricted=with_restricted)
     if institution_id is None and not ctx.has("document:search"):
         raise Forbidden(
             "Searching the documents of every school needs the document search permission. Choose your school.",
@@ -358,7 +420,7 @@ def search(
         inst = _institution(institution_id)
         if not _in_scope(ctx, inst.scope_node_id):
             raise Forbidden("That school is outside your scope.", code="AUTH-SCOPE")
-    qs = Document.objects.in_scope().filter(classification__in=_visible_classes(ctx)).exclude(status="disposed")
+    qs = Document.objects.in_scope().filter(classification__in=classes).exclude(status="disposed")
     if institution_id:
         qs = qs.filter(institution_id=institution_id)
     if category_code:
@@ -371,8 +433,7 @@ def search(
         if "/" in q and " " not in q:
             qs = qs.filter(reference_no__istartswith=q)
         else:
-            assert ctx.tenant_id is not None
-            ranked = _fulltext_ids(ctx.tenant_id, q, institution_id)
+            ranked = _fulltext_ids(ctx, q, institution_id, classes)
             qs = qs.filter(id__in=[uuid.UUID(bytes=b) for b in ranked])
     total = qs.count()
     rows = list(qs[: limit if not ranked else 2000])
@@ -390,10 +451,16 @@ def search(
             {"field": "query", "new": q[:200]},
             {"field": "institution_id", "new": str(institution_id or "")},
             {"field": "results", "new": total},
+            {"field": "purpose", "new": purpose},
         ],
     )
     cats = _cats()
-    return {"total": total, "rows": [_row(d, cats) for d in rows]}
+    return {
+        "total": total,
+        "rows": [_row(d, cats) for d in rows],
+        "purpose": purpose,
+        "restricted_left_out": restricted_needs_purpose(ctx) and not with_restricted,
+    }
 
 
 def _cats() -> dict[uuid.UUID, DocumentCategory]:
@@ -445,27 +512,34 @@ def institutions_with_documents(ctx: Context) -> list[dict[str, Any]]:
     return out
 
 
-def register(ctx: Context, institution_id: uuid.UUID, q: str = "") -> dict[str, Any]:
-    """One school's complete document register, grouped by category with reference numbers (FR-DOC-205)."""
+def register(ctx: Context, institution_id: uuid.UUID, q: str = "", purpose: str | None = None) -> dict[str, Any]:
+    """One school's complete document register, grouped by category with reference numbers (FR-DOC-205); restricted
+    documents are listed only with a declared purpose (FR-DOC-206), which is audited."""
     from syntegra.iam.services import format_address
 
     _require_any(ctx, "document:view", "document:search")
     inst = _institution(institution_id)
     if not _in_scope(ctx, inst.scope_node_id):
         raise Forbidden("That school is outside your scope.", code="AUTH-SCOPE")
-    found = search(ctx, q=q, institution_id=institution_id, limit=5000) if q else None
-    qs = (
-        Document.objects.in_scope()
-        .filter(institution_id=institution_id, classification__in=_visible_classes(ctx))
-        .exclude(status="disposed")
-    )
+    purpose, with_restricted = _listing_purpose(ctx, purpose)
+    found = search(ctx, q=q, institution_id=institution_id, limit=5000, purpose=purpose) if q else None
+    every = Document.objects.in_scope().filter(institution_id=institution_id).exclude(status="disposed")
+    qs = every.filter(classification__in=_visible_classes(ctx, restricted=with_restricted))
     cats = _cats()
     docs = [_row(d, cats) for d in qs.order_by("reference_no")] if found is None else found["rows"]
-    hidden = (
-        Document.objects.filter(institution_id=institution_id).exclude(status="disposed").count() - qs.count()
-        if found is None
+    restricted_hidden = (
+        every.filter(classification="restricted").count()
+        if found is None and restricted_needs_purpose(ctx) and not with_restricted
         else 0
     )
+    hidden = every.count() - qs.count() - restricted_hidden if found is None else 0
+    if found is None and purpose:
+        _audit(
+            ctx,
+            "document_register_view",
+            None,
+            [{"field": "institution_id", "new": str(institution_id)}, {"field": "purpose", "new": purpose}],
+        )
     groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for r in docs:
         groups[r["category"] or "Other"].append(r)
@@ -480,6 +554,9 @@ def register(ctx: Context, institution_id: uuid.UUID, q: str = "") -> dict[str, 
         "total": len(docs),
         "size": sum(int(r["size_bytes"] or 0) for r in docs),
         "hidden_above_level": max(0, hidden),
+        "restricted_hidden": restricted_hidden,
+        "restricted_left_out": restricted_needs_purpose(ctx) and not with_restricted,
+        "purpose": purpose,
         "categories": categories(),
     }
 

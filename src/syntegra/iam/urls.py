@@ -12,4 +12,7 @@ urlpatterns = [
     path("auth/sessions/<uuid:pk>/end", api.SessionEndView.as_view()),
     path("access/levels", api.AccessLevelsView.as_view()),
     path("access/grants/<uuid:pk>/level", api.GrantLevelView.as_view()),
+    path("access/grants/<uuid:pk>/office", api.GrantOfficeView.as_view()),
+    path("access/offices", api.OfficesView.as_view()),
+    path("access/offices/<uuid:pk>/address", api.OfficeAddressView.as_view()),
 ]

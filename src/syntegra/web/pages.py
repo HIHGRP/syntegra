@@ -26,6 +26,7 @@ IMPLEMENTED: dict[str, str] = {
     "STI-02": "security_institution",
     "STI-03": "security_course",
     "STI-04": "security_intake",
+    "AUT-02": "mfa_challenge",
     "AUT-03": "workspace",
     "CMD-101": "control_room",
     "CMD-102": "league",
@@ -55,6 +56,7 @@ UNIVERSAL = {"home", "catalogue", "forms_hub", "form_page"}
 # content is trimmed for each viewer — tabs, fields or records above the viewer's level are withheld by the services —
 # are entered at a lower level; the data-level checks still apply inside them.
 ENTRY_LEVEL: dict[str, str] = {
+    "AUT-02": "public",  # the second factor comes before any access level applies
     "AUT-03": "public",  # choosing the role comes before any access level applies
     "LRN-04": "confidential",  # Learner 360: safeguarding (special) and restricted tabs are withheld per viewer
     "LRN-02": "confidential",  # registration captures data; identity numbers are revealed only to cleared roles

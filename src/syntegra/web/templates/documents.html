@@ -17,17 +17,21 @@
     {% for c in categories %}<option value="{{ c.code }}"{% if cat == c.code %} selected{% endif %}>{{ c.title }}</option>{% endfor %}
   </select></label>
   <label>Year<input name="year" value="{{ year }}" inputmode="numeric" pattern="[0-9]{4}" placeholder="e.g. 1998" class="num4"></label>
+  {% if purposes %}<label>Purpose (to include restricted documents)<select name="purpose" id="purpose"><option value="">No purpose — leave restricted documents out</option>
+    {% for p in purposes %}<option value="{{ p.code }}"{% if purpose == p.code %} selected{% endif %}>{{ p.label }}</option>{% endfor %}
+  </select></label>{% endif %}
   <button class="primary">Search</button>
 </form>
 
 {% if result is not none %}
 <section class="card" id="results">
   <h2>{{ result.total }} document{{ "s" if result.total != 1 else "" }} found{% if q %} for “{{ q }}”{% endif %}</h2>
+  {% if result.restricted_left_out %}<p class="hint" id="restricted-note">Restricted documents (staff files, finance, discipline) are left out of this search. Choose a purpose above to include them — the purpose is recorded with the search.</p>{% elif result.purpose %}<p class="hint" id="purpose-note">Restricted documents are included for the purpose you declared; the search is recorded with it.</p>{% endif %}
   {% if result.rows %}
   <div class="scroll-x"><table>
     <thead><tr><th>Reference</th><th>Title</th><th>School</th><th>Category</th><th>Dates</th><th>Level</th></tr></thead>
     <tbody>{% for r in result.rows %}
-      <tr><td><a href="/documents/{{ r.id }}"><code>{{ r.reference_no }}</code></a></td><td>{{ r.title }}</td><td>{{ names.get(r.institution_id, "—") }}</td><td>{{ r.category }}</td>
+      <tr><td><a href="/documents/{{ r.id }}{% if result.purpose and r.level.number >= 4 %}?purpose={{ result.purpose|urlencode }}{% endif %}"><code>{{ r.reference_no }}</code></a></td><td>{{ r.title }}</td><td>{{ names.get(r.institution_id, "—") }}</td><td>{{ r.category }}</td>
         <td>{{ r.date_from|date("%Y") if r.date_from else "—" }}{% if r.date_to and r.date_to != r.date_from %}–{{ r.date_to|date("%Y") }}{% endif %}</td>
         <td><span class="level level-{{ r.level.number }}">{{ r.level.label }}</span></td></tr>
     {% endfor %}</tbody>

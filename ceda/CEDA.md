@@ -1914,14 +1914,26 @@ a bar under the menu on every page, with the user's access level.
 | An institution (school, college, university) | `institution.name` and `institution.address` (town, LGA, state) |
 | Any other node, or the grant's `office_scope_id` | The office's name and `scope_node.address` — e.g. a commissioner with state-wide scope works in the Abia State Ministry of Education, State Secretariat, Ogurube Layout, Umuahia |
 
-Nothing about the account or its school is revealed until the password has been verified.
+Nothing about the account or its school is revealed until the password has been verified. Accounts with an
+authenticator app enter its six-digit code first (AUT-02 `/auth/mfa`, `POST /api/v1/auth/mfa`): a code is accepted
+once only, and wrong codes count with wrong passwords towards the account lock (five in ten minutes lock it for
+fifteen). API clients confirm too: a session carries no role until `POST /api/v1/auth/role` confirms the school or
+office, so pages and API follow the same rule. A role that ends while its holder is signed in (revoked, expired,
+moved by a posting) is dropped from the session and the person is asked to choose again.
+
+Offices are recorded by administrators with `access:manage` on ADM-101: each office's name and address (state,
+boards, agencies, LGA education offices — `PUT /api/v1/access/offices/{id}/address`) and, for a person whose role has
+a wider scope, the office they work in (`role_grant.office_scope_id`, `PUT /api/v1/access/grants/{id}/office`;
+`grant_role(..., office_scope_id=...)` when granting).
 
 ### 31.2 One account, one session
 
 A sign-in (page or API) is refused while another session of the same account is **in use** — activity within the last
 15 minutes (`SYNTEGRA_SESSION_IN_USE_MINUTES`). The refused person is told when the account was signed in and when it
 will be free; the person using the account sees a warning on every page that someone tried to sign in. Sessions quieter
-than the window end as `replaced` when the account signs in again, so nobody is locked out by a forgotten browser. Every
+than the window end as `replaced` when the account signs in again, so nobody is locked out by a forgotten browser.
+Signing in again from the same browser or API client (it presents its own session) replaces that session, and a
+session whose school or office was never confirmed does not count as in use. Every
 session records why it ended: `signed_out`, `idle_timeout`, `expired`, `replaced`, `ended_by_administrator`,
 `account_inactive`; the person whose session ended is told why at the sign-in page. Administrators with
 `session:manage` see the sessions of users in their scope (ADM-102, `GET /api/v1/auth/sessions`) and end one with a
@@ -1935,10 +1947,10 @@ reason (`POST /api/v1/auth/sessions/{id}/end`).
 |---|---|
 | Upload (DOC-107, `POST /api/v1/documents`) | One or more scans (PDF, JPEG, PNG, TIFF or text; type checked from the bytes, 25 MB each) under a school, with category, title, dates or session, class, subject, the reference written on the paper and a description |
 | Reference number | `<institution code>/<category>/<year>/<sequence>`, e.g. `INS-NG-000129/ADM/1998/00001`, unique in the state |
-| Storage | Write-once, content-addressed object storage; the SHA-256 is recorded at upload and checked on every read; the same scan is stored once (a second upload is refused and points to the existing reference) |
+| Storage | Write-once, content-addressed object storage; each object is written to a temporary file and linked into place only when complete, so no partial object is ever kept; the SHA-256 is recorded at upload and checked on every read; the same scan is stored once (a second upload is refused and points to the existing reference when the uploader could open it) |
 | Index | `document_index`: title, keywords (category, school, session, class, subject, paper reference, description) and the text — the PDF text layer, text files, OCR with Tesseract where installed, and any transcription typed at upload — under a MySQL FULLTEXT key; special-category documents are never indexed |
-| Search (DOC-104, `GET /api/v1/documents`) | Words (all must match, prefixes allowed), a reference number, school, category and year; results ranked by relevance, limited to the caller's scope and access level |
-| School register (DOC-108) | Each school's complete register on one page, grouped by category with reference numbers, storage used, and search within the school |
+| Search (DOC-104, `GET /api/v1/documents`) | Words (all must match, prefixes allowed), a reference number, school, category and year; results ranked by relevance, limited to the caller's scope and access level inside the full-text query itself; restricted documents only with a declared purpose, recorded with the search |
+| School register (DOC-108) | Each school's complete register on one page, grouped by category with reference numbers, storage used, and search within the school; restricted documents are counted, and listed once a purpose is declared |
 | Viewer (DOC-105) | Metadata, the scan with an on-screen watermark (viewer and time), download, and **Download as Word** |
 
 **Word copies.** A scan is kept as the record — stamps, signatures and handwriting are evidence, and text read by OCR
@@ -1965,7 +1977,9 @@ access level; restricted documents (staff files, finance, discipline) also need 
 
 A role's `clearance` is its level; `role_grant.clearance_cap` lowers it for one person in one role (ADM-101,
 `PUT /api/v1/access/grants/{id}/level`), never above the role's level or the administrator's own, never on one's own
-grant, always with a reason. The effective level of the active role decides: pages (each page's catalogue
+grant, always with a reason — restoring a lowered grant counts as setting the role's level. ADM-101 searches and
+counts every grant in scope in the database, a page at a time. The effective level of the active role decides: forms
+(the level of the page each form writes through, `web.forms.FORM_PAGES`), pages (each page's catalogue
 classification, or a lower entry level for pages that withhold their sensitive parts per viewer — Learner 360,
 registration, fee clearance, funding agreements), menu items (hidden when the page is above the level), fields
 (`authz.visible_fields`) and documents.

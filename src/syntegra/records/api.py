@@ -62,6 +62,7 @@ class Documents(APIView):
             category_code=d["category"],
             year=d["year"],
             limit=d["limit"],
+            purpose=_purpose(request),
         )
         for r in result["rows"]:
             r["access_level"] = r.pop("level").number
@@ -140,7 +141,7 @@ class SchoolRegister(APIView):
 
     def get(self, request: Request, institution_id: uuid.UUID) -> Response:
         q = str(request.query_params.get("q", ""))[:300]
-        reg = services.register(context.require(), institution_id, q=q)
+        reg = services.register(context.require(), institution_id, q=q, purpose=_purpose(request))
         return Response(
             v.jsonable(
                 {
@@ -148,6 +149,8 @@ class SchoolRegister(APIView):
                     "total": reg["total"],
                     "size_bytes": reg["size"],
                     "hidden_above_level": reg["hidden_above_level"],
+                    "restricted_hidden": reg["restricted_hidden"],
+                    "restricted_left_out": reg["restricted_left_out"],
                     "groups": [
                         {"category": title, "documents": [{**r, "level": r["level"].number} for r in rows]}
                         for title, rows in reg["groups"]

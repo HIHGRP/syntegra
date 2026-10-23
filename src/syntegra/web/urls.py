@@ -9,6 +9,7 @@ urlpatterns = [
     path("pages", views.catalogue, name="catalogue"),
     path("command/control-room", views.control_room, name="control_room"),
     path("command/compare", views.league, name="league"),
+    path("auth/mfa", views.mfa_challenge, name="mfa_challenge"),
     path("auth/context", views.workspace, name="workspace"),
     path("admin/sessions", views.sessions_admin, name="sessions_admin"),
     path("documents", views.documents, name="documents"),

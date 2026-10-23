@@ -3,14 +3,16 @@
 Production uses S3-compatible object storage with WORM (object-lock) buckets; this module is the single place that
 reads and writes objects, so the backend can be swapped without touching the modules. The filesystem backend here
 stores ``<root>/<key>`` with the key derived from the SHA-256 of the content — the same bytes are stored once — and
-never overwrites an object. Every read recomputes the hash and refuses a file that no longer matches (MFS §13.2).
+never overwrites a good object. Every read recomputes the hash and refuses a file that no longer matches (MFS §13.2).
 """
 
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 import re
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -18,6 +20,7 @@ from django.conf import settings
 
 from syntegra.core.errors import DomainError
 
+log = logging.getLogger(__name__)
 KEY_RE = re.compile(r"^[a-z0-9][a-z0-9/_.-]{0,1000}$")
 
 
@@ -52,22 +55,58 @@ def _path(key: str) -> Path:
     return _root() / key
 
 
+def _write_temp(directory: Path, data: bytes) -> Path:
+    """Write ``data`` to a new temporary file in ``directory`` and flush it to disk."""
+    fd, name = tempfile.mkstemp(dir=directory, prefix=".incoming-")
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(data)
+            f.flush()
+            os.fsync(f.fileno())
+        os.chmod(name, 0o440)
+    except BaseException:
+        Path(name).unlink(missing_ok=True)
+        raise
+    return Path(name)
+
+
 def put(data: bytes, *, prefix: str, ext: str) -> Stored:
-    """Store ``data`` once under ``<prefix>/<aa>/<sha256>.<ext>``; storing the same bytes again is a no-op."""
+    """Store ``data`` once under ``<prefix>/<aa>/<sha256>.<ext>``; storing the same bytes again is a no-op.
+
+    The bytes are written to a temporary file and linked into place only once complete, so an object at its key is
+    always whole: a crash or a full disk mid-write leaves no partial object, and a second upload of the same scan at
+    the same moment finds either nothing or the finished file. An object at the key that does not match it (left
+    by an earlier interrupted write) is replaced with these bytes — they are, by construction, its correct content.
+    """
     digest = hashlib.sha256(data).digest()
     hexd = digest.hex()
     key = f"{prefix.strip('/').lower()}/{hexd[:2]}/{hexd}.{ext.lower().lstrip('.')}"
     path = _path(key)
     path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o440)
-    except FileExistsError:
-        if hashlib.sha256(path.read_bytes()).digest() != digest:
-            raise IntegrityFailure(key) from None
+    if path.exists() and _matches(path, digest):
         return Stored(key, digest, len(data), created=False)
-    with os.fdopen(fd, "wb") as f:
-        f.write(data)
-    return Stored(key, digest, len(data), created=True)
+    tmp = _write_temp(path.parent, data)
+    try:
+        try:
+            os.link(tmp, path)  # fails if the object exists: never overwrites a good object
+            created = True
+        except FileExistsError:
+            if _matches(path, digest):
+                created = False
+            else:
+                log.warning("object %s did not match its key; replaced with the uploaded bytes", key)
+                os.replace(tmp, path)
+                created = True
+    finally:
+        tmp.unlink(missing_ok=True)
+    return Stored(key, digest, len(data), created=created)
+
+
+def _matches(path: Path, digest: bytes) -> bool:
+    try:
+        return hashlib.sha256(path.read_bytes()).digest() == digest
+    except FileNotFoundError:
+        return False
 
 
 def get(key: str, expected_sha256: bytes) -> bytes:

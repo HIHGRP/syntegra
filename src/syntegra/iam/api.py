@@ -43,11 +43,25 @@ class SignInView(APIView):
         s.is_valid(raise_exception=True)
         ctx = context.require()
         tenant = request._request.syntegra_tenant  # type: ignore[attr-defined]
+        current, _ = session_token(request._request)
         r = services.sign_in(
-            tenant, s.validated_data["username"], s.validated_data["password"], ip=ctx.ip, ua=ctx.user_agent
+            tenant,
+            s.validated_data["username"],
+            s.validated_data["password"],
+            ip=ctx.ip,
+            ua=ctx.user_agent,
+            current_token=current,
         )
+        # Nothing else opens until the school or office is confirmed with POST /auth/role (FR-AUT-101), after the
+        # code with POST /auth/mfa when mfa_required.
         resp = Response(
-            {"token": r.token, "mfa_required": r.mfa_required, "grants": r.grants, "session_id": str(r.session_id)},
+            {
+                "token": r.token,
+                "mfa_required": r.mfa_required,
+                "confirm_required": True,
+                "grants": r.grants,
+                "session_id": str(r.session_id),
+            },
             status=201,
         )
         _set_cookie(resp, r.token)
@@ -174,7 +188,9 @@ class AccessLevelsView(APIView):
     permission_classes = [Authenticated]
 
     def get(self, request: Request) -> Response:
-        data = services.access_overview(context.require())
+        p = request.query_params
+        offset = int(p["from"]) if str(p.get("from", "")).isdigit() else 0
+        data = services.access_overview(context.require(), q=p.get("q", ""), offset=offset, limit=500)
 
         def lv(x: Any) -> dict[str, Any] | None:
             return None if x is None else {"number": x.number, "name": x.name, "classification": x.classification}
@@ -199,6 +215,8 @@ class AccessLevelsView(APIView):
                     }
                     for g in data["grants"]  # type: ignore[attr-defined]
                 ],
+                "total": data["total"],
+                "from": data["offset"],
             }
         )
 
@@ -220,5 +238,61 @@ class GrantLevelView(APIView):
         s.is_valid(raise_exception=True)
         services.set_grant_cap(
             context.require(), _uuid.UUID(str(pk)), s.validated_data["level"], s.validated_data["reason"]
+        )
+        return Response(status=204)
+
+
+class OfficesView(APIView):
+    """GET the offices in scope (state, boards, agencies, LGA offices) with the address shown at sign-in."""
+
+    permission_classes = [Authenticated]
+
+    def get(self, request: Request) -> Response:
+        return Response({"results": services.offices(context.require())})
+
+
+class OfficeAddressSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    office = serializers.CharField(max_length=160, required=False, allow_blank=True, default="")
+    street = serializers.CharField(max_length=160)
+    town = serializers.CharField(max_length=160)
+    lga = serializers.CharField(max_length=160, required=False, allow_blank=True, default="")
+    state = serializers.CharField(max_length=160, required=False, allow_blank=True, default="")
+    postcode = serializers.CharField(max_length=20, required=False, allow_blank=True, default="")
+    reason = serializers.CharField(min_length=5, max_length=1000)
+
+
+class OfficeAddressView(APIView):
+    """PUT an office's name and address as shown at sign-in, with a reason (FR-AUT-101)."""
+
+    permission_classes = [Authenticated]
+
+    def put(self, request: Request, pk: str) -> Response:
+        import uuid as _uuid
+
+        s = OfficeAddressSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = dict(s.validated_data)
+        reason = d.pop("reason")
+        services.set_office_address(context.require(), _uuid.UUID(str(pk)), d, reason)
+        return Response(status=204)
+
+
+class GrantOfficeSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    office_id = serializers.UUIDField(allow_null=True)
+    reason = serializers.CharField(min_length=5, max_length=1000)
+
+
+class GrantOfficeView(APIView):
+    """PUT the office a grant's holder works in (or null for the grant's own scope), with a reason."""
+
+    permission_classes = [Authenticated]
+
+    def put(self, request: Request, pk: str) -> Response:
+        import uuid as _uuid
+
+        s = GrantOfficeSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        services.set_grant_office(
+            context.require(), _uuid.UUID(str(pk)), s.validated_data["office_id"], s.validated_data["reason"]
         )
         return Response(status=204)

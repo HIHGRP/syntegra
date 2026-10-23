@@ -13,7 +13,10 @@ from syntegra.core import context
 class RequiresContext(BasePermission):
     """Authenticated user with an active role grant; per-view ``required_permission`` is checked too."""
 
-    message = "Sign in and select a role to continue."
+    message = (
+        "Sign in, enter your code when asked (POST /api/v1/auth/mfa) and confirm your school or office "
+        "(POST /api/v1/auth/role) to continue."
+    )
 
     def has_permission(self, request: Request, view: Any) -> bool:
         ctx = context.current(required=False)

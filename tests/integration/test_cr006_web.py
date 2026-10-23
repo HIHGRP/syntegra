@@ -122,12 +122,9 @@ def test_budgets_funding_and_facilities_pages_forms_and_api(world: Any, client: 
     assert client.get("/estate/state?scope_id=not-a-uuid").status_code == 422
 
     # the API: same services, same validation
-    r = client.post(
-        "/api/v1/auth/sign-in",
-        {"username": "bursar.absu@abia.demo", "password": PASSWORD},
-        content_type="application/json",
-    )
-    auth = {"HTTP_AUTHORIZATION": f"Bearer {r.json()['token']}"}
+    from tests.conftest import api_sign_in
+
+    auth = {"HTTP_AUTHORIZATION": f"Bearer {api_sign_in(client, 'bursar.absu@abia.demo', PASSWORD)}"}
     r = client.get("/api/v1/finance/budgets?fiscal_year=2026", **auth)
     assert r.status_code == 200 and r.json()["totals"]["revised"] > 0
     r = client.post(

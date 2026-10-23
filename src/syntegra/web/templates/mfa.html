@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Enter your code{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <p class="eyebrow">After your password</p>
+  <h1>Enter the code from your authenticator app</h1>
+  <p class="muted">Open the authenticator app on your phone and type the six-digit code shown for Syntegra. A code can be used once.</p>
+  {% if error %}<div class="alert alert-error" role="alert" id="mfa-error">{{ error }}</div>{% endif %}
+  <form method="post" action="/auth/mfa?next={{ next|urlencode }}">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+    <label>Six-digit code<input name="code" type="text" inputmode="numeric" pattern="[0-9 ]{6,7}" maxlength="7" autocomplete="one-time-code" required autofocus></label>
+    <button class="primary">Verify</button>
+  </form>
+  <p class="hint">Five wrong codes or passwords within ten minutes lock the account for fifteen minutes. Lost your phone? Sign out and ask your administrator.</p>
+  <form method="post" action="/sign-out"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><button class="link">Sign out</button></form>
+</section>
+{% endblock %}

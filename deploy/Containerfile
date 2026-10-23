@@ -25,6 +25,12 @@ ENV PATH=/opt/venv/bin:$PATH PYTHONPATH=/opt/app-root/src/src \
     SYNTEGRA_CEDA_DDL_DIR=/opt/app-root/src/ceda/generated/mysql \
     SYNTEGRA_CEDA_RELEASES_DIR=/opt/app-root/src/ceda/releases
 RUN python manage.py collectstatic --noinput --settings=syntegra.settings.dev >/dev/null
+# Document scans (CR-007) are the only copy of each master: they live on a mounted volume, not in the image.
+# OCR of image-only scans needs tesseract and poppler-utils (EPEL); without them the PDF text layer and typed
+# transcriptions are still indexed (README, "Documents").
+RUN mkdir -p /var/lib/syntegra/objects && chown 1001:0 /var/lib/syntegra/objects && chmod 0770 /var/lib/syntegra/objects
+ENV SYNTEGRA_OBJECT_STORE_DIR=/var/lib/syntegra/objects
+VOLUME ["/var/lib/syntegra/objects"]
 USER 1001
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s CMD python -c "import urllib.request,sys; urllib.request.urlopen('http://127.0.0.1:8000/healthz'); sys.exit(0)"
