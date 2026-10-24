@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ f.title }}{% endblock %}
+{% block content %}
+<p class="crumb no-print"><a href="/daybook">← Forms</a></p>
+<h1>{{ f.title }}</h1>
+{% if f.intro %}<p>{{ f.intro }}</p>{% endif %}
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+{% if not parent_view %}<form method="get" class="picker no-print"><label>Class<select name="class" onchange="this.form.submit()"><option value="">—</option>{% for c in classes %}<option value="{{ c.id }}"{% if request.GET.get('class') == c.id|string %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></label><noscript><button>Show</button></noscript></form>{% endif %}
+{% if prev %}<p class="hint">You sent this on {{ prev.at|localtime("%d %B %Y") }}; your answers are filled in below. Sending again replaces them.</p>{% endif %}
+{% if f.status == "published" and (who or parent_view) %}
+<form method="post" class="card" id="fill"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+  <label>{{ "Child" if parent_view else "Learner" }}<select name="learner_id" required{% if parent_view %} onchange="location.search='?learner='+this.value"{% endif %}>{% if not parent_view %}<option value="">—</option>{% endif %}{% for w in who %}<option value="{{ w.id }}"{% if learner_id == w.id %} selected{% endif %}>{{ w.name }}</option>{% endfor %}</select></label>
+  {% for x in f.fields %}{% set v = values.get(x.key, "") %}
+  <div class="q" data-key="{{ x.key }}"{% if x.show_if %} data-show-key="{{ x.show_if.key }}" data-show-equals="{{ x.show_if.equals }}"{% endif %}>
+  {% if x.kind == "yes_no" %}<fieldset><legend>{{ x.label }}{% if x.required %} *{% endif %}</legend><label class="check"><input type="radio" name="{{ x.key }}" value="yes"{% if v == "yes" %} checked{% endif %}> Yes</label> <label class="check"><input type="radio" name="{{ x.key }}" value="no"{% if v == "no" %} checked{% endif %}> No</label>{% if x.help %}<p class="hint">{{ x.help }}</p>{% endif %}</fieldset>
+  {% elif x.kind == "choice" %}<label>{{ x.label }}{% if x.required %} *{% endif %}{% if x.help %} <span class="hint opt">— {{ x.help }}</span>{% endif %}<select name="{{ x.key }}"><option value="">—</option>{% for o in x.options %}<option{% if v == o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></label>
+  {% elif x.kind == "long_text" %}<label>{{ x.label }}{% if x.required %} *{% endif %}{% if x.help %} <span class="hint opt">— {{ x.help }}</span>{% endif %}<textarea name="{{ x.key }}" rows="4" maxlength="2000">{{ v }}</textarea></label>
+  {% else %}<label>{{ x.label }}{% if x.required %} *{% endif %}{% if x.help %} <span class="hint opt">— {{ x.help }}</span>{% endif %}<input name="{{ x.key }}" value="{{ v }}"{% if x.kind == "date" %} type="date"{% elif x.kind == "number" %} inputmode="decimal"{% elif x.kind == "signature" %} autocomplete="name" placeholder="Type your full name"{% endif %}></label>{% endif %}
+  </div>{% endfor %}
+  <p><button class="primary">Send to the school</button></p>
+</form>
+<script>
+(function () {
+  const form = document.getElementById("fill");
+  function value(key) { const el = form.querySelector('[name="' + key + '"]:checked') || form.querySelector('select[name="' + key + '"]'); return el ? el.value : ""; }
+  function update() { for (const q of form.querySelectorAll(".q[data-show-key]")) { q.hidden = value(q.dataset.showKey) !== q.dataset.showEquals; } }
+  form.addEventListener("change", update); update();
+})();
+</script>
+{% elif f.status != "published" %}<p class="muted">This form is not in use.</p>{% endif %}
+{% endblock %}

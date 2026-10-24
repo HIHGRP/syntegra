@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% from "_school_picker.html" import school_picker %}
+{% block title %}Online classes{% endblock %}
+{% block content %}
+<h1>Online classes</h1>
+<p class="muted">{{ d.institution.name }} · Each class's subject has an online space for notes, links, work and live lessons. Its learners are the class.</p>
+{{ school_picker(school, schools) }}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<section class="card scroll-x"><table class="compact"><thead><tr><th scope="col">Class</th><th scope="col">Subject</th><th scope="col" class="num">Work open</th><th scope="col"></th></tr></thead>
+  <tbody>{% for r in d.rows %}<tr><td>{{ r.class }}</td><td>{% if r.space_id %}<a href="/courses/{{ r.space_id }}">{{ r.subject }}</a>{% else %}{{ r.subject }}{% endif %}{% if r.mine %} <span class="pill">yours</span>{% endif %}</td><td class="num">{{ r.open_work or "" }}</td>
+    <td><form method="post" class="inline-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="plan_id" value="{{ r.plan_id }}">{% if r.space_id %}<button title="Adds learners who joined the class and removes those who left">Update the class list</button>{% else %}<button class="primary">Open the online space</button>{% endif %}</form></td></tr>
+  {% else %}<tr><td colspan="4" class="muted">You are not the teacher of record for any class subject.</td></tr>{% endfor %}</tbody></table></section>
+{% endblock %}

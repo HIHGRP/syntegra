@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ d.activity.name }}{% endblock %}
+{% block content %}
+<p class="crumb no-print"><a href="/activities">← Clubs and activities</a></p>
+<h1>{{ d.activity.name }}</h1>
+<p class="muted">{{ d.activity.kind }} · {{ d.activity.when }} · led by {{ d.activity.lead }} · open to {{ d.activity.levels|join(", ") }} · {{ d.activity.allocated }} of {{ d.activity.capacity }} places{% if d.activity.waiting %} · {{ d.activity.waiting }} waiting{% endif %}</p>
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<form method="post" class="card scroll-x" id="register"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="register">
+  <div class="head-row"><h2>Members</h2>{% if d.can_register %}<p class="row-form"><label>Register for <input type="date" name="on" max="{{ today }}" value="{{ today }}"></label><button class="primary">Save register</button></p>{% endif %}</div>
+  <table class="compact"><thead><tr>{% if d.can_register %}<th scope="col">Here</th>{% endif %}<th scope="col">Learner</th><th scope="col">Class</th><th scope="col" class="num">Came</th><th scope="col" class="num">Rate</th><th scope="col"></th></tr></thead>
+  <tbody>{% for r in d.placed %}<tr>{% if d.can_register %}<td><input type="checkbox" name="present" value="{{ r.learner_id }}" aria-label="{{ r.name }} is here"></td>{% endif %}<td>{{ r.name }}</td><td>{{ r.class }}</td><td class="num">{{ r.attended }}</td><td class="num">{{ r.rate ~ "%" if r.rate is not none else "" }}</td>
+    <td>{% if d.can_register %}<button form="leave-{{ loop.index }}">Remove</button>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="6" class="muted">Nobody has a place yet.</td></tr>{% endfor %}</tbody></table>
+  {% if d.sessions %}<p class="hint">Registers taken: {% for s in d.sessions[:8] %}{{ s.strftime("%a %d %b") }}{% if not loop.last %}, {% endif %}{% endfor %}{% if d.sessions|length > 8 %} …{% endif %}</p>{% endif %}
+</form>
+{% for r in d.placed %}<form method="post" id="leave-{{ loop.index }}" hidden><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="leave"><input type="hidden" name="enrolment_id" value="{{ r.enrolment_id }}"></form>{% endfor %}
+<section class="card scroll-x" id="waiting"><h2>Waiting list</h2>
+  <ol>{% for r in d.waiting %}<li>{{ r.name }} <span class="hint opt">{{ r.class }}</span></li>{% else %}<li class="muted">Nobody waiting.</li>{% endfor %}</ol>
+  <p class="hint">When a place is given up, the first learner waiting gets it.</p>
+</section>
+{% if d.eligible_classes %}
+<section class="card" id="add"><h2>Add a learner</h2>
+  <form method="get" class="picker"><label>Class<select name="class" onchange="this.form.submit()"><option value="">—</option>{% for c in d.eligible_classes %}<option value="{{ c.id }}"{% if pick == c.id|string %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></label><noscript><button>Show</button></noscript></form>
+  {% if candidates %}<form method="post" class="row-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="add">
+    <select name="learner_id" aria-label="Learner">{% for c in candidates %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select><button class="primary">Add</button></form>{% endif %}
+</section>
+{% endif %}
+{% endblock %}

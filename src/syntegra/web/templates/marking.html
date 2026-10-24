@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Marking — {{ d.assignment.title }}{% endblock %}
+{% block content %}
+<p class="crumb no-print"><a href="/courses/{{ d.space.id }}">← {{ d.space.title }}</a></p>
+<div class="head-row"><h1>Marking — {{ d.assignment.title }}</h1>
+{% if d.can_mark and d.unreleased %}<form method="post"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="release"><button class="primary">Release {{ d.unreleased }} mark{{ "" if d.unreleased == 1 else "s" }}</button></form>{% endif %}</div>
+<p class="muted">Due {{ d.assignment.due|localtime("%a %d %b %H:%M") }} · {{ d.submitted }} handed in · {{ d.marked }} marked · marks reach learners and parents only when released</p>
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+{% for r in d.rows %}
+<section class="card" id="l{{ loop.index }}"><div class="head-row"><h2>{{ r.name }}</h2><p>{% if not r.submission %}<span class="pill pill-bad">not handed in</span>{% else %}v{{ r.version }}{% if r.late %} <span class="pill pill-bad">late</span>{% endif %} · <span class="hint opt">{{ r.ai }}</span>{% if r.released %} · <span class="pill pill-ok">released</span>{% endif %}{% endif %}</p></div>
+  {% if r.submission %}<details{% if r.score is none %} open{% endif %}><summary>Answer</summary><div class="doc-text">{{ r.text }}</div></details>
+  {% if d.can_mark %}<form method="post" class="row-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="submission_id" value="{{ r.submission.id }}">
+    <label>Score <input class="num4" name="score" inputmode="decimal" value="{{ '%g'|format(r.score) if r.score is not none else '' }}" required>{% if d.assignment.max_mark %} / {{ "%g"|format(d.assignment.max_mark) }}{% endif %}</label>
+    <label class="grow">Feedback <input name="feedback" maxlength="4000" value="{{ r.feedback or '' }}"></label><button>Save</button></form>
+  {% elif r.score is not none %}<p>Score {{ "%g"|format(r.score) }} — {{ r.feedback }}</p>{% endif %}{% endif %}
+</section>
+{% endfor %}
+{% endblock %}

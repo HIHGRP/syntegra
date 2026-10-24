@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Conversation{% endblock %}
+{% block content %}
+<p class="crumb no-print"><a href="/conversations">← Messages</a></p>
+<h1>{% if t.viewer == "parent" %}{{ t.staff }}{% else %}{{ t.parent }}{% endif %} <span class="muted">about {{ t.learner.name if t.learner else "" }}</span></h1>
+{% if t.viewer == "head" %}<p class="muted">You are reading a conversation between {{ t.staff }} and {{ t.parent }}. Only they reply in it.</p>{% endif %}
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<ol class="thread" id="thread">{% for m in t.messages %}
+  <li class="msg{% if m.mine %} mine{% endif %}"><div class="who">{{ m.from }} · {{ m.at|localtime("%a %d %b %H:%M") }}</div><div class="body">{{ m.body }}</div>
+  <div class="hint opt">{% if m.channel == "sms" %}by SMS · {{ "queued (no SMS gateway connected)" if m.status == "queued" else m.status }}{% elif m.read_at %}read {{ m.read_at|localtime("%d %b %H:%M") }}{% else %}delivered{% endif %}</div></li>
+{% endfor %}</ol>
+{% if t.can_reply %}
+<form method="post" class="card" id="reply"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+  <label>Reply<textarea name="body" rows="3" maxlength="1000" required>{{ posted.get('body', '') }}</textarea></label>
+  <p class="actions"><button class="primary">Send</button></p></form>
+{% if t.viewer == "staff" and t.status == "open" %}<form method="post" class="row-form no-print"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="resolve"><button>Mark as resolved</button></form>{% endif %}
+{% endif %}
+{% endblock %}

@@ -360,6 +360,10 @@ def home(request: HttpRequest) -> HttpResponse:
     from syntegra.analytics import metrics
 
     c = context.require()
+    if c.role_code == "PAR":
+        return HttpResponseRedirect("/parent")
+    if c.role_code == "LRN":
+        return HttpResponseRedirect("/work")
     tiles = []
     if c.has("metric:view"):
         for mid in ("ENR-COUNT", "CUR-GAPS-OPEN"):
@@ -2573,3 +2577,856 @@ def document_word(request: HttpRequest, document_id: uuid.UUID) -> HttpResponse:
     resp["Content-Disposition"] = f'attachment; filename="{name}"'
     resp["Cache-Control"] = "no-store"
     return resp
+
+
+# ----------------------------------------------------- parents, messages, meetings, activities, forms, online classes
+# (CR-009 phase 4)
+def _not_parent() -> None:
+    """Staff pages refuse parent and learner accounts outright, whatever the grant's level."""
+    from syntegra.families import portal
+
+    if portal.is_parent() or portal.me_learner() is not None:
+        raise Forbidden("This page is for the school's staff.", code="FAM-OWN")
+
+
+@require_http_methods(["GET"])
+@page("FAM-03")
+def parent_home(request: HttpRequest) -> HttpResponse:
+    """The parent's home: each child with messages, meetings to book, activities, forms to fill and schoolwork."""
+    from syntegra.comms import messaging
+    from syntegra.families import portal
+    from syntegra.forms import builder, meetings
+    from syntegra.lms import remote
+    from syntegra.operations import activities
+
+    g = portal.guardian()
+    if g is None:
+        raise Forbidden("This is the home page for parents.", code="FAM-OWN")
+    kids = portal.children()
+    inbox = messaging.parent_inbox()
+    events = [e for s in {k["institution_id"] for k in kids} for e in meetings.events(s) if e["open"]]
+    forms = {r["id"]: r["forms"] for r in builder.for_parent()}
+    acts = {r["id"]: [a for a in r["activities"] if a["enrolment"]] for r in activities.for_parent()}
+    now = dt.datetime.now(dt.UTC)
+    for k in kids:
+        work = remote.work_for(k["id"])
+        k["due"] = [w for w in work if w["submitted_at"] is None and w["due"] >= now][:5]
+        k["marks"] = [w for w in work if w["score"] is not None][:3]
+        k["forms_todo"] = [f for f in forms.get(k["id"], []) if f["sent_at"] is None]
+        k["activities"] = acts.get(k["id"], [])
+        k["events"] = [e for e in events if k["class_name"] in e["classes"]]
+    return render(
+        request,
+        "parent_home.html",
+        _ctx(request, parent=portal.guardian_name(g), kids=kids, inbox=inbox, page=pages.page("FAM-03")),
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("COM-01")
+def message_new(request: HttpRequest) -> HttpResponse:
+    """Write to the parents of one learner, several, or a whole class."""
+    from syntegra.comms import messaging
+
+    _not_parent()
+    school, schools = _school_for(request)
+    picked = request.POST.get("class") or request.GET.get("class")
+    class_id = _uuid_or_fail(picked, "class") if picked else _default_class(school.id)
+    message, problem, sent = None, None, None
+    if request.method == "POST":
+        try:
+            sent = messaging.send(school.id, _uuids(request.POST.getlist("learner_ids")), request.POST.get("body", ""))
+            parts = [f"{sent['in_app']} in the app"] if sent["in_app"] else []
+            if sent["sms"]:
+                parts.append(f"{sent['sms']} by SMS (queued: no SMS gateway is connected yet)")
+            message = (
+                f"Sent to the parents of {sent['learners'] - len(sent['unreachable'])} learner(s): "
+                + (", ".join(parts) or "nobody")
+                + "."
+            )
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    return render(
+        request,
+        "message_new.html",
+        _ctx(
+            request,
+            d=messaging.compose(school.id, class_id),
+            school=school,
+            schools=schools,
+            posted=request.POST if problem else {},
+            chosen=request.POST.getlist("learner_ids") if problem else [],
+            sent=sent,
+            message=message,
+            problem=problem,
+            page=pages.page("COM-01"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("COM-101")
+def conversations(request: HttpRequest) -> HttpResponse:
+    """A member of staff's (or a parent's) conversations; a parent can write to one of their child's teachers."""
+    from syntegra.comms import messaging
+    from syntegra.families import portal
+
+    problem = None
+    if portal.is_parent():
+        kids = portal.children()
+        chosen = request.POST.get("learner_id") or request.GET.get("learner")
+        child = next((k for k in kids if str(k["id"]) == chosen), kids[0] if kids else None)
+        if request.method == "POST":
+            try:
+                conv = messaging.parent_start(
+                    _uuid_or_fail(request.POST.get("learner_id"), "child"),
+                    _uuid_or_fail(request.POST.get("staff_user_id"), "teacher"),
+                    request.POST.get("body", ""),
+                )
+                return HttpResponseRedirect(f"/conversations/{conv.id}?sent=1")
+            except DomainError as exc:
+                problem = _problem_or_raise(exc)
+        return render(
+            request,
+            "conversations.html",
+            _ctx(
+                request,
+                parent_view=True,
+                d=messaging.parent_inbox(),
+                kids=kids,
+                child=child,
+                teachers=messaging.teachers_of(child["id"]) if child else [],
+                posted=request.POST if problem else {},
+                problem=problem,
+                page=pages.page("COM-101"),
+            ),
+            status=422 if problem else 200,
+        )
+    school, schools = _school_for(request)
+    d = messaging.inbox(school.id, everyone=request.GET.get("all") == "1")
+    return render(
+        request,
+        "conversations.html",
+        _ctx(request, parent_view=False, d=d, school=school, schools=schools, page=pages.page("COM-101")),
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("COM-101")
+def conversation(request: HttpRequest, conversation_id: uuid.UUID) -> HttpResponse:
+    from syntegra.comms import messaging
+
+    message, problem = None, None
+    if request.method == "POST":
+        try:
+            if request.POST.get("action") == "resolve":
+                messaging.resolve(conversation_id)
+                message = "Marked as resolved. It opens again if anyone writes."
+            else:
+                m = messaging.reply(conversation_id, request.POST.get("body", ""))
+                message = "Sent." if m.channel == "in_app" else "Sent by SMS — queued: no SMS gateway is connected yet."
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    elif request.GET.get("sent"):
+        message = "Sent."
+    return render(
+        request,
+        "conversation.html",
+        _ctx(
+            request,
+            t=messaging.thread(conversation_id),
+            posted=request.POST if problem else {},
+            message=message,
+            problem=problem,
+            page=pages.page("COM-101"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+def _local(value: dt.datetime | None) -> dt.datetime | None:
+    from zoneinfo import ZoneInfo
+
+    return value.astimezone(ZoneInfo(settings.TIME_ZONE)) if value else None
+
+
+@require_http_methods(["GET", "POST"])
+@page("PTM-101")
+def parents_meetings(request: HttpRequest) -> HttpResponse:
+    """The school's parents' meetings; the head sets one up."""
+    from syntegra.academic.models import ClassGroup
+    from syntegra.families import portal
+    from syntegra.forms import meetings
+
+    message, problem = None, None
+    if portal.is_parent():
+        kids = portal.children()
+        rows = [e for s in {k["institution_id"] for k in kids} for e in meetings.events(s) if not e["past"]]
+        return render(
+            request,
+            "parents_meetings.html",
+            _ctx(request, parent_view=True, events=rows, page=pages.page("PTM-101")),
+        )
+    _not_parent()
+    school, schools = _school_for(request)
+    if request.method == "POST":
+        try:
+            days = []
+            for i in range(1, 4):
+                on = _date_or_none(request.POST.get(f"day{i}"), "date")
+                if on:
+                    days.append((on, request.POST.get(f"from{i}", ""), request.POST.get(f"to{i}", "")))
+            opens = _date_or_none(request.POST.get("opens"), "opening date") or dt.date.today()
+            closes = _date_or_none(request.POST.get("closes"), "closing date")
+            if closes is None:
+                raise HardValidation("PTM-WINDOW", "Say when booking closes", "")
+            ev = meetings.create(
+                school.id,
+                title=request.POST.get("title", ""),
+                class_ids=_uuids(request.POST.getlist("class_ids")),
+                days=days,
+                slot_minutes=_int_or_none(request.POST.get("slot")) or 0,
+                gap_minutes=_int_or_none(request.POST.get("gap")) or 0,
+                modes=request.POST.getlist("modes"),
+                opens_on=opens,
+                closes_on=closes,
+            )
+            return HttpResponseRedirect(f"/parents-meetings/{ev.id}?created=1")
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    classes = list(
+        ClassGroup.objects.in_scope().filter(institution_id=school.id, status="active", kind="arm").order_by("name")
+    )
+    return render(
+        request,
+        "parents_meetings.html",
+        _ctx(
+            request,
+            parent_view=False,
+            events=meetings.events(school.id),
+            classes=classes,
+            school=school,
+            schools=schools,
+            posted=request.POST if problem else {},
+            chosen=request.POST.getlist("class_ids") if problem else [],
+            today=dt.date.today(),
+            message=message,
+            problem=problem,
+            page=pages.page("PTM-101"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("PTM-101")
+def parents_meeting(request: HttpRequest, event_id: uuid.UUID) -> HttpResponse:
+    """One meeting: the parent books their slots; the teacher has their list; the head sees every column."""
+    from syntegra.families import portal
+    from syntegra.forms import meetings
+
+    c = context.require()
+    message, problem = None, None
+    if request.GET.get("created"):
+        message = "Meeting set up. Parents can book once booking opens."
+    if request.method == "POST":
+        action = request.POST.get("action")
+        try:
+            if action == "book":
+                at = dt.datetime.fromisoformat(request.POST.get("slot", ""))
+                b = meetings.book(
+                    event_id,
+                    _uuid_or_fail(request.POST.get("learner_id"), "child"),
+                    _uuid_or_fail(request.POST.get("staff_id"), "teacher"),
+                    at,
+                    request.POST.get("mode", "in_person"),
+                    request.POST.get("interpreter"),
+                )
+                message = f"Booked for {_local(b.starts_at) or b.starts_at:%A %d %B at %H:%M}."
+            elif action == "cancel":
+                meetings.cancel(_uuid_or_fail(request.POST.get("booking_id"), "booking"))
+                message = "Booking cancelled."
+            elif action == "record":
+                meetings.record(
+                    _uuid_or_fail(request.POST.get("booking_id"), "booking"),
+                    request.POST.get("attended") == "yes",
+                    request.POST.get("note"),
+                )
+                message = "Recorded."
+        except ValueError:
+            problem = HardValidation("PTM-SLOT", "Choose a slot from the list", "").problem()
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    extra: dict[str, Any]
+    if portal.is_parent():
+        tpl, extra = "parents_meeting_parent.html", {"d": meetings.for_parent(event_id)}
+    else:
+        _not_parent()
+        extra = {"mine": meetings.my_list(event_id) if c.has("meeting:attend") else None}
+        extra["board"] = meetings.board(event_id) if c.has("meeting:manage") else None
+        if extra["mine"] is None and extra["board"] is None:
+            raise Forbidden("This page is for the school's teachers and parents.", code="PTM-OWN")
+        tpl = "parents_meeting.html"
+    return render(
+        request,
+        tpl,
+        _ctx(
+            request, message=message, problem=problem, now=dt.datetime.now(dt.UTC), page=pages.page("PTM-101"), **extra
+        ),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("OPS-05")
+def activities_page(request: HttpRequest) -> HttpResponse:
+    """The school's clubs and activities; parents ask for places for their children."""
+    from syntegra.families import portal
+    from syntegra.operations import activities
+
+    message, problem = None, None
+    if request.method == "POST":
+        action = request.POST.get("action")
+        try:
+            if action == "join":
+                e = activities.join(
+                    _uuid_or_fail(request.POST.get("activity_id"), "activity"),
+                    _uuid_or_fail(request.POST.get("learner_id"), "child"),
+                )
+                message = (
+                    "A place is confirmed."
+                    if e.allocation == "allocated"
+                    else f"The activity is full: on the waiting list, number {e.waiting_position}."
+                )
+            elif action == "leave":
+                activities.leave(_uuid_or_fail(request.POST.get("enrolment_id"), "place"))
+                message = "Done — the place has been given up."
+            elif action == "create" and not portal.is_parent():
+                school, _schools = _school_for(request)
+                day = _int_or_none(request.POST.get("day"))
+                activities.create(
+                    school.id,
+                    name=request.POST.get("name", ""),
+                    kind=request.POST.get("kind", ""),
+                    levels=request.POST.getlist("levels"),
+                    capacity=_int_or_none(request.POST.get("capacity")) or 0,
+                    day=day if day is not None else -1,
+                    starts=request.POST.get("starts", ""),
+                    ends=request.POST.get("ends", ""),
+                    lead_staff_id=_uuid_or_fail(request.POST.get("lead"), "leader")
+                    if request.POST.get("lead")
+                    else None,
+                    description=request.POST.get("description"),
+                )
+                message = "Activity added."
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    if portal.is_parent():
+        return render(
+            request,
+            "activities.html",
+            _ctx(
+                request,
+                parent_view=True,
+                kids=activities.for_parent(),
+                message=message,
+                problem=problem,
+                page=pages.page("OPS-05"),
+            ),
+            status=422 if problem else 200,
+        )
+    _not_parent()
+    school, schools = _school_for(request)
+    return render(
+        request,
+        "activities.html",
+        _ctx(
+            request,
+            parent_view=False,
+            d=activities.catalogue(school.id),
+            school=school,
+            schools=schools,
+            posted=request.POST if problem else {},
+            message=message,
+            problem=problem,
+            page=pages.page("OPS-05"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("OPS-05")
+def activity_page(request: HttpRequest, activity_id: uuid.UUID) -> HttpResponse:
+    """An activity's places, waiting list and register."""
+    from syntegra.academic.models import ClassMembership
+    from syntegra.learners.models import Learner
+    from syntegra.operations import activities
+
+    _not_parent()
+    message, problem = None, None
+    if request.method == "POST":
+        action = request.POST.get("action")
+        try:
+            if action == "register":
+                on = _date_or_none(request.POST.get("on"), "date") or dt.date.today()
+                n = activities.register(activity_id, on, _uuids(request.POST.getlist("present")))
+                message = f"Register taken for {on:%A %d %B}: {n} present."
+            elif action == "add":
+                e = activities.join(activity_id, _uuid_or_fail(request.POST.get("learner_id"), "learner"))
+                message = (
+                    "Added." if e.allocation == "allocated" else f"Full — waiting list number {e.waiting_position}."
+                )
+            elif action == "leave":
+                promoted = activities.leave(_uuid_or_fail(request.POST.get("enrolment_id"), "place"))
+                message = "Removed." + (" The first learner waiting has been given the place." if promoted else "")
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    d = activities.roster(activity_id)
+    pick = request.GET.get("class")
+    candidates: list[dict[str, Any]] = []
+    if pick and d["eligible_classes"]:
+        cid = _uuid_or_fail(pick, "class")
+        if any(c["id"] == cid for c in d["eligible_classes"]):
+            today = dt.date.today()
+            ids = list(
+                ClassMembership.objects.filter(class_group_id=cid, valid_from__lte=today)
+                .exclude(valid_to__lt=today)
+                .values_list("learner_id", flat=True)
+            )
+            held = {r["learner_id"] for r in d["placed"] + d["waiting"]}
+            candidates = sorted(
+                (
+                    {"id": lr.id, "name": f"{lr.legal_family_name}, {lr.legal_given_name}"}
+                    for lr in Learner.objects.filter(id__in=ids)
+                    if lr.id not in held
+                ),
+                key=lambda x: x["name"],
+            )
+    return render(
+        request,
+        "activity.html",
+        _ctx(
+            request,
+            d=d,
+            candidates=candidates,
+            pick=pick,
+            today=dt.date.today(),
+            message=message,
+            problem=problem,
+            page=pages.page("OPS-05"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("FRM-101")
+def form_builder(request: HttpRequest) -> HttpResponse:
+    """The school's own forms; the head starts a new one."""
+    from syntegra.forms import builder
+
+    _not_parent()
+    school, schools = _school_for(request)
+    problem = None
+    if request.method == "POST":
+        try:
+            f = builder.create(
+                school.id,
+                title=request.POST.get("title", ""),
+                intro=request.POST.get("intro"),
+                filled_by=request.POST.get("filled_by", ""),
+                level=request.POST.get("level", ""),
+            )
+            return HttpResponseRedirect(f"/forms/builder/{f.id}")
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    return render(
+        request,
+        "form_builder.html",
+        _ctx(
+            request,
+            d=builder.school_forms(school.id),
+            school=school,
+            schools=schools,
+            posted=request.POST if problem else {},
+            problem=problem,
+            page=pages.page("FRM-101"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("FRM-101")
+def form_edit(request: HttpRequest, form_id: uuid.UUID) -> HttpResponse:
+    """Build a draft: add and remove questions, publish; a published form starts a new version."""
+    from syntegra.forms import builder
+
+    _not_parent()
+    if not context.require().has("form:manage"):
+        raise Forbidden("The head builds the school's forms.", code="FRM-OWN")
+    message, problem = None, None
+    if request.method == "POST":
+        action = request.POST.get("action")
+        try:
+            if action == "add":
+                builder.add_field(
+                    form_id,
+                    label=request.POST.get("label", ""),
+                    kind=request.POST.get("kind", ""),
+                    required=request.POST.get("required") == "on",
+                    options=(request.POST.get("options") or "").splitlines(),
+                    help_text=request.POST.get("help"),
+                    show_if_key=request.POST.get("show_if_key") or None,
+                    show_if_value=request.POST.get("show_if_value") or None,
+                )
+                message = "Question added."
+            elif action == "remove":
+                builder.remove_field(form_id, request.POST.get("key", ""))
+                message = "Question removed."
+            elif action == "publish":
+                builder.publish(form_id)
+                message = "Published. It is now on the forms list for those who fill it in."
+            elif action == "new_version":
+                nv = builder.new_version(form_id)
+                return HttpResponseRedirect(f"/forms/builder/{nv.id}")
+            elif action == "withdraw":
+                builder.withdraw(form_id)
+                message = "Withdrawn: nobody can fill it in now. The answers are kept."
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    return render(
+        request,
+        "form_edit.html",
+        _ctx(
+            request,
+            f=builder.form(form_id),
+            kinds=builder.KINDS,
+            posted=request.POST if problem else {},
+            message=message,
+            problem=problem,
+            page=pages.page("FRM-101"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET"])
+@page("FRM-101")
+def form_answers(request: HttpRequest, form_id: uuid.UUID) -> HttpResponse:
+    from syntegra.forms import builder
+
+    _not_parent()
+    picked = request.GET.get("class")
+    d = builder.responses(form_id, _uuid_or_fail(picked, "class") if picked else None)
+    return render(request, "form_answers.html", _ctx(request, d=d, picked=picked, page=pages.page("FRM-101")))
+
+
+@require_http_methods(["GET"])
+@page("FRM-102")
+def daybook(request: HttpRequest) -> HttpResponse:
+    """The forms to fill in: a parent's for each child; staff's about learners."""
+    from syntegra.families import portal
+    from syntegra.forms import builder
+
+    if portal.is_parent():
+        return render(
+            request,
+            "daybook.html",
+            _ctx(request, parent_view=True, kids=builder.for_parent(), page=pages.page("FRM-102")),
+        )
+    _not_parent()
+    school, schools = _school_for(request)
+    return render(
+        request,
+        "daybook.html",
+        _ctx(
+            request,
+            parent_view=False,
+            forms=builder.for_staff(school.id),
+            school=school,
+            schools=schools,
+            page=pages.page("FRM-102"),
+        ),
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("FRM-102")
+def daybook_form(request: HttpRequest, form_id: uuid.UUID) -> HttpResponse:
+    """Fill in one form about a learner (a parent: their child; staff: a learner chosen from a class)."""
+    from syntegra.academic.models import ClassGroup, ClassMembership
+    from syntegra.families import portal
+    from syntegra.forms import builder
+    from syntegra.learners.models import Learner
+
+    f = builder.form(form_id)
+    parent = portal.is_parent()
+    if not parent:
+        _not_parent()
+    learner_raw = request.POST.get("learner_id") or request.GET.get("learner")
+    learner_id = _uuid_or_fail(learner_raw, "learner") if learner_raw else None
+    message, problem, replaced = None, None, False
+    if request.method == "POST":
+        try:
+            if learner_id is None:
+                raise HardValidation("FRM-LEARNER", "Choose who the form is about", "")
+            _r, replaced = builder.submit(form_id, learner_id, {k: request.POST.get(k, "") for k in request.POST})
+            message = "Thank you — sent to the school." + (
+                " It replaces the answers you sent before." if replaced else ""
+            )
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    who: list[dict[str, Any]] = []
+    classes: list[Any] = []
+    if parent:
+        who = [{"id": k["id"], "name": k["name"]} for k in portal.children()]
+        if learner_id is None and who:
+            learner_id = who[0]["id"]
+    else:
+        school, _schools = _school_for(request)
+        classes = list(ClassGroup.objects.in_scope().filter(institution_id=school.id, status="active").order_by("name"))
+        cpick = request.GET.get("class")
+        if cpick:
+            today = dt.date.today()
+            ids = (
+                ClassMembership.objects.filter(class_group_id=_uuid_or_fail(cpick, "class"), valid_from__lte=today)
+                .exclude(valid_to__lt=today)
+                .values_list("learner_id", flat=True)
+            )
+            who = sorted(
+                ({"id": lr.id, "name": f"{lr.legal_family_name}, {lr.legal_given_name}"}
+                 for lr in Learner.objects.filter(id__in=list(ids))),
+                key=lambda x: x["name"],
+            )  # fmt: skip
+    prev = builder.previous(form_id, learner_id) if learner_id and not problem and not message else None
+    values = request.POST if problem else (prev["answers"] if prev else {})
+    return render(
+        request,
+        "daybook_form.html",
+        _ctx(
+            request,
+            f=f,
+            who=who,
+            classes=classes,
+            learner_id=learner_id,
+            values=values,
+            prev=prev,
+            parent_view=parent,
+            message=message,
+            problem=problem,
+            page=pages.page("FRM-102"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("LMS-101")
+def courses(request: HttpRequest) -> HttpResponse:
+    """The teacher's class-subjects, each with its online space (opened on first use)."""
+    from syntegra.lms import remote
+
+    _not_parent()
+    school, schools = _school_for(request)
+    problem = None
+    if request.method == "POST":
+        try:
+            s = remote.open_space(_uuid_or_fail(request.POST.get("plan_id"), "class subject"))
+            return HttpResponseRedirect(f"/courses/{s.id}")
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    return render(
+        request,
+        "courses.html",
+        _ctx(
+            request,
+            d=remote.my_classes(school.id),
+            school=school,
+            schools=schools,
+            problem=problem,
+            page=pages.page("LMS-101"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("LMS-101")
+def course(request: HttpRequest, space_id: uuid.UUID) -> HttpResponse:
+    """A class's online space: units of notes and links, the work set and live lessons."""
+    from syntegra.lms import remote
+
+    message, problem = None, None
+    if request.method == "POST":
+        action = request.POST.get("action")
+        try:
+            if action == "unit":
+                remote.add_unit(space_id, request.POST.get("title", ""))
+                message = "Unit added."
+            elif action == "item":
+                remote.add_item(
+                    _uuid_or_fail(request.POST.get("unit_id"), "unit"),
+                    kind=request.POST.get("kind", ""),
+                    title=request.POST.get("title", ""),
+                    body=request.POST.get("body"),
+                    link=request.POST.get("link"),
+                )
+                message = "Added to the unit."
+            elif action == "live":
+                at = _datetime_or_none(request.POST.get("on"), request.POST.get("at"))
+                if at is None:
+                    raise HardValidation("LMS-LIVE", "Choose the date and time", "")
+                remote.schedule_live(space_id, at, request.POST.get("link", ""))
+                message = "Live lesson scheduled."
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    return render(
+        request,
+        "course.html",
+        _ctx(
+            request,
+            s=remote.space(space_id),
+            posted=request.POST if problem else {},
+            today=dt.date.today(),
+            message=message,
+            problem=problem,
+            page=pages.page("LMS-101"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("LMS-102")
+def assignment_new(request: HttpRequest, space_id: uuid.UUID) -> HttpResponse:
+    from syntegra.lms import remote
+
+    _not_parent()
+    s = remote.space(space_id)
+    if s["viewer"] != "teacher":
+        raise Forbidden("Only the space's teacher sets work.", code="LMS-OWN")
+    problem = None
+    if request.method == "POST":
+        try:
+            opens = _datetime_or_none(request.POST.get("opens_on"), request.POST.get("opens_at") or "00:00")
+            due = _datetime_or_none(request.POST.get("due_on"), request.POST.get("due_at") or "23:59")
+            if opens is None or due is None:
+                raise HardValidation("LMS-WORK", "Give the opening and due dates", "")
+            remote.set_work(
+                space_id,
+                title=request.POST.get("title", ""),
+                instructions=request.POST.get("instructions", ""),
+                kind=request.POST.get("kind", ""),
+                opens_at=opens,
+                due_at=due,
+                max_mark=request.POST.get("max_mark") or None,
+                late_policy=request.POST.get("late_policy", ""),
+                allow_resubmission=request.POST.get("resubmit") == "on",
+            )
+            return HttpResponseRedirect(f"/courses/{space_id}?set=1")
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    return render(
+        request,
+        "assignment_new.html",
+        _ctx(
+            request,
+            s=s,
+            kinds=remote.KINDS,
+            late=remote.LATE,
+            posted=request.POST if problem else {},
+            today=dt.date.today(),
+            problem=problem,
+            page=pages.page("LMS-102"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET"])
+@page("LMS-107")
+def my_work(request: HttpRequest) -> HttpResponse:
+    """A learner's work (or, for a parent, each child's): what is due, what was handed in, the marks released."""
+    from syntegra.families import portal
+    from syntegra.lms import remote
+
+    me = portal.me_learner()
+    if me is not None:
+        people = [{**me, "work": remote.work_for(me["id"])}]
+    elif portal.is_parent():
+        people = [{**k, "work": remote.work_for(k["id"])} for k in portal.children()]
+    else:
+        raise Forbidden("This page is for learners and their parents; teachers use their class spaces.", code="LMS-OWN")
+    return render(
+        request,
+        "work.html",
+        _ctx(
+            request, people=people, learner_view=me is not None, now=dt.datetime.now(dt.UTC), page=pages.page("LMS-107")
+        ),
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("LMS-103")
+def work_item(request: HttpRequest, assignment_id: uuid.UUID) -> HttpResponse:
+    """One piece of work: the learner hands it in (a new version each time, with a receipt); a parent reads it."""
+    from syntegra.lms import remote
+
+    message, problem = None, None
+    if request.method == "POST":
+        try:
+            sub = remote.submit(
+                assignment_id, request.POST.get("text", ""), request.POST.get("ai", ""), request.POST.get("ai_note")
+            )
+            message = f"Handed in — receipt {bytes(sub.receipt_hash).hex()[:16].upper()}." + (
+                " It was after the due time, so it is marked late." if sub.is_late else ""
+            )
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    return render(
+        request,
+        "work_item.html",
+        _ctx(
+            request,
+            a=remote.assignment(
+                assignment_id, _uuid_or_fail(request.GET["learner"], "learner") if request.GET.get("learner") else None
+            ),
+            posted=request.POST if problem else {},
+            message=message,
+            problem=problem,
+            page=pages.page("LMS-103"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("LMS-104")
+def marking(request: HttpRequest, space_id: uuid.UUID, assignment_id: uuid.UUID) -> HttpResponse:
+    from syntegra.lms import remote
+
+    _not_parent()
+    message, problem = None, None
+    if request.method == "POST":
+        try:
+            if request.POST.get("action") == "release":
+                n = remote.release(assignment_id)
+                message = f"{n} mark{'' if n == 1 else 's'} released to learners and their parents."
+            else:
+                remote.mark(_uuid_or_fail(request.POST.get("submission_id"), "submission"),
+                            request.POST.get("score", ""), request.POST.get("feedback"))  # fmt: skip
+                message = "Mark saved (not yet released)."
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    d = remote.marking(assignment_id)
+    if d["space"]["id"] != space_id:
+        raise NotFound("assignment", assignment_id)
+    return render(
+        request,
+        "marking.html",
+        _ctx(request, d=d, message=message, problem=problem, page=pages.page("LMS-104")),
+        status=422 if problem else 200,
+    )

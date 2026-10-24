@@ -13,6 +13,16 @@
   <a class="brand" href="/">{% if emblem %}<img class="emblem" src="{{ emblem }}" alt="Coat of arms of {{ tenant.name }}" width="44" height="36">{% endif %}Syntegra <span>{{ tenant.name if tenant else "" }}</span></a>
   {% if signed_in %}
   <nav aria-label="Primary">
+    {% if ctx.role_code == "PAR" %}
+    <a href="/parent"{% if request.path == "/parent" %} aria-current="page"{% endif %}>Home</a>
+    <a href="/conversations"{% if request.path.startswith("/conversations") %} aria-current="page"{% endif %}>Messages</a>
+    <a href="/work"{% if request.path.startswith("/work") %} aria-current="page"{% endif %}>Schoolwork</a>
+    <a href="/parents-meetings"{% if request.path.startswith("/parents-meetings") %} aria-current="page"{% endif %}>Parents' meetings</a>
+    <a href="/activities"{% if request.path.startswith("/activities") %} aria-current="page"{% endif %}>Clubs</a>
+    <a href="/daybook"{% if request.path.startswith("/daybook") %} aria-current="page"{% endif %}>Forms</a>
+    {% elif ctx.role_code == "LRN" %}
+    <a href="/work"{% if request.path.startswith("/work") %} aria-current="page"{% endif %}>My work</a>
+    {% else %}
     <a href="/">Home</a>
     {% if ctx.has("metric:view") and can_open("CMD-101") %}<a href="/command/control-room">Control room</a>{% endif %}
     {% if ctx.has("learner:register") and can_open("LRN-02") %}<a href="/learners/new">Register learner</a>{% endif %}
@@ -27,6 +37,11 @@
     {% if ctx.has("behaviour:view") and can_open("BEH-02") %}<a href="/behaviour"{% if request.path.startswith("/behaviour") %} aria-current="page"{% endif %}>Behaviour</a>{% endif %}
     {% if ctx.has("safeguarding:manage") and can_open("SAF-02") %}<a href="/safeguarding"{% if request.path.startswith("/safeguarding/cases") or request.path == "/safeguarding" %} aria-current="page"{% endif %}>Safeguarding</a>{% elif ctx.has("safeguarding:report") and can_open("SAF-01") %}<a href="/safeguarding/concerns/new"{% if request.path.startswith("/safeguarding") %} aria-current="page"{% endif %}>Report a concern</a>{% endif %}
     {% if ctx.has("send:view") and can_open("SEN-01") %}<a href="/send"{% if request.path.startswith("/send") %} aria-current="page"{% endif %}>SEN register</a>{% endif %}
+    {% if ctx.has("message:send") and can_open("COM-101") %}<a href="/conversations"{% if request.path.startswith("/conversations") or request.path.startswith("/messages") %} aria-current="page"{% endif %}>Messages</a>{% endif %}
+    {% if (ctx.has("meeting:manage") or ctx.has("meeting:attend")) and can_open("PTM-101") %}<a href="/parents-meetings"{% if request.path.startswith("/parents-meetings") %} aria-current="page"{% endif %}>Parents' meetings</a>{% endif %}
+    {% if (ctx.has("activity:manage") or ctx.has("activity:lead")) and can_open("OPS-05") %}<a href="/activities"{% if request.path.startswith("/activities") %} aria-current="page"{% endif %}>Activities</a>{% endif %}
+    {% if ctx.has("course:teach") and can_open("LMS-101") %}<a href="/courses"{% if request.path.startswith("/courses") %} aria-current="page"{% endif %}>Online classes</a>{% endif %}
+    {% if ctx.has("form:manage") and can_open("FRM-101") %}<a href="/forms/builder"{% if request.path.startswith("/forms/builder") or request.path.startswith("/daybook") %} aria-current="page"{% endif %}>School forms</a>{% elif ctx.has("form:fill") and can_open("FRM-102") %}<a href="/daybook"{% if request.path.startswith("/daybook") %} aria-current="page"{% endif %}>School forms</a>{% endif %}
     {% if ctx.has("exam:view") and can_open("EXM-01") %}<a href="/exams/series">Exams</a>{% endif %}
     {% if (ctx.has("document:view") or ctx.has("document:search") or ctx.has("document:upload")) and can_open("DOC-104") %}<a href="/documents"{% if request.path.startswith("/documents") or request.path.endswith("/documents") %} aria-current="page"{% endif %}>Documents</a>{% endif %}
     {% if ctx.has("budget:view") and can_open("FIN-02") %}<a href="/finance/performance">Budgets</a>{% endif %}
@@ -38,6 +53,7 @@
     <a href="/forms">Forms</a>
     <a href="/pages">Pages</a>
     <a href="/verify">Verify</a>
+    {% endif %}
   </nav>
   <div class="who">
     <span><a href="/me" id="me-link">{{ user.display_name }}</a> · <strong>{{ ctx.role_code or "no role" }}</strong> · <a href="/auth/context?next={{ request.path|urlencode }}">Switch</a></span>

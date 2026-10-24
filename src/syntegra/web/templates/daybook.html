@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% from "_school_picker.html" import school_picker %}
+{% block title %}Forms{% endblock %}
+{% block content %}
+<h1>Forms</h1>
+{% if parent_view %}
+<p class="muted">Forms the school asks you to fill in for each child.</p>
+{% for k in kids %}<section class="card" id="child-{{ loop.index }}"><h2>{{ k.name }} — {{ k.class_name }}</h2>
+  <ul class="plain">{% for f in k.forms %}<li><a href="/daybook/{{ f.id }}?learner={{ k.id }}">{{ f.title }}</a> — {% if f.sent_at %}<span class="pill pill-ok">sent {{ f.sent_at|localtime("%d %b") }}</span> <span class="hint opt">open it to change your answers</span>{% else %}<span class="pill">to fill in</span>{% endif %}</li>{% else %}<li class="muted">No forms at the moment.</li>{% endfor %}</ul></section>
+{% endfor %}
+{% else %}
+<p class="muted">{{ school.name }} · forms staff fill in about a learner</p>{{ school_picker(school, schools) }}
+<section class="card"><ul class="plain">{% for f in forms %}<li><a href="/daybook/{{ f.id }}?school={{ school.id }}">{{ f.title }}</a> <span class="hint opt">{{ f.fields|length }} questions</span></li>{% else %}<li class="muted">No staff forms published.{% if ctx.has("form:manage") %} <a href="/forms/builder">Build one</a>.{% endif %}</li>{% endfor %}</ul></section>
+{% endif %}
+{% endblock %}

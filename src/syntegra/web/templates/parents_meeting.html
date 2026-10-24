@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Parents' meeting{% endblock %}
+{% block content %}
+{% set ev = (board or mine).event %}
+<p class="crumb no-print"><a href="/parents-meetings">← Parents' meetings</a></p>
+<h1>{{ ev.title }}</h1>
+<p class="muted">{% for d, a, b in ev.days %}{{ d.strftime("%A %d %B") }} {{ a.strftime("%H:%M") }}–{{ b.strftime("%H:%M") }}{% if not loop.last %} · {% endif %}{% endfor %} · {{ ev.slot_minutes }}-minute slots, {{ ev.gap }} minutes between teachers · {{ ev.classes|join(", ") }}</p>
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+{% if mine and mine.is_teacher %}
+<section class="card scroll-x" id="my-list"><h2>Your appointments ({{ mine.appointments|length }})</h2>
+  <table class="compact"><thead><tr><th scope="col">Time</th><th scope="col">Parent</th><th scope="col">Learner</th><th scope="col">How</th><th scope="col">Came?</th><th scope="col">Note</th></tr></thead>
+  <tbody>{% for a in mine.appointments %}<tr><td>{{ a.at|localtime("%a %H:%M") }}</td><td>{{ a.parent }}{% if a.interpreter %}<br><span class="hint opt">interpreter: {{ a.interpreter }}</span>{% endif %}</td><td><a href="/learners/{{ a.learner_id }}">{{ a.learner }}</a></td><td>{{ a.mode }}</td>
+    <td colspan="2">{% if a.at <= now %}<form method="post" class="row-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="record"><input type="hidden" name="booking_id" value="{{ a.id }}">
+      <select name="attended" aria-label="Did the parent come?"><option value="yes"{% if a.attended %} selected{% endif %}>Came</option><option value="no"{% if a.attended == false %} selected{% endif %}>Did not come</option></select>
+      <input name="note" maxlength="1000" value="{{ a.note or '' }}" aria-label="Note" placeholder="What was agreed"><button>{{ "Update" if a.status == "completed" else "Record" }}</button></form>{% else %}<span class="muted">after the slot</span>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="6" class="muted">No parent has booked with you yet.</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endif %}
+{% if board %}
+<section class="card scroll-x" id="board"><h2>Every teacher — {{ board.bookings }} booking{{ "" if board.bookings == 1 else "s" }}</h2>
+  <table class="compact slots"><thead><tr><th scope="col">Time</th>{% for col in board.columns %}<th scope="col">{{ col.name }}<br><span class="hint opt">{{ col.teaches|join(", ") }} · {{ col.booked }}</span></th>{% endfor %}</tr></thead>
+  <tbody>{% for s in board.slots %}{% set i = loop.index0 %}<tr><th scope="row">{{ s|localtime("%a %H:%M") }}</th>{% for col in board.columns %}{% set cell = col.cells[i] %}<td{% if cell.learner %} class="booked"{% endif %}>{{ cell.learner or "" }}{% if cell.mode == "video" %} <span class="hint opt">video</span>{% endif %}</td>{% endfor %}</tr>{% endfor %}</tbody></table>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_school_picker.html" import school_picker %}
+{% block title %}Parents' meetings{% endblock %}
+{% block content %}
+<h1>Parents' meetings</h1>
+{% if not parent_view %}<p class="muted">{{ school.name }}</p>{{ school_picker(school, schools) }}{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<section class="card scroll-x" id="events">
+  <table class="compact"><thead><tr><th scope="col">Meeting</th><th scope="col">When</th><th scope="col">Classes</th><th scope="col">Booking</th>{% if not parent_view %}<th scope="col" class="num">Booked</th>{% endif %}</tr></thead>
+  <tbody>{% for e in events %}<tr><td><a href="/parents-meetings/{{ e.id }}">{{ e.title }}</a></td>
+    <td>{% for d, a, b in e.days %}{{ d.strftime("%a %d %b") }} {{ a.strftime("%H:%M") }}–{{ b.strftime("%H:%M") }}{% if not loop.last %}<br>{% endif %}{% endfor %}</td>
+    <td>{{ e.classes|join(", ") }}</td>
+    <td>{% if e.past %}<span class="muted">held</span>{% elif e.open %}<span class="pill pill-ok">open</span> until {{ e.closes|localtime("%d %b") }}{% else %}opens {{ e.opens|localtime("%d %b") }}{% endif %}</td>
+    {% if not parent_view %}<td class="num">{{ e.bookings }}</td>{% endif %}</tr>
+  {% else %}<tr><td colspan="5" class="muted">No parents' meetings {{ "for your children" if parent_view else "set up" }} yet.</td></tr>{% endfor %}</tbody></table>
+</section>
+{% if not parent_view and ctx.has("meeting:manage") %}
+<form method="post" class="card" id="new-meeting"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="school" value="{{ school.id }}">
+  <h2>Set up a meeting</h2>
+  <label>Title<input name="title" maxlength="300" required value="{{ posted.get('title', '') }}" placeholder="SS 2 parents' evening"></label>
+  <fieldset><legend>Classes invited</legend><div class="pick-grid">{% for c in classes %}<label class="chip"><input type="checkbox" name="class_ids" value="{{ c.id }}"{% if c.id|string in chosen %} checked{% endif %}> {{ c.name }}</label>{% endfor %}</div></fieldset>
+  <fieldset><legend>Evenings</legend>
+  {% for i in (1, 2, 3) %}<div class="grid-form"><label>Date {{ i }}{% if i > 1 %} <span class="hint opt">— optional</span>{% endif %}<input type="date" name="day{{ i }}" min="{{ today }}" value="{{ posted.get('day' ~ i, '') }}"></label><label>From<input type="time" name="from{{ i }}" value="{{ posted.get('from' ~ i, '16:00') }}"></label><label>To<input type="time" name="to{{ i }}" value="{{ posted.get('to' ~ i, '18:30') }}"></label></div>{% endfor %}
+  </fieldset>
+  <div class="grid-form">
+    <label>Slot length (minutes)<input class="num4" type="number" name="slot" min="5" max="30" value="{{ posted.get('slot', '10') }}"></label>
+    <label>Gap to walk between teachers (minutes)<input class="num4" type="number" name="gap" min="0" max="15" value="{{ posted.get('gap', '5') }}"></label>
+    <label>Booking opens<input type="date" name="opens" min="{{ today }}" value="{{ posted.get('opens', today) }}"></label>
+    <label>Booking closes<input type="date" name="closes" min="{{ today }}" value="{{ posted.get('closes', '') }}" required></label>
+  </div>
+  <fieldset><legend>Parents may meet</legend><label class="check"><input type="checkbox" name="modes" value="in_person" checked> In person</label> <label class="check"><input type="checkbox" name="modes" value="video"{% if 'video' in (posted.getlist('modes') if posted else []) %} checked{% endif %}> By video call</label></fieldset>
+  <p><button class="primary">Set up the meeting</button></p>
+</form>
+{% endif %}
+{% endblock %}

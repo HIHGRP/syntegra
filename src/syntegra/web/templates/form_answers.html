@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Answers — {{ d.form.title }}{% endblock %}
+{% block content %}
+<p class="crumb no-print"><a href="/forms/builder/{{ d.form.id }}">← {{ d.form.title }}</a></p>
+<h1>Answers — {{ d.form.title }}</h1>
+<p class="muted">{{ d.rows|length }} answer{{ "" if d.rows|length == 1 else "s" }} · <span class="cls cls-{{ d.form.level }}">{{ d.form.level }}</span></p>
+{% if d.classes %}<form method="get" class="picker no-print"><label>Class<select name="class" onchange="this.form.submit()"><option value="">All</option>{% for cid, name in d.classes %}<option value="{{ cid }}"{% if picked == cid|string %} selected{% endif %}>{{ name }}</option>{% endfor %}</select></label><noscript><button>Show</button></noscript></form>{% endif %}
+<section class="card scroll-x"><table class="compact"><thead><tr><th scope="col">Learner</th><th scope="col">Class</th>{% for c in d.columns %}<th scope="col">{{ c.label }}</th>{% endfor %}<th scope="col">By</th><th scope="col">Sent</th></tr></thead>
+  <tbody>{% for r in d.rows %}<tr><td>{{ r.learner }}</td><td>{{ r.class }}</td>{% for c in d.columns %}<td>{{ r.answers.get(c.key, "") }}</td>{% endfor %}<td>{{ r.by }}</td><td>{{ r.at|localtime("%d %b %H:%M") }} <span class="hint opt">v{{ r.version }}</span></td></tr>
+  {% else %}<tr><td colspan="{{ d.columns|length + 4 }}" class="muted">No answers yet.</td></tr>{% endfor %}</tbody></table></section>
+{% endblock %}

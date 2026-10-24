@@ -184,6 +184,11 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "safeguarding:report",
             "document:view",
             "document:upload",
+            "message:*",
+            "meeting:*",
+            "activity:*",
+            "form:*",
+            "course:*",
         ],
     ),
     "EXO": (
@@ -223,6 +228,11 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "behaviour:log",
             "behaviour:view",
             "safeguarding:report",
+            "message:send",
+            "meeting:attend",
+            "activity:lead",
+            "form:fill",
+            "course:teach",
         ],
     ),
     "DSL": (
@@ -355,6 +365,7 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "timetable:view",
             "room:*",
             "safeguarding:report",
+            "activity:*",
         ],
     ),
     "COMM": (
@@ -375,6 +386,27 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "learner:view",
             "document:view",
             "document:search",
+        ],
+    ),
+    # parents and learners (CR-009 phase 4): granted at their school; every page they use starts from their own
+    # children (or, for a learner, themselves) — see families/portal.py
+    "PAR": (
+        "Parent or guardian",
+        "internal",
+        [
+            "message:parent",
+            "meeting:book",
+            "activity:apply",
+            "form:submit",
+            "work:view",
+        ],
+    ),
+    "LRN": (
+        "Learner",
+        "internal",
+        [
+            "work:submit",
+            "work:view",
         ],
     ),
     # records management (CR-007): digitised paper documents of schools and offices

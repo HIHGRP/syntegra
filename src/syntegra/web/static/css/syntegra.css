@@ -280,3 +280,23 @@ ol.chronology li.concern { border-left-color: var(--bad); } ol.chronology p { ma
 .referral { border-bottom: 1px solid var(--line); padding: .4rem 0; } .referral p { margin: .2rem 0; }
 dl.profile dt { font-weight: 600; margin-top: .5rem; } dl.profile dd { margin: 0; }
 ul.plain { list-style: none; padding: 0; margin: 0; } ul.plain li { margin-bottom: .2rem; }
+
+/* CR-009 phase 4: conversations, meeting slots, forms */
+ol.thread { list-style: none; padding: 0; margin: 1rem 0; display: flex; flex-direction: column; gap: .6rem; max-width: 46rem; }
+ol.thread .msg { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .6rem .8rem; max-width: 85%; }
+ol.thread .msg.mine { align-self: flex-end; background: var(--ok-bg); }
+ol.thread .msg .who { font-size: .82rem; color: var(--muted); margin-bottom: .2rem; }
+ol.thread .msg .body { white-space: pre-wrap; }
+tr.unread td { font-weight: 600; }
+table.slots td.booked { background: var(--ok-bg); }
+table.slots th[scope="row"] { white-space: nowrap; }
+ol.questions li { margin: .45rem 0; }
+.child h3.sub { margin-top: .4rem; }
+.row-form { display: inline-flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin: .2rem 0; }
+.row-form input, .row-form select { width: auto; margin: 0; }
+.row-form input.grow, .row-form label.grow { flex: 1 1 14rem; }
+.row-form label { display: inline-flex; gap: .3rem; align-items: center; margin: 0; }
+/* a long menu (heads, state officers) takes its own full-width row under the brand instead of a narrow column */
+.topbar nav:has(> a:nth-of-type(12)) { order: 3; flex-basis: 100%; gap: .2rem 1.1rem; }
+.topbar .who { margin-left: auto; }
+.q label.check input[type="radio"], fieldset label.check input[type="radio"] { margin-right: .45rem; }

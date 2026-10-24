@@ -78,6 +78,26 @@ def current(qs: Any, on: dt.date) -> Any:
     return qs.filter(valid_from__lte=on).exclude(valid_to__lte=on)
 
 
+def teachers_of_class(class_id: uuid.UUID, on: dt.date | None = None) -> dict[uuid.UUID, list[str]]:
+    """Who teaches a class: each member of staff with what they are to it — "Form teacher" first, then the subjects
+    they are teacher of record for. The class is read without a scope check; callers have already checked it."""
+    on = on or dt.date.today()
+    plans = {p.id: p for p in _active(ClassSubjectPlan.objects.filter(class_group_id=class_id), on)}
+    subjects = {s.id: s.name for s in Subject.objects.filter(id__in={p.subject_id for p in plans.values()})}
+    out: dict[uuid.UUID, list[str]] = {}
+    cls = ClassGroup.objects.filter(pk=class_id).first()
+    if cls is not None and cls.form_teacher_staff_id:
+        out[cls.form_teacher_staff_id] = ["Form teacher"]
+    for a in current(
+        TeachingAssignment.objects.filter(class_subject_plan_id__in=list(plans), role="teacher_of_record"), on
+    ):
+        label = subjects.get(plans[a.class_subject_plan_id].subject_id, "Subject")
+        roles = out.setdefault(a.staff_id, [])
+        if label not in roles:
+            roles.append(label)
+    return out
+
+
 def class_plan(class_id: uuid.UUID, on: dt.date | None = None) -> dict[str, Any]:
     """ACA-101 read model: the class's subjects, who teaches each, live G2/G3 validation and the teachers' loads."""
     ctx = context.require()

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Work{% endblock %}
+{% block content %}
+<h1>{{ "My work" if learner_view else "Schoolwork" }}</h1>
+{% for p in people %}
+<section class="card scroll-x" id="work-{{ loop.index }}">{% if not learner_view %}<h2>{{ p.name }} — {{ p.class_name }}</h2>{% endif %}
+  <table class="compact"><thead><tr><th scope="col">Work</th><th scope="col">Class</th><th scope="col">Due</th><th scope="col">Handed in</th><th scope="col">Mark</th></tr></thead>
+  <tbody>{% for w in p.work %}<tr{% if w.overdue %} class="overdue"{% endif %}><td><a href="/work/{{ w.id }}{% if not learner_view %}?learner={{ p.id }}{% endif %}">{{ w.title }}</a> <span class="hint opt">{{ w.kind }}</span></td><td>{{ w.space }}</td><td>{{ w.due|localtime("%a %d %b %H:%M") }}</td>
+    <td>{% if w.submitted_at %}{{ w.submitted_at|localtime("%d %b %H:%M") }}{% if w.late %} <span class="pill pill-bad">late</span>{% endif %}{% elif w.overdue %}<span class="pill pill-bad">not handed in</span>{% else %}—{% endif %}</td>
+    <td>{% if w.score is not none %}<strong>{{ "%g"|format(w.score) }}{% if w.max_mark %} / {{ "%g"|format(w.max_mark) }}{% endif %}</strong>{% else %}—{% endif %}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">No work set yet.</td></tr>{% endfor %}</tbody></table>
+</section>
+{% else %}<div class="card"><p class="muted">Nothing to show.</p></div>{% endfor %}
+{% endblock %}

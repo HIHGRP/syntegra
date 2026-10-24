@@ -735,6 +735,7 @@ The Appendix J DDL (174 tables) was extracted from the MFS and loaded into MySQL
 | D31 | Retirement rules per cadre (teachers 65 years / 40 years of service; others 60 / 35) | Head of Service | Cadre attributes (`retirement_age`, `max_years_service`), not code |
 | D32 | Security agencies' reference data: agencies, structures, ranks, institutions and course catalogues | Each agency's training directorate + Office of the National Security Adviser | Seeded from public sources and marked `illustrative` or `to_confirm`; nothing is `verified` until the agency confirms it. Course detail is syllabus headings only, and courses whose detail an agency withholds are `content_held = false` |
 | D33 | Official lists of federal unity colleges and federal special training institutions; supervising ministries of NBS, OSGOF, FRSC, NDLEA, EFCC and DSS institutions | Federal Ministry of Education and each owning body | Seeded lists marked `to_confirm`; the reference import (`syntegra_federal_registry import`, template `ceda/templates/federal_institutions.csv`) completes and corrects them; missing supervisors stay visible as profile gaps |
+| D34 | Columns for an activity's meeting day and time, leader and register dates (CR-009 phase 4) | Product owner + data architect | Held in `activity.eligibility_rule` until the next CEDA release adds `activity.meets`, `activity.lead_staff_id` and an `activity_session` register (§37.4) |
 
 ---
 
@@ -2370,3 +2371,97 @@ At the sample secondary schools: a DSL (`dsl.<school code>@abia.demo`) and a SEN
 the default behaviour policy with two weeks of entries for SS 2A and SS 2B, a bullying report naming who it was aimed
 at and a proposed suspension waiting for the head; and three SS 2A learners on the SEN register with their profiles,
 adjustments and, for one, an individual education plan. No safeguarding concern is invented.
+
+## 37. Parents, messages, meetings, activities, school forms and remote learning (CR-009, phase 4)
+
+### 37.1 Parents and learners sign in
+
+Two roles are added, both at access level 2 (internal). A **parent** (`PAR`) signs in with the guardian's own account
+(`app_user.person_kind = guardian`, linked from `guardian.user_id`) and holds the role at their child's school. The
+grant is school-wide only so the school's pages open; a parent never sees the school. Every parent page starts from
+the learners the guardian is currently linked to with parental responsibility and enrolled at the school
+(`learner_guardian`, `class_membership`), and every action on a learner checks it first. A link marked
+contact-restricted gives the parent nothing about that child: the order behind the flag is held by the safeguarding
+lead (`contact_restriction`, vault), and the safe reading of an order the school office cannot see is that it
+withholds information. A **learner** (`LRN`, `person_kind = learner`) sees only their own work. Parents and learners
+are refused every staff page. Teachers gain `message:send`, `meeting:attend`, `activity:lead`, `form:fill` and
+`course:teach`; heads `message:*`, `meeting:*`, `activity:*`, `form:*` and `course:*`; facilities managers `activity:*`.
+
+### 37.2 Messages between the school and parents (COM-01, COM-101)
+
+A member of staff writes to the parents of one learner, several or a whole class in one step (up to 60 learners).
+Each parent gets the message in their own conversation with that member of staff about that child (`conversation`
+linked to the learner, assigned to the sender, on the school's in-app channel `message_channel`; the parent's in-app
+contact `channel_contact` with an HMAC lookup and an encrypted endpoint), so a reply is seen by the sender and nobody
+else, and one parent never sees another's. Parents write to their child's form teacher or subject teachers who have an
+account. A parent with an account receives the message in the app at once (`message.delivery_status = delivered`); a
+parent without one is sent it by SMS — queued for the school's gateway, which no release yet connects, so the page
+says it is queued. Opening a conversation marks the other side's messages read. Contact-restricted parents are never
+listed or written to. A member of staff sees their own conversations; the head sees every conversation at the school
+and does not reply in others'.
+
+### 37.3 Parents' meetings (PTM-101)
+
+The head sets up a meeting (`meeting_event`): one to three evenings (each by 20:00, never a Sunday), the classes, the
+slot length (5–30 minutes), the gap a parent needs to walk to the next teacher (0–15 minutes), in person and/or by
+video, and when booking opens and closes (before the first evening). Every teacher of the classes — form teachers and
+teachers of record — has a column of slots. A parent books a slot with each of their child's teachers they want to see
+(`meeting_booking`); a booking is refused when the slot is taken, when it overlaps another of the parent's meetings,
+when it leaves less than the gap to reach it from another teacher (no gap between two meetings with the same teacher),
+when the parent already has that teacher for that child, or outside the booking window. Bookings are made one at a time
+under a lock on the meeting. The school office books for parents without an account until the first slot. Teachers see
+their list and record attendance and a note after the slot; the head sees every teacher's column. No video service is
+connected: the page says the school sends the link.
+
+### 37.4 Clubs and activities (OPS-05)
+
+The head or facilities manager sets up clubs, sports, events and holiday programmes (`activity`): the class levels that
+may join, the places, the day and time it meets, the member of staff who leads it and a line for parents. Places are
+first come, first served (`activity_enrolment.allocation`); when full a learner joins the waiting list
+(`waiting_position`) and moves up in order as soon as someone leaves. A place is refused when the level is not eligible,
+when the learner already has a place or is waiting, or when it meets at the same time as another of their activities.
+Parents ask for places for their children; the leader or the head adds learners directly. The leader takes a register
+once per meeting day, on the club's weekday, on or before today; each learner present has it counted
+(`sessions_attended`), and the roster shows attendance rates.
+
+Where the details are kept: the meeting day and time, the leader, the description and the dates registers were taken
+are held in `activity.eligibility_rule` alongside the eligible levels until a CEDA release gives them columns of their
+own. This is recorded as an open data decision for the next release.
+
+### 37.5 The school's own forms (FRM-101, FRM-102)
+
+The head builds a form (`form_definition`) from questions — short answer, paragraph, number, date, a choice from a
+list, yes or no, typed signature — each optional or required, and each shown only when an earlier yes/no or choice
+question has a given answer. A form is filled in by parents, about their child, or by staff, about a learner, and its
+level (internal, confidential or restricted) decides who may read the answers: medical details belong at restricted.
+A form is drafted and published; a published version is never changed — editing starts the next version as a draft,
+and publishing it supersedes the old one. Answers (`form_response.answers`) are checked on the server against the
+version filled in — required questions among those shown, numbers, dates, choices, a full name for a signature — and
+only the answers to questions that were shown are kept, with the version (`form_version`). A parent filling the same
+version in again replaces their own earlier answers. The head reads the answers by class, every version together.
+
+### 37.6 Remote learning (LMS-101 to LMS-107)
+
+Each class-subject has an online space (`course_space`) opened by its teacher of record. Its learners are the class
+roster (`course_member`), brought into step whenever the teacher opens or refreshes it — joiners added, leavers'
+membership ended — and its owner is the teacher of record. The teacher posts units (`lms_unit`) of notes and links
+(`lms_content`; links must be https), sets work (`assignment`: homework, coursework, class test or practical, with an
+opening and due time, an optional mark, accept-late-and-flag or close-at-due, and whether a new version may be handed
+in) and schedules live lessons with the meeting link of the video service the school uses (`live_class`).
+
+Learners see the work set for their classes once it opens. Each hand-in is a new, unchangeable version (`submission`,
+append-only) with a receipt — a SHA-256 of the work and the time it was received — and is marked late when it arrives
+after the due time; closed work refuses late hand-ins, and work without resubmission refuses a second version. The
+learner says whether they used AI tools and, if so, how. The teacher marks the latest version with a score (within the
+work's mark) and feedback (`submission_mark`); marks stay with the teacher until released (`released_at`), when the
+learner and their parents see them together. Parents see each child's work, due dates and released marks.
+
+### 37.7 Demonstration data
+
+At the sample secondary schools: accounts for six SS 2A parents (`parent1.<school code>@abia.demo` …) and three SS 2A
+learners (`learner1.<school code>@abia.demo` …); the Mathematics teacher's message to the class's parents with a
+parent's reply and another parent's question; an SS 2 parents' evening ten days ahead, open for booking, with a parent's
+two bookings; four clubs (chess full with a waiting list and three registers taken, football, debating, JETS); two
+forms parents fill in (medical information and emergency contacts, restricted; consent for inter-house sports day,
+internal) with answers from two parents (no medical condition is invented); and the SS 2A Mathematics online class
+with a unit of notes and a link, two pieces of work, a live lesson, two hand-ins and one released mark.

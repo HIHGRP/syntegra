@@ -1399,6 +1399,240 @@ def _pastoral(schools: list[Any], names: _Names, out: Loaded, log: Log) -> None:
         log(f"  behaviour, safeguarding lead, SENCO and SEN register at {done} secondary schools")
 
 
+def _past(weekday: int, n: int) -> list[dt.date]:
+    """The last ``n`` dates before today that fall on ``weekday``, oldest first."""
+    day = dt.date.today() - dt.timedelta(days=1)
+    out: list[dt.date] = []
+    while len(out) < n:
+        if day.weekday() == weekday:
+            out.append(day)
+        day -= dt.timedelta(days=1)
+    return sorted(out)
+
+
+def _online_class(ss2a: Any, teacher: Context, pupils: list[Context]) -> None:
+    """The SS 2A Mathematics online class: a unit of notes and a link, two pieces of work, a live lesson, two
+    hand-ins, one marked and released."""
+    from zoneinfo import ZoneInfo
+
+    from django.conf import settings
+
+    from syntegra.academic.models import ClassSubjectPlan, Subject
+    from syntegra.lms import remote
+
+    maths = list(Subject.objects.filter(code="AB-MTH").values_list("id", flat=True))
+    plan = ClassSubjectPlan.objects.filter(class_group_id=ss2a.id, subject_id__in=maths).first()
+    if plan is not None:
+        tz = ZoneInfo(settings.TIME_ZONE)
+        now = dt.datetime.now(tz)
+        with context.use(teacher):
+            space = remote.open_space(plan.id)
+            unit = remote.add_unit(space.id, "Week 6 — Quadratic equations")
+            remote.add_item(unit.id, kind="note", title="Solving by factorising",
+                            body="To solve x² + 5x + 6 = 0, find two numbers that multiply to 6 and add to 5: "
+                                 "2 and 3. So (x + 2)(x + 3) = 0, and x = −2 or x = −3. Check each answer by "
+                                 "putting it back into the equation.")  # fmt: skip
+            remote.add_item(unit.id, kind="link", title="Quadratic equations (reading)",
+                            link="https://en.wikipedia.org/wiki/Quadratic_equation",
+                            body="Read the section on factoring.")  # fmt: skip
+            work = remote.set_work(space.id, title="Exercise 6.2 — factorising quadratics",
+                                   instructions="Solve questions 1 to 10 of Exercise 6.2 in the textbook by "
+                                                "factorising. Show every step.", kind="homework",
+                                   opens_at=now - dt.timedelta(days=2), due_at=now + dt.timedelta(days=3),
+                                   max_mark="20", late_policy="accept_flag", allow_resubmission=True)  # fmt: skip
+            remote.set_work(space.id, title="Practice test — quadratic equations",
+                            instructions="Twenty minutes, ten questions. Work on your own.", kind="ca_test",
+                            opens_at=now - dt.timedelta(hours=1), due_at=now + dt.timedelta(days=6),
+                            max_mark="10", late_policy="close_at_due", allow_resubmission=False)  # fmt: skip
+            remote.schedule_live(space.id, (now + dt.timedelta(days=2)).replace(hour=16, minute=0, second=0,
+                                 microsecond=0), "https://meet.jit.si/SyntegraDemo-SS2A-Mathematics")  # fmt: skip
+        answers = ("1. (x+2)(x+3)=0 so x=-2 or x=-3\n2. (x-1)(x-4)=0 so x=1 or x=4\n3. (x+5)(x-2)=0 so x=-5 "
+                   "or x=2\n4. x(x-7)=0 so x=0 or x=7\n5. (x-3)(x-3)=0 so x=3")  # fmt: skip
+        with context.use(pupils[0]):
+            first = remote.submit(work.id, answers, "none_used")
+        with context.use(pupils[1]):
+            remote.submit(work.id, "1. x=-2 or x=-3\n2. x=1 or x=4\n3. x=-5 or x=2", "none_used")
+        with context.use(teacher):
+            remote.mark(first.id, "16", "Good, clear working. Questions 6 to 10 are missing — finish them for "
+                        "full marks.")  # fmt: skip
+            remote.release(work.id)
+
+
+def _engagement(schools: list[Any], out: Loaded, log: Log) -> None:
+    """At the sample secondary schools: accounts for six SS 2A parents and three SS 2A learners, a message to the
+    class's parents with a reply and a parent's own question, an SS 2 parents' evening open for booking, four clubs
+    (one full, with a waiting list), two school forms parents fill in, and the SS 2A Mathematics online class with
+    notes, work handed in and a released mark (CR-009 phase 4)."""
+
+    from syntegra.academic.models import ClassGroup, ClassMembership
+    from syntegra.comms import messaging
+    from syntegra.comms.models import Conversation
+    from syntegra.families.models import Guardian, LearnerGuardian
+    from syntegra.forms import builder, meetings
+    from syntegra.forms.models import FormDefinition
+    from syntegra.iam import services as iam
+    from syntegra.iam.models import AppUser, Role, RoleGrant
+    from syntegra.learners.models import Learner
+    from syntegra.operations import activities
+
+    head_role = Role.objects.get(code="HEAD")
+    sysctx = _sys()
+    done = 0
+    for inst in schools:
+        code = inst.institution_code.lower()
+        teacher_user = AppUser.objects.filter(username=f"teacher.{code}@abia.demo", person_kind="staff").first()
+        if teacher_user is None or teacher_user.person_id is None:
+            continue
+        if FormDefinition.objects.filter(scope_node_id=inst.scope_node_id).exists():
+            continue
+        grant = RoleGrant.objects.filter(scope_id=inst.scope_node_id, role_id=head_role.id, status="active").first()
+        classes = {c.name: c for c in ClassGroup.objects.filter(institution_id=inst.id, status="active")}
+        if grant is None or "SS 2A" not in classes:
+            continue
+        head_user = AppUser.objects.get(pk=grant.user_id)
+        head = _user(head_user.username, head_user.display_name, "HEAD", inst.scope_node_id, out, inst.name)
+        teacher = _user(teacher_user.username, teacher_user.display_name, "TCH", inst.scope_node_id, out, inst.name)
+        ss2a = classes["SS 2A"]
+        roster = sorted(
+            ClassMembership.objects.filter(class_group_id=ss2a.id, valid_to__isnull=True).values_list(
+                "learner_id", flat=True
+            ),
+            key=str,
+        )
+        if len(roster) < 8:
+            continue
+        learners = {lr.id: lr for lr in Learner.objects.filter(id__in=roster)}
+        # 1. accounts: the first parent with parental responsibility of six learners; three learners
+        parents: list[Context] = []
+        for i, lid in enumerate(roster[:6], start=1):
+            lg = (
+                LearnerGuardian.objects.filter(learner_id=lid, has_parental_responsibility=True, valid_to__isnull=True)
+                .order_by("contact_priority")
+                .first()
+            )
+            g = Guardian.objects.filter(pk=lg.guardian_id).first() if lg else None
+            if g is None:
+                continue
+            username = f"parent{i}.{code}@abia.demo"
+            with context.use(sysctx):
+                if not AppUser.objects.filter(username=username).exists():
+                    u = iam.create_user(sysctx, username=username, display_name=f"{g.given_name} {g.family_name}",
+                                        password=PASSWORD, person_kind="guardian", person_id=g.id, phone=g.phone)  # fmt: skip
+                    Guardian.objects.filter(pk=g.id).update(user_id=u.id)
+            parents.append(
+                _user(username, f"{g.given_name} {g.family_name}", "PAR", inst.scope_node_id, out, inst.name)
+            )
+        pupils: list[Context] = []
+        for i, lid in enumerate(roster[:3], start=1):
+            lr = learners[lid]
+            username = f"learner{i}.{code}@abia.demo"
+            with context.use(sysctx):
+                if not AppUser.objects.filter(username=username).exists():
+                    iam.create_user(sysctx, username=username, display_name=f"{lr.legal_given_name} {lr.legal_family_name}",
+                                    password=PASSWORD, person_kind="learner", person_id=lr.id)  # fmt: skip
+            pupils.append(_user(username, lr.legal_given_name, "LRN", inst.scope_node_id, out, inst.name))
+        if len(parents) < 3:
+            continue
+        # 2. messages: the Mathematics teacher writes to the class's parents; one replies, another asks a question
+        with context.use(teacher):
+            messaging.send(inst.id, roster, "Good afternoon. SS 2A will write a Mathematics test on quadratic "
+                           "equations next Friday. Please make sure your child practises the exercises set online "
+                           "this week. Thank you — Mathematics department.")  # fmt: skip
+        with context.use(parents[0]):
+            conv = Conversation.objects.filter(linked_record_id=roster[0]).first()
+            if conv is not None:
+                messaging.reply(conv.id, "Thank you, ma. We will make sure she practises every evening this week.")
+        with context.use(parents[1]):
+            messaging.parent_start(roster[1], teacher_user.id, "Good evening. My son was absent on Monday with "
+                                   "fever. Please what work did he miss in Mathematics?")  # fmt: skip
+        # 3. the SS 2 parents' evening, ten days ahead, open for booking now
+        evening = dt.date.today() + dt.timedelta(days=10)
+        while evening.weekday() not in (1, 2, 3):
+            evening += dt.timedelta(days=1)
+        ss2 = [c.id for n, c in classes.items() if n.startswith("SS 2")]
+        with context.use(head):
+            ev = meetings.create(inst.id, title="SS 2 parents' evening", class_ids=ss2,
+                                 days=[(evening, "15:30", "18:30")], slot_minutes=10, gap_minutes=5,
+                                 modes=["in_person", "video"], opens_on=dt.date.today(),
+                                 closes_on=evening - dt.timedelta(days=2))  # fmt: skip
+        slots = meetings.slot_starts(ev)
+        with context.use(parents[0]):
+            view = meetings.for_parent(ev.id)
+            kid = view["children"][0] if view["children"] else None
+            for t, at in zip((kid["teachers"] if kid else [])[:2], (slots[0], slots[3]), strict=False):
+                meetings.book(ev.id, roster[0], t["staff_id"], at)
+        # 4. clubs and activities: chess is full with two waiting; the register taken on the last three Wednesdays
+        with context.use(head):
+            staff = {s["name"]: s["id"] for s in activities.catalogue(inst.id)["staff"]}
+            lead = teacher_user.person_id
+            others = [sid for sid in staff.values() if sid != lead]
+            made = {}
+            for name, kind, levels, cap, day, a, b, who, about in (
+                ("Chess club", "club", ["JSS3", "SSS1", "SSS2", "SSS3"], 8, 2, "14:30", "15:30", lead,
+                 "Learn and play chess; the school team plays the inter-school league in the third term."),
+                ("Football", "sport", ["JSS1", "JSS2", "JSS3", "SSS1", "SSS2", "SSS3"], 22, 1, "15:00", "16:30",
+                 others[0] if others else lead, "Training for the school team; bring sports kit."),
+                ("Debating society", "club", ["SSS1", "SSS2", "SSS3"], 20, 3, "14:30", "15:30",
+                 others[1] if len(others) > 1 else lead, "Weekly debates; preparing for the state debate competition."),
+                ("JETS club", "club", ["JSS2", "JSS3", "SSS1", "SSS2"], 24, 4, "14:30", "15:30",
+                 others[2] if len(others) > 2 else lead, "Junior Engineers, Technicians and Scientists: projects and the JETS fair."),
+            ):  # fmt: skip
+                made[name] = activities.create(inst.id, name=name, kind=kind, levels=levels, capacity=cap, day=day,
+                                               starts=a, ends=b, lead_staff_id=who, description=about)  # fmt: skip
+            chess = made["Chess club"]
+            for lid in roster[6:16]:
+                activities.join(chess.id, lid)
+            for lid in roster[16:28:2]:
+                activities.join(made["Football"].id, lid)
+            for lid in roster[2:14:3]:
+                activities.join(made["Debating society"].id, lid)
+        with context.use(parents[2]):
+            activities.join(made["JETS club"].id, roster[2])
+        with context.use(teacher):
+            placed = [r["learner_id"] for r in activities.roster(chess.id)["placed"]]
+            for i, on in enumerate(_past(2, 3)):
+                activities.register(chess.id, on, [x for j, x in enumerate(placed) if (i + j) % 5])
+        # 5. two school forms parents fill in
+        with context.use(head):
+            med = builder.create(inst.id, title="Medical information and emergency contacts", filled_by="parents",
+                                 level="restricted",
+                                 intro="Please tell us about any medical condition, so staff can keep your child "
+                                       "safe. Only the head and the school nurse read these answers.")  # fmt: skip
+            builder.add_field(med.id, label="Does your child have a medical condition the school should know about?",
+                              kind="yes_no", required=True)  # fmt: skip
+            builder.add_field(med.id, label="Please give details and what staff should do", kind="long_text",
+                              required=True, show_if_key="q1", show_if_value="yes")  # fmt: skip
+            builder.add_field(med.id, label="Medicines your child takes at school", kind="text", required=False)
+            builder.add_field(med.id, label="Emergency contact — name", kind="text", required=True)
+            builder.add_field(med.id, label="Emergency contact — phone", kind="text", required=True)
+            builder.add_field(med.id, label="Signed (parent or guardian)", kind="signature", required=True)
+            builder.publish(med.id)
+            sports = builder.create(inst.id, title="Consent: inter-house sports day", filled_by="parents",
+                                    level="internal", intro="Inter-house sports day is on the school field. "
+                                    "Learners take part in at least one event.")  # fmt: skip
+            builder.add_field(sports.id, label="May your child take part?", kind="yes_no", required=True)
+            builder.add_field(sports.id, label="House", kind="choice", required=True,
+                              options=["Blue house", "Green house", "Red house", "Yellow house"])  # fmt: skip
+            builder.add_field(sports.id, label="Anything the PE teacher should know", kind="long_text", required=False)
+            builder.add_field(sports.id, label="Signed (parent or guardian)", kind="signature", required=True)
+            builder.publish(sports.id)
+        for p, lid in ((parents[0], roster[0]), (parents[1], roster[1])):
+            g = Guardian.objects.get(pk=AppUser.objects.get(pk=p.actor_id).person_id)
+            with context.use(p):
+                builder.submit(
+                    sports.id, lid, {"q1": "yes", "q2": "Green house", "q4": f"{g.given_name} {g.family_name}"}
+                )
+        with context.use(parents[1]):
+            g = Guardian.objects.get(pk=AppUser.objects.get(pk=parents[1].actor_id).person_id)
+            builder.submit(med.id, roster[1], {"q1": "no", "q4": f"{g.given_name} {g.family_name}",
+                                               "q5": g.phone or "", "q6": f"{g.given_name} {g.family_name}"})  # fmt: skip
+        # 6. the SS 2A Mathematics online class
+        _online_class(ss2a, teacher, pupils)
+        done += 1
+    if done:
+        log(f"  parents, messages, a parents' evening, clubs, school forms and an online class at {done} schools")
+
+
 def _teaching(schools: list[Any], subjects: dict[str, Any], session: Any, names: _Names, out: Loaded, log: Log) -> None:
     """At the sample secondary schools: three more junior-secondary teachers, every teacher's TRCN authorisations,
     a teacher of record for every class-subject (one deliberately not authorised, with the head's reason, so the
@@ -1688,6 +1922,7 @@ def run(scale: Scale | None = None, log: Log = print) -> Loaded:
             _classrooms(schools, out, log)
             _teaching(schools, subjects, session, names, out, log)
             _pastoral(schools, names, out, log)
+            _engagement(schools, out, log)
             _documents(names, out, log)
             log("6/6 daily jobs: facility rules and the warehouse")
             from syntegra.analytics import warehouse

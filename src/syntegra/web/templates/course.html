@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ s.title }}{% endblock %}
+{% block content %}
+<p class="crumb no-print">{% if s.viewer in ("teacher", "head") %}<a href="/courses">← Online classes</a>{% else %}<a href="/work">← Work</a>{% endif %}</p>
+<div class="head-row"><h1>{{ s.title }}</h1>{% if s.viewer == "teacher" %}<p><a class="button primary" href="/courses/{{ s.id }}/assignments/new">Set work</a></p>{% endif %}</div>
+<p class="muted">{{ s.teacher }} · {{ s.learners }} learners</p>
+{% if message or request.GET.get("set") %}<div class="alert alert-ok" role="status">{{ message or "Work set. Learners see it when it opens." }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<div class="grid2">
+<section class="card scroll-x" id="work"><h2>Work</h2>
+  <table class="compact"><thead><tr><th scope="col">Work</th><th scope="col">Due</th>{% if s.viewer in ("teacher", "head") %}<th scope="col" class="num">Handed in</th>{% endif %}</tr></thead>
+  <tbody>{% for w in s.work %}<tr><td>{% if s.viewer in ("teacher", "head") %}<a href="/courses/{{ s.id }}/assignments/{{ w.id }}/marking">{{ w.title }}</a>{% else %}<a href="/work/{{ w.id }}">{{ w.title }}</a>{% endif %} <span class="hint opt">{{ w.kind }}{% if w.status == "scheduled" %} · opens {{ w.opens|localtime("%d %b %H:%M") }}{% endif %}</span></td><td>{{ w.due|localtime("%a %d %b %H:%M") }}</td>{% if s.viewer in ("teacher", "head") %}<td class="num">{{ w.submitted }} / {{ s.learners }}</td>{% endif %}</tr>
+  {% else %}<tr><td colspan="3" class="muted">No work set yet.</td></tr>{% endfor %}</tbody></table>
+</section>
+<section class="card" id="live"><h2>Live lessons</h2>
+  <ul class="plain">{% for x in s.live %}<li><strong>{{ x.at|localtime("%a %d %b %H:%M") }}</strong> — <a href="{{ x.link }}" rel="noopener noreferrer" target="_blank">join</a></li>{% else %}<li class="muted">None scheduled.</li>{% endfor %}</ul>
+  {% if s.viewer == "teacher" %}<form method="post" class="grid-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="live">
+    <label>Date<input type="date" name="on" min="{{ today }}" required></label><label>Time<input type="time" name="at" value="10:00" required></label>
+    <label class="span-all">Meeting link <span class="hint opt">— from the video service the school uses</span><input name="link" type="url" placeholder="https://" required></label><p><button>Schedule</button></p></form>{% endif %}
+</section>
+</div>
+<section class="card" id="units"><h2>Notes and links</h2>
+  {% for u in s.units %}<h3 class="sub">{{ u.title }}</h3>
+    <ul class="plain">{% for c in u.contents %}<li>{% if c.link %}<a href="{{ c.link }}" rel="noopener noreferrer" target="_blank">{{ c.title }}</a>{% if c.body %} — {{ c.body }}{% endif %}{% else %}<details><summary>{{ c.title }}</summary><div class="doc-text">{{ c.body }}</div></details>{% endif %}</li>{% else %}<li class="muted">Nothing in this unit yet.</li>{% endfor %}</ul>
+    {% if s.viewer == "teacher" %}<details class="no-print"><summary>Add to “{{ u.title }}”</summary><form method="post"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="item"><input type="hidden" name="unit_id" value="{{ u.id }}">
+      <div class="grid-form"><label>Kind<select name="kind"><option value="note">Note</option><option value="link">Link</option><option value="video">Video link</option></select></label><label>Title<input name="title" maxlength="300" required></label></div>
+      <label>Link <span class="hint opt">— for a link or video</span><input name="link" type="url" placeholder="https://"></label>
+      <label>Note, or a line about the link<textarea name="body" rows="4"></textarea></label><p><button>Add</button></p></form></details>{% endif %}
+  {% else %}<p class="muted">No units yet.</p>{% endfor %}
+  {% if s.viewer == "teacher" %}<form method="post" class="row-form no-print"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="unit"><input name="title" maxlength="300" placeholder="Week 3 — Quadratic equations" aria-label="New unit title" required><button>Add a unit</button></form>{% endif %}
+</section>
+{% endblock %}
