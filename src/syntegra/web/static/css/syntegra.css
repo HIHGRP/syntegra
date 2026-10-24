@@ -230,4 +230,9 @@ form.assign { min-width: 16rem; }
 .brand { display: inline-flex; align-items: center; gap: .5rem; }
 .brand .emblem { height: 36px; width: auto; background: #fff; border-radius: 6px; padding: 2px; }
 .affbar-emblem { height: 24px; width: auto; align-self: center; }
-.sign-in-emblem { display: block; height: 98px; width: auto; margin: 0 0 .5rem; }
+.sign-in-emblem { display: block; height: 98px; width: auto; margin: 0 auto .5rem; }
+.state-heading { display: flex; align-items: center; gap: 1rem; margin: .25rem 0 1rem; }
+.state-heading img { height: 78px; width: auto; }
+.state-heading strong { display: block; font-size: 1.05rem; }
+.state-heading span { color: var(--muted); }
+.body-emblem { height: 23px; width: auto; vertical-align: middle; }

@@ -3,6 +3,7 @@
 {% macro err(name) %}{% if errors.get(name) %}<span class="err" id="{{ name }}-err">{{ errors[name] }}</span>{% endif %}{% endmacro %}
 {% macro val(name, default="") %}{{ f.get(name, default) or default }}{% endmacro %}
 {% block content %}
+{% from "_state_heading.html" import state_heading %}{{ state_heading(tenant) }}
 <h1>Register a learner</h1>
 {% if registration %}
   {% set r = registration %}
