@@ -1,0 +1,2664 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/30_audit.schema.json",
+  "title": "CEDA AUD — Audit trail, chain anchors and the transactional outbox",
+  "$defs": {
+    "AuditEventPlatform": {
+      "title": "AuditEvent",
+      "description": "Tamper-evident audit event (append-only, hash-chained per tenant and zone, partitioned by day)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "audit_event",
+        "zone": "platform",
+        "domain": "AUD",
+        "kind": "event",
+        "classification": "restricted",
+        "history": "append",
+        "module": "core"
+      },
+      "properties": {
+        "chain_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Tenant id (or the platform chain id in the platform zone)"
+        },
+        "chain_seq": {
+          "type": "integer",
+          "description": "Monotonic sequence within the chain"
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "event_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "UUID v7 of the event"
+        },
+        "actor_kind": {
+          "type": "string",
+          "enum": [
+            "user",
+            "agent",
+            "api_client",
+            "system",
+            "platform_operator"
+          ]
+        },
+        "actor_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "on_behalf_of_user_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Agent X acting for Owner Y"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actor_grant_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Active role-at-scope"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scope_node_id_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Scope of the record at the time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "action": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "e.g. learner.update, learner.nin.reveal, safeguarding_case.view, export.bulk"
+        },
+        "record_kind": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "record_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "field_changes": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "[{field, from, to}] — special-category values as hashes"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "purpose_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Required for restricted/special access"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approval_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "correlation_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ip": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "ipv6"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "user_agent": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 400
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "prev_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "chain_id",
+        "chain_seq",
+        "occurred_at",
+        "event_id",
+        "actor_kind",
+        "action",
+        "record_kind",
+        "prev_hash",
+        "hash",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "AuditEventRegistry": {
+      "title": "AuditEvent",
+      "description": "Tamper-evident audit event (append-only, hash-chained per tenant and zone, partitioned by day)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "audit_event",
+        "zone": "registry",
+        "domain": "AUD",
+        "kind": "event",
+        "classification": "restricted",
+        "history": "append",
+        "module": "core"
+      },
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "chain_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Tenant id (or the platform chain id in the platform zone)"
+        },
+        "chain_seq": {
+          "type": "integer",
+          "description": "Monotonic sequence within the chain"
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "event_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "UUID v7 of the event"
+        },
+        "actor_kind": {
+          "type": "string",
+          "enum": [
+            "user",
+            "agent",
+            "api_client",
+            "system",
+            "platform_operator"
+          ]
+        },
+        "actor_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "on_behalf_of_user_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Agent X acting for Owner Y"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actor_grant_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Active role-at-scope"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scope_node_id_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Scope of the record at the time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "action": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "e.g. learner.update, learner.nin.reveal, safeguarding_case.view, export.bulk"
+        },
+        "record_kind": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "record_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "field_changes": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "[{field, from, to}] — special-category values as hashes"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "purpose_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Required for restricted/special access"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approval_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "correlation_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ip": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "ipv6"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "user_agent": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 400
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "prev_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "tenant_id",
+        "chain_id",
+        "chain_seq",
+        "occurred_at",
+        "event_id",
+        "actor_kind",
+        "action",
+        "record_kind",
+        "prev_hash",
+        "hash",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "AuditEventOps": {
+      "title": "AuditEvent",
+      "description": "Tamper-evident audit event (append-only, hash-chained per tenant and zone, partitioned by day)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "audit_event",
+        "zone": "ops",
+        "domain": "AUD",
+        "kind": "event",
+        "classification": "restricted",
+        "history": "append",
+        "module": "core"
+      },
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "chain_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Tenant id (or the platform chain id in the platform zone)"
+        },
+        "chain_seq": {
+          "type": "integer",
+          "description": "Monotonic sequence within the chain"
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "event_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "UUID v7 of the event"
+        },
+        "actor_kind": {
+          "type": "string",
+          "enum": [
+            "user",
+            "agent",
+            "api_client",
+            "system",
+            "platform_operator"
+          ]
+        },
+        "actor_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "on_behalf_of_user_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Agent X acting for Owner Y"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actor_grant_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Active role-at-scope"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scope_node_id_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Scope of the record at the time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "action": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "e.g. learner.update, learner.nin.reveal, safeguarding_case.view, export.bulk"
+        },
+        "record_kind": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "record_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "field_changes": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "[{field, from, to}] — special-category values as hashes"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "purpose_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Required for restricted/special access"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approval_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "correlation_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ip": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "ipv6"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "user_agent": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 400
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "prev_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "tenant_id",
+        "chain_id",
+        "chain_seq",
+        "occurred_at",
+        "event_id",
+        "actor_kind",
+        "action",
+        "record_kind",
+        "prev_hash",
+        "hash",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "AuditEventVault": {
+      "title": "AuditEvent",
+      "description": "Tamper-evident audit event (append-only, hash-chained per tenant and zone, partitioned by day)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "audit_event",
+        "zone": "vault",
+        "domain": "AUD",
+        "kind": "event",
+        "classification": "restricted",
+        "history": "append",
+        "module": "core"
+      },
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "chain_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Tenant id (or the platform chain id in the platform zone)"
+        },
+        "chain_seq": {
+          "type": "integer",
+          "description": "Monotonic sequence within the chain"
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "event_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "UUID v7 of the event"
+        },
+        "actor_kind": {
+          "type": "string",
+          "enum": [
+            "user",
+            "agent",
+            "api_client",
+            "system",
+            "platform_operator"
+          ]
+        },
+        "actor_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "on_behalf_of_user_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Agent X acting for Owner Y"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actor_grant_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Active role-at-scope"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scope_node_id_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Scope of the record at the time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "action": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "e.g. learner.update, learner.nin.reveal, safeguarding_case.view, export.bulk"
+        },
+        "record_kind": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "record_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "field_changes": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "[{field, from, to}] — special-category values as hashes"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "purpose_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Required for restricted/special access"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approval_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "correlation_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ip": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "ipv6"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "user_agent": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 400
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "prev_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "tenant_id",
+        "chain_id",
+        "chain_seq",
+        "occurred_at",
+        "event_id",
+        "actor_kind",
+        "action",
+        "record_kind",
+        "prev_hash",
+        "hash",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "AuditEventRecords": {
+      "title": "AuditEvent",
+      "description": "Tamper-evident audit event (append-only, hash-chained per tenant and zone, partitioned by day)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "audit_event",
+        "zone": "records",
+        "domain": "AUD",
+        "kind": "event",
+        "classification": "restricted",
+        "history": "append",
+        "module": "core"
+      },
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "chain_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Tenant id (or the platform chain id in the platform zone)"
+        },
+        "chain_seq": {
+          "type": "integer",
+          "description": "Monotonic sequence within the chain"
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "event_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "UUID v7 of the event"
+        },
+        "actor_kind": {
+          "type": "string",
+          "enum": [
+            "user",
+            "agent",
+            "api_client",
+            "system",
+            "platform_operator"
+          ]
+        },
+        "actor_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "on_behalf_of_user_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Agent X acting for Owner Y"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actor_grant_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Active role-at-scope"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scope_node_id_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Scope of the record at the time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "action": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "e.g. learner.update, learner.nin.reveal, safeguarding_case.view, export.bulk"
+        },
+        "record_kind": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "record_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "field_changes": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "[{field, from, to}] — special-category values as hashes"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "purpose_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Required for restricted/special access"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approval_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "correlation_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ip": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "ipv6"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "user_agent": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 400
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "prev_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "tenant_id",
+        "chain_id",
+        "chain_seq",
+        "occurred_at",
+        "event_id",
+        "actor_kind",
+        "action",
+        "record_kind",
+        "prev_hash",
+        "hash",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "AuditChainHeadPlatform": {
+      "title": "AuditChainHead",
+      "description": "Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain",
+      "type": "object",
+      "x-ceda": {
+        "entity": "audit_chain_head",
+        "zone": "platform",
+        "domain": "AUD",
+        "kind": "projection",
+        "classification": "internal",
+        "history": "none",
+        "module": "core"
+      },
+      "properties": {
+        "chain_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "lane": {
+          "type": "integer"
+        },
+        "last_seq": {
+          "type": "integer"
+        },
+        "last_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "chain_id",
+        "lane",
+        "last_seq",
+        "last_hash",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "AuditChainHeadRegistry": {
+      "title": "AuditChainHead",
+      "description": "Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain",
+      "type": "object",
+      "x-ceda": {
+        "entity": "audit_chain_head",
+        "zone": "registry",
+        "domain": "AUD",
+        "kind": "projection",
+        "classification": "internal",
+        "history": "none",
+        "module": "core"
+      },
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "chain_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "lane": {
+          "type": "integer"
+        },
+        "last_seq": {
+          "type": "integer"
+        },
+        "last_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "tenant_id",
+        "chain_id",
+        "lane",
+        "last_seq",
+        "last_hash",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "AuditChainHeadOps": {
+      "title": "AuditChainHead",
+      "description": "Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain",
+      "type": "object",
+      "x-ceda": {
+        "entity": "audit_chain_head",
+        "zone": "ops",
+        "domain": "AUD",
+        "kind": "projection",
+        "classification": "internal",
+        "history": "none",
+        "module": "core"
+      },
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "chain_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "lane": {
+          "type": "integer"
+        },
+        "last_seq": {
+          "type": "integer"
+        },
+        "last_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "tenant_id",
+        "chain_id",
+        "lane",
+        "last_seq",
+        "last_hash",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "AuditChainHeadVault": {
+      "title": "AuditChainHead",
+      "description": "Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain",
+      "type": "object",
+      "x-ceda": {
+        "entity": "audit_chain_head",
+        "zone": "vault",
+        "domain": "AUD",
+        "kind": "projection",
+        "classification": "internal",
+        "history": "none",
+        "module": "core"
+      },
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "chain_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "lane": {
+          "type": "integer"
+        },
+        "last_seq": {
+          "type": "integer"
+        },
+        "last_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "tenant_id",
+        "chain_id",
+        "lane",
+        "last_seq",
+        "last_hash",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "AuditChainHeadRecords": {
+      "title": "AuditChainHead",
+      "description": "Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain",
+      "type": "object",
+      "x-ceda": {
+        "entity": "audit_chain_head",
+        "zone": "records",
+        "domain": "AUD",
+        "kind": "projection",
+        "classification": "internal",
+        "history": "none",
+        "module": "core"
+      },
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "chain_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "lane": {
+          "type": "integer"
+        },
+        "last_seq": {
+          "type": "integer"
+        },
+        "last_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "tenant_id",
+        "chain_id",
+        "lane",
+        "last_seq",
+        "last_hash",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "AuditAnchorPlatform": {
+      "title": "AuditAnchor",
+      "description": "Daily anchor of an audit chain written to write-once storage, and the nightly verification result",
+      "type": "object",
+      "x-ceda": {
+        "entity": "audit_anchor",
+        "zone": "platform",
+        "domain": "AUD",
+        "kind": "event",
+        "classification": "internal",
+        "history": "append",
+        "module": "core"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "chain_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "anchor_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "last_chain_seq": {
+          "type": "integer"
+        },
+        "anchor_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "worm_object_key": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "verified_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "verification_ok": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "chain_id",
+        "anchor_date",
+        "last_chain_seq",
+        "anchor_hash",
+        "worm_object_key",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "AuditAnchorRegistry": {
+      "title": "AuditAnchor",
+      "description": "Daily anchor of an audit chain written to write-once storage, and the nightly verification result",
+      "type": "object",
+      "x-ceda": {
+        "entity": "audit_anchor",
+        "zone": "registry",
+        "domain": "AUD",
+        "kind": "event",
+        "classification": "internal",
+        "history": "append",
+        "module": "core"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "chain_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "anchor_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "last_chain_seq": {
+          "type": "integer"
+        },
+        "anchor_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "worm_object_key": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "verified_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "verification_ok": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "chain_id",
+        "anchor_date",
+        "last_chain_seq",
+        "anchor_hash",
+        "worm_object_key",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "AuditAnchorOps": {
+      "title": "AuditAnchor",
+      "description": "Daily anchor of an audit chain written to write-once storage, and the nightly verification result",
+      "type": "object",
+      "x-ceda": {
+        "entity": "audit_anchor",
+        "zone": "ops",
+        "domain": "AUD",
+        "kind": "event",
+        "classification": "internal",
+        "history": "append",
+        "module": "core"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "chain_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "anchor_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "last_chain_seq": {
+          "type": "integer"
+        },
+        "anchor_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "worm_object_key": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "verified_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "verification_ok": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "chain_id",
+        "anchor_date",
+        "last_chain_seq",
+        "anchor_hash",
+        "worm_object_key",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "AuditAnchorVault": {
+      "title": "AuditAnchor",
+      "description": "Daily anchor of an audit chain written to write-once storage, and the nightly verification result",
+      "type": "object",
+      "x-ceda": {
+        "entity": "audit_anchor",
+        "zone": "vault",
+        "domain": "AUD",
+        "kind": "event",
+        "classification": "internal",
+        "history": "append",
+        "module": "core"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "chain_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "anchor_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "last_chain_seq": {
+          "type": "integer"
+        },
+        "anchor_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "worm_object_key": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "verified_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "verification_ok": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "chain_id",
+        "anchor_date",
+        "last_chain_seq",
+        "anchor_hash",
+        "worm_object_key",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "AuditAnchorRecords": {
+      "title": "AuditAnchor",
+      "description": "Daily anchor of an audit chain written to write-once storage, and the nightly verification result",
+      "type": "object",
+      "x-ceda": {
+        "entity": "audit_anchor",
+        "zone": "records",
+        "domain": "AUD",
+        "kind": "event",
+        "classification": "internal",
+        "history": "append",
+        "module": "core"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "chain_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "anchor_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "last_chain_seq": {
+          "type": "integer"
+        },
+        "anchor_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "worm_object_key": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "verified_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "verification_ok": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "chain_id",
+        "anchor_date",
+        "last_chain_seq",
+        "anchor_hash",
+        "worm_object_key",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "OutboxEventPlatform": {
+      "title": "OutboxEvent",
+      "description": "Transactional outbox of domain events (written with the change; published by CDC; purged 7 days after publication)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "outbox_event",
+        "zone": "platform",
+        "domain": "AUD",
+        "kind": "queue",
+        "classification": "internal",
+        "history": "none",
+        "module": "core"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "created_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "event_type": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "e.g. LRN.CREATED"
+        },
+        "schema_version": {
+          "type": "integer"
+        },
+        "aggregate_kind": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "aggregate_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "scope_node_id_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actor": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "correlation_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "payload": {
+          "type": "object"
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "created_on",
+        "event_type",
+        "schema_version",
+        "aggregate_kind",
+        "aggregate_id",
+        "actor",
+        "payload",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "OutboxEventRegistry": {
+      "title": "OutboxEvent",
+      "description": "Transactional outbox of domain events (written with the change; published by CDC; purged 7 days after publication)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "outbox_event",
+        "zone": "registry",
+        "domain": "AUD",
+        "kind": "queue",
+        "classification": "internal",
+        "history": "none",
+        "module": "core"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "created_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "event_type": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "e.g. LRN.CREATED"
+        },
+        "schema_version": {
+          "type": "integer"
+        },
+        "aggregate_kind": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "aggregate_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "scope_node_id_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actor": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "correlation_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "payload": {
+          "type": "object"
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "created_on",
+        "event_type",
+        "schema_version",
+        "aggregate_kind",
+        "aggregate_id",
+        "actor",
+        "payload",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "OutboxEventOps": {
+      "title": "OutboxEvent",
+      "description": "Transactional outbox of domain events (written with the change; published by CDC; purged 7 days after publication)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "outbox_event",
+        "zone": "ops",
+        "domain": "AUD",
+        "kind": "queue",
+        "classification": "internal",
+        "history": "none",
+        "module": "core"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "created_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "event_type": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "e.g. LRN.CREATED"
+        },
+        "schema_version": {
+          "type": "integer"
+        },
+        "aggregate_kind": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "aggregate_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "scope_node_id_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actor": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "correlation_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "payload": {
+          "type": "object"
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "created_on",
+        "event_type",
+        "schema_version",
+        "aggregate_kind",
+        "aggregate_id",
+        "actor",
+        "payload",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "OutboxEventVault": {
+      "title": "OutboxEvent",
+      "description": "Transactional outbox of domain events (written with the change; published by CDC; purged 7 days after publication)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "outbox_event",
+        "zone": "vault",
+        "domain": "AUD",
+        "kind": "queue",
+        "classification": "internal",
+        "history": "none",
+        "module": "core"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "created_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "event_type": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "e.g. LRN.CREATED"
+        },
+        "schema_version": {
+          "type": "integer"
+        },
+        "aggregate_kind": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "aggregate_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "scope_node_id_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actor": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "correlation_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "payload": {
+          "type": "object"
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "created_on",
+        "event_type",
+        "schema_version",
+        "aggregate_kind",
+        "aggregate_id",
+        "actor",
+        "payload",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "OutboxEventRecords": {
+      "title": "OutboxEvent",
+      "description": "Transactional outbox of domain events (written with the change; published by CDC; purged 7 days after publication)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "outbox_event",
+        "zone": "records",
+        "domain": "AUD",
+        "kind": "queue",
+        "classification": "internal",
+        "history": "none",
+        "module": "core"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "created_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "event_type": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "e.g. LRN.CREATED"
+        },
+        "schema_version": {
+          "type": "integer"
+        },
+        "aggregate_kind": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "aggregate_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "scope_node_id_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actor": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "correlation_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "payload": {
+          "type": "object"
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "created_on",
+        "event_type",
+        "schema_version",
+        "aggregate_kind",
+        "aggregate_id",
+        "actor",
+        "payload",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

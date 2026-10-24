@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ f.title }}{% endblock %}
+{% block content %}
+<p class="crumb no-print"><a href="/forms/builder">← The school's forms</a></p>
+<div class="head-row"><h1>{{ f.title }} <span class="muted">v{{ f.version }}</span></h1><p><span class="pill{% if f.status == 'published' %} pill-ok{% endif %}">{{ f.status }}</span></p></div>
+<p class="muted">{{ f.filled_by_label }} · answers are <span class="cls cls-{{ f.level }}">{{ f.level }}</span>{% if f.intro %} · “{{ f.intro }}”{% endif %}</p>
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<section class="card" id="questions"><h2>Questions</h2>
+  <ol class="questions">{% for x in f.fields %}<li><strong>{{ x.label }}</strong>{% if x.required %} <span class="pill">required</span>{% endif %} <span class="hint opt">{{ x.kind_label }}{% if x.options %}: {{ x.options|join(" · ") }}{% endif %}{% if x.show_if %} — shown when “{{ x.show_if_label }}” is {{ x.show_if.equals }}{% endif %}</span>
+    {% if f.status == "draft" %}<form method="post" class="row-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="remove"><input type="hidden" name="key" value="{{ x.key }}"><button>Remove</button></form>{% endif %}</li>
+  {% else %}<li class="muted">No questions yet.</li>{% endfor %}</ol>
+</section>
+{% if f.status == "draft" %}
+<form method="post" class="card" id="add-question"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="add">
+  <h2>Add a question</h2>
+  <label>Question<input name="label" maxlength="300" required value="{{ posted.get('label', '') }}"></label>
+  <div class="grid-form">
+    <label>Answer<select name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}"{% if posted.get('kind') == k %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+    <label class="check"><input type="checkbox" name="required"{% if posted.get('required') %} checked{% endif %}> Required</label>
+  </div>
+  <label>Choices <span class="hint opt">— for “choose one from a list”: one per line</span><textarea name="options" rows="3">{{ posted.get('options', '') }}</textarea></label>
+  <label>Help text <span class="hint opt">— optional</span><input name="help" maxlength="300" value="{{ posted.get('help', '') }}"></label>
+  {% set conds = f.fields|selectattr("kind", "in", ["yes_no", "choice"])|list %}
+  {% if conds %}<div class="grid-form"><label>Only show it when<select name="show_if_key"><option value="">— always show —</option>{% for x in conds %}<option value="{{ x.key }}">{{ x.label }}</option>{% endfor %}</select></label>
+    <label>has the answer<input name="show_if_value" placeholder="yes" value="{{ posted.get('show_if_value', '') }}"></label></div>{% endif %}
+  <p><button>Add the question</button></p>
+</form>
+<form method="post" class="actions"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="publish"><button class="primary"{% if not f.fields %} disabled{% endif %}>Publish v{{ f.version }}</button> <span class="hint">Once published, the questions are fixed. To change them later you start a new version.</span></form>
+{% elif f.status == "published" %}
+<form method="post" class="actions"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><button name="action" value="new_version">Start version {{ f.version + 1 }}</button> <button name="action" value="withdraw" class="danger">Withdraw</button> <a class="button" href="/forms/builder/{{ f.id }}/answers">See the answers</a></form>
+{% endif %}
+{% endblock %}

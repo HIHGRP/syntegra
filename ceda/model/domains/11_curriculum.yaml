@@ -1,0 +1,221 @@
+domain: curriculum
+code: CUR
+title: Curriculum 360, adoption, teaching chain evidence and zero-gap coverage assurance
+module: curriculum
+zone: registry
+retention: RS-CUR-PERM
+summary: >
+  Federal and state curricula captured as structured Curriculum 360 (subject → strand → theme → topic →
+  objective/competency with hours, assessment and teacher-qualification requirements), versioned and
+  immutable once published; state adaptations layered on federal versions; adoption resolved and stamped
+  on every class (MFS §5.1, FR-CUR-01–15, 101–115). The teaching chain evidence — scheme of work, lesson
+  delivery log — and the coverage engine's gap register (invariants G1–G12) live in the ops zone of the
+  institution's tenant. Compliance scores are computed in the warehouse (metric CUR-COMPLIANCE).
+
+entities:
+  curriculum:
+    title: Curriculum 360 master (national, state, international or institutional framework)
+    kind: master
+    class: public
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-CUR-01, FR-CUR-05, FR-CUR-101, FR-CUR-115]
+    pages: [CUR-01, CUR-04]
+    attrs:
+      - "code: code(48)! | e.g. NG-NERDC-MATH-JSS"
+      - "title: title!"
+      - "framework: cl(curriculum_framework)! | national, state, cambridge, ib, pearson, competency, institutional"
+      - "subject_id: ref(subject)"
+      - "levels: cls(education_level)!"
+      - "authority: cl(regulator)! | NERDC, State MoE, NBTE, NCCE, NUC …"
+      - "status: enum(record_status)!"
+    uq: [[scope_node_id, code]]
+
+  curriculum_version:
+    title: Immutable published version of a curriculum (copy-on-write; author ≠ approver)
+    kind: config
+    class: public
+    history: versioned
+    origin: appj
+    scope_note: Inherits the curriculum's authority scope.
+    reqs: [FR-CUR-01, FR-CUR-03, FR-CUR-04, FR-CUR-10, FR-CUR-101]
+    pages: [CUR-02, CUR-03, CUR-04]
+    events: [CUR.APPROVED, CUR.PUBLISHED, CUR.WITHDRAWN]
+    attrs:
+      - "curriculum_id: ref(curriculum)!"
+      - "version_label: semver! | e.g. 3.1"
+      - "base_version_id: ref(curriculum_version) | Federal version a state adaptation layers on"
+      - "is_adaptation: bool! default=false"
+      - "language: lang | Curriculum versions by language of instruction"
+      - "status: enum(curriculum_status)!"
+      - "effective_from: date"
+      - "effective_to: date"
+      - "authored_by: ref(app_user)!"
+      - "approved_by: ref(app_user)"
+      - "approval_reason: text"
+      - "source_document_id: uuid | Digitised source (captured from paper; human approval before publication)"
+      - "content_hash: hash | Hash of the node tree at publication"
+    uq: [[curriculum_id, version_label]]
+    checks:
+      four_eyes: "approved_by IS NULL OR approved_by <> authored_by"
+
+  curriculum_node:
+    title: Strand, theme, topic, learning objective or competency of a curriculum version
+    kind: config
+    class: public
+    history: versioned
+    origin: appj
+    scope_note: Inherits the version's scope.
+    reqs: [FR-CUR-02, FR-CUR-08]
+    pages: [CUR-02, CUR-04]
+    attrs:
+      - "version_id: ref(curriculum_version)!"
+      - "parent_id: ref(curriculum_node)"
+      - "node_code: code(48)! | Unique within the version"
+      - "kind: enum(curriculum_node_kind)!"
+      - "statement: text!"
+      - "requirement: enum(requirement_status)! | mandatory, optional, recommended, restricted"
+      - "is_state_addition: bool! default=false"
+      - "min_hours: dec(6,1)"
+      - "is_assessment_required: bool! default=false"
+      - "teacher_requirements: json | Required qualification and specialism"
+      - "resource_requirements: json"
+      - "term_hint: smallint | Suggested term for scheme-of-work drafting"
+      - "sort_key: int!"
+    uq: [[version_id, node_code]]
+
+  curriculum_adoption:
+    title: Which curriculum version applies to which institution, level, cohort and period (resolved automatically)
+    kind: link
+    class: internal
+    history: effective
+    scope: owned
+    origin: appj
+    reqs: [FR-CUR-07, FR-CUR-102, FR-CUR-103, FR-CUR-114]
+    pages: [CUR-06, CUR-101, ACA-101]
+    events: [CUR.ADOPTION_RESOLVED]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "version_id: ref(curriculum_version)!"
+      - "education_level: cl(education_level)!"
+      - "cohort_start_year: smallint"
+      - "is_additional: bool! default=false | Approved institution addition (Cambridge, IB, faith studies)"
+      - "resolved_by: enum(adoption_source)!"
+    ix: [[institution_id, education_level]]
+
+  scheme_of_work:
+    title: Scheme of work for a teaching assignment — auto-drafted from curriculum hours and the calendar, edited by the teacher (G5, G10)
+    kind: transaction
+    zone: ops
+    class: internal
+    history: versioned
+    scope: "derived: the class"
+    origin: appj
+    appj_name: lesson_plan
+    reqs: [FR-CUR-110, FR-LMS-102]
+    pages: [CUR-09, LMS-101]
+    attrs:
+      - "class_subject_plan_id: ref(class_subject_plan)"
+      - "course_section_id: ref(course_section)"
+      - "teaching_assignment_id: ref(teaching_assignment)!"
+      - "curriculum_version_id: ref(curriculum_version)!"
+      - "version: int_u!"
+      - "is_auto_drafted: bool! default=true"
+      - "status: enum(version_status)!"
+
+  scheme_week:
+    title: Week of a scheme of work with the curriculum objectives placed in it
+    kind: link
+    zone: ops
+    class: internal
+    history: none
+    scope: "derived: the scheme"
+    origin: ceda
+    reqs: [FR-CUR-110]
+    pages: [CUR-09]
+    attrs:
+      - "scheme_id: ref(scheme_of_work)!"
+      - "week_no: smallint!"
+      - "week_starts_on: date!"
+      - "node_ids: json! | Curriculum objectives planned for the week"
+      - "planned_minutes: minutes"
+    uq: [[scheme_id, week_no]]
+
+  delivery_log:
+    title: Evidence that a lesson was delivered — objectives covered, learners present, note (G6)
+    kind: event
+    zone: ops
+    class: internal
+    history: append
+    scope: owned
+    origin: appj
+    reqs: [FR-CUR-111, FR-CUR-09]
+    pages: [CUR-09, ACA-05]
+    events: [CUR.LESSON_DELIVERED]
+    attrs:
+      - "lesson_occurrence_id: ref(lesson_occurrence)!"
+      - "teaching_assignment_id: ref(teaching_assignment)!"
+      - "staff_id: ref(staff)!"
+      - "node_ids: json! | Objectives covered"
+      - "delivered_minutes: minutes!"
+      - "is_as_planned: bool!"
+      - "source: enum(delivery_source)! | class_page, staff_app, lms_lesson"
+      - "learners_present: smallint"
+      - "note: str(1000)"
+      - "delivered_on: date!"
+
+  coverage_gap:
+    title: Coverage gap — a breached teaching-chain invariant (G1–G12) with owner, severity, due date and escalation
+    kind: transaction
+    zone: ops
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-CUR-106, FR-CUR-107, FR-CUR-108, FR-CUR-113, FR-CUR-109, FR-ACA-112, FR-CUR-11]
+    pages: [CUR-103, CUR-101, CUR-102]
+    events: [CUR.GAP_OPENED, CUR.GAP_ESCALATED, CUR.GAP_CLOSED]
+    notes: Deduplicated — one open gap per class-subject (or section) per rule. Only people close gaps.
+    attrs:
+      - "rule: enum(coverage_rule)!"
+      - "severity: enum(severity)!"
+      - "institution_id: ref(institution)!"
+      - "class_subject_plan_id: ref(class_subject_plan)"
+      - "course_section_id: ref(course_section)"
+      - "teaching_assignment_id: ref(teaching_assignment)"
+      - "learners_affected: smallint!"
+      - "owner_role: code(16)!"
+      - "owner_user_id: uuid"
+      - "due_on: date!"
+      - "escalation_level: smallint! default=0"
+      - "escalated_to_scope_id: uuid"
+      - "suggested_fixes: json | Ranked qualified teachers with spare load, LGA deployment, remote teaching"
+      - "accepted_by_head: bool! default=false | Gap accepted (e.g. leaver handover)"
+      - "opened_at: ts!"
+      - "closed_at: ts"
+      - "closed_by: uuid"
+      - "status: enum(gap_status)!"
+      - "open_key: code(120) derived | rule:target while open; NULL when closed (one open gap per target per rule)"
+    generated:
+      open_key: "IF(`status` IN ('open','in_progress','escalated'), CONCAT(`rule`, ':', HEX(COALESCE(`class_subject_plan_id`, `course_section_id`, `teaching_assignment_id`, `institution_id`))), NULL)"
+    uq: [[open_key]]
+    ix: [[institution_id, status], [due_on]]
+
+  gap_event:
+    title: History of a coverage gap (opened, reminded, escalated, fix proposed, closed) — append-only
+    kind: event
+    zone: ops
+    class: internal
+    history: append
+    origin: appj
+    scope_note: Inherits the gap's scope.
+    reqs: [FR-CUR-107]
+    pages: [CUR-103]
+    attrs:
+      - "gap_id: ref(coverage_gap)!"
+      - "event_kind: enum(gap_event_kind)!"
+      - "actor: uuid | User or agent service identity"
+      - "detail: json"
+      - "linked_thread_ref: code(128) | Workspace-messaging thread (FR-COM-110)"
+      - "occurred_at: ts!"

@@ -1,0 +1,242 @@
+domain: integration
+code: INTG
+title: Integration, data exchange, imports, webhooks, idempotency and data-subject requests
+module: integration
+zone: registry
+retention: RS-INTG
+summary: >
+  Integrations exchange data through APIs and events and never become a second copy of master data
+  (Book 3 §27). API clients are bound to data-sharing agreements (purpose, datasets, legal basis, expiry);
+  every exchange is authenticated, logged and traceable, and cross-border exchanges carry only agreed
+  fields. Inbound webhooks (payment gateways, exam bodies, WhatsApp, state revenue) are signature-verified
+  and processed idempotently; client POSTs that create or move money, issue certificates or enrol learners
+  carry an Idempotency-Key retained 24 hours. Legacy imports are staged, validated, matched and reversible
+  for 30 days (FR-ADM-12). Data-subject requests are handled within statutory deadlines (ADM-10).
+
+entities:
+  api_client:
+    title: API client (partner, verifier, government system, LMS) with OAuth scopes, mTLS binding and rate limits
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-ADM-06, FR-CER-07]
+    pages: [ADM-09, ADM-08]
+    attrs:
+      - "name: title!"
+      - "client_kind: enum(api_client_kind)!"
+      - "client_id: code(64)! uq"
+      - "secret_hash: hash | Client secret hash (or mTLS certificate thumbprint)"
+      - "certificate_thumbprint: hash"
+      - "scopes: json!"
+      - "agreement_id: ref(data_sharing_agreement)"
+      - "rate_limit_per_minute: int_u!"
+      - "service_identity_id: ref(service_identity)!"
+      - "status: enum(record_status)!"
+
+  data_sharing_agreement:
+    title: Data-sharing agreement (purpose, datasets, legal basis, parties, residency, expiry)
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: ceda
+    reqs: [FR-ADM-06, FR-ADM-07]
+    pages: [ADM-09]
+    attrs:
+      - "title: title!"
+      - "counterparty: title!"
+      - "purpose: text!"
+      - "datasets: json! | Agreed fields only"
+      - "legal_basis: enum(legal_basis)!"
+      - "cross_border: bool! default=false"
+      - "expires_on: date!"
+      - "document_id: uuid"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+
+  exchange_transfer:
+    title: Global Education Data Exchange transfer (learner records, transcripts, results, institution, funding, attendance, outcomes)
+    kind: event
+    class: confidential
+    history: append
+    scope: owned
+    origin: ceda
+    reqs: [FR-LRN-10, FR-LRN-16, FR-ADM-06]
+    pages: [ADM-09, LRN-05]
+    attrs:
+      - "agreement_id: ref(data_sharing_agreement)!"
+      - "direction: enum(message_direction)!"
+      - "dataset: enum(exchange_dataset)!"
+      - "subject_ref: uuid | Learner or institution"
+      - "payload_hash: hash!"
+      - "payload_format: code(32)! | OneRoster 1.2, Ed-Fi style, PESC transcript …"
+      - "counterpart_ref: code(128)"
+      - "occurred_at: ts!"
+
+  integration_connection:
+    title: Configured integration (payment gateway, NIMC, exam body, LMS, SSO/SCIM, IFMIS, accounting, OCR engine, originality provider)
+    kind: config
+    zone: [registry, ops]
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-ADM-06, FR-PMT-101, FR-FIN-06]
+    pages: [ADM-08]
+    attrs:
+      - "integration_code: code(40)! | paystack, flutterwave, remita, nimc, waec, moodle, entra, ifmis …"
+      - "adapter_version: semver!"
+      - "settings: json! | Non-secret settings"
+      - "credentials_vault_ref: str(255)! | Secrets in the vault only"
+      - "last_success_at: ts"
+      - "status: enum(record_status)!"
+    uq: [[scope_node_id, integration_code]]
+
+  webhook_subscription:
+    title: Outbound webhook subscription (tenant-configurable, HMAC-signed, retried with back-off for 24 h)
+    kind: config
+    zone: ops
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-CONFIG
+    reqs: [FR-ADM-06]
+    pages: [ADM-08]
+    attrs:
+      - "api_client_id: uuid! | Registry API client"
+      - "event_types: json!"
+      - "target_url: url!"
+      - "signing_secret_vault_ref: str(255)!"
+      - "status: enum(record_status)!"
+
+  webhook_delivery:
+    title: Delivery attempt of an outbound webhook
+    kind: queue
+    zone: ops
+    class: internal
+    history: lifecycle
+    origin: ceda
+    retention: RS-OPS-3
+    scope_note: Inherits the subscription's scope.
+    reqs: [FR-ADM-06]
+    pages: [ADM-08]
+    attrs:
+      - "subscription_id: ref(webhook_subscription)!"
+      - "event_id: uuid!"
+      - "attempts: smallint! default=0"
+      - "next_attempt_at: ts"
+      - "last_status_code: smallint"
+      - "delivered_at: ts"
+      - "status: enum(delivery_status)!"
+    uq: [[subscription_id, event_id]]
+
+  inbound_webhook:
+    title: Inbound webhook received (payment gateway, exam body, WhatsApp, state revenue) — signature verified, processed once
+    kind: queue
+    zone: [registry, ops]
+    class: confidential
+    history: lifecycle
+    origin: ceda
+    retention: RS-OPS-3
+    scope_note: Routed to the owning module after verification.
+    reqs: [FR-PMT-02, FR-SUB-111, FR-COM-106]
+    pages: [PMT-03, SUB-103]
+    attrs:
+      - "source: code(40)!"
+      - "external_event_id: code(128)! | Provider event id — idempotency key"
+      - "signature_valid: bool!"
+      - "payload: json!"
+      - "received_at: ts!"
+      - "processed_at: ts"
+      - "error: str(1000)"
+      - "status: enum(delivery_status)!"
+    uq: [[source, external_event_id]]
+
+  idempotency_key:
+    title: Client Idempotency-Key and the stored response (retained 24 hours; offline sync operations use the same table)
+    kind: queue
+    zone: [registry, ops]
+    class: internal
+    history: none  # transient: rows are purged after expires_at (RS-TRANSIENT), so not append-only
+    origin: ceda
+    retention: RS-TRANSIENT
+    scope_note: Per calling principal.
+    reqs: [FR-ATT-03, FR-PMT-02]
+    pages: [PMT-03, ATT-01]
+    attrs:
+      - "principal_id: uuid!"
+      - "idem_key: code(128)!"
+      - "request_hash: hash!"
+      - "response_status: smallint!"
+      - "response_body: json"
+      - "expires_at: ts!"
+    uq: [[principal_id, idem_key]]
+
+  import_job:
+    title: Legacy data import or migration batch (mapping, validation, matching, staged commit, 30-day rollback)
+    kind: transaction
+    zone: [registry, ops]
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-OPS-3
+    reqs: [FR-ADM-12, FR-ASM-102, FR-ASM-103]
+    pages: [ADM-15]
+    attrs:
+      - "template: enum(import_template)!"
+      - "source_document_id: uuid!"
+      - "mapping: json!"
+      - "rows_total: int_u!"
+      - "rows_valid: int_u!"
+      - "rows_matched: int_u!"
+      - "rows_committed: int_u!"
+      - "committed_at: ts"
+      - "rollback_until: ts"
+      - "rolled_back_at: ts"
+      - "status: enum(import_status)!"
+
+  import_row_issue:
+    title: Validation or matching issue on an import row
+    kind: queue
+    zone: [registry, ops]
+    class: confidential
+    history: lifecycle
+    origin: ceda
+    retention: RS-OPS-3
+    scope_note: Inherits the job's scope.
+    reqs: [FR-ADM-12]
+    pages: [ADM-15]
+    attrs:
+      - "job_id: ref(import_job)!"
+      - "row_no: int_u!"
+      - "level: enum(validation_level)!"
+      - "message: str(1000)!"
+      - "error_code: code(16)"
+      - "status: enum(queue_status)!"
+
+  privacy_request:
+    title: Data-subject request (access, rectification, erasure respecting legal holds, restriction, portability, objection)
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-AUDIT
+    reqs: [FR-ADM-07, NFR-PRIV-03]
+    pages: [ADM-10]
+    attrs:
+      - "request_kind: enum(dsr_kind)!"
+      - "subject_kind: enum(person_kind)!"
+      - "subject_id: uuid"
+      - "requester_name: name! pii"
+      - "identity_verified_at: ts"
+      - "received_at: ts!"
+      - "due_at: ts!"
+      - "outcome: json | Per-entity actions (export, redact, crypto-shred, refused with basis)"
+      - "export_document_id: uuid"
+      - "handled_by: ref(app_user)"
+      - "status: enum(request_status)!"

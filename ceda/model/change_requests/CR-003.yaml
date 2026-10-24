@@ -1,0 +1,29 @@
+# CEDA change request register entry (see CR-001.yaml for the format).
+
+id: CR-003
+title: Two-factor authentication enforced by clearance, and federated single sign-on (OIDC)
+received: 2026-10-14
+status: adopted
+ceda_version: 1.4.0
+summary: >
+  Strengthens sign-in (MFS pages AUT-01, AUT-02, HOM-04). A second factor becomes mandatory for every user who holds
+  a role with restricted or special clearance, with authenticator-app (TOTP) enrolment, single-use recovery codes,
+  replay protection and lockout. Each state can enable federated single sign-on through OpenID Connect with its
+  government identity provider, Microsoft Entra ID or Google Workspace, linked only to accounts the state has
+  already created; the identity provider's MFA counts as the second factor only where the state trusts it.
+constraints:
+  - "Roles and scope are granted by the state, never by an identity provider: SSO links to existing accounts only (no self-provisioning)."
+  - "Linking requires an e-mail address the provider marks as verified, in a domain the state allows for that provider."
+  - "Secrets (TOTP seeds, OIDC client secrets) are envelope-encrypted; recovery codes and session tokens are stored only as keyed hashes."
+  - "A session holds no role grant, and therefore no data access, until the required second factor is verified."
+
+requirements:
+  - {id: FR-AUT-01, module: ADM, priority: SHALL, phase: P1, text: "Require a second factor before any role grant is active for users holding a role with restricted or special clearance (the threshold is configuration); users who enrolled a factor are always asked for it."}
+  - {id: FR-AUT-02, module: ADM, priority: SHALL, phase: P1, text: "Enrol an authenticator app (TOTP, RFC 6238) by scanning a QR code and confirming a code; issue ten single-use recovery codes shown once and stored hashed; adding or removing a factor needs a session that has passed MFA."}
+  - {id: FR-AUT-03, module: ADM, priority: SHALL, phase: P1, text: "Refuse a TOTP code already used in its time step; lock the account after five failed second-factor attempts; audit every MFA pass, failure, enrolment, removal and recovery-code use."}
+  - {id: FR-AUT-04, module: ADM, priority: SHALL, phase: P1, text: "Offer federated single sign-on by OpenID Connect (authorization code with PKCE) with the state's government identity provider, Microsoft Entra ID and Google Workspace, configured per state; verify the ID token's signature, issuer, audience, expiry and nonce."}
+  - {id: FR-AUT-05, module: ADM, priority: SHALL, phase: P1, text: "Link a federated identity only to an existing active account whose e-mail the provider verified, in a domain allowed for that provider; later sign-ins match the provider's subject; record the authentication method on the session."}
+  - {id: FR-AUT-06, module: ADM, priority: SHALL, phase: P1, text: "Accept the identity provider's MFA (amr/acr) as the second factor only for providers the state marks as trusted; otherwise ask for the local factor. Accounts linked to SSO cannot sign in with a password."}
+  - {id: FR-AUT-07, module: ADM, priority: SHALL, phase: P1, text: "Let users see their MFA factors and active sessions, sign out other sessions and regenerate recovery codes (HOM-04)."}
+
+pages: []

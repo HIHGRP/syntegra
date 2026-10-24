@@ -1,0 +1,409 @@
+domain: operations
+code: OPS
+title: Operations — estate, rooms, assets, maintenance, safety incidents, capital plan, transport, clubs, trips, meals, library and learning resources
+module: operations
+zone: ops
+retention: RS-OPS-7
+summary: >
+  The physical institution (FR-OPS-01–08, 101–107): buildings and rooms with accessibility, ICT and
+  condition (Infrastructure 360 feeding infrastructure indicators), the asset register with inspections
+  and predictive maintenance, maintenance requests (critical safety risk → Priority 1 to head and LGA),
+  facility safety incidents, the multi-year capital plan and campus plan archive, transport with driver
+  checks and boarding records, clubs and events with fair allocation, trips with consent gating, meals
+  reconciled against attendance for the school feeding programme, library loans and textbook issue with
+  textbook-to-learner ratios.
+
+entities:
+  building:
+    title: Building on a campus (condition, structural safety, water, power, toilets by sex)
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-OPS-01, FR-OPS-105]
+    pages: [OPS-01]
+    attrs:
+      - "campus_id: ref(campus)!"
+      - "name: title!"
+      - "built_year: smallint"
+      - "condition_grade: cl(condition_grade)"
+      - "facilities: json | Toilets by sex, water, power, accessibility"
+      - "plan_document_ids: json | Campus plan archive over time"
+      - "status: enum(record_status)!"
+
+  room:
+    title: Room or space — Infrastructure 360 (classroom, lab, workshop, hall, ICT suite, hostel room, skills lab)
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-OPS-01, FR-TIM-06, FR-TVT-02, FR-HED-03]
+    pages: [OPS-01, TIM-04, TVT-02, HED-04]
+    attrs:
+      - "campus_id: ref(campus)!"
+      - "building_id: ref(building)"
+      - "code: code(32)!"
+      - "name: title"
+      - "room_type: cl(room_type)!"
+      - "capacity: smallint!"
+      - "accessibility: json | step_free, hearing_loop …"
+      - "condition_grade: cl(condition_grade)"
+      - "ict: json"
+      - "status: enum(record_status)!"
+    uq: [[campus_id, code]]
+
+  asset:
+    title: Asset register entry (custodian, location, value, condition, service and safety-check dates)
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-OPS-02, FR-TVT-02, FR-OPS-102]
+    pages: [OPS-02, TVT-02]
+    attrs:
+      - "asset_tag: code(40)!"
+      - "name: title!"
+      - "category: cl(asset_category)!"
+      - "room_id: ref(room)"
+      - "custodian_staff_id: ref(staff)"
+      - "acquired_on: date"
+      - "value: money"
+      - "currency: currency"
+      - "condition_grade: cl(condition_grade)"
+      - "next_service_on: date"
+      - "safety_check_due_on: date | Equipment past this date cannot be allocated (FR-TVT-02)"
+      - "predicted_failure_on: date | Predictive maintenance estimate"
+      - "status: enum(asset_status)!"
+    uq: [[scope_node_id, asset_tag]]
+
+  asset_inspection:
+    title: Technician inspection of an asset (mobile, offline, checklist and photos) or stock-take record
+    kind: event
+    class: internal
+    history: append
+    origin: ceda
+    scope_note: Inherits the asset's scope.
+    reqs: [FR-OPS-106, FR-OPS-02]
+    pages: [OPS-02]
+    attrs:
+      - "asset_id: ref(asset)!"
+      - "inspected_by: uuid!"
+      - "checklist: json!"
+      - "photo_document_ids: json"
+      - "condition_grade: cl(condition_grade)!"
+      - "inspected_at: ts!"
+      - "client_op_id: uuid"
+
+  maintenance_request:
+    title: Maintenance request with safety-risk rating (critical → Priority 1 to head and LGA); preventive work orders
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-OPS-03, FR-OPS-102]
+    pages: [OPS-03]
+    attrs:
+      - "asset_id: ref(asset)"
+      - "room_id: ref(room)"
+      - "description: text!"
+      - "risk: enum(severity)!"
+      - "is_preventive: bool! default=false"
+      - "reported_by: uuid!"
+      - "assigned_to: uuid"
+      - "due_on: date"
+      - "completed_at: ts"
+      - "cost: money"
+      - "currency: currency"
+      - "status: enum(work_status)!"
+
+  facility_incident:
+    title: Facility safety incident (location, severity, photos, follow-up)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-OPS-103]
+    pages: [OPS-03]
+    attrs:
+      - "room_id: ref(room)"
+      - "location_text: str(200)"
+      - "severity: enum(severity)!"
+      - "description: text!"
+      - "photo_document_ids: json"
+      - "occurred_at: ts!"
+      - "follow_up: text"
+      - "status: enum(case_status)!"
+
+  capital_plan_item:
+    title: Multi-year capital plan item linked to asset and building condition (cost estimate and priority)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-OPS-104]
+    pages: [OPS-01]
+    attrs:
+      - "building_id: ref(building)"
+      - "asset_id: ref(asset)"
+      - "title: title!"
+      - "planned_year: smallint!"
+      - "estimate: money!"
+      - "currency: currency!"
+      - "priority: smallint!"
+      - "status: enum(work_status)!"
+
+  transport_route:
+    title: Transport route with stops
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-OPS-04]
+    pages: [OPS-04]
+    attrs:
+      - "name: title!"
+      - "stops: json! | Ordered stops with times and coordinates"
+      - "vehicle_id: ref(vehicle)"
+      - "driver_staff_id: ref(staff)"
+      - "status: enum(record_status)!"
+
+  vehicle:
+    title: Vehicle (registration, capacity, roadworthiness and insurance expiry)
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-OPS-04]
+    pages: [OPS-04]
+    attrs:
+      - "registration: code(16)!"
+      - "capacity: smallint!"
+      - "roadworthy_until: date"
+      - "insured_until: date"
+      - "status: enum(record_status)!"
+    uq: [[scope_node_id, registration]]
+
+  transport_allocation:
+    title: Learner allocated to a route and stop (detention transport check uses it)
+    kind: link
+    class: confidential
+    history: effective
+    origin: ceda
+    scope_note: Inherits the route's scope.
+    reqs: [FR-OPS-04, FR-BEH-111]
+    pages: [OPS-04]
+    attrs:
+      - "route_id: ref(transport_route)!"
+      - "learner_id: ref(learner)!"
+      - "stop_code: code(16)!"
+      - "direction: enum(route_direction)!"
+    uq: [[route_id, learner_id, direction, valid_from]]
+
+  boarding_record:
+    title: Boarding or alighting record on a route
+    kind: event
+    class: confidential
+    history: append
+    origin: ceda
+    retention: RS-OPS-3
+    partition: {type: range_month, column: boarded_on}
+    scope_note: Inherits the route's scope.
+    reqs: [FR-OPS-04]
+    pages: [OPS-04]
+    attrs:
+      - "route_id: ref(transport_route)!"
+      - "learner_id: ref(learner)!"
+      - "boarded_on: date!"
+      - "event: enum(boarding_event)!"
+      - "at: ts!"
+      - "recorded_by: uuid!"
+
+  activity:
+    title: Club, activity or event with eligibility, capacity, fees and achievements
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-OPS-05, FR-OPS-101]
+    pages: [OPS-05]
+    attrs:
+      - "name: title!"
+      - "activity_kind: enum(activity_kind)!"
+      - "eligibility_rule: json"
+      - "capacity: smallint"
+      - "fee: money"
+      - "currency: currency"
+      - "allocation_method: enum(allocation_method_fair)!"
+      - "period_id: ref(academic_period)"
+      - "status: enum(record_status)!"
+
+  activity_enrolment:
+    title: Learner preference, allocation, waiting list and attendance for an activity
+    kind: link
+    class: confidential
+    history: lifecycle
+    origin: ceda
+    scope_note: Inherits the activity's scope.
+    reqs: [FR-OPS-05, FR-OPS-101]
+    pages: [OPS-05]
+    attrs:
+      - "activity_id: ref(activity)!"
+      - "learner_id: ref(learner)!"
+      - "preference_rank: smallint"
+      - "allocation: enum(allocation_outcome)!"
+      - "waiting_position: smallint"
+      - "invoice_id: ref(invoice)"
+      - "sessions_attended: smallint! default=0"
+    uq: [[activity_id, learner_id]]
+
+  trip:
+    title: Trip or visit (planning, risk assessment, approval, consent, payment, on-the-day register)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-OPS-06, FR-STF-106]
+    pages: [OPS-06]
+    attrs:
+      - "title: title!"
+      - "destination: str(300)!"
+      - "departs_at: ts!"
+      - "returns_at: ts!"
+      - "leader_staff_id: ref(staff)! | Must hold valid safeguarding training when gating is on"
+      - "risk_assessment_document_id: uuid"
+      - "workflow_instance_id: ref(workflow_instance)"
+      - "charge: money"
+      - "currency: currency"
+      - "status: enum(trip_status)!"
+
+  trip_participant:
+    title: Learner on a trip (blocked without consent) and on-the-day register
+    kind: link
+    class: confidential
+    history: lifecycle
+    origin: ceda
+    scope_note: Inherits the trip's scope.
+    reqs: [FR-OPS-06]
+    pages: [OPS-06]
+    attrs:
+      - "trip_id: ref(trip)!"
+      - "learner_id: ref(learner)!"
+      - "consent_record_id: ref(consent_record)"
+      - "invoice_id: ref(invoice)"
+      - "present_out: bool"
+      - "present_return: bool"
+    uq: [[trip_id, learner_id]]
+
+  meal_service:
+    title: Meals served per day and session (school feeding programme numbers reconciled against attendance)
+    kind: event
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-OPS-07]
+    pages: [OPS-07]
+    attrs:
+      - "served_on: date!"
+      - "meal_session: enum(meal_session)!"
+      - "programme: cl(feeding_programme)"
+      - "meals_served: int_u!"
+      - "learners_present: int_u | From attendance"
+      - "menu: json"
+      - "variance_note: str(500)"
+    uq: [[scope_node_id, served_on, meal_session]]
+
+  dietary_requirement:
+    title: Learner dietary requirement (allergy detail is health data — kept as a coded flag here)
+    kind: master
+    class: confidential
+    history: effective
+    scope: "derived: the learner's institution"
+    origin: ceda
+    reqs: [FR-OPS-07]
+    pages: [OPS-07]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "requirement: cl(dietary_code)!"
+      - "is_allergy: bool! default=false"
+
+  library_item:
+    title: Library catalogue item (or link to an external library system)
+    kind: master
+    class: public
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-OPS-08]
+    pages: [OPS-08]
+    attrs:
+      - "title: title!"
+      - "authors: str(500)"
+      - "isbn: code(17)"
+      - "copies: smallint!"
+      - "external_ref: str(200)"
+
+  library_loan:
+    title: Library loan
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    origin: ceda
+    retention: RS-OPS-3
+    scope_note: Inherits the item's scope.
+    reqs: [FR-OPS-08]
+    pages: [OPS-08]
+    attrs:
+      - "library_item_id: ref(library_item)!"
+      - "borrower_kind: enum(person_kind)!"
+      - "borrower_id: uuid!"
+      - "loaned_on: date!"
+      - "due_on: date!"
+      - "returned_on: date"
+
+  learning_resource:
+    title: Textbook or learning material title held in stock (government-supplied or institution-bought) by subject and level
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-OPS-107]
+    pages: [OPS-08]
+    attrs:
+      - "title: title!"
+      - "subject_id: ref(subject)!"
+      - "education_level: cl(education_level)!"
+      - "source: enum(resource_source)!"
+      - "stock: int_u!"
+      - "content_library_item_id: ref(content_library_item) | Digital resource linked to objectives"
+      - "status: enum(record_status)!"
+
+  resource_issue:
+    title: Issue, return, loss and condition of a learning resource per learner or class
+    kind: event
+    class: confidential
+    history: lifecycle
+    origin: appj
+    scope_note: Inherits the resource's scope.
+    reqs: [FR-OPS-107]
+    pages: [OPS-08]
+    attrs:
+      - "resource_id: ref(learning_resource)!"
+      - "learner_id: ref(learner)"
+      - "class_group_id: ref(class_group)"
+      - "quantity: smallint! default=1"
+      - "issued_on: date!"
+      - "returned_on: date"
+      - "outcome: enum(resource_outcome)"
+      - "condition_grade: cl(condition_grade)"

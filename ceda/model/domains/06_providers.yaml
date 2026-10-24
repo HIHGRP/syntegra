@@ -1,0 +1,275 @@
+domain: providers
+code: PVT
+title: Private education provider admission and regulation
+module: providers
+zone: registry
+retention: RS-INS-PERM
+summary: >
+  One online door for private providers (MFS §10): proprietor account and identity, application with
+  evidence against the state checklist, fees through Remita, desk review, approval inspection, four-eyes
+  decision, digitally signed approval certificate, automatic tenant creation and onboarding, then
+  renewals, conditions, monitoring, sanctions and learner protection on closure. The regulatory dataset
+  that private institutions share with the state is defined by policy and delivered as projections
+  (reg_* records) — the regulator never reads a private tenant's operational schema (MFS §16.3).
+
+entities:
+  provider:
+    title: Private education provider (proprietor organisation) — Provider 360
+    kind: master
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-PVT-101, FR-PVT-110, FR-PVT-102]
+    pages: [PVT-103, PVT-104]
+    events: [PVT.PROVIDER_REGISTERED]
+    attrs:
+      - "legal_name: title!"
+      - "trading_name: title"
+      - "cac_number: code(20) uq | Corporate Affairs Commission registration"
+      - "tin: code(20) | Tax identification number"
+      - "provider_tenant_id: uuid | Private tenant created on first approval"
+      - "registered_address: json!"
+      - "phone: phone"
+      - "email: email"
+      - "status: enum(provider_status)!"
+
+  provider_person:
+    title: Proprietor or director of a provider (identity verified by NIN)
+    kind: link
+    class: restricted
+    history: effective
+    origin: ceda
+    scope_note: Inherits the provider's scope.
+    reqs: [FR-PVT-101]
+    pages: [PVT-101, PVT-103]
+    attrs:
+      - "provider_id: ref(provider)!"
+      - "user_id: ref(app_user) | Account of the proprietor (PROP role)"
+      - "given_name: name! pii"
+      - "family_name: name! pii"
+      - "role: enum(provider_person_role)!"
+      - "nin_verified: bool! default=false | External identifier held in external_identifier"
+      - "ownership_share: pct"
+
+  provider_application:
+    title: Application for approval (new, regularisation or renewal) of one or more proposed institutions
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-PVT-101, FR-PVT-103, FR-PVT-106, FR-PVT-109, FR-PVT-113, FR-PVT-117]
+    pages: [PVT-101, PVT-102]
+    events: [ADM.APPLICATION_SUBMITTED, INS.APPLICATION_SUBMITTED, PVT.DECISION_MADE]
+    attrs:
+      - "provider_id: ref(provider)!"
+      - "application_number: code(32)! uq"
+      - "kind: enum(application_kind)!"
+      - "proposed_institution: json! | Name, levels, location, capacity, curricula, fee schedule, staffing plan"
+      - "proposed_location: point | Map pin (duplicate check within 500 m)"
+      - "institution_id: ref(institution) | Existing or created institution"
+      - "federal_approval: json | NUC / NBTE / NCCE / MDCN / NMCN evidence for tertiary and medical (FR-PVT-117)"
+      - "completeness: pct | Share of checklist items evidenced"
+      - "submitted_at: ts"
+      - "desk_review_due_on: date | 10 working days"
+      - "inspection_due_on: date | 20 working days"
+      - "decision: enum(approval_decision)"
+      - "decision_reasons: text"
+      - "decided_by: ref(app_user)"
+      - "second_approver_id: ref(app_user) | Four-eyes decision"
+      - "decided_at: ts"
+      - "appeal_route: str(500)"
+      - "status: enum(application_status)!"
+    checks:
+      four_eyes: "second_approver_id IS NULL OR decided_by IS NULL OR second_approver_id <> decided_by"
+
+  approval_checklist_item:
+    title: State approval checklist item and minimum standard per level (policy data, not code)
+    kind: config
+    class: public
+    history: versioned
+    scope: owned
+    origin: ceda
+    reqs: [FR-PVT-104]
+    pages: [PVT-101, PVT-102]
+    attrs:
+      - "item_key: code(40)!"
+      - "area: enum(checklist_area)!"
+      - "title: title!"
+      - "levels: cls(education_level)"
+      - "is_mandatory: bool! default=true"
+      - "minimum_standard: json | e.g. classroom size, toilets by sex, laboratories"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, item_key, version]]
+
+  application_evidence:
+    title: Evidence item against the approval checklist (pre-checked by document intelligence)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    origin: appj
+    scope_note: Inherits the application's scope.
+    reqs: [FR-PVT-103]
+    pages: [PVT-101, PVT-102]
+    attrs:
+      - "application_id: ref(provider_application)!"
+      - "checklist_item_id: ref(approval_checklist_item)!"
+      - "document_id: uuid! | records zone"
+      - "ai_precheck: json | Document-intelligence pre-check result and confidence"
+      - "reviewer_status: enum(evidence_status)!"
+      - "reviewer_note: str(1000)"
+    uq: [[application_id, checklist_item_id, document_id]]
+
+  application_query:
+    title: Query sent back to the applicant during desk review, and the reply
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    origin: ceda
+    scope_note: Inherits the application's scope.
+    reqs: [FR-PVT-106]
+    pages: [PVT-102, PVT-101]
+    attrs:
+      - "application_id: ref(provider_application)!"
+      - "question: text!"
+      - "asked_by: ref(app_user)!"
+      - "reply: text"
+      - "replied_at: ts"
+      - "status: enum(queue_status)!"
+
+  regulatory_fee:
+    title: State regulatory fee (application, inspection, approval, renewal) — separate from the operator subscription
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-PVT-105, FR-SUB-122]
+    pages: [PVT-101, PVT-103]
+    attrs:
+      - "provider_id: ref(provider)!"
+      - "application_id: ref(provider_application)"
+      - "fee_kind: enum(regulatory_fee_kind)!"
+      - "amount: money!"
+      - "currency: currency!"
+      - "revenue_code: code(40)! | State revenue code"
+      - "payment_reference: code(64) | Remita RRR"
+      - "paid_at: ts"
+      - "receipt_number: code(64)"
+      - "status: enum(fee_status)!"
+
+  approval:
+    title: Approval certificate of a private institution (signed, QR-verifiable, levels, capacity, conditions, expiry)
+    kind: master
+    class: public
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-PVT-107, FR-PVT-113, FR-PVT-116]
+    pages: [PVT-103, PVT-104, PVT-105]
+    events: [PVT.APPROVAL_ISSUED, PVT.APPROVAL_RENEWED]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "application_id: ref(provider_application)!"
+      - "approval_number: code(40)! uq"
+      - "approved_levels: cls(education_level)!"
+      - "approved_capacity: int_u"
+      - "valid_from_on: date!"
+      - "expires_on: date! | Default 3 years"
+      - "certificate_id: ref(certificate) | Signed approval certificate in the certificate registry"
+      - "status: enum(approval_status)!"
+
+  approval_condition:
+    title: Condition attached to an approval, tracked as a corrective action with evidence
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    origin: appj
+    scope_note: Inherits the approval's scope.
+    reqs: [FR-PVT-112]
+    pages: [PVT-105]
+    attrs:
+      - "approval_id: ref(approval)!"
+      - "condition_text: text!"
+      - "due_on: date!"
+      - "corrective_action_id: ref(corrective_action)"
+      - "status: enum(action_status)!"
+
+  sanction:
+    title: Sanction step on a private institution (warning → conditions → suspension of admissions → suspension → closure) with appeal
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-PVT-114]
+    pages: [PVT-103, PVT-105]
+    events: [PVT.SANCTION_APPLIED]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "step: enum(sanction_step)!"
+      - "grounds: text!"
+      - "evidence_document_ids: json!"
+      - "blocks_admissions: bool! default=false"
+      - "blocks_exam_entries: bool! default=false"
+      - "decided_by: ref(app_user)!"
+      - "effective_on: date!"
+      - "appeal_status: enum(appeal_status)"
+      - "lifted_on: date"
+      - "status: enum(sanction_status)!"
+
+  closure_case:
+    title: Learner protection case when a private institution is suspended or closed (LGA tracks re-enrolment)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-PVT-115]
+    pages: [PVT-103, PVT-104]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "sanction_id: ref(sanction)"
+      - "learners_affected: int_u!"
+      - "learners_reenrolled: int_u! default=0"
+      - "alternatives: json | Nearby approved institutions with places"
+      - "lga_officer_id: ref(app_user)"
+      - "status: enum(case_status)!"
+
+  reg_dataset_definition:
+    title: Regulatory dataset that private institutions share with the state (configured per country/state, MFS §10.5)
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: ceda
+    reqs: [FR-PVT-111, FR-INS-10, FR-CUR-114]
+    pages: [PVT-103, INS-02]
+    attrs:
+      - "dataset: enum(dataset_kind)!"
+      - "fields: json! | Fields included"
+      - "frequency: enum(refresh_frequency)!"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, dataset, version]]
+
+  reg_snapshot:
+    title: Regulatory dataset delivery from a private institution (read-only to the regulator)
+    kind: snapshot
+    class: confidential
+    history: snapshot
+    scope: owned
+    origin: ceda
+    reqs: [FR-PVT-111, FR-CUR-114]
+    pages: [PVT-103, CMD-101]
+    notes: Produced by the private tenant's ops zone through the governed exchange; the regulator reads only this.
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "dataset: enum(dataset_kind)!"
+      - "definition_id: ref(reg_dataset_definition)!"
+      - "as_of: ts!"
+      - "payload: json! | Aggregates and permitted identities only"
+      - "payload_hash: hash!"
+    ix: [[institution_id, dataset, as_of]]

@@ -1,0 +1,203 @@
+# Nigerian jurisdiction pack (default deployment) — code lists used by attributes of type cl(...)/cls(...).
+# Loaded into the registry zone tables code_list / code_value (generated seed:
+# generated/mysql/15_registry_seed_code_lists.sql). Lower layers may add values to extensible lists but
+# never remove pack values. Labels are English; translations go in code_value.labels_i18n.
+# Sources: MFS Book 3 §7.2 (country configuration — Nigeria), MFS §5, §6, §10, §11, §18.9, §19, §20.
+
+pack: ng-core
+country: NG
+code_lists:
+  - code: education_level
+    title: Education levels and grades (Nigeria)
+    values:
+      - {code: ECCDE, label: Early childhood care (ECCDE, 0–5)}
+      - {code: KG, label: Kindergarten / Nursery}
+      - {code: PRY1, label: Primary 1}
+      - {code: PRY2, label: Primary 2}
+      - {code: PRY3, label: Primary 3}
+      - {code: PRY4, label: Primary 4}
+      - {code: PRY5, label: Primary 5}
+      - {code: PRY6, label: Primary 6}
+      - {code: JSS1, label: Junior Secondary 1}
+      - {code: JSS2, label: Junior Secondary 2}
+      - {code: JSS3, label: Junior Secondary 3}
+      - {code: SSS1, label: Senior Secondary 1}
+      - {code: SSS2, label: Senior Secondary 2}
+      - {code: SSS3, label: Senior Secondary 3}
+      - {code: NTC, label: Technical college (NTC/NBC)}
+      - {code: NCE, label: College of education (NCE)}
+      - {code: ND, label: Polytechnic National Diploma}
+      - {code: HND, label: Polytechnic Higher National Diploma}
+      - {code: UG100, label: University 100 level}
+      - {code: UG200, label: University 200 level}
+      - {code: UG300, label: University 300 level}
+      - {code: UG400, label: University 400 level}
+      - {code: UG500, label: University 500 level}
+      - {code: UG600, label: University 600 level}
+      - {code: UG700, label: University 700 level}
+      - {code: PG, label: Postgraduate}
+      - {code: NURSING, label: Nursing and midwifery}
+      - {code: HEALTH_TECH, label: Health technology}
+      - {code: ADULT, label: Adult and non-formal education}
+  - code: institution_category
+    title: Institution categories
+    values: [eccde_centre, nursery_primary, primary, junior_secondary, senior_secondary, combined_secondary, technical_college, college_of_education, polytechnic, monotechnic, university, school_of_nursing, school_of_health_technology, special_school, non_formal_centre, tutorial_centre, international_school, military_academy, police_academy, paramilitary_academy, defence_university, staff_college, defence_college, security_training_school]
+  - code: ownership
+    title: Ownership
+    values: [federal, state, lga, private, faith, community, ngo]
+  - code: sex
+    title: Sex (as recorded on identity documents)
+    values: [female, male]
+  - code: language
+    title: Languages
+    extensible: true
+    values: [en, ha, ig, yo, ibb, ff, kr, tiv, efi, pcm, ar, fr]
+  - code: identifier_scheme
+    title: External identifier schemes
+    extensible: true
+    values: [NG-NIN, WAEC-CAND, NECO-CAND, NABTEB-CAND, JAMB-REG, BECE-CAND, TRCN, MDCN, NMCN, CAC-RC, TIN, UPN, INST-ID, PREV-LRN-ID, NG-BVN, PENCOM-RSA, NHF, IPPIS, {code: SVC-NO, label: Service number}]
+  - code: regulator
+    title: Regulators, examination and awarding bodies
+    extensible: true
+    values: [FME, STATE_MOE, SUBEB, UBEC, NERDC, NBTE, NCCE, NUC, TRCN, MDCN, NMCN, PCN, MRTB, RRBN, MLSCN, CHPRBN, WAEC, NECO, NABTEB, NBAIS, JAMB, STATE_EXAM_BOARD, INSTITUTION_SENATE]
+  - code: exam_body
+    title: Examination bodies
+    values: [WAEC, NECO, NABTEB, NBAIS, JAMB, STATE_BECE, INSTITUTION, CAMBRIDGE, IB, PEARSON]
+  - code: attendance_code
+    title: Attendance codes (Book 3 §7.2)
+    values:
+      - {code: P, label: Present}
+      - {code: L, label: Late}
+      - {code: A, label: Absent (unauthorised)}
+      - {code: M, label: Medical}
+      - {code: E, label: Excused}
+      - {code: AA, label: Approved activity}
+      - {code: NR, label: Not required}
+  - code: absence_reason
+    title: Absence reasons reported by parents
+    extensible: true
+    values: [illness, medical_appointment, family_emergency, religious_observance, transport, insecurity, weather_flooding, other]
+  - code: absence_type
+    title: Staff absence types
+    values: [sick, annual_leave, maternity, paternity, study, training, official_duty, compassionate, unauthorised, casual, examination, sabbatical, leave_of_absence]
+  - code: leaving_reason
+    title: Leaving reasons
+    values: [completed_level, transferred, relocated, financial, dropped_out, deceased, excluded, unknown, employment, marriage]
+  - code: relationship
+    title: Learner–guardian relationship
+    values: [mother, father, step_parent, grandparent, aunt_uncle, sibling, legal_guardian, foster_carer, social_worker, sponsor, other]
+  - code: consent_type
+    title: Consent types (FR-FAM-05)
+    values: [photography, trips, data_sharing, medical, biometrics, digital_services, video_recording, marketing, facial_match]
+  - code: stream
+    title: Senior secondary streams
+    values: [science, arts, commercial, technical]
+  - code: subject_group
+    title: Subject groups
+    values: [core, science, arts, commercial, technical, vocational, language, religious, creative]
+  - code: room_type
+    title: Room types
+    values: [classroom, laboratory, workshop, ict_suite, library, hall, sports, office, hostel_room, skills_lab, clinic, store, toilet, kitchen_dining, staff_room, staff_quarters, nursery_play, chapel_mosque, guard_house, generator_house, water_point]
+  - code: condition_grade
+    title: Condition grades
+    values: [good, fair, poor, unsafe]
+  - code: asset_category
+    title: Asset categories
+    values: [ict_device, furniture, lab_equipment, workshop_equipment, vehicle, generator, water_system, sports_equipment, other, solar_system, transformer, borehole, fire_safety_equipment, security_system, kitchen_equipment, medical_equipment, playground_equipment, musical_instrument, office_equipment]
+  - code: staff_category
+    title: Staff categories
+    values: [teaching, non_teaching, lecturer, graduate_assistant, technician, administrative, support]
+  - code: academic_rank
+    title: Academic ranks (load policy)
+    values: [professor, reader, senior_lecturer, lecturer_i, lecturer_ii, assistant_lecturer, graduate_assistant, chief_lecturer, principal_lecturer, lecturer_iii, instructor]
+  - code: appraisal_rating
+    title: Appraisal ratings
+    values: [outstanding, very_good, good, fair, poor]
+  - code: cpd_kind
+    title: CPD kinds
+    values: [course, workshop, conference, lms_training, digital_practice, mentoring, qualification, statutory_training]
+  - code: training_topic
+    title: Statutory training topics (MFS §18.10)
+    values: [child_protection, safe_schools, first_aid, fire_safety, data_protection, online_safety, send_awareness]
+  - code: behaviour_category
+    title: Behaviour categories (state minimum framework includes bullying, violence, lateness, positive conduct)
+    extensible: true
+    values: [positive_conduct, academic_effort, helpfulness, leadership, bullying, cyber_bullying, violence, lateness, disruption, defiance, uniform, damage, substance, other]
+  - code: concern_category
+    title: Safeguarding concern categories — Nigerian pack (FR-SAF-105)
+    values: [physical_abuse, emotional_abuse, sexual_abuse, neglect, bullying, cyber_bullying, child_labour, early_forced_marriage, trafficking, fgm, insecurity_abduction_risk, substance_misuse, online_safety, risk_of_dropping_out, other]
+  - code: risk_level
+    title: Safeguarding risk levels (set by the DSL)
+    values: [low, medium, high, immediate]
+  - code: send_need_area
+    title: SEND need areas
+    values: [cognition_learning, communication_interaction, social_emotional_mental_health, sensory_visual, sensory_hearing, physical, multiple, medical]
+  - code: send_support_level
+    title: SEND support levels
+    values: [monitoring, school_support, specialist_support, statutory_plan]
+  - code: send_plan_type
+    title: SEND plan types
+    values: [iep, isp, statutory_plan, health_plan, behaviour_support_plan]
+  - code: provision_kind
+    title: SEND provision kinds
+    values: [in_class_support, small_group, one_to_one, therapy, assistive_technology, mentoring, gifted_extension]
+  - code: adjustment_kind
+    title: Reasonable adjustments
+    values: [extra_time, large_print, read_aloud, scribe, rest_breaks, seating, alternative_format, assistive_technology, separate_room, step_free_room]
+  - code: referral_agency
+    title: External referral agencies
+    values: [speech_language, occupational_therapy, educational_psychology, health, social_welfare, police, ngo, other]
+  - code: gifted_domain
+    title: Gifted and talented domains
+    values: [academic, mathematics, science, languages, arts, music, sport, leadership]
+  - code: wellbeing_concern_type
+    title: Wellbeing concern types (MFS §18.8)
+    values: [exam_pressure, anxiety, bullying, friendships, family, sleep, online_safety, food, transport, other]
+  - code: intervention_kind
+    title: Intervention kinds
+    values: [attendance, academic_catch_up, behaviour, wellbeing, literacy, numeracy, re_entry, mentoring, family_support]
+  - code: inspection_area
+    title: Inspection areas
+    values: [leadership, teaching_learning, curriculum, safeguarding, welfare, premises, staffing, records, finance, community]
+  - code: inspection_judgement
+    title: Inspection judgements
+    values: [outstanding, good, requires_improvement, inadequate, not_judged]
+  - code: facility_check_kind
+    title: Facility checks and certifications (FR-INSP-101)
+    values: [fire_inspection, fire_certificate, health_safety_check, structural_safety, food_hygiene, water_quality, electrical_safety, generator_safety, vehicle_roadworthiness]
+  - code: curriculum_framework
+    title: Curriculum frameworks (FR-CUR-115)
+    values: [national, state, cambridge, ib, pearson, american, british, competency, institutional]
+  - code: benchmark_framework
+    title: Tertiary benchmark frameworks
+    values: [NUC_CCMAS, NBTE, NCCE, MDCN, NMCN]
+  - code: degree_class
+    title: Degree and diploma classifications
+    values: [first_class, second_upper, second_lower, third_class, pass, distinction, upper_credit, lower_credit]
+  - code: programme_family
+    title: Health-profession programme families (FR-MED-103)
+    values: [medicine, dentistry, nursing, midwifery, pharmacy, physiotherapy, radiography, medical_laboratory_science, community_health, public_health, other_allied]
+  - code: destination_kind
+    title: Destinations
+    values: [further_education, higher_education, employment, apprenticeship, entrepreneurship, professional_qualification, nysc, not_in_education_or_employment, unknown]
+  - code: admission_scheme
+    title: Higher-education admission schemes
+    values: [jamb_utme, jamb_de, caps, ucas_equivalent, direct]
+  - code: finance_scheme
+    title: Student finance schemes
+    values: [nelfund, state_bursary, scholarship, bank_loan, other]
+  - code: guidance_topic
+    title: Career guidance topics
+    values: [stream_selection, subject_choice, careers, higher_education, tvet_pathway, personal]
+  - code: industry_sector
+    title: Industry sectors
+    values: [agriculture, construction, manufacturing, ict, health, hospitality, energy, finance, public_sector, education, other]
+  - code: digital_strand
+    title: Digital skills framework strands (MFS §8.6)
+    values: [device_use, information_literacy, communication, content_creation, safety_wellbeing, computational_thinking]
+  - code: feeding_programme
+    title: School feeding programmes
+    values: [ng_hgsfp, state_programme, institution]
+  - code: dietary_code
+    title: Dietary requirements
+    values: [vegetarian, halal, no_pork, nut_allergy, lactose_intolerant, gluten_free, other]

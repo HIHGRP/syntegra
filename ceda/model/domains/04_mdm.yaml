@@ -1,0 +1,189 @@
+domain: mdm
+code: MDM
+title: Master data management, identity matching and data quality
+module: mdm
+zone: registry
+retention: RS-MDM
+summary: >
+  "One person, one record" (P4). Before any learner, guardian, staff member, institution, supplier,
+  course or programme is created the matching engine runs (Book 3 §12): deterministic identifier
+  matches, Fellegi–Sunter probabilistic scoring, probable matches routed to stewards (LRN-03, ADM-17),
+  merges with survivorship, alias resolution and 90-day un-merge. External identifiers (NIN, exam
+  candidate numbers, TRCN) are encrypted with HMAC lookup tokens and never used as keys. Data-quality
+  rules and issues feed the Data Quality Index (§12.3) and the data quality command centre (CMD-16).
+
+entities:
+  external_identifier:
+    title: Authorised external identifier of a person (NIN, exam candidate number, UPN, TRCN number …)
+    kind: master
+    class: restricted
+    history: lifecycle
+    origin: appj
+    retention: RS-LRN-PERM
+    scope_note: Visibility follows the person record it belongs to; reveal requires purpose and is audited.
+    reqs: [FR-LRN-04, FR-FAM-01, FR-STF-02, FR-PVT-101, FR-FCL-14]
+    pages: [LRN-02, LRN-04, STF-03]
+    notes: >
+      Never displayed unmasked; NIN never used as a primary key or sole matching key (Book 3 §8.3, §12.1).
+      Identifiers of learners, guardians and staff share this table so matching can block on value_hmac.
+    attrs:
+      - "person_kind: enum(person_kind)!"
+      - "person_id: uuid! | learner, guardian, staff or provider_person id (polymorphic)"
+      - "scheme: cl(identifier_scheme)! | NG-NIN, WAEC-CAND, NECO-CAND, JAMB-REG, TRCN, UPN, INST-ID …"
+      - "value: secret! lookup mask4 restricted | Identifier value — envelope-encrypted per tenant and scheme"
+      - "value_national_hmac: hmac | National lookup token (federation key) — NIN only, for cross-state matching without exchanging the NIN (CR-002)"
+      - "issuer: str(120) | Issuing body where not implied by the scheme"
+      - "verified_at: ts"
+      - "verified_via: enum(verification_channel)"
+      - "status: enum(identifier_status)!"
+    ix: [[person_kind, person_id], [scheme, value_hmac], [scheme, value_national_hmac]]
+
+  identity_verification:
+    title: Identity verification attempt against a national source (NIMC NIN, TRCN, CAC) — result only, not the source data
+    scope_note: "Visibility follows the verified person record."
+    kind: event
+    class: restricted
+    history: append
+    origin: ceda
+    retention: RS-AUDIT
+    reqs: [FR-LRN-04, FR-CER-107, FR-PVT-101, FR-PVT-117]
+    pages: [LRN-02, CER-102, PVT-101]
+    events: [ID.NIN_VERIFIED]
+    attrs:
+      - "person_kind: enum(person_kind)!"
+      - "person_id: uuid!"
+      - "scheme: cl(identifier_scheme)!"
+      - "channel: enum(verification_channel)!"
+      - "requested_by: uuid! | User or service identity"
+      - "purpose_code: code(40)!"
+      - "outcome: enum(verification_outcome)!"
+      - "match_detail: json | Field-level agreement (name, DOB) — no source photo or address stored"
+      - "provider_ref: code(128) | Gateway transaction reference"
+      - "occurred_at: ts!"
+
+  match_review:
+    title: Probable-duplicate pair awaiting or holding a steward decision
+    kind: queue
+    class: restricted
+    history: lifecycle
+    origin: appj
+    reqs: [FR-LRN-02, FR-FAM-01, FR-INS-02, FR-PVT-102, FR-FIN-04, FR-DOC-108]
+    pages: [LRN-03, ADM-17, FAM-02, STF-03, INS-03]
+    events: [LRN.MATCH_REVIEWED, MDM.MATCH_DECIDED]
+    attrs:
+      - "entity_kind: enum(match_entity)!"
+      - "candidate_id: uuid! | Incoming or newer record"
+      - "existing_id: uuid! | Existing master record"
+      - "score: ratio! | 0.80–0.98 probable band; ≥ 0.98 auto-linked (still logged)"
+      - "evidence: json! | Field comparisons, blocking keys, model version"
+      - "source: enum(match_source)!"
+      - "assigned_to: ref(app_user)"
+      - "decision: enum(match_decision)"
+      - "decision_reason: str(500)"
+      - "decided_by: ref(app_user)"
+      - "decided_at: ts"
+      - "status: enum(queue_status)!"
+    uq: [[entity_kind, candidate_id, existing_id]]
+
+  match_pair_decision:
+    title: Remembered steward decision on a pair (suppresses re-raising; trains matching weights)
+    scope_note: "Steward-only memory of decisions."
+    kind: event
+    class: internal
+    history: append
+    origin: ceda
+    reqs: [FR-LRN-02]
+    pages: [LRN-03]
+    attrs:
+      - "entity_kind: enum(match_entity)!"
+      - "record_a_id: uuid!"
+      - "record_b_id: uuid!"
+      - "decision: enum(match_decision)!"
+      - "model_version: semver"
+    uq: [[entity_kind, record_a_id, record_b_id]]
+
+  merge_journal:
+    title: Merge of two master records with survivorship and re-pointed references (un-merge within 90 days)
+    scope_note: "Steward and DPO only."
+    kind: event
+    class: restricted
+    history: append
+    origin: ceda
+    reqs: [FR-LRN-14, FR-INS-11]
+    pages: [LRN-08, ADM-17]
+    events: [MDM.MERGED, MDM.UNMERGED]
+    notes: Merges of learners holding certificates or exam results need two approvers (Book 3 §12.2).
+    attrs:
+      - "entity_kind: enum(match_entity)!"
+      - "survivor_id: uuid!"
+      - "merged_id: uuid! | Becomes an alias that still resolves"
+      - "survivorship: json! | Field → chosen source and rule"
+      - "repointed: json! | Table → count of references re-pointed"
+      - "approved_by: ref(app_user)!"
+      - "second_approver_id: ref(app_user) | Required for records with certificates/results"
+      - "merged_at: ts!"
+      - "unmerge_deadline: date!"
+      - "unmerged_at: ts"
+      - "unmerged_by: ref(app_user)"
+    ix: [[entity_kind, merged_id]]
+    checks:
+      four_eyes: "second_approver_id IS NULL OR second_approver_id <> approved_by"
+
+  data_quality_rule:
+    title: Data-quality rule feeding the DQI components (completeness, uniqueness, validity, timeliness, consistency, verification)
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: ceda
+    reqs: [FR-CMD-104]
+    pages: [CMD-16, ADM-17]
+    attrs:
+      - "rule_key: code(40)!"
+      - "dimension: enum(dq_dimension)!"
+      - "entity: code(64)! | CEDA entity checked"
+      - "expression: text! | Rule DSL or SQL template over the semantic layer"
+      - "severity: enum(severity)!"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, rule_key, version]]
+
+  data_quality_issue:
+    title: Open data-quality issue on a record (validation failure, probable duplicate, stale dataset, conflict)
+    kind: queue
+    zone: [registry, ops]
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-CMD-103, FR-CMD-104]
+    pages: [CMD-16, ADM-17, CMD-103]
+    attrs:
+      - "rule_key: code(40)!"
+      - "dimension: enum(dq_dimension)!"
+      - "record_kind: code(64)!"
+      - "record_id: uuid"
+      - "detail: str(1000)!"
+      - "severity: enum(severity)!"
+      - "detected_at: ts!"
+      - "owner_user_id: uuid"
+      - "resolved_at: ts"
+      - "status: enum(queue_status)!"
+    ix: [[rule_key, status]]
+
+  dataset_freshness:
+    title: Last data received per institution per dataset (stale institutions shown, not hidden)
+    kind: projection
+    class: internal
+    history: none
+    scope: owned
+    origin: ceda
+    reqs: [FR-CMD-104]
+    pages: [CMD-101, CMD-103, CMD-16]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "dataset: enum(dataset_kind)!"
+      - "last_received_at: ts"
+      - "expected_interval_hours: smallint!"
+      - "is_stale: bool! default=false"
+    uq: [[institution_id, dataset]]

@@ -1,0 +1,117 @@
+name: Application
+
+on:
+  push:
+    paths: ["src/**", "tests/**", "ceda/**", "pyproject.toml", "manage.py", "deploy/**", ".github/workflows/app.yml"]
+  pull_request:
+    paths: ["src/**", "tests/**", "ceda/**", "pyproject.toml", "manage.py", "deploy/**", ".github/workflows/app.yml"]
+
+jobs:
+  quality:
+    name: Lint, types, architecture boundaries, generated models
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: System libraries for mysqlclient
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends default-libmysqlclient-dev pkg-config
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+      - name: Django models match the CEDA model
+        run: python ceda/tools/gen_django.py check
+      - name: ruff
+        run: ruff check src tests manage.py ceda/tools/gen_django.py && ruff format --check src tests
+      - name: mypy (strict on kernel and domain packages)
+        run: mypy
+      - name: import-linter (module boundaries)
+        run: PYTHONPATH=src lint-imports
+
+  tests:
+    name: Tests on MySQL 9.7
+    runs-on: ubuntu-24.04
+    services:
+      mysql:
+        image: mysql:9.7
+        env:
+          MYSQL_ROOT_PASSWORD: ceda
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pceda"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    env:
+      SYNTEGRA_DB_HOST: 127.0.0.1
+      SYNTEGRA_DB_USER: root
+      SYNTEGRA_DB_PASSWORD: ceda
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: System libraries for mysqlclient, English OCR data
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends default-libmysqlclient-dev pkg-config tesseract-ocr-eng
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+      - name: Django system checks
+        run: python manage.py check --settings=syntegra.settings.test
+      - name: Unit and integration tests (real MySQL, all six zones)
+        run: python -m pytest tests -q --create-db
+
+  container-image:
+    name: Production image builds, with OCR
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build the RHEL 10 UBI image
+        run: docker build -f deploy/Containerfile -t syntegra:ci .
+      - name: A scanned page is read by OCR inside the image
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends imagemagick fonts-dejavu-core
+          mkdir -p /tmp/ocr
+          convert -size 1200x200 xc:white -font DejaVu-Sans -fill black -pointsize 72 \
+            -annotate +40+130 'ADMISSION REGISTER 1998' /tmp/ocr/scan.png
+          docker run --rm -v /tmp/ocr:/data:ro syntegra:ci python -c "
+          from syntegra.records import text
+          assert text.ocr_available()
+          r = text.extract(open('/data/scan.png', 'rb').read(), 'image/png')
+          print(r.source, repr(r.text))
+          assert r.source == 'ocr' and 'ADMISSION' in r.text.upper(), r
+          "
+
+  staging:
+    name: Staging rehearsal (image on MySQL TLS, object lock, OIDC, backup and restore)
+    runs-on: ubuntu-24.04
+    needs: [tests]
+    env:
+      COMPOSE: docker compose -f deploy/staging/compose.yaml
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build the production image
+        run: docker build -f deploy/Containerfile -t syntegra:ci .
+      - name: Infrastructure (MySQL 9.7 with TLS, object store with object lock, identity provider)
+        run: |
+          deploy/staging/certs.sh
+          $COMPOSE up -d --wait db db-restore
+          $COMPOSE up -d objects idp
+      - name: Migrate, seed the state, create the locked bucket
+        run: $COMPOSE run --rm migrate
+      - name: Start the application with production settings
+        run: $COMPOSE up -d web
+      - name: Smoke test (MFA enrolment, upload, OCR, search, stamped release, WORM, single sign-on)
+        run: $COMPOSE run --rm smoke
+      - name: Back up (dumps over TLS, object mirror) with the application stopped
+        run: |
+          $COMPOSE stop web
+          $COMPOSE run --rm backup-db
+          $COMPOSE run --rm backup-objects
+      - name: Restore into an empty MySQL and verify every table and object
+        run: |
+          $COMPOSE run --rm restore-db
+          $COMPOSE run --rm verify
+      - name: Logs
+        if: failure()
+        run: $COMPOSE logs --no-color --tail=200 web idp objects db
+      - name: Tear down
+        if: always()
+        run: $COMPOSE down -v

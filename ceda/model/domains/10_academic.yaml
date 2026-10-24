@@ -1,0 +1,360 @@
+domain: academic
+code: ACA
+title: Academic structure — calendars, subjects, programmes, qualifications, classes, departments and courses
+module: academic
+zone: registry
+retention: RS-LRN-PERM
+summary: >
+  Schools are level → class (arm) → subject → teacher; post-secondary institutions are faculty →
+  department → subject area → course → section → lecturer (MFS §6). Masters shared across the state —
+  calendars, Subject 360, programmes, qualifications, departments, subject areas and the course
+  catalogue with benchmark mappings — sit in the registry. The session-specific operational structure —
+  Class 360, class subject plans, sets, teaching assignments, course sections, allocations and course
+  registration — sits in the ops zone. Every assignment and allocation is effective-dated so past results
+  always show who taught them (FR-ACA-118).
+
+entities:
+  academic_period:
+    title: Session, term, semester or half-term of a calendar (state calendar inherited by institutions)
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-ACA-02, FR-ACA-06, FR-SUB-103]
+    pages: [ACA-01, SUB-102]
+    attrs:
+      - "parent_id: ref(academic_period)"
+      - "kind: enum(period_kind)!"
+      - "name: title!"
+      - "institution_types: cls(institution_category) | Calendars differ by institution type"
+      - "starts_on: date!"
+      - "ends_on: date!"
+      - "teaching_days: smallint | After closures"
+      - "status: enum(record_status)!"
+    checks:
+      dates: "ends_on >= starts_on"
+
+  calendar_event:
+    title: Closure, holiday, exam window or event on a calendar (school closures recalculate compliance with an automatic exception)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-ACA-02]
+    pages: [ACA-01]
+    attrs:
+      - "period_id: ref(academic_period)!"
+      - "kind: enum(calendar_event_kind)!"
+      - "title: title!"
+      - "starts_on: date!"
+      - "ends_on: date!"
+      - "reduces_teaching_days: bool! default=false"
+      - "is_remote_mode: bool! default=false | Closure switches classes to LMS remote mode"
+      - "exception_id: ref(policy_exception)"
+
+  subject:
+    title: Subject 360 master (country master list plus institution courses)
+    kind: master
+    class: public
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-ACA-03, FR-CUR-115]
+    pages: [ACA-03, CUR-02]
+    attrs:
+      - "code: code(32)!"
+      - "name: title!"
+      - "levels: cls(education_level)"
+      - "subject_group: cl(subject_group) | Core, science, arts, commercial, technical, vocational, language"
+      - "is_mandatory_core: bool! default=false"
+      - "status: enum(record_status)!"
+    uq: [[scope_node_id, code]]
+
+  stream_combination_rule:
+    title: Stream subject-combination rule (WAEC, NECO, NABTEB, JAMB) for SSS classes and option choices
+    kind: config
+    class: public
+    history: versioned
+    scope: owned
+    origin: ceda
+    reqs: [FR-ACA-103, FR-P16-01, FR-EXM-01]
+    pages: [ACA-101, P16-01]
+    attrs:
+      - "stream: cl(stream)!"
+      - "exam_body: cl(exam_body)"
+      - "rule: json! | Required, either-of and maximum subject sets"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+
+  qualification:
+    title: Qualification 360 (FSLC, BECE, SSC, NTC, NCE, ND, HND, B.Sc. …) with award rules
+    kind: master
+    class: public
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-CER-01, FR-ACA-04]
+    pages: [ACA-04, CER-03]
+    attrs:
+      - "code: code(32)!"
+      - "name: title!"
+      - "awarding_body: cl(regulator)!"
+      - "framework_level: code(16)"
+      - "award_rules: json! | Evaluated by the eligibility engine"
+      - "status: enum(record_status)!"
+    uq: [[scope_node_id, code]]
+
+  programme:
+    title: Programme 360 (qualification-bearing programmes, national or institutional)
+    kind: master
+    class: public
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-ACA-04, FR-ACA-108, FR-HED-101, FR-BIL-08, FR-MED-103]
+    pages: [ACA-04, ACA-102, EXM-07]
+    attrs:
+      - "institution_id: ref(institution) | NULL for national programmes"
+      - "department_id: ref(department)"
+      - "code: code(32)!"
+      - "name: title!"
+      - "qualification_id: ref(qualification)"
+      - "delivery_mode: enum(delivery_mode)! default=on_campus"
+      - "programme_family: cl(programme_family) | Health-profession family (medicine, nursing, pharmacy …)"
+      - "professional_body_id: ref(professional_body)"
+      - "duration_terms: smallint"
+      - "rules: json! | Credits, CGPA, progression, classification scheme"
+      - "accreditation_status: enum(accreditation_status)"
+      - "accreditation_expires_on: date"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, code]]
+
+  programme_component:
+    title: Course or module within a programme (credits, core/elective, prerequisites — cycle-checked)
+    kind: link
+    class: public
+    history: effective
+    scope: "derived: the programme"
+    origin: appj
+    reqs: [FR-ACA-04]
+    pages: [ACA-04]
+    attrs:
+      - "programme_id: ref(programme)!"
+      - "course_id: ref(course)!"
+      - "programme_level: code(16) | 100L, ND1, Year 2"
+      - "semester_no: smallint"
+      - "credits: dec(4,1)!"
+      - "is_core: bool!"
+      - "prerequisite_course_ids: json | Cycle-checked on save"
+    uq: [[programme_id, course_id, valid_from]]
+
+  department:
+    title: Department 360 — academic department of a post-secondary institution
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-ACA-108, FR-ACA-114]
+    pages: [ACA-102, ACA-103]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "org_unit_id: ref(org_unit)! | The department's node in the organisation structure"
+      - "faculty_org_unit_id: ref(org_unit)"
+      - "name: title!"
+      - "hod_staff_id: ref(staff)"
+      - "acting_hod_staff_id: ref(staff)"
+      - "load_policy: json | Maximum contact hours per rank"
+      - "status: enum(record_status)!"
+
+  subject_area:
+    title: Discipline area of a department mapped to the national benchmark (NUC CCMAS, NBTE, NCCE)
+    kind: master
+    class: public
+    history: lifecycle
+    scope: "derived: the department"
+    origin: ceda
+    reqs: [FR-ACA-108, FR-ACA-109]
+    pages: [ACA-102]
+    attrs:
+      - "department_id: ref(department)!"
+      - "code: code(40)!"
+      - "name: title!"
+      - "benchmark: cl(benchmark_framework)!"
+      - "benchmark_area_code: code(40)!"
+    uq: [[department_id, code]]
+
+  course:
+    title: Course 360 catalogue entry owned by a department (code, units, level, semester, prerequisites, benchmark)
+    kind: master
+    class: public
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-ACA-108, FR-ACA-109, FR-ACA-03]
+    pages: [ACA-102, ACA-03]
+    attrs:
+      - "department_id: ref(department)!"
+      - "subject_area_id: ref(subject_area)"
+      - "subject_id: ref(subject)"
+      - "code: code(20)! | e.g. COM 214, GST 111"
+      - "title: title!"
+      - "units: dec(4,1)!"
+      - "course_level: code(16)!"
+      - "semester_no: smallint"
+      - "is_service_course: bool! default=false | Taught to other departments (GST)"
+      - "is_compulsory: bool! default=true"
+      - "benchmark_ref: code(60)"
+      - "outline_document_id: uuid"
+      - "status: enum(record_status)!"
+    uq: [[department_id, code]]
+
+  class_group:
+    title: Class 360 — class (arm), set, cohort or course section for a period
+    kind: master
+    zone: ops
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-ACA-101, FR-ACA-104, FR-ACA-107, FR-ACA-117, FR-CUR-102, FR-CUR-103, FR-ACA-02]
+    pages: [ACA-02, ACA-05, ACA-101]
+    events: [ACA.CLASS_ACTIVATED]
+    notes: >
+      scope_node_id is the class node (level 9). A class cannot be activated for a session without an adopted
+      curriculum for every mandatory subject of its level (FR-CUR-103).
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "campus_id: ref(campus)"
+      - "period_id: ref(academic_period)! | Session"
+      - "kind: enum(class_kind)!"
+      - "education_level: cl(education_level)!"
+      - "name: title! | Primary 4B, JSS 1 Gold, SS 2 Science A"
+      - "stream: cl(stream)"
+      - "programme_id: ref(programme)"
+      - "parent_class_id: ref(class_group) | Sets and cross-class groupings link to parent classes"
+      - "form_teacher_staff_id: ref(staff)"
+      - "room_id: ref(room)"
+      - "capacity: smallint! | Room capacity and state policy (default 40 primary, 45 secondary)"
+      - "language_of_instruction: lang"
+      - "session_shift: enum(session_shift) | Double-shift schools"
+      - "rolled_from_id: ref(class_group) | Academic Year Rollover Wizard"
+      - "status: enum(class_status)!"
+    uq: [[institution_id, period_id, name]]
+
+  class_membership:
+    title: Learner membership of a class, set or grouping (exactly one class arm per session; sets in addition)
+    kind: link
+    zone: ops
+    class: confidential
+    history: effective
+    scope: "derived: the class"
+    origin: ceda
+    reqs: [FR-ACA-101, FR-ACA-104]
+    pages: [ACA-05, ATT-01]
+    attrs:
+      - "class_group_id: ref(class_group)!"
+      - "learner_id: ref(learner)!"
+      - "enrolment_id: ref(enrolment)!"
+      - "is_arm: bool! | True for the learner's single class arm"
+    uq: [[class_group_id, learner_id, valid_from]]
+    ix: [[learner_id]]
+
+  class_subject_plan:
+    title: Subject offered to a class — periods per week, room type, curriculum version, language of instruction
+    kind: config
+    zone: ops
+    class: internal
+    history: effective
+    scope: "derived: the class"
+    origin: appj
+    reqs: [FR-ACA-102, FR-ACA-103, FR-ACA-105, FR-ACA-106, FR-CUR-102, FR-ACA-115]
+    pages: [ACA-101, CUR-102]
+    events: [ACA.SUBJECT_PLAN_PUBLISHED]
+    attrs:
+      - "class_group_id: ref(class_group)!"
+      - "subject_id: ref(subject)!"
+      - "is_mandatory: bool! | Pre-filled mandatory subjects cannot be removed"
+      - "periods_per_week: smallint!"
+      - "required_hours: dec(6,1) | From the adopted curriculum"
+      - "room_type: cl(room_type)"
+      - "curriculum_version_id: ref(curriculum_version) | Resolved and stored for history"
+      - "language_of_instruction: lang"
+      - "copied_from_id: ref(class_subject_plan)"
+    uq: [[class_group_id, subject_id, valid_from]]
+
+  teaching_assignment:
+    title: Teacher of record or co-teacher for a class-subject or lecturer for a course section (effective-dated)
+    kind: link
+    zone: ops
+    class: internal
+    history: effective
+    scope: owned
+    origin: appj
+    reqs: [FR-CUR-104, FR-CUR-105, FR-CUR-109, FR-ACA-105, FR-ACA-111, FR-ACA-116, FR-ACA-118, FR-STF-04]
+    pages: [CUR-102, ACA-101, ACA-103]
+    events: [CUR.ASSIGNMENT_CHANGED]
+    notes: Exactly one teacher of record per class-subject or section at a time (G2); unauthorised assignments need a time-boxed exception (G3).
+    attrs:
+      - "class_subject_plan_id: ref(class_subject_plan) | School"
+      - "course_section_id: ref(course_section) | Tertiary"
+      - "staff_id: ref(staff)!"
+      - "staff_post_id: ref(staff_post)!"
+      - "role: enum(teaching_role)!"
+      - "authorisation_id: ref(staff_qualification) | Authorisation that satisfied G3"
+      - "exception_id: ref(policy_exception) | Time-boxed exception when unauthorised"
+      - "justification: str(500) | Out-of-specialism or overload reason (HOD)"
+      - "weekly_periods: dec(5,2)"
+      - "of_record_key: uuid derived"
+    generated:
+      of_record_key: "IF(`role` = 'teacher_of_record' AND `valid_to` IS NULL, COALESCE(`class_subject_plan_id`, `course_section_id`), NULL)"
+    uq: [[of_record_key]]
+    ix: [[staff_id], [class_subject_plan_id], [course_section_id]]
+    checks:
+      target: "(class_subject_plan_id IS NULL) <> (course_section_id IS NULL)"
+
+  course_section:
+    title: Course offering section per semester (lecturer of record, co-lecturers, TAs, LMS space, assessment components)
+    kind: master
+    zone: ops
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-ACA-110, FR-ACA-112, FR-ACA-111]
+    pages: [ACA-103, HED-03]
+    attrs:
+      - "course_id: ref(course)!"
+      - "period_id: ref(academic_period)! | Semester"
+      - "section_code: code(8)!"
+      - "capacity: smallint"
+      - "consuming_department_ids: json | Service courses visible to consuming departments"
+      - "assessment_scheme: json | CA and exam components"
+      - "external_examiner: json | External examiners and moderators (FR-ACA-114)"
+      - "allocation_status: enum(allocation_status)! | HOD approval publishes to timetables and the LMS"
+      - "approved_by: uuid"
+    uq: [[course_id, period_id, section_code]]
+
+  course_registration:
+    title: Student semester course registration (unit limits, prerequisites, carry-overs, clashes, adviser approval)
+    kind: transaction
+    zone: ops
+    class: confidential
+    history: lifecycle
+    scope: "derived: the course section"
+    origin: ceda
+    reqs: [FR-HED-02, FR-ACA-112]
+    pages: [HED-03]
+    events: [ACA.COURSE_REGISTERED]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "enrolment_id: ref(enrolment)!"
+      - "course_section_id: ref(course_section)!"
+      - "is_carry_over: bool! default=false"
+      - "units: dec(4,1)!"
+      - "adviser_staff_id: ref(staff)"
+      - "approved_at: ts"
+      - "status: enum(registration_status)!"
+    uq: [[learner_id, course_section_id]]

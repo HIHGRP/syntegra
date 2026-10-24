@@ -1,0 +1,49 @@
+# CEDA change request register entry (see CR-001.yaml for the format).
+
+id: CR-007
+title: The user's school or office at sign-in; one session per account; document management for digitised paper records; access levels
+received: 2026-10-15
+status: adopted
+ceda_version: 1.8.0
+summary: >
+  (1) After a correct username and password, the sign-in shows the name and address of the school, college or
+  office the user is signing in for — taken from the user's role grants, never typed — records it on the session
+  and shows it on every page. (2) One account, one session: a second sign-in with the same credentials is refused
+  while the first session is in use, a session that has gone quiet is ended when the account signs in again, and
+  both people are told why; administrators can see and end sessions. (3) Document management in the main menu:
+  paper documents digitised at each school are uploaded under the school's name with a reference number, indexed
+  (metadata and text) and searchable; each school's complete document register is on one page; the Ministry of
+  Education and other education administrators view and search the documents of every school in their scope only
+  with the document search permission, a sufficient access level and, for restricted documents, a declared purpose,
+  and every search, view and download is audited. (4) Five named access levels over the data classifications decide
+  which pages, menu items, fields and documents each user can see; an administrator can lower a user's level for one
+  role grant, never raise it above the role's own.
+constraints:
+  - "Never reveal that an account exists, is signed in elsewhere, or which school it belongs to until the password has been verified."
+  - "A user cannot choose or type a school at sign-in: the school or office comes from the user's active role grants only."
+  - "Single-session enforcement must never lock a person out indefinitely: a session that has been idle longer than the in-use window is ended by the next sign-in, and administrators can end any session in their scope."
+  - "Special-category documents are never full-text indexed (CEDA §8); document access follows scope, access level, document-category permissions and, for restricted documents, a declared purpose."
+  - "Digitised masters are write-once: the stored file is hashed at upload and verified on every read; metadata changes never replace the master."
+  - "An administrator can lower a grant's access level but never raise it above the role's clearance or above the administrator's own level."
+
+requirements:
+  # ------------------------------------------------------------------ sign-in identity and sessions
+  - {id: FR-AUT-101, module: AUT, priority: SHALL, phase: P1, text: "After a correct username and password, show the name and address of the school, college or office of each of the user's active role grants; record the one the user confirms on the session (name and address as shown) and show it on every page."}
+  - {id: FR-AUT-102, module: AUT, priority: SHALL, phase: P1, text: "Refuse a sign-in with an account that already has a session in use (activity within the in-use window, 15 minutes by default) and tell the person why; end the account's sessions that have gone quiet when it signs in again, recording why each session ended."}
+  - {id: FR-AUT-103, module: AUT, priority: SHALL, phase: P1, text: "Show administrators the active sessions of users in their scope — user, school or office, device, address, start and last activity — and let them end a session, with the reason recorded and audited."}
+  # ------------------------------------------------------------------ document management
+  - {id: FR-DOC-201, module: DOC, priority: SHALL, phase: P2, text: "Show Documents in the main menu to every role that may view, upload or search documents."}
+  - {id: FR-DOC-202, module: DOC, priority: SHALL, phase: P2, text: "Upload digitised paper documents (PDF, JPEG, PNG, TIFF or text) under the school or institution they come from, with category, title, dates or session, class or level, subject, the reference written on the paper original and a description; give each document a reference number unique within the state (institution code / category / year / sequence)."}
+  - {id: FR-DOC-203, module: DOC, priority: SHALL, phase: P2, text: "Index every document's metadata and text (the text layer of PDFs, text files, and any transcription entered at upload) for full-text search, except special-category documents."}
+  - {id: FR-DOC-204, module: DOC, priority: SHALL, phase: P2, text: "Search documents by words, reference number, school, category and year; results show reference, title, school, category, dates and classification, limited to the caller's scope and access level."}
+  - {id: FR-DOC-205, module: DOC, priority: SHALL, phase: P2, text: "Give every school or institution one page listing its complete document register, grouped by category with reference numbers, with search within the school."}
+  - {id: FR-DOC-206, module: DOC, priority: SHALL, phase: P2, text: "Let the Ministry of Education and other education administrators view and search the documents of every school in their scope only with the document search permission and an access level covering the document; restricted documents also need a declared purpose; every search, view and download is audited."}
+  # ------------------------------------------------------------------ access levels
+  - {id: FR-ADM-201, module: ADM, priority: SHALL, phase: P1, text: "Define five access levels over the data classifications — 1 Public, 2 Internal, 3 Confidential, 4 Restricted, 5 Special — give every role a level, and withhold pages, menu items, fields and documents above the user's level for the active role."}
+  - {id: FR-ADM-202, module: ADM, priority: SHALL, phase: P1, text: "Show administrators every role with its access level and every user grant in their scope with its effective level; let them lower (cap) the level of a grant with a reason, never above the role's level or their own, audited."}
+
+pages:
+  - {id: DOC-107, title: Upload documents, module: Records, pattern: Form, route: "/documents/upload", classification: Confidential, phase: P2, roles: [RECM (Records Manager), HEAD (Head of Institution), STA (State Ministry Administrator)], purpose: "Upload digitised paper documents under a school with category, dates, paper reference and description; each file gets a reference number and is indexed."}
+  - {id: DOC-108, title: School documents, module: Records, pattern: Register / list, route: "/institutions/{id}/documents", classification: Confidential, phase: P2, roles: [HEAD (Head of Institution), RECM (Records Manager), LGA (Local Authority Education Officer), STA (State Ministry Administrator), COMM (Commissioner for Education)], purpose: "The complete document register of one school or institution, grouped by category with reference numbers, with search within the school."}
+  - {id: ADM-101, title: Access levels, module: Administration, pattern: Settings / configuration, route: "/admin/access-levels", classification: Internal, phase: P1, roles: [STA (State Ministry Administrator), PLAT (Platform Administrator)], purpose: "The five access levels, every role's level, and every user grant in scope with its effective level; lower a grant's level with a reason."}
+  - {id: ADM-102, title: Active sessions, module: Administration, pattern: Register / list, route: "/admin/sessions", classification: Internal, phase: P1, roles: [STA (State Ministry Administrator), PLAT (Platform Administrator)], purpose: "Sessions in use by users in scope — user, school or office, device, address, start and last activity — and ending a session."}

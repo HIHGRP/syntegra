@@ -1,0 +1,160 @@
+domain: timetable
+code: TIM
+title: Timetable, lesson occurrences, cover rota, duties and room bookings
+module: timetable
+zone: ops
+retention: RS-OPS-7
+summary: >
+  Timetables built with hard constraints (clashes, capacity, accessibility, mandatory curriculum hours)
+  and soft constraints, solved with CP-SAT and edited by hand (FR-TIM-01–07, 101–104). A published
+  timetable version expands into recurring lessons; lesson occurrences are materialised on the day when
+  something happens to them (register, cover, delivery log, on-report rating) so registers, cover (G8)
+  and delivery evidence (G6) refer to one dated lesson. Duty and on-call rotas, room and resource
+  bookings and external lettings are here.
+
+entities:
+  timetable:
+    title: Timetable version for an institution and session (one- or two-week cycles, structures per year group)
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: ceda
+    reqs: [FR-TIM-01, FR-TIM-02, FR-TIM-03, FR-TIM-101, FR-TIM-07]
+    pages: [TIM-01, TIM-02]
+    events: [TT.PUBLISHED]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "period_id: ref(academic_period)!"
+      - "version: int_u!"
+      - "cycle_weeks: smallint! default=1"
+      - "sessions_per_day: smallint! default=1 | Double-shift schools"
+      - "solver_run: json | Constraint set, objective value and unmet soft constraints"
+      - "unmet_requirements: json | Mandatory hours not met (publication blocked unless an exception exists)"
+      - "exception_id: ref(policy_exception)"
+      - "published_at: ts"
+      - "status: enum(version_status)!"
+    uq: [[institution_id, period_id, version]]
+
+  period_structure:
+    title: Bell schedule — named periods with times per day of the cycle and per year-group structure
+    kind: config
+    class: internal
+    history: none
+    scope: "derived: the timetable"
+    origin: ceda
+    reqs: [FR-TIM-101]
+    pages: [TIM-01]
+    attrs:
+      - "timetable_id: ref(timetable)!"
+      - "structure_code: code(20)! | Year-group structure"
+      - "cycle_day: smallint!"
+      - "period_code: code(16)!"
+      - "starts_at: time!"
+      - "ends_at: time!"
+      - "is_teaching: bool! default=true | Breaks and registration periods are not teaching"
+    uq: [[timetable_id, structure_code, cycle_day, period_code]]
+
+  timetable_lesson:
+    title: Recurring scheduled lesson (class or section × subject × teacher × room × cycle slot)
+    kind: config
+    class: internal
+    history: none
+    scope: "derived: the timetable"
+    origin: appj
+    reqs: [FR-TIM-01, FR-TIM-04, FR-CUR-15]
+    pages: [TIM-01, TIM-02, ATT-01]
+    attrs:
+      - "timetable_id: ref(timetable)!"
+      - "class_group_id: ref(class_group)!"
+      - "class_subject_plan_id: ref(class_subject_plan)"
+      - "course_section_id: ref(course_section)"
+      - "subject_id: ref(subject)!"
+      - "staff_id: ref(staff)!"
+      - "room_id: ref(room)"
+      - "cycle_day: smallint!"
+      - "period_code: code(16)!"
+      - "duration_minutes: minutes!"
+      - "lesson_kind: enum(lesson_kind)! default=lesson | lesson, lecture, tutorial, practical, live_class"
+    ix: [[timetable_id, cycle_day, period_code], [staff_id], [class_group_id]]
+
+  lesson_occurrence:
+    title: Dated occurrence of a lesson, materialised when a register, cover, delivery log or rating refers to it
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-ATT-01, FR-TIM-04, FR-STF-06]
+    pages: [ATT-01, TIM-02, TIM-03]
+    attrs:
+      - "timetable_lesson_id: ref(timetable_lesson)!"
+      - "occurs_on: date!"
+      - "starts_at: ts!"
+      - "ends_at: ts!"
+      - "staff_id: ref(staff)! | Teacher actually responsible (cover changes it)"
+      - "room_id: ref(room)"
+      - "is_remote: bool! default=false"
+      - "status: enum(lesson_status)!"
+    uq: [[timetable_lesson_id, occurs_on]]
+    ix: [[staff_id, occurs_on]]
+
+  duty_rota:
+    title: Break, duty or on-call rota slot (fair distribution; on-call responders for BEH-105)
+    kind: config
+    class: internal
+    history: effective
+    scope: owned
+    origin: ceda
+    reqs: [FR-TIM-102, FR-BEH-113]
+    pages: [TIM-03, BEH-105]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "duty_kind: enum(duty_kind)!"
+      - "location: str(120)"
+      - "cycle_day: smallint!"
+      - "period_code: code(16)!"
+      - "staff_id: ref(staff)!"
+      - "backup_staff_id: ref(staff)"
+
+  room_booking:
+    title: Booking of a room or shared resource (labs, halls, laptop trolleys) — recurring, approval rules, weekly limits
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-TIM-06, FR-TIM-103, FR-MED-101]
+    pages: [TIM-04]
+    attrs:
+      - "room_id: ref(room)"
+      - "asset_id: ref(asset) | Shared resource"
+      - "booked_by: uuid!"
+      - "purpose: str(300)!"
+      - "starts_at: ts!"
+      - "ends_at: ts!"
+      - "recurrence: json | RRULE for recurring bookings"
+      - "approved_by: uuid"
+      - "status: enum(booking_status)!"
+    ix: [[room_id, starts_at]]
+    checks:
+      window: "ends_at > starts_at"
+
+  letting:
+    title: External letting of facilities with charges posted to finance
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-FIN
+    reqs: [FR-TIM-104]
+    pages: [TIM-04]
+    attrs:
+      - "room_booking_id: ref(room_booking)!"
+      - "hirer_name: title!"
+      - "hirer_contact: str(200) pii"
+      - "charge: money!"
+      - "currency: currency!"
+      - "invoice_id: ref(invoice)"
+      - "status: enum(booking_status)!"

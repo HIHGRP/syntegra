@@ -1,0 +1,397 @@
+domain: records
+code: DOC
+title: Records and archives — document store, file plan, retention, legal holds, disposal and the digitisation pipeline
+module: records
+zone: records
+retention: RS-DOC
+summary: >
+  One records system for born-digital and digitised paper (MFS §13, FR-DOC-101–118). Every document has
+  Dublin Core-based metadata extended for education, a classification inherited from its document type,
+  a record series (file plan) with retention, and links to the people and institutions it concerns.
+  Binary content lives in S3-compatible object storage: masters in WORM buckets, hashed at capture and
+  verified on every read; access copies are derived. The digitisation pipeline tracks boxes and volumes
+  under chain of custody through capture, clean-up, OCR/HTR, classification, field extraction with
+  confidence, human QA and linking to master records. Special-category documents are restricted to
+  cleared operators and named users throughout, and are never full-text indexed.
+
+entities:
+  record_series:
+    title: File-plan record series with owner, classification and retention rule
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: appj
+    reqs: [FR-DOC-115, FR-ADM-07]
+    pages: [DOC-106, ADM-10]
+    attrs:
+      - "code: code(32)! | File plan code"
+      - "title: title!"
+      - "owner_role: code(16)!"
+      - "classification: enum(classification)!"
+      - "retention_series: code(32)! | CEDA retention series (model/retention.yaml)"
+      - "retention_rule: json! | Trigger, period, disposal action"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, code, version]]
+
+  document_category:
+    title: Document type/category with its own view, download and share permissions (on top of role and scope)
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-CONFIG
+    reqs: [FR-DOC-106, FR-DOC-117]
+    pages: [DOC-106]
+    attrs:
+      - "code: code(40)!"
+      - "title: title!"
+      - "record_series_id: ref(record_series)!"
+      - "classification: enum(classification)!"
+      - "permissions: json! | view, download, share by role"
+      - "is_full_text_indexed: bool! default=true | Always false for special category"
+    uq: [[scope_node_id, code]]
+
+  document:
+    title: Stored document — born-digital or digitised (object-storage pointer, metadata, classification, retention, hash)
+    kind: master
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-DOC-103, FR-DOC-109, FR-DOC-110, FR-DOC-111, FR-DOC-112, FR-DOC-116, FR-INT-03, FR-INT-101, FR-DOC-201, FR-DOC-202, FR-DOC-205, FR-DOC-206, FR-DOC-301]
+    pages: [DOC-105, DOC-104, AIX-02, HOM-05, DOC-107, DOC-108]
+    events: [DOC.INGESTED, DOC.LINKED]
+    notes: >
+      Metadata (MFS §13.4): title, type, institution, LGA, date or range, people referenced, session, class/level,
+      subject, record series, classification, retention rule, source (box, volume, pages, batch) or origin module,
+      capture date, hash and QA status. Downloads and prints are watermarked with the viewer's name and time.
+    attrs:
+      - "category_id: ref(document_category)!"
+      - "reference_no: code(64) | Reference number, unique in the state: <institution code>/<category>/<year>/<sequence> (CR-007)"
+      - "title: title!"
+      - "description: str(2000) | What the document is and what it contains"
+      - "source_reference: str(200) | Reference, file or box number written on the paper original"
+      - "classification: enum(classification)!"
+      - "institution_id: uuid | Registry institution (soft)"
+      - "lga_scope_id: uuid"
+      - "date_from: date"
+      - "date_to: date"
+      - "session_label: code(20)"
+      - "level_or_class: str(80)"
+      - "subject_label: str(120)"
+      - "origin: enum(document_origin)!"
+      - "origin_module: code(40) | Born-digital source module"
+      - "batch_id: ref(digitisation_batch)"
+      - "page_range: str(40)"
+      - "master_object_key: object_key! | WORM bucket"
+      - "master_store: code(20) | Where the master is held: s3 (object storage) or fs (development only) (CR-008)"
+      - "master_lock_mode: enum(object_lock_mode) | Object lock on the master: compliance in production (CR-008)"
+      - "master_retain_until: date | The master cannot be changed or deleted before this date (CR-008)"
+      - "access_object_key: object_key | Derived access copy (PDF/A-2b)"
+      - "mime_type: mime!"
+      - "size_bytes: bigint!"
+      - "sha256: hash!"
+      - "captured_at: ts!"
+      - "qa_status: enum(qa_status)!"
+      - "ocr_text_ref: object_key | Full text (never for special category)"
+      - "legal_hold_count: smallint! default=0"
+      - "disposal_due_on: date"
+      - "status: enum(document_status)!"
+    uq: [[reference_no]]
+    ix: [[category_id], [disposal_due_on], [institution_id, category_id]]
+
+  document_index:
+    title: Full-text search entry of a document — title, keywords and extracted text (never for special category)
+    kind: projection
+    class: confidential
+    history: none
+    origin: ceda
+    scope_note: Inherits the document's scope; search results are filtered through the document.
+    reqs: [FR-DOC-203, FR-DOC-204]
+    pages: [DOC-104, DOC-108]
+    events: [DOC.INDEXED]
+    notes: >
+      One row per indexed document, rebuilt when the document's metadata or text changes. The FULLTEXT key spans
+      title, keywords and body_text; queries always filter tenant_id and join the document for scope, access level
+      and category permissions. body_text comes from the PDF text layer, text files, the transcription entered at
+      upload and, later, OCR of scanned pages.
+    attrs:
+      - "document_id: ref(document)! uq"
+      - "institution_id: uuid | Denormalised from the document for per-school search"
+      - "reference_no: code(64)"
+      - "title: title!"
+      - "keywords: str(2000) | Category, school, session, class, subject, paper reference and description"
+      - "body_text: longtext | Extracted or transcribed text"
+      - "text_source: enum(text_source)! | Where body_text came from"
+      - "char_count: int_u! default=0"
+      - "indexed_at: ts!"
+    ix: [[institution_id]]
+    fulltext: [[title, keywords, body_text]]
+
+  document_rendition:
+    title: Derived copy of a document's master — the searchable PDF access copy (page images with the OCR text laid invisibly over them)
+    kind: transaction
+    class: confidential
+    history: none
+    origin: ceda
+    scope_note: Inherits the document's scope and access level.
+    reqs: [FR-DOC-302]
+    pages: [DOC-105]
+    events: [DOC.RENDITION_CREATED]
+    notes: >
+      The master is never altered (CR-008). A rendition is a new write-once object with its own SHA-256, made from the
+      master whose hash it records, so the copy can always be traced back to the exact original it came from.
+    attrs:
+      - "document_id: ref(document)!"
+      - "kind: enum(rendition_kind)!"
+      - "object_key: object_key!"
+      - "store: code(20)! | s3 or fs"
+      - "mime_type: mime!"
+      - "size_bytes: bigint!"
+      - "sha256: hash! | Of the rendition"
+      - "source_sha256: hash! | Of the master it was made from"
+      - "pages: int_u!"
+      - "generator: str(120)! | Software and version that made it, e.g. Tesseract 5.5.3"
+    uq: [[document_id, kind]]
+
+  document_release:
+    title: Release register — every copy of a document that left the system, stamped with recipient, time, purpose and release code
+    kind: event
+    class: confidential
+    history: append
+    origin: ceda
+    scope_note: Inherits the document's scope.
+    reqs: [FR-DOC-303, FR-DOC-304, FR-DOC-305]
+    pages: [DOC-109, DOC-105]
+    events: [DOC.RELEASED]
+    notes: >
+      The release code printed on every page of a stamped copy is random and carries no personal data; looking it up
+      shows the document, recipient, purpose, time and the hash of the bytes released. Certified true copies (unstamped,
+      byte for byte the master) need document:certify and a reason (CR-008).
+    attrs:
+      - "document_id: ref(document)!"
+      - "release_code: code(16)! uq | Printed on every page of the copy"
+      - "kind: enum(release_kind)!"
+      - "released_to: uuid! | User who received the copy"
+      - "released_to_name: name! pii | As printed on the copy"
+      - "purpose: code(40) | Declared purpose (restricted documents)"
+      - "reason: str(500) | Why a certified true copy was needed"
+      - "sha256: hash! | Of the bytes released"
+      - "size_bytes: bigint!"
+      - "released_at: ts!"
+    ix: [[document_id, released_at], [released_to, released_at]]
+
+  document_link:
+    title: Link from a document to a person or record (learner, staff, guardian, institution, case …) — powers every 360 Documents tab
+    kind: link
+    class: confidential
+    history: none
+    origin: ceda
+    scope_note: Inherits the document's scope; visibility also requires access to the linked record.
+    reqs: [FR-DOC-108, FR-DOC-111, FR-DOC-116, FR-FRM-105]
+    pages: [DOC-105, LRN-04, STF-02, INS-02]
+    events: [DOC.LINKED]
+    attrs:
+      - "document_id: ref(document)!"
+      - "record_kind: code(40)!"
+      - "record_id: uuid!"
+      - "link_basis: enum(link_basis)!"
+      - "confidence: ratio | For links proposed by matching"
+      - "confirmed_by: uuid"
+    uq: [[document_id, record_kind, record_id]]
+    ix: [[record_kind, record_id]]
+
+  legal_hold:
+    title: Legal hold suspending disposal for named people, institutions or series
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-DOC-115, FR-ADM-07]
+    pages: [DOC-106, ADM-10]
+    attrs:
+      - "title: title!"
+      - "subject_filter: json! | People, institutions, series"
+      - "reason: text!"
+      - "placed_by: uuid!"
+      - "released_at: ts"
+      - "status: enum(record_status)!"
+
+  disposal:
+    title: Approved disposal of documents or originals with disposal/destruction certificate (refused while a legal hold applies)
+    kind: event
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-DOC-115]
+    pages: [DOC-106]
+    attrs:
+      - "record_series_id: ref(record_series)!"
+      - "proposal: json! | Documents or boxes proposed"
+      - "approved_by: uuid"
+      - "executed_at: ts"
+      - "certificate_document_id: uuid"
+      - "physical_disposition: enum(physical_disposition)"
+      - "status: enum(disposal_status)!"
+
+  redaction:
+    title: Automatic redaction of third-party personal data before external release, with human review
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    origin: ceda
+    scope_note: Inherits the document's scope.
+    reqs: [FR-DOC-113]
+    pages: [DOC-105]
+    attrs:
+      - "document_id: ref(document)!"
+      - "regions: json! | Page regions redacted"
+      - "redacted_object_key: object_key!"
+      - "reviewed_by: uuid"
+      - "released_at: ts"
+
+  record_request:
+    title: Public request for copies of a person's own records (identity verification and configured fee)
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-DOC-114]
+    pages: [DOC-104, PUB-101]
+    attrs:
+      - "requester_name: name! pii"
+      - "requester_phone: phone pii"
+      - "person_kind: enum(person_kind)"
+      - "person_id: uuid"
+      - "identity_verified_at: ts"
+      - "fee_reference: code(64)"
+      - "paid_at: ts"
+      - "fulfilled_document_ids: json"
+      - "status: enum(request_status)!"
+
+  digitisation_site_survey:
+    title: Survey of paper holdings per site (boxes, volumes, page estimates, cost and duration)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-DOC-101]
+    pages: [DOC-101]
+    attrs:
+      - "site_name: title!"
+      - "institution_id: uuid"
+      - "boxes: int_u!"
+      - "volumes: int_u!"
+      - "estimated_pages: bigint!"
+      - "priority: smallint!"
+      - "surveyed_on: date!"
+
+  digitisation_batch:
+    title: Box/volume batch in the digitisation programme (barcode, priority, schedule, throughput, quality)
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-DOC-101, FR-DOC-102, FR-DOC-118]
+    pages: [DOC-101, DOC-102]
+    attrs:
+      - "barcode: code(40)! uq"
+      - "survey_id: ref(digitisation_site_survey)"
+      - "record_series_id: ref(record_series)"
+      - "classification: enum(classification)! | Special-category batches only to cleared operators"
+      - "assigned_operator_ids: json | DIGO operators (batch-scoped access)"
+      - "pages_expected: int_u"
+      - "pages_captured: int_u! default=0"
+      - "hub: str(80)"
+      - "stage: enum(pipeline_stage)!"
+      - "status: enum(record_status)!"
+
+  custody_event:
+    title: Chain-of-custody event of a box or volume (collected, transferred, received, scanned, returned, archived, destroyed) — append-only
+    kind: event
+    class: internal
+    history: append
+    origin: appj
+    scope_note: Inherits the batch's scope.
+    reqs: [FR-DOC-102]
+    pages: [DOC-102]
+    attrs:
+      - "batch_id: ref(digitisation_batch)!"
+      - "event_kind: enum(custody_event_kind)!"
+      - "from_location: str(120)"
+      - "to_location: str(120)!"
+      - "handled_by: uuid!"
+      - "transfer_note_document_id: uuid"
+      - "occurred_at: ts!"
+
+  scanned_page:
+    title: Page image captured from a batch (master TIFF/JPEG 2000 hashed at capture; access copy derived)
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    origin: appj
+    scope_note: Inherits the batch's scope.
+    reqs: [FR-DOC-103, FR-DOC-104, FR-DOC-105, FR-LMS-119]
+    pages: [DOC-103]
+    attrs:
+      - "batch_id: ref(digitisation_batch)!"
+      - "document_id: ref(document)"
+      - "sequence_no: int_u!"
+      - "master_object_key: object_key!"
+      - "access_object_key: object_key"
+      - "dpi: smallint!"
+      - "sha256: hash!"
+      - "ocr_confidence: ratio"
+      - "document_type_guess: code(40)"
+      - "captured_at: ts!"
+      - "qa_status: enum(qa_status)!"
+    uq: [[batch_id, sequence_no]]
+
+  extracted_field:
+    title: Field extracted from a page with confidence (names, DOB, admission numbers, grades, staff numbers) — double-keyed when key
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    origin: appj
+    scope_note: Inherits the batch's scope.
+    reqs: [FR-DOC-106, FR-DOC-107, FR-DOC-108, FR-INT-03]
+    pages: [DOC-103, AIX-02]
+    attrs:
+      - "page_id: ref(scanned_page)!"
+      - "row_no: smallint | Register/broadsheet row"
+      - "field_name: code(40)!"
+      - "value: str(500)"
+      - "confidence: ratio!"
+      - "is_key_field: bool! default=false"
+      - "verified_value: str(500)"
+      - "verified_by: uuid"
+      - "second_key_by: uuid | Double-keying"
+      - "matched_record_kind: code(40)"
+      - "matched_record_id: uuid"
+      - "status: enum(qa_status)!"
+    ix: [[page_id, row_no]]
+
+  qa_sample:
+    title: Batch QA sample result against the accuracy target (≥ 99.5% key fields)
+    kind: event
+    class: internal
+    history: append
+    origin: ceda
+    scope_note: Inherits the batch's scope.
+    reqs: [FR-DOC-107]
+    pages: [DOC-103, DOC-101]
+    attrs:
+      - "batch_id: ref(digitisation_batch)!"
+      - "sampled: int_u!"
+      - "errors: int_u!"
+      - "accuracy: pct!"
+      - "passed: bool!"
+      - "checked_by: uuid!"

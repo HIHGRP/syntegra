@@ -1,0 +1,2385 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/10_academic.schema.json",
+  "title": "CEDA ACA — Academic structure — calendars, subjects, programmes, qualifications, classes, departments and courses",
+  "$defs": {
+    "AcademicPeriod": {
+      "title": "AcademicPeriod",
+      "description": "Session, term, semester or half-term of a calendar (state calendar inherited by institutions)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "academic_period",
+        "zone": "registry",
+        "domain": "ACA",
+        "kind": "master",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "academic"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "academic_period"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "session",
+            "term",
+            "semester",
+            "half_term",
+            "billing_period"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "institution_types": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 32
+              },
+              "x-code-list": "institution_category",
+              "description": "Calendars differ by institution type"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "starts_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "ends_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "teaching_days": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "description": "After closures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "kind",
+        "name",
+        "starts_on",
+        "ends_on",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "CalendarEvent": {
+      "title": "CalendarEvent",
+      "description": "Closure, holiday, exam window or event on a calendar (school closures recalculate compliance with an automatic exception)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "calendar_event",
+        "zone": "registry",
+        "domain": "ACA",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "academic"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "period_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "academic_period"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "holiday",
+            "closure",
+            "exam_window",
+            "event",
+            "inset_day",
+            "mid_term_break"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "starts_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "ends_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "reduces_teaching_days": {
+          "type": "boolean"
+        },
+        "is_remote_mode": {
+          "type": "boolean",
+          "description": "Closure switches classes to LMS remote mode"
+        },
+        "exception_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "policy_exception"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "period_id",
+        "kind",
+        "title",
+        "starts_on",
+        "ends_on",
+        "reduces_teaching_days",
+        "is_remote_mode",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Subject": {
+      "title": "Subject",
+      "description": "Subject 360 master (country master list plus institution courses)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "subject",
+        "zone": "registry",
+        "domain": "ACA",
+        "kind": "master",
+        "classification": "public",
+        "history": "lifecycle",
+        "module": "academic"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "levels": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 32
+              },
+              "x-code-list": "education_level"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "subject_group": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "x-code-list": "subject_group",
+              "description": "Core, science, arts, commercial, technical, vocational, language"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_mandatory_core": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "code",
+        "name",
+        "is_mandatory_core",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "StreamCombinationRule": {
+      "title": "StreamCombinationRule",
+      "description": "Stream subject-combination rule (WAEC, NECO, NABTEB, JAMB) for SSS classes and option choices",
+      "type": "object",
+      "x-ceda": {
+        "entity": "stream_combination_rule",
+        "zone": "registry",
+        "domain": "ACA",
+        "kind": "config",
+        "classification": "public",
+        "history": "versioned",
+        "module": "academic"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "stream": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "stream"
+        },
+        "exam_body": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "x-code-list": "exam_body"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rule": {
+          "type": "object",
+          "description": "Required, either-of and maximum subject sets"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "stream",
+        "rule",
+        "version",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Qualification": {
+      "title": "Qualification",
+      "description": "Qualification 360 (FSLC, BECE, SSC, NTC, NCE, ND, HND, B.Sc. …) with award rules",
+      "type": "object",
+      "x-ceda": {
+        "entity": "qualification",
+        "zone": "registry",
+        "domain": "ACA",
+        "kind": "master",
+        "classification": "public",
+        "history": "lifecycle",
+        "module": "academic"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "awarding_body": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "regulator"
+        },
+        "framework_level": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 16,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "award_rules": {
+          "type": "object",
+          "description": "Evaluated by the eligibility engine"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "code",
+        "name",
+        "awarding_body",
+        "award_rules",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Programme": {
+      "title": "Programme",
+      "description": "Programme 360 (qualification-bearing programmes, national or institutional)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "programme",
+        "zone": "registry",
+        "domain": "ACA",
+        "kind": "master",
+        "classification": "public",
+        "history": "lifecycle",
+        "module": "academic"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "institution_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "institution",
+              "description": "NULL for national programmes"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "department_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "department"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "qualification_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "qualification"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "delivery_mode": {
+          "type": "string",
+          "enum": [
+            "on_campus",
+            "distance",
+            "online",
+            "blended",
+            "continuing"
+          ]
+        },
+        "programme_family": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "x-code-list": "programme_family",
+              "description": "Health-profession family (medicine, nursing, pharmacy …)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "professional_body_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "professional_body"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "duration_terms": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rules": {
+          "type": "object",
+          "description": "Credits, CGPA, progression, classification scheme"
+        },
+        "accreditation_status": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "full",
+                "interim",
+                "denied",
+                "expired",
+                "not_required"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "accreditation_expires_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "code",
+        "name",
+        "delivery_mode",
+        "rules",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ProgrammeComponent": {
+      "title": "ProgrammeComponent",
+      "description": "Course or module within a programme (credits, core/elective, prerequisites — cycle-checked)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "programme_component",
+        "zone": "registry",
+        "domain": "ACA",
+        "kind": "link",
+        "classification": "public",
+        "history": "effective",
+        "module": "academic"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "programme_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "programme"
+        },
+        "course_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "course"
+        },
+        "programme_level": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 16,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "100L, ND1, Year 2"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "semester_no": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "credits": {
+          "type": "string",
+          "format": "decimal"
+        },
+        "is_core": {
+          "type": "boolean"
+        },
+        "prerequisite_course_ids": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Cycle-checked on save"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective from (inclusive) — history: effective",
+          "readOnly": true
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective to (inclusive); NULL = open-ended — history: effective",
+          "readOnly": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "programme_id",
+        "course_id",
+        "credits",
+        "is_core",
+        "valid_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Department": {
+      "title": "Department",
+      "description": "Department 360 — academic department of a post-secondary institution",
+      "type": "object",
+      "x-ceda": {
+        "entity": "department",
+        "zone": "registry",
+        "domain": "ACA",
+        "kind": "master",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "academic"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "org_unit_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "org_unit",
+          "description": "The department's node in the organisation structure"
+        },
+        "faculty_org_unit_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "org_unit"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "hod_staff_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "staff"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "acting_hod_staff_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "staff"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "load_policy": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Maximum contact hours per rank"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "institution_id",
+        "org_unit_id",
+        "name",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "SubjectArea": {
+      "title": "SubjectArea",
+      "description": "Discipline area of a department mapped to the national benchmark (NUC CCMAS, NBTE, NCCE)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "subject_area",
+        "zone": "registry",
+        "domain": "ACA",
+        "kind": "master",
+        "classification": "public",
+        "history": "lifecycle",
+        "module": "academic"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "department_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "department"
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "benchmark": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "benchmark_framework"
+        },
+        "benchmark_area_code": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "department_id",
+        "code",
+        "name",
+        "benchmark",
+        "benchmark_area_code",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Course": {
+      "title": "Course",
+      "description": "Course 360 catalogue entry owned by a department (code, units, level, semester, prerequisites, benchmark)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "course",
+        "zone": "registry",
+        "domain": "ACA",
+        "kind": "master",
+        "classification": "public",
+        "history": "lifecycle",
+        "module": "academic"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "department_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "department"
+        },
+        "subject_area_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "subject_area"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "subject_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "subject"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 20,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "e.g. COM 214, GST 111"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "units": {
+          "type": "string",
+          "format": "decimal"
+        },
+        "course_level": {
+          "type": "string",
+          "maxLength": 16,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "semester_no": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_service_course": {
+          "type": "boolean",
+          "description": "Taught to other departments (GST)"
+        },
+        "is_compulsory": {
+          "type": "boolean"
+        },
+        "benchmark_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 60,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outline_document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "department_id",
+        "code",
+        "title",
+        "units",
+        "course_level",
+        "is_service_course",
+        "is_compulsory",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ClassGroup": {
+      "title": "ClassGroup",
+      "description": "Class 360 — class (arm), set, cohort or course section for a period",
+      "type": "object",
+      "x-ceda": {
+        "entity": "class_group",
+        "zone": "ops",
+        "domain": "ACA",
+        "kind": "master",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "academic"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "campus_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "campus"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "period_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "academic_period",
+          "description": "Session"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "arm",
+            "set",
+            "cohort",
+            "course_section",
+            "group"
+          ]
+        },
+        "education_level": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "education_level"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Primary 4B, JSS 1 Gold, SS 2 Science A"
+        },
+        "stream": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "x-code-list": "stream"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "programme_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "programme"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "parent_class_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "class_group",
+              "description": "Sets and cross-class groupings link to parent classes"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "form_teacher_staff_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "staff"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "room_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "room"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "capacity": {
+          "type": "integer",
+          "description": "Room capacity and state policy (default 40 primary, 45 secondary)"
+        },
+        "language_of_instruction": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 35
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "session_shift": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "morning",
+                "afternoon",
+                "evening",
+                "single"
+              ],
+              "description": "Double-shift schools"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rolled_from_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "class_group",
+              "description": "Academic Year Rollover Wizard"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "active",
+            "closed",
+            "archived"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "institution_id",
+        "period_id",
+        "kind",
+        "education_level",
+        "name",
+        "capacity",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ClassMembership": {
+      "title": "ClassMembership",
+      "description": "Learner membership of a class, set or grouping (exactly one class arm per session; sets in addition)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "class_membership",
+        "zone": "ops",
+        "domain": "ACA",
+        "kind": "link",
+        "classification": "confidential",
+        "history": "effective",
+        "module": "academic"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "class_group_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "class_group"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "enrolment_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "enrolment"
+        },
+        "is_arm": {
+          "type": "boolean",
+          "description": "True for the learner's single class arm"
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective from (inclusive) — history: effective",
+          "readOnly": true
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective to (inclusive); NULL = open-ended — history: effective",
+          "readOnly": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "class_group_id",
+        "learner_id",
+        "enrolment_id",
+        "is_arm",
+        "valid_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ClassSubjectPlan": {
+      "title": "ClassSubjectPlan",
+      "description": "Subject offered to a class — periods per week, room type, curriculum version, language of instruction",
+      "type": "object",
+      "x-ceda": {
+        "entity": "class_subject_plan",
+        "zone": "ops",
+        "domain": "ACA",
+        "kind": "config",
+        "classification": "internal",
+        "history": "effective",
+        "module": "academic"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "class_group_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "class_group"
+        },
+        "subject_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "subject"
+        },
+        "is_mandatory": {
+          "type": "boolean",
+          "description": "Pre-filled mandatory subjects cannot be removed"
+        },
+        "periods_per_week": {
+          "type": "integer"
+        },
+        "required_hours": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal",
+              "description": "From the adopted curriculum"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "room_type": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "x-code-list": "room_type"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "curriculum_version_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "curriculum_version",
+              "description": "Resolved and stored for history"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "language_of_instruction": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 35
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "copied_from_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "class_subject_plan"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective from (inclusive) — history: effective",
+          "readOnly": true
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective to (inclusive); NULL = open-ended — history: effective",
+          "readOnly": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "class_group_id",
+        "subject_id",
+        "is_mandatory",
+        "periods_per_week",
+        "valid_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "TeachingAssignment": {
+      "title": "TeachingAssignment",
+      "description": "Teacher of record or co-teacher for a class-subject or lecturer for a course section (effective-dated)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "teaching_assignment",
+        "zone": "ops",
+        "domain": "ACA",
+        "kind": "link",
+        "classification": "internal",
+        "history": "effective",
+        "module": "academic"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "class_subject_plan_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "class_subject_plan",
+              "description": "School"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "course_section_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "course_section",
+              "description": "Tertiary"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff"
+        },
+        "staff_post_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff_post"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "teacher_of_record",
+            "co_teacher",
+            "teaching_assistant",
+            "specialist"
+          ]
+        },
+        "authorisation_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "staff_qualification",
+              "description": "Authorisation that satisfied G3"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exception_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "policy_exception",
+              "description": "Time-boxed exception when unauthorised"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "justification": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500,
+              "description": "Out-of-specialism or overload reason (HOD)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "weekly_periods": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "of_record_key": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "readOnly": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective from (inclusive) — history: effective",
+          "readOnly": true
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective to (inclusive); NULL = open-ended — history: effective",
+          "readOnly": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "staff_id",
+        "staff_post_id",
+        "role",
+        "valid_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "CourseSection": {
+      "title": "CourseSection",
+      "description": "Course offering section per semester (lecturer of record, co-lecturers, TAs, LMS space, assessment components)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "course_section",
+        "zone": "ops",
+        "domain": "ACA",
+        "kind": "master",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "academic"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "course_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "course"
+        },
+        "period_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "academic_period",
+          "description": "Semester"
+        },
+        "section_code": {
+          "type": "string",
+          "maxLength": 8,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "capacity": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "consuming_department_ids": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Service courses visible to consuming departments"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assessment_scheme": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "CA and exam components"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "external_examiner": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "External examiners and moderators (FR-ACA-114)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allocation_status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "proposed",
+            "approved",
+            "published",
+            "applied",
+            "allocated",
+            "waitlisted",
+            "cancelled"
+          ],
+          "description": "HOD approval publishes to timetables and the LMS"
+        },
+        "approved_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "course_id",
+        "period_id",
+        "section_code",
+        "allocation_status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "CourseRegistration": {
+      "title": "CourseRegistration",
+      "description": "Student semester course registration (unit limits, prerequisites, carry-overs, clashes, adviser approval)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "course_registration",
+        "zone": "ops",
+        "domain": "ACA",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "academic"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "enrolment_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "enrolment"
+        },
+        "course_section_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "course_section"
+        },
+        "is_carry_over": {
+          "type": "boolean"
+        },
+        "units": {
+          "type": "string",
+          "format": "decimal"
+        },
+        "adviser_staff_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "staff"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approved_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "submitted",
+            "adviser_approved",
+            "registered",
+            "dropped"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "learner_id",
+        "enrolment_id",
+        "course_section_id",
+        "is_carry_over",
+        "units",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

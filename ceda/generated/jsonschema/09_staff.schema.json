@@ -1,0 +1,2401 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/09_staff.schema.json",
+  "title": "CEDA STF — Staff / Teacher 360, authorisations, HR, cover, recruitment, CPD, training and payroll",
+  "$defs": {
+    "Staff": {
+      "title": "Staff",
+      "description": "Staff / Teacher 360 master (one person, many posts)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "staff",
+        "zone": "registry",
+        "domain": "STF",
+        "kind": "master",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "people"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "staff_number": {
+          "type": "string",
+          "maxLength": 20,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "STF-NNNN-NNNN with check digit"
+        },
+        "given_name": {
+          "type": "string",
+          "maxLength": 200,
+          "x-personal-data": true
+        },
+        "middle_names": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200,
+              "x-personal-data": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "family_name": {
+          "type": "string",
+          "maxLength": 200,
+          "x-personal-data": true
+        },
+        "name_phonetic": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "date_of_birth": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date",
+              "x-personal-data": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sex": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "x-code-list": "sex"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "phone": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\+[1-9][0-9]{6,14}$",
+              "x-personal-data": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "email": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "email",
+              "maxLength": 254,
+              "x-personal-data": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_historic": {
+          "type": "boolean",
+          "description": "Created from a digitised personal file"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "onboarding",
+            "active",
+            "leaver",
+            "merged"
+          ]
+        },
+        "merged_into": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "staff"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "staff_number",
+        "given_name",
+        "family_name",
+        "name_phonetic",
+        "is_historic",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "StaffPost": {
+      "title": "StaffPost",
+      "description": "Post held by a staff member at an institution (employer, unit, title, grade, contract, FTE, line manager)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "staff_post",
+        "zone": "registry",
+        "domain": "STF",
+        "kind": "link",
+        "classification": "confidential",
+        "history": "effective",
+        "module": "people"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "org_unit_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "org_unit"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "job_title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "staff_category": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "staff_category",
+          "description": "teaching, non_teaching, lecturer, graduate_assistant …"
+        },
+        "academic_rank": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "x-code-list": "academic_rank",
+              "description": "Professor, Senior Lecturer, Lecturer I … (load policy)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "grade_step": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "contract": {
+          "type": "string",
+          "enum": [
+            "permanent",
+            "fixed_term",
+            "part_time",
+            "adjunct",
+            "visiting",
+            "nysc",
+            "volunteer",
+            "graduate_assistant"
+          ]
+        },
+        "fte": {
+          "type": "string",
+          "format": "decimal"
+        },
+        "employer_scope_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "scope_node",
+              "description": "e.g. SUBEB, TESCOM, the private provider"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "line_manager_staff_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "staff"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_temporary": {
+          "type": "boolean"
+        },
+        "leaving_reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "x-code-list": "leaving_reason"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective from (inclusive) — history: effective",
+          "readOnly": true
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective to (inclusive); NULL = open-ended — history: effective",
+          "readOnly": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "staff_id",
+        "institution_id",
+        "job_title",
+        "staff_category",
+        "contract",
+        "fte",
+        "is_temporary",
+        "valid_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "StaffQualification": {
+      "title": "StaffQualification",
+      "description": "Qualification, professional registration, teaching authorisation (subject × level) or check, with expiry and verification",
+      "type": "object",
+      "x-ceda": {
+        "entity": "staff_qualification",
+        "zone": "registry",
+        "domain": "STF",
+        "kind": "master",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "people"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "degree",
+            "certificate",
+            "registration",
+            "teaching_authorisation",
+            "specialism",
+            "check"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "subject_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "subject",
+              "description": "For teaching authorisations"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "subject_area_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Tertiary specialism (subject area)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "levels": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 32
+              },
+              "x-code-list": "education_level"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "issuer": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "x-code-list": "regulator",
+              "description": "TRCN, university, professional body"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reference": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "issued_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expires_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "verification": {
+          "type": "string",
+          "enum": [
+            "unverified",
+            "pending",
+            "verified",
+            "failed",
+            "expired"
+          ]
+        },
+        "verified_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Certificate scan (records zone)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "staff_id",
+        "kind",
+        "title",
+        "verification",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ProfessionalRegistrationCheck": {
+      "title": "ProfessionalRegistrationCheck",
+      "description": "Verification of a professional registration with its register (TRCN, MDCN, NMCN …)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "professional_registration_check",
+        "zone": "registry",
+        "domain": "STF",
+        "kind": "event",
+        "classification": "confidential",
+        "history": "append",
+        "module": "people"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "qualification_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff_qualification"
+        },
+        "register": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "regulator"
+        },
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "match",
+            "partial_match",
+            "no_match",
+            "manual_review",
+            "error"
+          ]
+        },
+        "checked_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "provider_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "qualification_id",
+        "register",
+        "outcome",
+        "checked_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "StaffAbsence": {
+      "title": "StaffAbsence",
+      "description": "Staff absence (triggers the cover process and G8 checks)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "staff_absence",
+        "zone": "ops",
+        "domain": "STF",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "people"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff"
+        },
+        "staff_post_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "staff_post"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "absence_type": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "absence_type"
+        },
+        "starts_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ends_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "is_planned": {
+          "type": "boolean"
+        },
+        "reason_note": {
+          "anyOf": [
+            {
+              "type": "string",
+              "x-classification": "special",
+              "writeOnly": true,
+              "description": "Medical or personal detail (encrypted)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approved_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "requested",
+            "approved",
+            "rejected",
+            "recorded",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "staff_id",
+        "absence_type",
+        "starts_at",
+        "ends_at",
+        "is_planned",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "CoverAssignment": {
+      "title": "CoverAssignment",
+      "description": "Cover for a lesson affected by staff absence (never auto-assigned unqualified; G8)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "cover_assignment",
+        "zone": "ops",
+        "domain": "STF",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "people"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "absence_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff_absence"
+        },
+        "lesson_occurrence_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "lesson_occurrence"
+        },
+        "cover_staff_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "staff"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_qualified": {
+          "type": "boolean"
+        },
+        "rank_evidence": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Qualified → free → lowest cover load → same department"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "alternative": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "supervised_study_with_lms_work",
+                "merged_class",
+                "cancelled_lesson"
+              ],
+              "description": "supervised_study_with_lms_work when no qualified cover"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "proposed_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Cover Agent service identity or SLT user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "confirmed_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "proposed",
+            "booked",
+            "confirmed",
+            "declined",
+            "gap"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "absence_id",
+        "lesson_occurrence_id",
+        "is_qualified",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Vacancy": {
+      "title": "Vacancy",
+      "description": "Vacancy in the recruitment workflow",
+      "type": "object",
+      "x-ceda": {
+        "entity": "vacancy",
+        "zone": "ops",
+        "domain": "STF",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "people"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "org_unit_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "org_unit"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "subjects": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Subjects and levels needed (links to coverage gaps)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "coverage_gap_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "coverage_gap",
+              "description": "Gap that justified the vacancy"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "closing_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "workflow_instance_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "workflow_instance"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "open",
+            "closed",
+            "filled",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "institution_id",
+        "title",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "JobApplication": {
+      "title": "JobApplication",
+      "description": "Application for a vacancy (blind scoring by default; references and checks before offer)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "job_application",
+        "zone": "ops",
+        "domain": "STF",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "people"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "vacancy_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "vacancy"
+        },
+        "applicant_name": {
+          "type": "string",
+          "maxLength": 200,
+          "x-personal-data": true
+        },
+        "applicant_email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 254,
+          "x-personal-data": true
+        },
+        "applicant_phone": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\+[1-9][0-9]{6,14}$",
+              "x-personal-data": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cv_document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "blind_score": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scores": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Per criterion and panel member"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "stage": {
+          "type": "string",
+          "enum": [
+            "applied",
+            "shortlisted",
+            "interview",
+            "references",
+            "checks",
+            "offer",
+            "appointed",
+            "rejected",
+            "withdrawn"
+          ]
+        },
+        "staff_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "staff",
+              "description": "Set on appointment (after identity matching)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "vacancy_id",
+        "applicant_name",
+        "applicant_email",
+        "stage",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Appraisal": {
+      "title": "Appraisal",
+      "description": "Annual appraisal with objectives, evidence, ratings and development plan",
+      "type": "object",
+      "x-ceda": {
+        "entity": "appraisal",
+        "zone": "ops",
+        "domain": "STF",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "people"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff"
+        },
+        "reviewer_staff_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff"
+        },
+        "cycle_label": {
+          "type": "string",
+          "maxLength": 20,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "e.g. 2026/2027"
+        },
+        "objectives": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rating": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "x-code-list": "appraisal_rating"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "development_plan": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 65535
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "planned",
+            "objectives_set",
+            "mid_year",
+            "final_review",
+            "signed_off"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "staff_id",
+        "reviewer_staff_id",
+        "cycle_label",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "CpdRecord": {
+      "title": "CpdRecord",
+      "description": "CPD and professional learning record (including LMS training and evidenced digital teaching practice)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "cpd_record",
+        "zone": "ops",
+        "domain": "STF",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "people"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "provider_name": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 300
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cpd_kind": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "cpd_kind"
+        },
+        "hours": {
+          "type": "string",
+          "format": "decimal"
+        },
+        "subject_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "subject",
+              "description": "Route to a teaching authorisation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "completed_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "evidence_document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_kind": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "lms_course, digital_practice, external"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expires_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "staff_id",
+        "title",
+        "cpd_kind",
+        "hours",
+        "completed_on",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "TrainingCourse": {
+      "title": "TrainingCourse",
+      "description": "Safeguarding or statutory training course (native LMS staff course space or SCORM/xAPI package)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "training_course",
+        "zone": "ops",
+        "domain": "STF",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "people"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "topic": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "training_topic",
+          "description": "child protection, safe schools, first aid, fire safety, data protection, online safety, SEND awareness"
+        },
+        "course_space_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "course_space"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "package_format": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "native_lms",
+                "scorm",
+                "xapi"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pass_mark": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "renewal_months": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "required_for_roles": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Role codes"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "code",
+        "title",
+        "topic",
+        "version",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "TrainingCompletion": {
+      "title": "TrainingCompletion",
+      "description": "Completion of a training course by an adult (writes to Staff 360, CPD and the Education Passport)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "training_completion",
+        "zone": "ops",
+        "domain": "STF",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "people"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "course_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "training_course"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff"
+        },
+        "assigned_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "completed_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "score": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "passed": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "certificate_document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expires_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "assigned",
+            "in_progress",
+            "passed",
+            "failed",
+            "expired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "course_id",
+        "staff_id",
+        "assigned_on",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "StaffPulseResponse": {
+      "title": "StaffPulseResponse",
+      "description": "Anonymous staff wellbeing pulse response (reported only in aggregate; no staff identifier stored)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "staff_pulse_response",
+        "zone": "ops",
+        "domain": "STF",
+        "kind": "event",
+        "classification": "internal",
+        "history": "append",
+        "module": "people"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "survey_code": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "org_unit_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "org_unit"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "answers": {
+          "type": "object"
+        },
+        "submitted_on": {
+          "type": "string",
+          "format": "date",
+          "description": "Date only — no timestamp to resist re-identification"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "survey_code",
+        "answers",
+        "submitted_on",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "PayrollTaxTable": {
+      "title": "PayrollTaxTable",
+      "description": "Versioned payroll statutory table (PAYE, pension/PenCom, NHF)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "payroll_tax_table",
+        "zone": "ops",
+        "domain": "STF",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "people"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "table_kind": {
+          "type": "string",
+          "enum": [
+            "paye",
+            "pension",
+            "nhf",
+            "nhis",
+            "other"
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bands": {
+          "type": "object"
+        },
+        "effective_from": {
+          "type": "string",
+          "format": "date"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "table_kind",
+        "version",
+        "bands",
+        "effective_from",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "PayrollRun": {
+      "title": "PayrollRun",
+      "description": "Pay run (two-person approval, bank file export, ledger posting)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "payroll_run",
+        "zone": "ops",
+        "domain": "STF",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "people"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "employer_scope_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "scope_node"
+        },
+        "period_label": {
+          "type": "string",
+          "maxLength": 7,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "YYYY-MM"
+        },
+        "pay_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "gross_total_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "net_total_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "prepared_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "approved_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "second_approver_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "bank_file_document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "journal_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "journal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "calculated",
+            "exceptions_review",
+            "approved",
+            "exported",
+            "posted",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "employer_scope_id",
+        "period_label",
+        "pay_date",
+        "gross_total_minor",
+        "net_total_minor",
+        "currency",
+        "prepared_by",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Payslip": {
+      "title": "Payslip",
+      "description": "Payslip of one staff post in a pay run",
+      "type": "object",
+      "x-ceda": {
+        "entity": "payslip",
+        "zone": "ops",
+        "domain": "STF",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "append",
+        "module": "people"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "payroll_run_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "payroll_run"
+        },
+        "staff_post_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff_post"
+        },
+        "gross_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "deductions_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "net_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "line_items": {
+          "type": "object",
+          "description": "Earnings and deductions by code with tax table versions used"
+        },
+        "bank_account": {
+          "type": "string",
+          "x-classification": "restricted",
+          "writeOnly": true,
+          "description": "Payee bank account"
+        },
+        "exception_flags": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Exceptions reviewed before approval"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "payroll_run_id",
+        "staff_post_id",
+        "gross_minor",
+        "deductions_minor",
+        "net_minor",
+        "currency",
+        "line_items",
+        "created_at"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

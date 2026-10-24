@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Facilities{% endblock %}
+{% macro usable(x) %}{% if x %}<span class="sev {{ 'sev-critical' if x.usability in ('unsafe_restricted', 'unusable', 'condemned') else 'sev-high' if x.usability == 'usable_major_repairs' else '' }}">{{ x.usability|human }}</span><span class="line muted">{{ x.condition_grade|human }} · {{ x.assessed_on|date }}</span>{% else %}<span class="muted">Not assessed</span>{% endif %}{% endmacro %}
+{% block content %}
+<h1>Facilities</h1>
+<form method="get" class="inline"><label class="sr" for="inst">Institution</label>
+  <select id="inst" name="institution_id"><option value="">Choose an institution</option>{% for i in institutions %}<option value="{{ i.id }}" {% if chosen == i.id|string %}selected{% endif %}>{{ i.name }}</option>{% endfor %}</select><button>Show</button></form>
+{% if w %}
+<p class="actions">{% if ctx.has("estate:manage") %}<a href="/forms/estate-site?institution_id={{ w.institution.id }}">Register a site</a><a href="/forms/estate-building?institution_id={{ w.institution.id }}">Add a building</a><a href="/forms/estate-room">Add a room</a><a href="/forms/estate-asset?institution_id={{ w.institution.id }}">Add equipment</a><a href="/forms/estate-schedule">Plan maintenance</a>{% endif %}{% if ctx.has("estate:assess") %}<a href="/forms/estate-assess">Record an assessment</a>{% endif %}{% if ctx.has("estate:act") %}<a href="/forms/estate-done">Mark maintenance done</a>{% endif %}</p>
+<h2>{{ w.institution.name }}</h2>
+<section class="kpis" aria-label="Summary">
+  <div class="kpi"><span class="k">Classrooms usable</span><span class="v">{{ w.summary.classrooms_usable }} / {{ w.summary.classrooms }}</span></div>
+  <div class="kpi"><span class="k">Learners per usable classroom</span><span class="v">{{ w.summary.learners_per_usable_classroom or "—" }}</span></div>
+  <div class="kpi"><span class="k">Unsafe facilities</span><span class="v">{{ w.summary.unsafe }}</span></div>
+  <div class="kpi"><span class="k">Open actions</span><span class="v">{{ w.summary.open_actions }}</span><span class="muted">{{ w.summary.critical_actions }} critical</span></div>
+  <div class="kpi"><span class="k">Repair backlog</span><span class="v">{{ w.summary.repair_backlog|naira_short }}</span></div>
+</section>
+<article class="card"><h2>Do these first</h2>
+{% if w.actions %}<ul class="people">{% for a in w.actions %}<li><span class="sev sev-{{ a.priority }}">{{ a.priority|human }}</span> <strong>{{ a.title }}</strong><span class="line muted">{{ a.detail }} · due {{ a.due_on|date }} · {{ a.status|human }}{% if a.escalation_level %} · escalated{% endif %}</span></li>{% endfor %}</ul>
+{% else %}<p class="muted">No open actions — nothing is overdue or unsafe.</p>{% endif %}</article>
+<section class="grid2c">
+<article class="card"><h2>Buildings and rooms</h2>
+{% for b in w.buildings %}<h3 class="sub">{{ b.name }}{% if b.built_year %} <span class="muted">({{ b.built_year }})</span>{% endif %}</h3>
+<table class="compact"><thead><tr><th scope="col">Room</th><th scope="col">Type</th><th scope="col" class="num">Capacity</th><th scope="col">Usability</th></tr></thead>
+<tbody><tr><td colspan="3"><em>Whole building</em></td><td>{{ usable(b.latest) }}</td></tr>{% for r in b.rooms %}<tr><td><code>{{ r.code }}</code> {{ r.name or "" }}</td><td>{{ r.room_type|human }}</td><td class="num">{{ r.capacity }}</td><td>{{ usable(r.latest) }}</td></tr>{% endfor %}</tbody></table>
+{% else %}<p class="muted">No buildings recorded.</p>{% endfor %}</article>
+<article class="card"><h2>Sites</h2>
+{% if w.sites %}<ul class="people">{% for s in w.sites %}<li><strong>{{ s.name }}</strong> <code>{{ s.site_code }}</code><span class="line muted">{{ s.owner|human }} · {{ s.title_document|human }} · {{ s.fenced|human }} · encroachment: {{ s.encroachment|human }}</span>{{ usable(s.latest) }}</li>{% endfor %}</ul>{% else %}<p class="muted">No sites registered.</p>{% endif %}
+<h2>Equipment</h2>
+{% if w.assets %}<ul class="people">{% for a in w.assets %}<li><strong>{{ a.name }}</strong> <code>{{ a.asset_tag }}</code><span class="line muted">{{ a.category|human }} · next service {{ a.next_service_on|date }}{% if a.safety_check_due_on %} · safety check {{ a.safety_check_due_on|date }}{% endif %}</span></li>{% endfor %}</ul>{% else %}<p class="muted">No equipment recorded.</p>{% endif %}
+<h2>Maintenance plan</h2>
+{% if w.schedules %}<ul class="people">{% for s in w.schedules %}<li><strong>{{ s.task }}</strong><span class="line muted">{{ s.task_kind|human }} · every {{ s.frequency_days }} days · next {{ s.next_due_on|date }} · last {{ s.last_done_on|date }}</span></li>{% endfor %}</ul>{% else %}<p class="muted">No planned maintenance.</p>{% endif %}
+</article>
+</section>
+{% elif not institutions %}<p class="muted">No institution in your scope.</p>{% endif %}
+{% endblock %}

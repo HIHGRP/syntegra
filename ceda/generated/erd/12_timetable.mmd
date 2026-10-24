@@ -1,0 +1,142 @@
+erDiagram
+    timetable {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        BINARY_16_ period_id FK
+        INT version
+        SMALLINT cycle_weeks
+        SMALLINT sessions_per_day
+        JSON solver_run
+        JSON unmet_requirements
+        BINARY_16_ exception_id FK
+        DATETIME_6_ published_at
+        VARCHAR_32_ status
+    }
+    period_structure {
+        BINARY_16_ id PK
+        BINARY_16_ timetable_id FK
+        VARCHAR_20_ structure_code
+        SMALLINT cycle_day
+        VARCHAR_16_ period_code
+        TIME starts_at
+        TIME ends_at
+        BOOLEAN is_teaching
+    }
+    timetable_lesson {
+        BINARY_16_ id PK
+        BINARY_16_ timetable_id FK
+        BINARY_16_ class_group_id FK
+        BINARY_16_ class_subject_plan_id FK
+        BINARY_16_ course_section_id FK
+        BINARY_16_ subject_id FK
+        BINARY_16_ staff_id FK
+        BINARY_16_ room_id FK
+        SMALLINT cycle_day
+        VARCHAR_16_ period_code
+        INT duration_minutes
+        VARCHAR_32_ lesson_kind
+    }
+    lesson_occurrence {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ timetable_lesson_id FK
+        DATE occurs_on
+        DATETIME_6_ starts_at
+        DATETIME_6_ ends_at
+        BINARY_16_ staff_id FK
+        BINARY_16_ room_id FK
+        BOOLEAN is_remote
+        VARCHAR_32_ status
+    }
+    duty_rota {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        VARCHAR_32_ duty_kind
+        VARCHAR_120_ location
+        SMALLINT cycle_day
+        VARCHAR_16_ period_code
+        BINARY_16_ staff_id FK
+        BINARY_16_ backup_staff_id FK
+        DATE valid_from
+        DATE valid_to
+    }
+    room_booking {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ room_id FK
+        BINARY_16_ asset_id FK
+        BINARY_16_ booked_by
+        VARCHAR_300_ purpose
+        DATETIME_6_ starts_at
+        DATETIME_6_ ends_at
+        JSON recurrence
+        BINARY_16_ approved_by
+        VARCHAR_32_ status
+    }
+    letting {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ room_booking_id FK
+        VARCHAR_300_ hirer_name
+        VARCHAR_200_ hirer_contact
+        BIGINT charge_minor
+        CHAR_3_ currency
+        BINARY_16_ invoice_id FK
+        VARCHAR_32_ status
+    }
+    academic_period {
+        BINARY_16 id PK
+    }
+    asset {
+        BINARY_16 id PK
+    }
+    class_group {
+        BINARY_16 id PK
+    }
+    class_subject_plan {
+        BINARY_16 id PK
+    }
+    course_section {
+        BINARY_16 id PK
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    invoice {
+        BINARY_16 id PK
+    }
+    policy_exception {
+        BINARY_16 id PK
+    }
+    room {
+        BINARY_16 id PK
+    }
+    staff {
+        BINARY_16 id PK
+    }
+    subject {
+        BINARY_16 id PK
+    }
+    academic_period ||--o{ timetable : "period_id"
+    asset ||--o{ room_booking : "asset_id"
+    class_group ||--o{ timetable_lesson : "class_group_id"
+    class_subject_plan ||--o{ timetable_lesson : "class_subject_plan_id"
+    course_section ||--o{ timetable_lesson : "course_section_id"
+    institution ||--o{ duty_rota : "institution_id"
+    institution ||--o{ timetable : "institution_id"
+    invoice ||--o{ letting : "invoice_id"
+    policy_exception ||--o{ timetable : "exception_id"
+    room ||--o{ lesson_occurrence : "room_id"
+    room ||--o{ room_booking : "room_id"
+    room ||--o{ timetable_lesson : "room_id"
+    room_booking ||--o{ letting : "room_booking_id"
+    staff ||--o{ duty_rota : "backup_staff_id"
+    staff ||--o{ duty_rota : "staff_id"
+    staff ||--o{ lesson_occurrence : "staff_id"
+    staff ||--o{ timetable_lesson : "staff_id"
+    subject ||--o{ timetable_lesson : "subject_id"
+    timetable ||--o{ period_structure : "timetable_id"
+    timetable ||--o{ timetable_lesson : "timetable_id"
+    timetable_lesson ||--o{ lesson_occurrence : "timetable_lesson_id"

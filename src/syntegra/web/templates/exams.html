@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Examination series{% endblock %}
+{% block content %}
+<h1>Examination series</h1>
+<p class="muted">Internal examinations and mocks, and the school's arrangements for external ones (WAEC, NECO, BECE). For each series: its papers, the candidates entered and the sitting arrangement for every paper.</p>
+<p class="actions">{% if ctx.has("exam:manage") %}<a href="/forms/exam-series">Set up a series</a><a href="/forms/exam-paper">Add a paper</a><a href="/forms/exam-entries">Enter candidates</a><a href="/forms/exam-sitting">Plan the sitting arrangement</a>{% endif %}</p>
+{% if rows %}
+<table class="compact"><thead><tr><th scope="col">Series</th><th scope="col">Institution</th><th scope="col">Set by</th><th scope="col" class="num">Papers</th><th scope="col" class="num">Candidates</th><th scope="col">Status</th></tr></thead>
+<tbody>{% for s in rows %}<tr><td><a href="/exams/series/{{ s.id }}/sittings">{{ s.name }}</a></td><td>{{ s.institution }}</td><td>{{ s.exam_body|human }}</td><td class="num">{{ s.papers }}</td><td class="num">{{ s.candidates }}</td><td>{{ s.status|human }}</td></tr>{% endfor %}</tbody></table>
+{% else %}<p class="muted">No examination series yet.{% if ctx.has("exam:manage") %} <a href="/forms/exam-series">Set one up</a>.{% endif %}</p>{% endif %}
+{% endblock %}

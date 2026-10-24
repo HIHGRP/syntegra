@@ -1,0 +1,2110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/21_comms.schema.json",
+  "title": "CEDA COM — Communication — messaging gateway, WhatsApp and Zenzap, templates, conversations, broadcasts, notifications, announcements and consent requests",
+  "$defs": {
+    "MessageChannel": {
+      "title": "MessageChannel",
+      "description": "Connected channel (WhatsApp number, Zenzap workspace, SMS sender ID, e-mail domain, push app) held by the tenant",
+      "type": "object",
+      "x-ceda": {
+        "entity": "message_channel",
+        "zone": "ops",
+        "domain": "COM",
+        "kind": "config",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "comms"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "channel": {
+          "type": "string",
+          "enum": [
+            "in_app",
+            "push",
+            "sms",
+            "whatsapp",
+            "email",
+            "voice",
+            "ussd",
+            "workspace",
+            "web",
+            "post"
+          ]
+        },
+        "provider": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "meta_cloud_api, bsp_name, zenzap, teams, slack, smpp_aggregator …"
+        },
+        "display_name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "address": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "E.164 number, sender id, workspace id"
+        },
+        "credentials_vault_ref": {
+          "type": "string",
+          "maxLength": 255,
+          "description": "Token stored in the vault; never in the database"
+        },
+        "monthly_spend_cap_minor": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "description": "(minor units)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "quiet_hours": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Default 20:00–07:00 local"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "channel",
+        "provider",
+        "display_name",
+        "address",
+        "credentials_vault_ref",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "MessageTemplate": {
+      "title": "MessageTemplate",
+      "description": "Approved message template (Meta category, multilingual variants, approval status, version)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "message_template",
+        "zone": "ops",
+        "domain": "COM",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "comms"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "channel_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "message_channel"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "template_key": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "utility",
+            "authentication",
+            "marketing",
+            "service",
+            "internal"
+          ]
+        },
+        "variants": {
+          "type": "object",
+          "description": "Language → body with merge fields"
+        },
+        "provider_template_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approval_status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "submitted",
+            "approved",
+            "rejected",
+            "paused",
+            "retired"
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "is_mail_merge": {
+          "type": "boolean",
+          "description": "Word-compatible letter/label/badge template"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "template_key",
+        "category",
+        "variants",
+        "approval_status",
+        "version",
+        "is_mail_merge",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ChannelContact": {
+      "title": "ChannelContact",
+      "description": "Contact endpoint of a person on a channel (phone or address) with HMAC lookup for inbound matching",
+      "type": "object",
+      "x-ceda": {
+        "entity": "channel_contact",
+        "zone": "ops",
+        "domain": "COM",
+        "kind": "master",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "comms"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "person_kind": {
+          "type": "string",
+          "enum": [
+            "learner",
+            "guardian",
+            "staff",
+            "provider_person",
+            "applicant",
+            "visitor"
+          ]
+        },
+        "person_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "channel": {
+          "type": "string",
+          "enum": [
+            "in_app",
+            "push",
+            "sms",
+            "whatsapp",
+            "email",
+            "voice",
+            "ussd",
+            "workspace",
+            "web",
+            "post"
+          ]
+        },
+        "endpoint": {
+          "type": "string",
+          "x-classification": "restricted",
+          "writeOnly": true,
+          "description": "E.164 phone, e-mail or device token"
+        },
+        "is_verified": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "person_kind",
+        "person_id",
+        "channel",
+        "endpoint",
+        "is_verified",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ChannelOptIn": {
+      "title": "ChannelOptIn",
+      "description": "Opt-in / opt-out per contact and channel with evidence (STOP honoured immediately)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "channel_opt_in",
+        "zone": "ops",
+        "domain": "COM",
+        "kind": "event",
+        "classification": "confidential",
+        "history": "append",
+        "module": "comms"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "contact_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "channel_contact"
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "opt_in",
+            "opt_out"
+          ]
+        },
+        "category": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "utility",
+                "authentication",
+                "marketing",
+                "service",
+                "internal"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "wording": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Wording shown at opt-in"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "in_app",
+            "push",
+            "sms",
+            "whatsapp",
+            "email",
+            "voice",
+            "ussd",
+            "workspace",
+            "web",
+            "post"
+          ]
+        },
+        "decided_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "contact_id",
+        "decision",
+        "wording",
+        "source",
+        "decided_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Two-way conversation thread (WhatsApp inbox, workspace thread linked to a record, web chat)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "conversation",
+        "zone": "ops",
+        "domain": "COM",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "comms"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "channel_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "message_channel"
+        },
+        "contact_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "channel_contact"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "external_thread_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "linked_record_kind": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "alert, coverage_gap, corrective_action, inspection, reissue_case"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "linked_record_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assigned_office": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "class_teacher",
+                "bursary",
+                "admissions",
+                "pastoral",
+                "attendance",
+                "helpdesk",
+                "head"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assigned_user_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "service_window_ends_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "description": "WhatsApp 24-hour customer-service window"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sla_due_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_bot_handled": {
+          "type": "boolean",
+          "description": "Parent Concierge Agent; hand-over offered"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "pending",
+            "resolved",
+            "closed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "channel_id",
+        "is_bot_handled",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Message sent or received on any channel (delivery, read, failure status; stored against the recipient record)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "message",
+        "zone": "ops",
+        "domain": "COM",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "comms"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "created_on": {
+          "type": "string",
+          "format": "date",
+          "description": "Partition key (UTC date of creation)"
+        },
+        "conversation_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "conversation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "campaign_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "broadcast_campaign"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "notification_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "notification"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "outbound",
+            "inbound"
+          ]
+        },
+        "channel": {
+          "type": "string",
+          "enum": [
+            "in_app",
+            "push",
+            "sms",
+            "whatsapp",
+            "email",
+            "voice",
+            "ussd",
+            "workspace",
+            "web",
+            "post"
+          ]
+        },
+        "recipient_kind": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "learner",
+                "guardian",
+                "staff",
+                "provider_person",
+                "applicant",
+                "visitor"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recipient_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "about_learner_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "learner"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "template_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "message_template"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "language": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 35
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "body": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 65535,
+              "description": "Rendered content (never special-category on external channels)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "p1",
+            "high",
+            "normal",
+            "low"
+          ]
+        },
+        "estimated_cost_minor": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "description": "(minor units)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actual_cost_minor": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "description": "(minor units)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provider_message_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "delivery_status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "sent",
+            "delivered",
+            "read",
+            "failed",
+            "retrying",
+            "abandoned",
+            "processed"
+          ]
+        },
+        "delivered_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "read_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "failure_reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 300
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sent_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "User or agent service identity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "created_on",
+        "direction",
+        "channel",
+        "priority",
+        "delivery_status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "BroadcastCampaign": {
+      "title": "BroadcastCampaign",
+      "description": "Broadcast campaign (audience rules, scheduling, language variants, throttling, cost estimate, results)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "broadcast_campaign",
+        "zone": "ops",
+        "domain": "COM",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "comms"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "audience_rule": {
+          "type": "object"
+        },
+        "template_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "message_template"
+        },
+        "scheduled_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "throttle_per_second": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recipients_estimated": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cost_estimate_minor": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "description": "Counts only template messages outside open service windows (minor units)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "results": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approved_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "awaiting_approval",
+            "scheduled",
+            "sending",
+            "completed",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "title",
+        "audience_rule",
+        "template_id",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "NotificationRule": {
+      "title": "NotificationRule",
+      "description": "Rule turning domain events into notifications (recipients, channel policy, digest, quiet hours, escalation)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "notification_rule",
+        "zone": "ops",
+        "domain": "COM",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "comms"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "event_type": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "recipient_rule": {
+          "type": "object"
+        },
+        "channel_policy": {
+          "type": "object"
+        },
+        "is_digest": {
+          "type": "boolean"
+        },
+        "bypass_quiet_hours": {
+          "type": "boolean",
+          "description": "Priority 1 and DSL safeguarding only"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "event_type",
+        "recipient_rule",
+        "channel_policy",
+        "is_digest",
+        "bypass_quiet_hours",
+        "version",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "In-app notification to a user (permission-trimmed; may fan out to external channels)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "notification",
+        "zone": "ops",
+        "domain": "COM",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "comms"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "created_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "rule_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "notification_rule"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "event_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Source domain event"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "body": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1000,
+              "description": "Never special-category content"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "link": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "p1",
+            "high",
+            "normal",
+            "low"
+          ]
+        },
+        "read_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "acknowledged_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "created_on",
+        "user_id",
+        "title",
+        "priority",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "StaffAnnouncement": {
+      "title": "StaffAnnouncement",
+      "description": "Announcement to staff or parents with relationship-based audience (timetabled teachers, heads of year, tutors), receipts and expiry",
+      "type": "object",
+      "x-ceda": {
+        "entity": "staff_announcement",
+        "zone": "ops",
+        "domain": "COM",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "comms"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "body": {
+          "type": "string",
+          "maxLength": 65535
+        },
+        "audience_rule": {
+          "type": "object",
+          "description": "e.g. timetabled_teachers_of(learner)"
+        },
+        "requires_acknowledgement": {
+          "type": "boolean"
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "title",
+        "body",
+        "audience_rule",
+        "requires_acknowledgement",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "AnnouncementRecipient": {
+      "title": "AnnouncementRecipient",
+      "description": "Delivery, read and acknowledgement per announcement recipient",
+      "type": "object",
+      "x-ceda": {
+        "entity": "announcement_recipient",
+        "zone": "ops",
+        "domain": "COM",
+        "kind": "link",
+        "classification": "internal",
+        "history": "none",
+        "module": "comms"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "announcement_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff_announcement"
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "delivered_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "read_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "acknowledged_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "announcement_id",
+        "user_id",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ConsentRequest": {
+      "title": "ConsentRequest",
+      "description": "Request for parental consent (trip, photographs, event, data sharing) — versioned, reminders only to pending parents",
+      "type": "object",
+      "x-ceda": {
+        "entity": "consent_request",
+        "zone": "ops",
+        "domain": "COM",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "comms"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "consent_type": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "consent_type"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "body": {
+          "type": "string",
+          "maxLength": 65535
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "learner_ids": {
+          "type": "object",
+          "description": "Learners covered"
+        },
+        "respond_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "trip_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "trip"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "consent_type",
+        "title",
+        "body",
+        "version",
+        "learner_ids",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "MailMergeJob": {
+      "title": "MailMergeJob",
+      "description": "Mail-merge run producing letters, labels or badges (every letter stored to the recipient record)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "mail_merge_job",
+        "zone": "ops",
+        "domain": "COM",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "comms"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "template_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "message_template"
+        },
+        "recipient_rule": {
+          "type": "object"
+        },
+        "output": {
+          "type": "string",
+          "enum": [
+            "letters_pdf",
+            "labels",
+            "badges",
+            "email"
+          ]
+        },
+        "documents_created": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "previewed",
+            "running",
+            "awaiting_approval",
+            "approved",
+            "issued",
+            "completed",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "template_id",
+        "recipient_rule",
+        "output",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "WorkspaceChannel": {
+      "title": "WorkspaceChannel",
+      "description": "Workspace-messaging channel provisioned from the hierarchy and staff posts (state, LGA, institution, department, year group)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "workspace_channel",
+        "zone": "ops",
+        "domain": "COM",
+        "kind": "config",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "comms"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "channel_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "message_channel"
+        },
+        "external_channel_ref": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "audience": {
+          "type": "string",
+          "enum": [
+            "state_heads",
+            "lga_heads",
+            "all_staff",
+            "department",
+            "year_group",
+            "committee"
+          ]
+        },
+        "membership_rule": {
+          "type": "object",
+          "description": "Derived from grants and posts; removed automatically on leaving"
+        },
+        "last_synced_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "channel_id",
+        "external_channel_ref",
+        "audience",
+        "membership_rule",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

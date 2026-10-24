@@ -1,0 +1,336 @@
+erDiagram
+    salary_structure {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_20_ code
+        VARCHAR_300_ title
+        BINARY_16_ employer_scope_id FK
+        CHAR_3_ currency
+        DATE effective_from
+        INT version
+        VARCHAR_200_ approval_instrument
+        VARCHAR_32_ status
+    }
+    salary_scale_point {
+        BINARY_16_ id PK
+        BINARY_16_ structure_id FK
+        SMALLINT grade_level
+        SMALLINT step
+        BIGINT annual_basic_minor
+        CHAR_3_ currency
+        JSON allowances
+    }
+    cadre {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_20_ code
+        VARCHAR_300_ title
+        VARCHAR_32_ staff_category
+        BOOLEAN is_teaching
+        VARCHAR_20_ salary_structure_code
+        SMALLINT entry_grade_level
+        SMALLINT max_grade_level
+        SMALLINT years_per_promotion
+        SMALLINT retirement_age
+        SMALLINT max_years_service
+        VARCHAR_32_ status
+    }
+    position {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ position_code
+        BINARY_16_ institution_id FK
+        BINARY_16_ org_unit_id FK
+        BINARY_16_ employer_scope_id FK
+        VARCHAR_300_ title
+        BINARY_16_ cadre_id FK
+        VARCHAR_32_ staff_category
+        SMALLINT grade_level_min
+        SMALLINT grade_level_max
+        BINARY_16_ subject_id FK
+        JSON education_levels
+        VARCHAR_32_ funding
+        VARCHAR_40_ budget_line
+        VARCHAR_32_ status
+    }
+    employment_record {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ staff_post_id FK
+        BINARY_16_ staff_id FK
+        BINARY_16_ position_id FK
+        BINARY_16_ cadre_id FK
+        BINARY_16_ employer_scope_id FK
+        VARCHAR_32_ appointment_type
+        VARCHAR_64_ appointment_letter_ref
+        DATE first_appointment_on
+        DATE present_appointment_on
+        DATE confirmation_due_on
+        DATE confirmed_on
+        BINARY_16_ salary_structure_id FK
+        SMALLINT grade_level
+        SMALLINT step
+        DATE last_promotion_on
+        DATE retirement_due_on
+        VARCHAR_32_ retirement_basis
+        VARCHAR_32_ status
+        BINARY_16_ seat_key
+    }
+    staff_posting {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ order_number
+        BINARY_16_ staff_id FK
+        BINARY_16_ from_staff_post_id FK
+        BINARY_16_ to_position_id FK
+        BINARY_16_ to_institution_id FK
+        VARCHAR_32_ posting_kind
+        TEXT reason
+        DATE effective_on
+        JSON coverage_impact
+        BINARY_16_ requested_by FK
+        BINARY_16_ approved_by FK
+        BINARY_16_ workflow_instance_id FK
+        BINARY_16_ new_staff_post_id FK
+        VARCHAR_32_ status
+    }
+    promotion_case {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ staff_id FK
+        BINARY_16_ employment_record_id FK
+        VARCHAR_20_ exercise_label
+        SMALLINT from_grade_level
+        SMALLINT from_step
+        SMALLINT to_grade_level
+        SMALLINT to_step
+        JSON eligibility
+        DECIMAL_6_3_ exam_score
+        VARCHAR_32_ board_decision
+        BINARY_16_ decided_by FK
+        DATE effective_on
+        VARCHAR_32_ status
+    }
+    separation {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ staff_id FK
+        BINARY_16_ staff_post_id FK
+        VARCHAR_32_ separation_kind
+        DATE notice_on
+        DATE effective_on
+        JSON exit_checklist
+        DATE pension_notified_on
+        BINARY_16_ recorded_by FK
+        VARCHAR_32_ status
+    }
+    staff_bank_account {
+        BINARY_16_ id PK
+        BINARY_16_ staff_id FK
+        VARCHAR_10_ bank_code
+        BINARY_32_ account_number_hmac
+        VARBINARY_1024_ account_number_enc
+        CHAR_4_ account_number_last4
+        VARCHAR_200_ account_name
+        BOOLEAN is_primary
+        VARCHAR_32_ verified_via
+        DATETIME_6_ verified_at
+        BINARY_16_ requested_by FK
+        BINARY_16_ approved_by FK
+        VARCHAR_32_ status
+    }
+    hr_integrity_flag {
+        BINARY_16_ id PK
+        BINARY_16_ staff_id FK
+        BINARY_16_ employer_scope_id FK
+        VARCHAR_32_ flag_kind
+        JSON evidence
+        DATETIME_6_ detected_at
+        VARCHAR_40_ run_label
+        BOOLEAN payroll_hold
+        BINARY_16_ decided_by FK
+        TEXT decision_reason
+        VARCHAR_32_ status
+        VARCHAR_120_ open_key
+    }
+    headcount_exercise {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        VARCHAR_40_ label
+        VARCHAR_32_ method
+        DATE starts_on
+        DATE ends_on
+        BINARY_16_ conducted_by FK
+        VARCHAR_32_ status
+    }
+    headcount_result {
+        BINARY_16_ id PK
+        BINARY_16_ exercise_id FK
+        BINARY_16_ staff_id FK
+        BINARY_16_ staff_post_id FK
+        VARCHAR_32_ outcome
+        DATETIME_6_ verified_at
+        JSON evidence
+        BINARY_16_ verifier_id FK
+    }
+    leave_policy {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ code
+        VARCHAR_32_ leave_type
+        VARCHAR_20_ cadre_code
+        SMALLINT grade_level_min
+        SMALLINT grade_level_max
+        DECIMAL_6_1_ days_per_year
+        VARCHAR_32_ day_basis
+        DECIMAL_6_1_ carry_over_max
+        BOOLEAN requires_document
+        BOOLEAN is_paid
+        INT version
+        VARCHAR_32_ status
+    }
+    leave_balance {
+        BINARY_16_ id PK
+        BINARY_16_ staff_id FK
+        VARCHAR_32_ leave_type
+        SMALLINT leave_year
+        DECIMAL_6_1_ entitled
+        DECIMAL_6_1_ carried_over
+        DECIMAL_6_1_ taken
+        DECIMAL_6_1_ pending
+    }
+    leave_request {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ staff_id FK
+        BINARY_16_ staff_post_id FK
+        VARCHAR_32_ leave_type
+        DATE starts_on
+        DATE ends_on
+        DECIMAL_6_1_ days
+        VARCHAR_500_ note
+        BINARY_16_ requested_by
+        BINARY_16_ approver_id
+        DATETIME_6_ decided_at
+        BINARY_16_ relief_staff_id FK
+        BINARY_16_ absence_id FK
+        VARCHAR_32_ status
+    }
+    employee_relations_case {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ case_number
+        BINARY_16_ staff_id FK
+        VARCHAR_32_ case_kind
+        TEXT summary
+        BINARY_16_ vault_allegation_ref
+        BINARY_16_ raised_by
+        DATE raised_on
+        DATE response_due_on
+        JSON steps
+        VARCHAR_32_ outcome
+        BINARY_16_ outcome_decided_by
+        DATE outcome_on
+        VARCHAR_32_ status
+    }
+    pay_element {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_20_ code
+        VARCHAR_300_ title
+        VARCHAR_32_ element_kind
+        VARCHAR_32_ calc_method
+        DECIMAL_9_4_ rate
+        VARCHAR_32_ table_kind
+        BOOLEAN is_taxable
+        BOOLEAN is_pensionable
+        INT version
+        VARCHAR_32_ status
+    }
+    staff_pay_element {
+        BINARY_16_ id PK
+        BINARY_16_ staff_post_id FK
+        VARCHAR_20_ element_code
+        BIGINT amount_minor
+        DECIMAL_9_4_ rate
+        CHAR_3_ currency
+        BIGINT loan_balance_minor
+        VARCHAR_64_ reference
+        BINARY_16_ approved_by
+        DATE valid_from
+        DATE valid_to
+    }
+    app_user {
+        BINARY_16 id PK
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    org_unit {
+        BINARY_16 id PK
+    }
+    scope_node {
+        BINARY_16 id PK
+    }
+    staff {
+        BINARY_16 id PK
+    }
+    staff_absence {
+        BINARY_16 id PK
+    }
+    staff_post {
+        BINARY_16 id PK
+    }
+    subject {
+        BINARY_16 id PK
+    }
+    workflow_instance {
+        BINARY_16 id PK
+    }
+    app_user ||--o{ headcount_exercise : "conducted_by"
+    app_user ||--o{ headcount_result : "verifier_id"
+    app_user ||--o{ hr_integrity_flag : "decided_by"
+    app_user ||--o{ promotion_case : "decided_by"
+    app_user ||--o{ separation : "recorded_by"
+    app_user ||--o{ staff_bank_account : "approved_by"
+    app_user ||--o{ staff_bank_account : "requested_by"
+    app_user ||--o{ staff_posting : "approved_by"
+    app_user ||--o{ staff_posting : "requested_by"
+    cadre ||--o{ employment_record : "cadre_id"
+    cadre ||--o{ position : "cadre_id"
+    employment_record ||--o{ promotion_case : "employment_record_id"
+    headcount_exercise ||--o{ headcount_result : "exercise_id"
+    institution ||--o{ headcount_exercise : "institution_id"
+    institution ||--o{ position : "institution_id"
+    institution ||--o{ staff_posting : "to_institution_id"
+    org_unit ||--o{ position : "org_unit_id"
+    position ||--o{ employment_record : "position_id"
+    position ||--o{ staff_posting : "to_position_id"
+    salary_structure ||--o{ employment_record : "salary_structure_id"
+    salary_structure ||--o{ salary_scale_point : "structure_id"
+    scope_node ||--o{ employment_record : "employer_scope_id"
+    scope_node ||--o{ hr_integrity_flag : "employer_scope_id"
+    scope_node ||--o{ position : "employer_scope_id"
+    scope_node ||--o{ salary_structure : "employer_scope_id"
+    staff ||--o{ employee_relations_case : "staff_id"
+    staff ||--o{ employment_record : "staff_id"
+    staff ||--o{ headcount_result : "staff_id"
+    staff ||--o{ hr_integrity_flag : "staff_id"
+    staff ||--o{ leave_balance : "staff_id"
+    staff ||--o{ leave_request : "relief_staff_id"
+    staff ||--o{ leave_request : "staff_id"
+    staff ||--o{ promotion_case : "staff_id"
+    staff ||--o{ separation : "staff_id"
+    staff ||--o{ staff_bank_account : "staff_id"
+    staff ||--o{ staff_posting : "staff_id"
+    staff_absence ||--o{ leave_request : "absence_id"
+    staff_post ||--o{ headcount_result : "staff_post_id"
+    staff_post ||--o{ leave_request : "staff_post_id"
+    staff_post ||--o{ separation : "staff_post_id"
+    staff_post ||--o{ staff_pay_element : "staff_post_id"
+    staff_post ||--o{ staff_posting : "from_staff_post_id"
+    staff_post ||--o{ staff_posting : "new_staff_post_id"
+    staff_post ||--o| employment_record : "staff_post_id"
+    subject ||--o{ position : "subject_id"
+    workflow_instance ||--o{ staff_posting : "workflow_instance_id"

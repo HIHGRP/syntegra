@@ -1,0 +1,205 @@
+erDiagram
+    send_profile {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        VARCHAR_32_ support_level
+        VARCHAR_32_ plan_type
+        MEDIUMBLOB profile
+        BINARY_16_ senco_user_id
+        DATE review_due_on
+        VARCHAR_32_ status
+    }
+    send_need {
+        BINARY_16_ id PK
+        BINARY_16_ profile_id FK
+        VARCHAR_32_ need_area
+        BOOLEAN is_primary
+        MEDIUMBLOB detail
+        DATE valid_from
+        DATE valid_to
+    }
+    support_plan {
+        BINARY_16_ id PK
+        BINARY_16_ profile_id FK
+        VARCHAR_32_ plan_type
+        INT version
+        MEDIUMBLOB outcomes
+        JSON participants
+        SMALLINT review_cycle_months
+        DATE next_review_on
+        BINARY_16_ linked_learning_plan_id
+        VARCHAR_32_ status
+    }
+    support_plan_review {
+        BINARY_16_ id PK
+        BINARY_16_ plan_id FK
+        DATE reviewed_on
+        MEDIUMBLOB notes
+        JSON attendees
+    }
+    provision {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ name
+        VARCHAR_32_ provision_kind
+        JSON staff_ids
+        DECIMAL_5_2_ hours_per_week
+        BIGINT cost_per_term_minor
+        CHAR_3_ currency
+        VARCHAR_32_ status
+    }
+    provision_allocation {
+        BINARY_16_ id PK
+        BINARY_16_ provision_id FK
+        BINARY_16_ learner_id FK
+        MEDIUMBLOB impact
+        DATE valid_from
+        DATE valid_to
+    }
+    external_referral {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        VARCHAR_32_ agency_kind
+        VARCHAR_200_ agency_name
+        BINARY_16_ consent_record_id
+        DATE referred_on
+        BINARY_16_ report_document_id
+        VARCHAR_32_ status
+    }
+    adjustment {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        VARCHAR_32_ adjustment_kind
+        JSON parameters
+        JSON applies_to
+        BINARY_16_ authorised_by
+        DATE valid_from
+        DATE valid_to
+    }
+    gifted_register_entry {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        VARCHAR_32_ domain_area
+        VARCHAR_1000_ evidence
+        VARCHAR_1000_ provision_note
+        DATE valid_from
+        DATE valid_to
+    }
+    wellbeing_checkin {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        VARCHAR_32_ source
+        SMALLINT score
+        VARCHAR_32_ tracker_code
+        MEDIUMBLOB note
+        DATETIME_6_ checked_in_at
+    }
+    wellbeing_concern {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        VARCHAR_32_ reported_by_kind
+        BINARY_16_ reported_by_id
+        VARCHAR_32_ concern_type
+        MEDIUMBLOB body
+        BOOLEAN keyword_alert
+        BINARY_16_ assigned_to
+        DATETIME_6_ respond_by
+        VARCHAR_32_ status
+    }
+    intervention {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ title
+        VARCHAR_32_ intervention_kind
+        BINARY_16_ lead_staff_id FK
+        JSON learner_ids
+        JSON baseline
+        JSON target
+        DATE review_on
+        JSON outcome
+        JSON effect_estimate
+        BINARY_16_ recommendation_id FK
+        BIGINT cost_minor
+        CHAR_3_ currency
+        VARCHAR_32_ status
+    }
+    learning_plan_template {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ code
+        VARCHAR_300_ title
+        JSON content
+        INT version
+        VARCHAR_32_ status
+    }
+    learning_plan {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        BINARY_16_ template_id FK
+        INT template_version
+        BINARY_16_ owner_staff_id FK
+        DATE next_review_on
+        INT time_spent_minutes
+        BIGINT cost_minor
+        CHAR_3_ currency
+        VARCHAR_32_ status
+    }
+    learning_plan_goal {
+        BINARY_16_ id PK
+        BINARY_16_ plan_id FK
+        VARCHAR_1000_ goal_text
+        JSON node_ids
+        BINARY_16_ target_grade_id FK
+        VARCHAR_32_ status
+    }
+    learning_plan_entry {
+        BINARY_16_ id PK
+        BINARY_16_ plan_id FK
+        BINARY_16_ goal_id FK
+        VARCHAR_32_ entry_kind
+        VARCHAR_32_ author_kind
+        BINARY_16_ author_id
+        TEXT body
+        JSON evidence_ref
+        BINARY_16_ owner_staff_id FK
+        DATE due_on
+        DATETIME_6_ occurred_at
+    }
+    learner {
+        BINARY_16 id PK
+    }
+    recommendation {
+        BINARY_16 id PK
+    }
+    staff {
+        BINARY_16 id PK
+    }
+    target_grade {
+        BINARY_16 id PK
+    }
+    learner ||--o{ adjustment : "learner_id"
+    learner ||--o{ external_referral : "learner_id"
+    learner ||--o{ gifted_register_entry : "learner_id"
+    learner ||--o{ learning_plan : "learner_id"
+    learner ||--o{ provision_allocation : "learner_id"
+    learner ||--o{ send_profile : "learner_id"
+    learner ||--o{ wellbeing_checkin : "learner_id"
+    learner ||--o{ wellbeing_concern : "learner_id"
+    learning_plan ||--o{ learning_plan_entry : "plan_id"
+    learning_plan ||--o{ learning_plan_goal : "plan_id"
+    learning_plan_goal ||--o{ learning_plan_entry : "goal_id"
+    learning_plan_template ||--o{ learning_plan : "template_id"
+    provision ||--o{ provision_allocation : "provision_id"
+    recommendation ||--o{ intervention : "recommendation_id"
+    send_profile ||--o{ send_need : "profile_id"
+    send_profile ||--o{ support_plan : "profile_id"
+    staff ||--o{ intervention : "lead_staff_id"
+    staff ||--o{ learning_plan : "owner_staff_id"
+    staff ||--o{ learning_plan_entry : "owner_staff_id"
+    support_plan ||--o{ support_plan_review : "plan_id"
+    target_grade ||--o{ learning_plan_goal : "target_grade_id"

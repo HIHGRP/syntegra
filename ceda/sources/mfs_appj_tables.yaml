@@ -1,0 +1,699 @@
+# Table index of SYN-MFS-002 v2.4 Book 3 Appendix J (MySQL 9.7 physical schema, 174 tables).
+# Every entry is mapped to a CEDA entity (see generated/traceability/appj_mapping.md).
+tables:
+- table: tenant
+  domain: Platform & governance
+  purpose: Tenant boundary (global, country, regional, institutional, department)
+  columns: 7
+- table: scope_node
+  domain: Platform & governance
+  purpose: Governance hierarchy node (country→state→LGA→network→institution→campus→unit→class)
+  columns: 9
+- table: app_user
+  domain: Platform & governance
+  purpose: Login identity (people may also be learners, guardians or staff)
+  columns: 8
+- table: role
+  domain: Platform & governance
+  purpose: Role template
+  columns: 5
+- table: role_permission
+  domain: Platform & governance
+  purpose: Permission granted by a role
+  columns: 3
+- table: role_grant
+  domain: Platform & governance
+  purpose: Role granted to a user at a scope
+  columns: 8
+- table: policy_rule
+  domain: Platform & governance
+  purpose: Versioned rule at a governance level (Ministry Policy Engine)
+  columns: 10
+- table: policy_exception
+  domain: Platform & governance
+  purpose: Approved, time-boxed exception to a rule
+  columns: 9
+- table: config_version
+  domain: Platform & governance
+  purpose: Country / institution configuration snapshot
+  columns: 6
+- table: institution
+  domain: Institutions
+  purpose: Institution 360 master
+  columns: 15
+- table: campus
+  domain: Institutions
+  purpose: Campus / site
+  columns: 4
+- table: org_unit
+  domain: Institutions
+  purpose: Faculty / school / department / unit (effective-dated tree)
+  columns: 8
+- table: licence
+  domain: Institutions
+  purpose: Licence / accreditation / authorisation
+  columns: 9
+- table: inspection
+  domain: Institutions
+  purpose: Inspection 360
+  columns: 8
+- table: inspection_finding
+  domain: Institutions
+  purpose: Finding recorded during an inspection
+  columns: 5
+- table: learner
+  domain: People
+  purpose: Learner 360 master (one row per person, lifelong)
+  columns: 14
+- table: external_identifier
+  domain: People
+  purpose: Authorised external identifiers for a person (NIN, exam candidate no., UPN …)
+  columns: 9
+- table: guardian
+  domain: People
+  purpose: Parent/Guardian 360 master
+  columns: 9
+- table: learner_guardian
+  domain: People
+  purpose: Relationship between learner and guardian
+  columns: 9
+- table: family
+  domain: People
+  purpose: Family 360 household / billing group
+  columns: 3
+- table: family_member
+  domain: People
+  purpose: Membership of learners/guardians in a family
+  columns: 3
+- table: staff
+  domain: People
+  purpose: Staff / Teacher 360 master (one person, many posts)
+  columns: 9
+- table: staff_post
+  domain: People
+  purpose: Post held by a staff member at an institution
+  columns: 11
+- table: staff_qualification
+  domain: People
+  purpose: Qualifications, registrations and teaching authorisations
+  columns: 9
+- table: academic_period
+  domain: Academic & curriculum
+  purpose: Session / term / semester (calendar)
+  columns: 6
+- table: subject
+  domain: Academic & curriculum
+  purpose: Subject 360 master (country master list + institution courses)
+  columns: 4
+- table: programme
+  domain: Academic & curriculum
+  purpose: Programme 360 (incl. qualification-bearing programmes)
+  columns: 6
+- table: programme_component
+  domain: Academic & curriculum
+  purpose: Course/module within a programme
+  columns: 6
+- table: qualification
+  domain: Academic & curriculum
+  purpose: Qualification 360 (e.g. SSC, BECE, ND, B.Sc.)
+  columns: 5
+- table: class_group
+  domain: Academic & curriculum
+  purpose: Class / arm / cohort / course section for a period
+  columns: 9
+- table: enrolment
+  domain: Academic & curriculum
+  purpose: Learner enrolment at an institution/class/programme
+  columns: 10
+- table: curriculum
+  domain: Academic & curriculum
+  purpose: Curriculum 360 master
+  columns: 5
+- table: curriculum_version
+  domain: Academic & curriculum
+  purpose: Immutable published version
+  columns: 8
+- table: curriculum_node
+  domain: Academic & curriculum
+  purpose: Strand / topic / objective / competency
+  columns: 10
+- table: curriculum_adoption
+  domain: Academic & curriculum
+  purpose: Which version applies to which institution/level/cohort and when
+  columns: 6
+- table: lesson_plan
+  domain: Academic & curriculum
+  purpose: Planned lesson linked to curriculum nodes
+  columns: 6
+- table: delivery_log
+  domain: Academic & curriculum
+  purpose: Evidence that a lesson was delivered
+  columns: 7
+- table: room
+  domain: Academic & curriculum
+  purpose: Room / space (Infrastructure 360)
+  columns: 7
+- table: timetable_lesson
+  domain: Academic & curriculum
+  purpose: Scheduled lesson occurrence pattern
+  columns: 9
+- table: attendance_mark
+  domain: Academic & curriculum
+  purpose: Attendance per learner per session/lesson (partitioned by month)
+  columns: 8
+- table: assessment
+  domain: Academic & curriculum
+  purpose: Assessment 360 definition
+  columns: 8
+- table: assessment_result
+  domain: Academic & curriculum
+  purpose: Mark per learner per assessment
+  columns: 6
+- table: grading_scale
+  domain: Academic & curriculum
+  purpose: Configurable grading scale
+  columns: 4
+- table: exam_series
+  domain: Academic & curriculum
+  purpose: Examination 360 series
+  columns: 5
+- table: exam_entry
+  domain: Academic & curriculum
+  purpose: Candidate entry
+  columns: 6
+- table: exam_result
+  domain: Academic & curriculum
+  purpose: Result per candidate per paper (immutable once committed)
+  columns: 7
+- table: certificate
+  domain: Certificates
+  purpose: Certificate 360 master
+  columns: 16
+- table: certificate_event
+  domain: Certificates
+  purpose: Lifecycle event (issue, correct, suspend, revoke, reissue) — append only
+  columns: 6
+- table: verification
+  domain: Certificates
+  purpose: Public/API certificate verification log
+  columns: 6
+- table: behaviour_event
+  domain: Learner success
+  purpose: Behaviour log
+  columns: 7
+- table: safeguarding_case
+  domain: Learner success
+  purpose: Safeguarding 360 case (special category; separate schema + key)
+  columns: 8
+- table: safeguarding_entry
+  domain: Learner success
+  purpose: Concern / chronology entry (encrypted text)
+  columns: 6
+- table: send_profile
+  domain: Learner success
+  purpose: SEND 360 support profile
+  columns: 5
+- table: adjustment
+  domain: Learner success
+  purpose: Authorised reasonable adjustment (the teacher-visible layer)
+  columns: 6
+- table: intervention
+  domain: Learner success
+  purpose: Intervention with baseline and outcome (closed loop)
+  columns: 9
+- table: account
+  domain: Finance
+  purpose: Ledger account for a learner, family, sponsor or funder
+  columns: 3
+- table: billing_rule
+  domain: Finance
+  purpose: Versioned billing rule
+  columns: 9
+- table: invoice
+  domain: Finance
+  purpose: Invoice (immutable once issued; credit notes for changes)
+  columns: 8
+- table: ledger_entry
+  domain: Finance
+  purpose: Double-entry posting (append only)
+  columns: 9
+- table: payment
+  domain: Finance
+  purpose: Incoming payment
+  columns: 8
+- table: funding_source
+  domain: Finance
+  purpose: Scholarship, bursary, grant, sponsor, capitation, loan
+  columns: 5
+- table: workflow_definition
+  domain: Cross-cutting
+  purpose: Versioned workflow definition
+  columns: 4
+- table: workflow_instance
+  domain: Cross-cutting
+  purpose: Running workflow
+  columns: 5
+- table: workflow_task
+  domain: Cross-cutting
+  purpose: Human task
+  columns: 7
+- table: match_review
+  domain: Cross-cutting
+  purpose: Probable-duplicate review
+  columns: 9
+- table: alert
+  domain: Cross-cutting
+  purpose: Alert instance
+  columns: 12
+- table: recommendation
+  domain: Cross-cutting
+  purpose: AI recommendation awaiting human decision
+  columns: 10
+- table: document
+  domain: Cross-cutting
+  purpose: Stored document (object storage pointer)
+  columns: 7
+- table: audit_event
+  domain: Cross-cutting
+  purpose: Tamper-evident audit trail (append only, hash-chained, partitioned by day)
+  columns: 16
+- table: outbox_event
+  domain: Cross-cutting
+  purpose: Transactional outbox for domain events
+  columns: 7
+- table: subscription
+  domain: Platform & governance
+  purpose: Platform subscription and plan for a tenant
+  columns: 5
+- table: scope_closure
+  domain: Platform & governance
+  purpose: Ancestor/descendant pairs of the governance hierarchy for fast subtree queries
+  columns: 3
+- table: supplier
+  domain: Finance
+  purpose: Supplier 360 master
+  columns: 4
+- table: provider
+  domain: Private providers
+  purpose: Private education provider (proprietor organisation)
+  columns: 4
+- table: provider_application
+  domain: Private providers
+  purpose: Application for approval of a private institution
+  columns: 10
+- table: application_evidence
+  domain: Private providers
+  purpose: Evidence item against the approval checklist
+  columns: 5
+- table: approval
+  domain: Private providers
+  purpose: Approval certificate for a private institution
+  columns: 8
+- table: approval_condition
+  domain: Private providers
+  purpose: Condition attached to an approval
+  columns: 4
+- table: department
+  domain: Academic structure
+  purpose: Department 360 (post-secondary)
+  columns: 4
+- table: course
+  domain: Academic structure
+  purpose: Course 360 (catalogue entry)
+  columns: 9
+- table: course_section
+  domain: Academic structure
+  purpose: Course offering per semester
+  columns: 5
+- table: class_subject_plan
+  domain: Academic structure
+  purpose: Subject offered to a class with teacher of record
+  columns: 7
+- table: teaching_assignment
+  domain: Academic structure
+  purpose: Teacher of record or co-teacher for a class-subject or course section
+  columns: 7
+- table: coverage_gap
+  domain: Curriculum 360
+  purpose: Coverage gap record (rules G1–G12)
+  columns: 9
+- table: gap_event
+  domain: Curriculum 360
+  purpose: History of a coverage gap (append only)
+  columns: 4
+- table: course_space
+  domain: LMS
+  purpose: LMS course space for a class-subject or course section
+  columns: 4
+- table: lms_unit
+  domain: LMS
+  purpose: Unit (week/topic) in a course space
+  columns: 4
+- table: lms_content
+  domain: LMS
+  purpose: Content item in a unit
+  columns: 5
+- table: assignment
+  domain: LMS
+  purpose: Coursework, homework, CA test, quiz, practical or portfolio
+  columns: 14
+- table: rubric
+  domain: LMS
+  purpose: Marking rubric
+  columns: 2
+- table: submission
+  domain: LMS
+  purpose: Learner submission (versioned)
+  columns: 9
+- table: submission_file
+  domain: LMS
+  purpose: File in a submission
+  columns: 2
+- table: submission_mark
+  domain: LMS
+  purpose: Mark and feedback for a submission
+  columns: 6
+- table: extension
+  domain: LMS
+  purpose: Individual extension
+  columns: 4
+- table: question
+  domain: LMS
+  purpose: Question bank item
+  columns: 9
+- table: digital_skill_level
+  domain: LMS
+  purpose: Digital skills level per person and strand
+  columns: 5
+- table: message_channel
+  domain: Communication
+  purpose: Connected channel (WhatsApp number, Zenzap workspace, SMS sender)
+  columns: 4
+- table: message_template
+  domain: Communication
+  purpose: Approved message template
+  columns: 6
+- table: conversation
+  domain: Communication
+  purpose: Two-way conversation thread
+  columns: 7
+- table: message
+  domain: Communication
+  purpose: Message sent or received
+  columns: 8
+- table: channel_opt_in
+  domain: Communication
+  purpose: Opt-in / opt-out per contact and channel
+  columns: 5
+- table: security_stock
+  domain: Certificates
+  purpose: Security paper stock by serial number
+  columns: 5
+- table: registry_publication
+  domain: Certificates
+  purpose: Publication of certificate events to the state registry and linked platforms
+  columns: 5
+- table: reissue_case
+  domain: Certificates
+  purpose: Certificate reissue / copy request
+  columns: 10
+- table: identity_check
+  domain: Certificates
+  purpose: Identity verification step for a case
+  columns: 5
+- table: agent
+  domain: Automation agents
+  purpose: Automation agent instance
+  columns: 8
+- table: agent_action
+  domain: Automation agents
+  purpose: Action taken or proposed by an agent (append only)
+  columns: 8
+- table: digitisation_batch
+  domain: Records & archives
+  purpose: Box/volume batch in the digitisation programme
+  columns: 6
+- table: custody_event
+  domain: Records & archives
+  purpose: Chain-of-custody event (append only)
+  columns: 4
+- table: scanned_page
+  domain: Records & archives
+  purpose: Page image captured from a batch
+  columns: 7
+- table: extracted_field
+  domain: Records & archives
+  purpose: Field extracted from a page with confidence
+  columns: 7
+- table: record_series
+  domain: Records & archives
+  purpose: File plan record series with retention
+  columns: 5
+- table: legal_hold
+  domain: Records & archives
+  purpose: Legal hold suspending disposal
+  columns: 4
+- table: disposal
+  domain: Records & archives
+  purpose: Approved disposal with certificate
+  columns: 4
+- table: form_definition
+  domain: Forms
+  purpose: Form template (versioned)
+  columns: 5
+- table: form_response
+  domain: Forms
+  purpose: Submitted form
+  columns: 5
+- table: meeting_event
+  domain: Parents’ meetings
+  purpose: Parents’ meeting event
+  columns: 4
+- table: meeting_booking
+  domain: Parents’ meetings
+  purpose: Booked slot
+  columns: 7
+- table: seating_plan
+  domain: Behaviour
+  purpose: Seating plan for a class
+  columns: 3
+- table: detention
+  domain: Behaviour
+  purpose: Detention session and attendance
+  columns: 5
+- table: industrial_training
+  domain: TVET
+  purpose: Industrial training / SIWES placement
+  columns: 6
+- table: external_referral
+  domain: SEND
+  purpose: Therapy / external agency referral
+  columns: 6
+- table: authorised_collector
+  domain: Early years
+  purpose: Person authorised to collect an early-years child
+  columns: 5
+- table: behaviour_policy
+  domain: Behaviour
+  purpose: Versioned behaviour policy of an institution, inheriting the state minimum framework
+  columns: 6
+- table: behaviour_type
+  domain: Behaviour
+  purpose: Configured positive or negative behaviour with points and default outcome
+  columns: 9
+- table: reward_badge
+  domain: Behaviour
+  purpose: Achievement badge awarded at a points threshold or by rule
+  columns: 4
+- table: badge_award
+  domain: Behaviour
+  purpose: Badge awarded to a learner
+  columns: 4
+- table: seating_field_set
+  domain: Behaviour
+  purpose: Set of up to 16 learner data fields shown on seating plans for a class, subject or level
+  columns: 4
+- table: influence_score
+  domain: Behaviour
+  purpose: Pairwise influence between two learners derived from behaviour in shared lessons
+  columns: 7
+- table: intel_rule
+  domain: Behaviour
+  purpose: Threshold rule over behaviour, attendance, homework or wellbeing data with actions
+  columns: 7
+- table: intel_firing
+  domain: Behaviour
+  purpose: Each time an intelligence rule fires (append only)
+  columns: 5
+- table: detention_type
+  domain: Behaviour
+  purpose: Detention level in the institution ladder
+  columns: 7
+- table: oncall_request
+  domain: Behaviour
+  purpose: On-call request raised from a classroom
+  columns: 9
+- table: on_report_card
+  domain: Behaviour
+  purpose: Learner on report for a period with a level and owner
+  columns: 8
+- table: on_report_target
+  domain: Behaviour
+  purpose: Target on an on-report card
+  columns: 3
+- table: on_report_rating
+  domain: Behaviour
+  purpose: Rating and comment for a target in one lesson, or a parent or learner comment
+  columns: 6
+- table: evacuation_event
+  domain: Attendance
+  purpose: Evacuation or drill
+  columns: 5
+- table: evacuation_mark
+  domain: Attendance
+  purpose: Roll-call mark for a person at an assembly point
+  columns: 8
+- table: absence_report
+  domain: Attendance
+  purpose: Absence reported by a parent
+  columns: 9
+- table: staff_announcement
+  domain: Communication
+  purpose: Announcement to staff or parents with audience rule
+  columns: 7
+- table: announcement_recipient
+  domain: Communication
+  purpose: Delivery, read and acknowledgement per recipient
+  columns: 4
+- table: consent_request
+  domain: Communication
+  purpose: Request for parental consent (trip, photos, event, data sharing)
+  columns: 5
+- table: consent_response
+  domain: Communication
+  purpose: Consent given or refused by a guardian for a learner (the consent record)
+  columns: 7
+- table: wellbeing_concern
+  domain: Wellbeing
+  purpose: Wellbeing concern reported by a learner, parent or staff member
+  columns: 8
+- table: learning_plan_template
+  domain: Learning plans
+  purpose: Reusable personal learning plan template (state or institution)
+  columns: 5
+- table: learning_plan
+  domain: Learning plans
+  purpose: Personal learning plan for a learner
+  columns: 6
+- table: learning_plan_goal
+  domain: Learning plans
+  purpose: Goal in a learning plan linked to curriculum and target
+  columns: 5
+- table: learning_plan_entry
+  domain: Learning plans
+  purpose: Action, learner voice, parent comment, evidence or review (append only)
+  columns: 6
+- table: staff_case
+  domain: Safeguarding
+  purpose: Allegation, low-level concern or self-referral about an adult (restricted area)
+  columns: 7
+- table: staff_case_entry
+  domain: Safeguarding
+  purpose: Chronology entry, decision or document on a staff case (append only)
+  columns: 5
+- table: reporting_form
+  domain: Safeguarding
+  purpose: Community reporting form with branding, fields and channels
+  columns: 7
+- table: community_report
+  domain: Safeguarding
+  purpose: Report received through a community form, anonymous by default
+  columns: 7
+- table: training_course
+  domain: Staff
+  purpose: Safeguarding or statutory training course
+  columns: 7
+- table: training_completion
+  domain: Staff
+  purpose: Completion of a training course by an adult
+  columns: 7
+- table: homework_limit
+  domain: LMS
+  purpose: Nightly homework timetable and load limit for a class
+  columns: 4
+- table: professional_body
+  domain: Medical education
+  purpose: Health-profession regulator and its registration rules for a programme family
+  columns: 6
+- table: learning_resource
+  domain: Operations
+  purpose: Textbook or learning material title held in stock
+  columns: 7
+- table: resource_issue
+  domain: Operations
+  purpose: Issue, return, loss and condition of a learning resource
+  columns: 7
+- table: guidance_session
+  domain: Post-16 & careers
+  purpose: Career guidance session with a learner
+  columns: 7
+- table: sdaf_rate_card
+  domain: Programme financing
+  purpose: Version of the state-approved Student Digital Access Fee rate card
+  columns: 6
+- table: sdaf_rate
+  domain: Programme financing
+  purpose: Rate in a rate card for an institution type and level
+  columns: 5
+- table: billing_period
+  domain: Programme financing
+  purpose: Term or semester billing period with census date
+  columns: 5
+- table: census_snapshot
+  domain: Programme financing
+  purpose: Frozen billable-learner count of an institution for a period
+  columns: 9
+- table: census_learner
+  domain: Programme financing
+  purpose: Learner included or excluded in a census snapshot (append only)
+  columns: 6
+- table: sdaf_payer_rule
+  domain: Programme financing
+  purpose: Who pays the SDAF for an institution type and level
+  columns: 7
+- table: sdaf_exemption
+  domain: Programme financing
+  purpose: Approved SDAF exemption for a learner and period
+  columns: 7
+- table: sdaf_demand
+  domain: Programme financing
+  purpose: Demand notice or individual assessment for the SDAF
+  columns: 10
+- table: sdaf_collection
+  domain: Programme financing
+  purpose: Payment into the state revenue account against a demand (append only)
+  columns: 7
+- table: remittance
+  domain: Programme financing
+  purpose: Remittance of collected SDAF from the State Government to the programme operator (append only)
+  columns: 7
+- table: remittance_allocation
+  domain: Programme financing
+  purpose: Allocation of a remittance to collections
+  columns: 3
+- table: reconciliation_statement
+  domain: Programme financing
+  purpose: Period statement of billed, exempted, collected, remitted and outstanding SDAF with dual sign-off
+  columns: 8
+- table: subscription_plan
+  domain: Programme financing
+  purpose: Operator plan and price-list version for private providers
+  columns: 9
+- table: subscription_invoice
+  domain: Programme financing
+  purpose: Invoice from the operator to a private provider (never edited after issue)
+  columns: 9
+- table: subscription_payment
+  domain: Programme financing
+  purpose: Payment by a private provider directly to the operator
+  columns: 5

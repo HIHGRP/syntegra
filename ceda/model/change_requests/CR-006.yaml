@@ -1,0 +1,71 @@
+# CEDA change request register entry (see CR-001.yaml for the format).
+
+id: CR-006
+title: Institutional accounting and budgets; funding and loan platforms; the government property and infrastructure warehouse; security-agency curricula through each agency's structure
+received: 2026-10-14
+status: adopted
+ceda_version: 1.7.0
+summary: >
+  (1) Institutional and administrative finance for every school, college and tertiary institution: cost centres,
+  budget lines by cost centre, account and funding source, commitment control before money is spent, virements
+  with a second approver, imprest (cash advances) and their retirement, and budget execution. (2) Funding and loan
+  platforms for securing capital (government interventions such as TETFund and UBEC, development partners, banks),
+  staff welfare (co-operative and housing loans, salary advances) and student support (the Nigerian Education Loan
+  Fund, scholarships and bursaries): programmes, applications with eligibility, agreements, disbursement, repayment
+  schedules, repayments (including payroll deduction) and arrears. (3) A register of every government property —
+  land, sites, buildings, rooms and equipment — with its title, condition and current state of usability, planned
+  maintenance and proactive actions for heads of institutions (principal, head teacher, rector, provost, nursery
+  head), escalated to the LGA and the ministry, all loaded into the state data warehouse so that the Commissioner
+  for Education sees the state of school infrastructure across the whole state. (4) Each security agency's
+  curricula are tied to the agency's own structure: agency-specific syllabus headings, which commands and
+  directorates sponsor, approve, deliver or hold quotas on each course, and the courses each rank requires for
+  promotion, appointment or command — importable so that new agencies, institutions and courses can be added.
+constraints:
+  - "Money is BIGINT minor units with a currency on the row; ledger entries stay append-only; a budget line can never be committed or spent beyond its revised amount without an approved virement (FR-ACC-03)."
+  - "Unpaid fees, loans or arrears never restrict a learner's attendance, teaching, assessment, results or record transfer (P9); loan data is restricted, purpose-bound and visible to the borrower."
+  - "Lending decisions are human decisions with a second approver; eligibility rules inform, never decide. Payroll deductions for repayments never take net pay below the policy floor (one third of gross pay by default, policy FND-NET-PAY-FLOOR)."
+  - "Programme terms seeded from public sources (e.g. the Students Loans (Access to Higher Education) Act 2024) are illustrative or to_confirm until the provider confirms them."
+  - "Facility usability is a recorded human assessment; the platform proposes proactive actions and escalates them, it never closes a facility on its own."
+  - "All CR-004 constraints apply to security-agency curricula: syllabus headings and administration only, never operational or tactical content."
+
+requirements:
+  # ------------------------------------------------------------------ institutional accounting and budgets
+  - {id: FR-ACC-01, module: ACC, priority: SHALL, phase: P3, text: "Maintain cost centres per institution (administration, departments, boarding, feeding, estate, ICT, transport, projects, welfare) with a budget holder."}
+  - {id: FR-ACC-02, module: ACC, priority: SHALL, phase: P3, text: "Hold the approved budget as lines by cost centre, ledger account, economic code and funding source (subvention, internally generated revenue, grant, loan), with original and revised amounts."}
+  - {id: FR-ACC-03, module: ACC, priority: SHALL, phase: P3, text: "Commit funds against a budget line before a requisition, purchase order, imprest or disbursement proceeds; refuse a commitment that exceeds the line's available balance."}
+  - {id: FR-ACC-04, module: ACC, priority: SHALL, phase: P3, text: "Move budget between lines only by a virement with a reason, approved by someone other than the requester."}
+  - {id: FR-ACC-05, module: ACC, priority: SHALL, phase: P3, text: "Issue imprest (cash advances) to a named holder against a budget line, track retirement with receipts and refunds by a due date, and flag overdue imprest."}
+  - {id: FR-ACC-06, module: ACC, priority: SHALL, phase: P3, text: "Report budget execution — original, revised, committed, actual and available — by institution, cost centre and economic code, rolled up to LGA and state."}
+  # ------------------------------------------------------------------ funding and loan platforms
+  - {id: FR-FND-01, module: FND, priority: SHALL, phase: P3, text: "Maintain funding programmes from government, development partners, banks, co-operatives, employers, alumni and philanthropy for institutions (capital, equipment, ICT, research, operations), staff (welfare, housing, vehicle, salary advance) and learners (student loans, scholarships, bursaries), with instrument, terms and eligibility."}
+  - {id: FR-FND-02, module: FND, priority: SHALL, phase: P3, text: "Accept applications from or on behalf of an institution, a member of staff or a learner, evaluate the programme's eligibility rules, and record a recommendation and a decision by two different people."}
+  - {id: FR-FND-03, module: FND, priority: SHALL, phase: P3, text: "Record the funding agreement (principal, rate, tenor, moratorium, repayment basis) and generate its repayment schedule; grants, scholarships and bursaries have no schedule."}
+  - {id: FR-FND-04, module: FND, priority: SHALL, phase: P3, text: "Record disbursements to the institution (fees, capital works), the beneficiary (upkeep) or a supplier or contractor, and link institutional funding to the receiving budget line."}
+  - {id: FR-FND-05, module: FND, priority: SHALL, phase: P3, text: "Record repayments by payroll deduction, direct debit, transfer or employer remittance, allocate them to the oldest instalment first, and keep the outstanding balance and arrears."}
+  - {id: FR-FND-06, module: FND, priority: SHALL, phase: P3, text: "Never deduct a repayment from pay that would take net pay below the policy floor; report arrears and give the borrower their own schedule and statement."}
+  - {id: FR-FND-07, module: FND, priority: SHALL, phase: P3, text: "Link capital funding to the capital plan items and facilities it pays for, so that the property register shows how each improvement was financed."}
+  # ------------------------------------------------------------------ government property and facility management
+  - {id: FR-EST-01, module: EST, priority: SHALL, phase: P3, text: "Register every government property site (land) used by an institution with owner, land title and reference, area, boundary, fencing and encroachment status, and valuation."}
+  - {id: FR-EST-02, module: EST, priority: SHALL, phase: P3, text: "Record dated condition and usability assessments of sites, buildings, rooms and equipment (fully usable, usable with minor or major repairs, unsafe — restricted, unusable, condemned) with defects, working utilities, learners affected and the repair estimate."}
+  - {id: FR-EST-03, module: EST, priority: SHALL, phase: P3, text: "Plan preventive maintenance per facility (servicing, statutory tests, generator, borehole, fire safety, roofing, plumbing, electrical) and raise work orders when tasks fall due."}
+  - {id: FR-EST-04, module: EST, priority: SHALL, phase: P3, text: "Propose proactive actions to the head of institution — unsafe facility in use, assessment overdue, maintenance due or overdue, condition deteriorating, equipment past its safety check or predicted to fail — each with an owner, a due date and escalation to the LGA and the ministry when not acted on."}
+  - {id: FR-EST-05, module: EST, priority: SHALL, phase: P3, text: "Give the head of every institution — nursery, primary, secondary, technical, college and tertiary — a facilities workspace with the condition, usability, open actions and maintenance plan of their own sites."}
+  # ------------------------------------------------------------------ infrastructure data warehouse
+  - {id: FR-IDW-01, module: IDW, priority: SHALL, phase: P3, text: "Load every institution's property, facility condition and usability, maintenance and proactive actions into the state data warehouse as conformed facility and institution dimensions and dated facts."}
+  - {id: FR-IDW-02, module: IDW, priority: SHALL, phase: P3, text: "Roll infrastructure up every level of the governance hierarchy (institution, LGA, authority, state) — usable classrooms, learners per usable classroom, unsafe and condemned facilities, water, power and sanitation, open critical actions and the repair backlog."}
+  - {id: FR-IDW-03, module: IDW, priority: SHALL, phase: P3, text: "Give the Commissioner for Education and the ministry a state-wide view of school infrastructure from the warehouse, with drill-down to LGA and institution, within their scope."}
+  - {id: FR-IDW-04, module: IDW, priority: SHALL, phase: P3, text: "Load budget execution and funding (applications, approvals, disbursements, repayments, arrears) into the warehouse by institution and programme."}
+  # ------------------------------------------------------------------ security-agency curricula through each agency's structure
+  - {id: FR-STI-09, module: STI, priority: SHALL, phase: P3, text: "Give every security agency's courses syllabus headings specific to that agency's mandate and establishing law, in addition to the common service, leadership and law headings."}
+  - {id: FR-STI-10, module: STI, priority: SHALL, phase: P3, text: "Record which units of the agency's structure sponsor, approve, deliver, or hold quotas on each course."}
+  - {id: FR-STI-11, module: STI, priority: SHALL, phase: P3, text: "Record, per agency and rank, the courses or course categories required for commissioning, confirmation, promotion, appointment or command."}
+  - {id: FR-STI-12, module: STI, priority: SHALL, phase: P3, text: "Import new or revised courses and syllabus headings from an agency's official file, keeping earlier versions, so that new agencies, institutions and courses can be added without changing the platform."}
+
+pages:
+  - {id: ACC-01, title: Imprest and retirement, module: Finance, pattern: Register / list, route: "/finance/imprest", classification: Internal, phase: P3, roles: [FINO (Finance Officer / Bursar), HEAD (Head of Institution), STA (State Ministry Administrator)], purpose: "Cash advances by holder and cost centre, retirement with receipts and refunds, and overdue imprest."}
+  - {id: FND-01, title: Funding and loan programmes, module: Funding, pattern: Register / list, route: "/funding", classification: Internal, phase: P3, roles: [FINO (Finance Officer / Bursar), HEAD (Head of Institution), STA (State Ministry Administrator), COMM (Commissioner for Education), All], purpose: "Programmes for capital, staff welfare and student support, applications and their status, and agreements with balances and arrears."}
+  - {id: FND-02, title: Funding agreement, module: Funding, pattern: Record 360, route: "/funding/agreements/{id}", classification: Restricted, phase: P3, roles: [FINO (Finance Officer / Bursar), STA (State Ministry Administrator), All], purpose: "Terms, disbursements, repayment schedule, repayments and arrears of one agreement; borrowers see their own."}
+  - {id: EST-01, title: Government property register, module: Estate, pattern: Register / list, route: "/estate/property", classification: Internal, phase: P3, roles: [OPSM (Operations & Facilities Manager), HEAD (Head of Institution), LGA (Local Authority Education Officer), STA (State Ministry Administrator), COMM (Commissioner for Education)], purpose: "Every government property site with title, area, fencing and encroachment, its buildings, and their latest condition and usability."}
+  - {id: EST-02, title: Facility actions, module: Estate, pattern: Workspace, route: "/estate/actions", classification: Internal, phase: P3, roles: [HEAD (Head of Institution), OPSM (Operations & Facilities Manager), LGA (Local Authority Education Officer), STA (State Ministry Administrator)], purpose: "Proactive actions for the head of institution — unsafe facilities, overdue assessments and maintenance, deteriorating condition — with owners, due dates and escalation."}
+  - {id: EST-03, title: State infrastructure overview, module: Estate, pattern: Dashboard, route: "/estate/state", classification: Internal, phase: P3, roles: [COMM (Commissioner for Education), STA (State Ministry Administrator), LGA (Local Authority Education Officer)], purpose: "The Commissioner's view of school infrastructure across the state from the warehouse: usable classrooms, learners per usable classroom, unsafe and condemned facilities, utilities, open critical actions and the repair backlog by LGA and institution."}
+  - {id: STI-05, title: Agency careers and course requirements, module: Security training, pattern: Record 360, route: "/security-training/agencies/{id}/careers", classification: Internal, phase: P3, roles: [SADM (Security Training Administrator), STO (Security Training Officer)], purpose: "The courses each rank of an agency requires, and which commands sponsor, approve, deliver and hold quotas on each course."}

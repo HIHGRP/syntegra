@@ -1,0 +1,658 @@
+domain: finance
+code: FIN
+title: Billing, payments, funding, ledger, budgets, procurement and suppliers
+module: finance
+zone: ops
+retention: RS-FIN
+summary: >
+  The global billing engine (bases, funding models, charge types, versioned rules, runs with preview and
+  approval, learner ledgers, family statements, payment plans and ethical recovery — FR-BIL-01–10),
+  payments and reconciliation (gateways, virtual accounts, idempotent webhooks, allocation, duplicate
+  detection, bank statements, multi-currency — FR-PMT-01–07, 101), and finance (budgets, procurement with
+  three-way match, Supplier 360, double-entry ledger with period close — FR-FIN-01–06). Money is BIGINT
+  minor units with a currency on the row. Ledger entries are append-only (reverse, never edit). Unpaid
+  fees never restrict registers, teaching, assessment, results or record transfer (P9).
+
+entities:
+  account:
+    title: Ledger account — learner, family, sponsor or funder account, and general-ledger accounts
+    kind: master
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-BIL-07, FR-FIN-05]
+    pages: [BIL-03, BIL-04, FIN-05]
+    attrs:
+      - "account_kind: enum(account_kind)!"
+      - "code: code(32)!"
+      - "name: title!"
+      - "holder_kind: enum(account_holder)"
+      - "holder_id: uuid | learner, family, sponsor or funder"
+      - "currency: currency!"
+      - "gl_type: enum(gl_type) | asset, liability, income, expense, equity (GL accounts)"
+      - "virtual_account_number: code(20) | Per-family virtual account for transfers"
+      - "status: enum(record_status)!"
+    uq: [[scope_node_id, code]]
+    ix: [[holder_kind, holder_id]]
+
+  charge_type:
+    title: Charge type (tuition, registration, exam, accommodation, transport, meals, uniform, books, ICT, lab, clinical, trips …) with GL account and tax treatment
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-CONFIG
+    reqs: [FR-BIL-03, FR-SUB-123]
+    pages: [BIL-01]
+    attrs:
+      - "code: code(32)!"
+      - "name: title!"
+      - "income_account_id: ref(account)!"
+      - "tax_code: code(16)"
+      - "is_digital_services_line: bool! default=false | Labelled pass-through line for private providers"
+      - "status: enum(record_status)!"
+    uq: [[scope_node_id, code]]
+
+  billing_rule:
+    title: Versioned, effective-dated billing rule (conditions, amount, priority, discount stacking); tested before publishing
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: appj
+    reqs: [FR-BIL-01, FR-BIL-02, FR-BIL-04, FR-BIL-05, FR-BIL-08]
+    pages: [BIL-01]
+    attrs:
+      - "rule_key: code(40)!"
+      - "charge_type_id: ref(charge_type)!"
+      - "billing_basis: enum(billing_basis)!"
+      - "conditions: json! | Institution, campus, programme, course, level, category, residency, scholarship, family …"
+      - "amount: money!"
+      - "currency: currency!"
+      - "priority: smallint!"
+      - "discount_policy: json | Sibling/family discounts and stacking"
+      - "version: int_u!"
+      - "effective_from: date!"
+      - "effective_to: date"
+      - "test_results: json | Results against sample learners"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, rule_key, version]]
+
+  billing_run:
+    title: Billing run with preview, exceptions, approval and issue (no duplicate invoice per learner per period)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-BIL-06]
+    pages: [BIL-02]
+    events: [BIL.RUN_ISSUED]
+    attrs:
+      - "period_label: code(20)!"
+      - "billing_basis: enum(billing_basis)!"
+      - "learners_in_scope: int_u!"
+      - "exceptions: json"
+      - "total_amount: money!"
+      - "currency: currency!"
+      - "approved_by: uuid"
+      - "issued_at: ts"
+      - "status: enum(run_status)!"
+
+  invoice:
+    title: Invoice to a payer (immutable once issued; credit notes for changes)
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-BIL-06, FR-BIL-07, FR-FRM-104, FR-TIM-104, FR-OPS-101]
+    pages: [BIL-05, BIL-02, BIL-04]
+    events: [BIL.INVOICE_ISSUED, BIL.INVOICE_OVERDUE]
+    attrs:
+      - "invoice_number: code(32)! uq"
+      - "billing_run_id: ref(billing_run)"
+      - "account_id: ref(account)!"
+      - "learner_id: ref(learner)"
+      - "payer_kind: enum(account_holder)!"
+      - "payer_id: uuid!"
+      - "period_label: code(20)"
+      - "issued_on: date!"
+      - "due_on: date!"
+      - "total: money!"
+      - "balance: money!"
+      - "currency: currency!"
+      - "fx_rate_to_reporting: dec(18,8) | Rate captured per transaction"
+      - "content_hash: hash!"
+      - "status: enum(invoice_status)!"
+      - "dedupe_key: code(120) derived | learner:period:run — prevents duplicate invoices per learner per period"
+    generated:
+      dedupe_key: "IF(`learner_id` IS NULL OR `period_label` IS NULL OR `status` = 'void', NULL, CONCAT(HEX(`learner_id`), ':', `period_label`, ':', HEX(`account_id`)))"
+    uq: [[dedupe_key]]
+    ix: [[learner_id], [due_on, status]]
+
+  invoice_line:
+    title: Invoice line (charge, rule version used, discount and funding applied)
+    kind: transaction
+    class: restricted
+    history: append
+    origin: ceda
+    scope_note: Inherits the invoice's scope.
+    reqs: [FR-BIL-04, FR-BIL-09]
+    pages: [BIL-05]
+    attrs:
+      - "invoice_id: ref(invoice)!"
+      - "line_no: smallint!"
+      - "charge_type_id: ref(charge_type)!"
+      - "billing_rule_id: ref(billing_rule)"
+      - "rule_version: int_u"
+      - "description: str(300)!"
+      - "gross: money!"
+      - "discount: money!"
+      - "funded: money! | Applied funding sources (no double funding)"
+      - "net: money!"
+      - "currency: currency!"
+    uq: [[invoice_id, line_no]]
+
+  credit_note:
+    title: Credit note against an invoice
+    kind: transaction
+    class: restricted
+    history: append
+    origin: ceda
+    scope_note: Inherits the invoice's scope.
+    reqs: [FR-BIL-06]
+    pages: [BIL-05]
+    attrs:
+      - "invoice_id: ref(invoice)!"
+      - "credit_number: code(32)! uq"
+      - "reason: str(500)!"
+      - "amount: money!"
+      - "currency: currency!"
+      - "approved_by: uuid!"
+
+  funding_source:
+    title: Scholarship, bursary, grant, sponsor, capitation, employer funding or loan (budget and per-learner caps)
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-BIL-02, FR-BIL-09, FR-HED-06]
+    pages: [BIL-07, BIL-08, HED-07]
+    attrs:
+      - "name: title!"
+      - "funding_kind: enum(funding_kind)!"
+      - "funder_account_id: ref(account)"
+      - "budget: money"
+      - "per_learner_cap: money"
+      - "currency: currency!"
+      - "priority: smallint!"
+      - "eligibility_rule: json"
+      - "valid_until: date"
+      - "status: enum(record_status)!"
+
+  funding_award:
+    title: Funding awarded to a learner (scholarship, bursary, capitation share) — never double counted
+    kind: transaction
+    class: restricted
+    history: effective
+    scope: "derived: the learner's institution"
+    origin: ceda
+    reqs: [FR-HED-06, FR-BIL-09]
+    pages: [HED-07, BIL-07]
+    attrs:
+      - "funding_source_id: ref(funding_source)!"
+      - "learner_id: ref(learner)!"
+      - "amount: money!"
+      - "currency: currency!"
+      - "awarded_by: uuid!"
+
+  government_funding_receipt:
+    title: Capitation or government grant tranche received, reconciled against learners funded
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-BIL-09]
+    pages: [BIL-08]
+    attrs:
+      - "funding_source_id: ref(funding_source)!"
+      - "tranche_label: code(40)!"
+      - "amount_due: money!"
+      - "amount_received: money"
+      - "currency: currency!"
+      - "received_on: date"
+      - "learners_funded: int_u"
+      - "reconciliation: json | Government + student + scholarship + sponsor = total, no double counting"
+      - "status: enum(reconciliation_status)!"
+
+  payment_plan:
+    title: Payment plan and hardship assessment under the ethical recovery policy
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-BIL-10]
+    pages: [BIL-06]
+    attrs:
+      - "account_id: ref(account)!"
+      - "instalments: json!"
+      - "hardship_assessment: sealed special | Household circumstances (encrypted)"
+      - "approved_by: uuid"
+      - "status: enum(plan_status)!"
+
+  recovery_policy:
+    title: Ethical recovery policy (reminder cadence, payment-plan offers); core education restrictions cannot be configured
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: ceda
+    retention: RS-CONFIG
+    reqs: [FR-BIL-10, FR-ASM-07]
+    pages: [BIL-06]
+    attrs:
+      - "version: int_u!"
+      - "steps: json!"
+      - "status: enum(version_status)!"
+    checks:
+      no_core_restriction: "JSON_SEARCH(`steps`, 'one', 'restrict_core_education') IS NULL"
+
+  payment:
+    title: Incoming payment (gateway, virtual account, transfer, card, USSD, mobile money, cash, cheque, government, employer, scholarship)
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-PMT-01, FR-PMT-02, FR-PMT-03, FR-PMT-05, FR-PMT-07, FR-PMT-101]
+    pages: [PMT-01, PMT-03]
+    events: [PMT.RECEIVED, PMT.ALLOCATED]
+    notes: Raw card data is never handled (hosted fields/redirect, PCI DSS SAQ-A). Receipts only after gateway confirmation.
+    attrs:
+      - "method: enum(payment_method)!"
+      - "gateway: code(32)"
+      - "gateway_ref: code(128) uq | Hard duplicate check"
+      - "payer_name: name pii"
+      - "payer_contact_hmac: hmac | Soft duplicate check (payer + amount within 10 minutes)"
+      - "amount: money!"
+      - "currency: currency!"
+      - "fx_rate_to_reporting: dec(18,8)"
+      - "received_at: ts!"
+      - "confirmed_at: ts"
+      - "receipt_number: code(32) uq"
+      - "allocation_status: enum(allocation_state)!"
+      - "possible_duplicate_of_id: ref(payment)"
+      - "status: enum(payment_status)!"
+
+  payment_allocation:
+    title: Allocation of a payment to an invoice (virtual account → reference → payer → heuristic suggestion)
+    kind: transaction
+    class: restricted
+    history: append
+    origin: ceda
+    scope_note: Inherits the payment's scope.
+    reqs: [FR-PMT-04]
+    pages: [PMT-01]
+    attrs:
+      - "payment_id: ref(payment)!"
+      - "invoice_id: ref(invoice)!"
+      - "amount: money!"
+      - "currency: currency!"
+      - "method: enum(allocation_method)!"
+      - "confidence: ratio | Fee Agent allocates only ≥ 0.95; below that it suggests"
+      - "allocated_by: uuid!"
+
+  ledger_entry:
+    title: Double-entry posting (append-only; reverse, never edit; partitioned by month)
+    kind: event
+    class: restricted
+    history: append
+    origin: appj
+    partition: {type: range_month, column: posted_on}
+    scope_note: Inherits the journal's scope.
+    reqs: [FR-FIN-05, FR-BIL-07, FR-STF-09]
+    pages: [BIL-03, FIN-05]
+    attrs:
+      - "journal_id: ref(journal)!"
+      - "account_id: ref(account)!"
+      - "posted_on: date!"
+      - "debit: money! default=0"
+      - "credit: money! default=0"
+      - "currency: currency!"
+      - "source_kind: code(40)! | invoice, payment, payroll_run, credit_note, journal"
+      - "source_id: uuid!"
+      - "rule_versions: json | Billing rule versions referenced"
+      - "reverses_id: uuid | Entry this one reverses"
+    ix: [[account_id, posted_on]]
+    checks:
+      one_side: "(debit_minor = 0) <> (credit_minor = 0)"
+
+  journal:
+    title: Journal (balanced set of ledger entries) in a fiscal period
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-FIN-05, FR-FIN-06]
+    pages: [FIN-05]
+    attrs:
+      - "journal_number: code(32)! uq"
+      - "fiscal_period_id: ref(fiscal_period)!"
+      - "description: str(500)!"
+      - "posted_by: uuid!"
+      - "exported_at: ts | Exported to an external ERP/IFMIS where it is the ledger of record"
+      - "status: enum(journal_status)!"
+
+  fiscal_period:
+    title: Fiscal period (open/closed); closed periods accept no postings
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-FIN-05]
+    pages: [FIN-05]
+    attrs:
+      - "code: code(10)! | YYYY-MM"
+      - "starts_on: date!"
+      - "ends_on: date!"
+      - "closed_at: ts"
+      - "closed_by: uuid"
+    uq: [[scope_node_id, code]]
+
+  fx_rate:
+    title: Exchange rate captured per source and day (local and reporting currency)
+    kind: reference
+    class: public
+    history: append
+    origin: ceda
+    scope_note: Tenant-wide reference data.
+    reqs: [FR-PMT-07]
+    pages: [FIN-06]
+    attrs:
+      - "rate_date: date!"
+      - "base_currency: currency!"
+      - "quote_currency: currency!"
+      - "rate: dec(18,8)!"
+      - "source: code(32)!"
+    uq: [[rate_date, base_currency, quote_currency, source]]
+
+  tax_rule:
+    title: Tax rule (VAT 7.5% where applicable, withholding) by charge type and jurisdiction
+    kind: config
+    class: public
+    history: versioned
+    origin: ceda
+    retention: RS-CONFIG
+    scope_note: Tenant-wide configuration.
+    reqs: [FR-PMT-07, FR-BIL-03]
+    pages: [FIN-06]
+    attrs:
+      - "tax_code: code(16)!"
+      - "rate: pct!"
+      - "applies_to: json!"
+      - "version: int_u!"
+      - "effective_from: date!"
+    uq: [[tax_code, version]]
+
+  bank_statement_line:
+    title: Imported bank statement line (MT940/CSV/open banking) reconciled to payments and disbursements
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-PMT-06]
+    pages: [PMT-02]
+    attrs:
+      - "bank_account_ref: code(40)!"
+      - "statement_date: date!"
+      - "value_date: date!"
+      - "amount: money!"
+      - "currency: currency!"
+      - "narrative: str(500)"
+      - "bank_ref: code(64)!"
+      - "matched_kind: code(40)"
+      - "matched_id: uuid"
+      - "status: enum(reconciliation_status)!"
+    uq: [[bank_account_ref, bank_ref]]
+
+  budget:
+    title: Budget by cost centre and account linked to enrolment and staffing forecasts (approved via workflow)
+    kind: transaction
+    class: internal
+    history: versioned
+    scope: owned
+    origin: ceda
+    reqs: [FR-FIN-01, FR-FIN-02]
+    pages: [FIN-01, FIN-02]
+    attrs:
+      - "fiscal_year: smallint!"
+      - "version: int_u!"
+      - "line_items: json! | Cost centre × account × period amounts"
+      - "assumptions: json | Enrolment and staffing forecasts"
+      - "currency: currency!"
+      - "variance_notes: json | Explanations and forecast outturn"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, fiscal_year, version]]
+
+  supplier:
+    title: Supplier 360 master (duplicate detection; call-back verification and dual approval for bank-detail changes)
+    kind: master
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-FIN-04]
+    pages: [FIN-04, FIN-03]
+    attrs:
+      - "name: title!"
+      - "cac_number: code(20)"
+      - "tin: code(20)"
+      - "contacts: json pii"
+      - "bank_account: secret restricted mask4"
+      - "bank_change_verified_by: uuid"
+      - "bank_change_approved_by: uuid"
+      - "status: enum(record_status)!"
+    checks:
+      dual_control: "bank_change_approved_by IS NULL OR bank_change_verified_by IS NULL OR bank_change_approved_by <> bank_change_verified_by"
+
+  requisition:
+    title: Purchase requisition (delegated approval limits; split-purchase detection)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-FIN-03]
+    pages: [FIN-03]
+    attrs:
+      - "requisition_number: code(32)! uq"
+      - "requested_by: uuid!"
+      - "cost_centre: code(32)!"
+      - "line_items: json!"
+      - "total: money!"
+      - "currency: currency!"
+      - "split_purchase_flag: bool! default=false"
+      - "workflow_instance_id: ref(workflow_instance)"
+      - "status: enum(request_status)!"
+
+  purchase_order:
+    title: Purchase order, goods receipt and three-way match to the supplier invoice
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-FIN-03]
+    pages: [FIN-03]
+    attrs:
+      - "po_number: code(32)! uq"
+      - "requisition_id: ref(requisition)"
+      - "supplier_id: ref(supplier)!"
+      - "total: money!"
+      - "currency: currency!"
+      - "received_on: date"
+      - "supplier_invoice_ref: code(64)"
+      - "match_status: enum(match_status_3way)!"
+      - "paid_journal_id: ref(journal)"
+      - "status: enum(po_status)!"
+
+  # ---------------------------------------------------------------- institutional accounting and budget control (CR-006)
+  cost_centre:
+    title: Cost centre of an institution (administration, department, boarding, feeding, estate, ICT, transport, project, welfare) with its budget holder
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-ACC-01]
+    pages: [FIN-01, FIN-02, ACC-01]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "code: code(32)!"
+      - "name: title!"
+      - "cost_centre_kind: enum(cost_centre_kind)!"
+      - "parent_id: ref(cost_centre)"
+      - "org_unit_id: ref(org_unit) | Department or unit the cost centre belongs to"
+      - "holder_staff_id: ref(staff) | Budget holder"
+      - "status: enum(record_status)!"
+    uq: [[scope_node_id, code]]
+    ix: [[institution_id]]
+
+  budget_line:
+    title: Approved budget line — cost centre × ledger account × economic code × funding source, with original, revised, committed and actual amounts
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-ACC-02, FR-ACC-03, FR-ACC-06]
+    pages: [FIN-01, FIN-02]
+    notes: >
+      committed and actual are maintained by the commitment service under a row lock; available = revised −
+      committed − actual is never negative (FR-ACC-03).
+    attrs:
+      - "budget_id: ref(budget)!"
+      - "cost_centre_id: ref(cost_centre)!"
+      - "account_id: ref(account)!"
+      - "economic_code: code(16)! | Economic segment of the National Chart of Accounts, e.g. 22020101"
+      - "funding_source_kind: enum(budget_funding_kind)!"
+      - "funding_source_id: ref(funding_source)"
+      - "description: str(300)"
+      - "original: money!"
+      - "revised: money!"
+      - "committed: money! default=0"
+      - "actual: money! default=0"
+      - "currency: currency!"
+    uq: [[budget_id, cost_centre_id, account_id, economic_code, funding_source_kind]]
+    ix: [[cost_centre_id]]
+    checks:
+      within_budget: "committed_minor >= 0 AND actual_minor >= 0 AND committed_minor + actual_minor <= revised_minor"
+
+  budget_commitment:
+    title: Commitment of a budget line by a requisition, purchase order, imprest, payroll or disbursement (released, spent or cancelled)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-ACC-03]
+    pages: [FIN-02]
+    events: [FIN.FUNDS_COMMITTED]
+    attrs:
+      - "budget_line_id: ref(budget_line)!"
+      - "source_kind: enum(commitment_source)!"
+      - "source_id: uuid!"
+      - "description: str(300)!"
+      - "amount: money!"
+      - "spent: money! default=0"
+      - "released: money! default=0"
+      - "currency: currency!"
+      - "committed_on: date!"
+      - "committed_by: uuid!"
+      - "status: enum(commitment_status)!"
+    ix: [[budget_line_id, status], [source_kind, source_id]]
+    checks:
+      settles: "spent_minor + released_minor <= amount_minor"
+
+  budget_virement:
+    title: Virement — budget moved between two lines with a reason, approved by someone other than the requester
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-ACC-04]
+    pages: [FIN-01, FIN-02]
+    events: [FIN.VIREMENT_APPROVED]
+    attrs:
+      - "virement_number: code(32)! uq"
+      - "from_line_id: ref(budget_line)!"
+      - "to_line_id: ref(budget_line)!"
+      - "amount: money!"
+      - "currency: currency!"
+      - "reason: text!"
+      - "requested_by: uuid!"
+      - "decided_by: uuid"
+      - "decided_at: ts"
+      - "status: enum(request_status)!"
+    checks:
+      four_eyes: "decided_by IS NULL OR decided_by <> requested_by"
+      two_lines: "from_line_id <> to_line_id"
+
+  imprest:
+    title: Imprest — cash advance to a named holder against a budget line, to be retired with receipts by a due date
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-ACC-05]
+    pages: [ACC-01]
+    events: [FIN.IMPREST_OVERDUE]
+    attrs:
+      - "imprest_number: code(32)! uq"
+      - "holder_staff_id: ref(staff)!"
+      - "cost_centre_id: ref(cost_centre)!"
+      - "budget_line_id: ref(budget_line)!"
+      - "commitment_id: ref(budget_commitment)"
+      - "purpose: str(300)!"
+      - "amount: money!"
+      - "retired: money! default=0"
+      - "refunded: money! default=0"
+      - "currency: currency!"
+      - "requested_by: uuid!"
+      - "approved_by: uuid"
+      - "issued_on: date"
+      - "retire_by: date!"
+      - "status: enum(imprest_status)!"
+    ix: [[holder_staff_id, status], [retire_by]]
+    checks:
+      four_eyes: "approved_by IS NULL OR approved_by <> requested_by"
+      retired_within: "retired_minor + refunded_minor <= amount_minor"
+
+  imprest_retirement:
+    title: Retirement of an imprest — receipts, amount accounted for and cash refunded
+    kind: event
+    class: confidential
+    history: append
+    origin: ceda
+    scope_note: Inherits the imprest's scope.
+    reqs: [FR-ACC-05]
+    pages: [ACC-01]
+    attrs:
+      - "imprest_id: ref(imprest)!"
+      - "receipts: json! | Receipt references, payees and amounts"
+      - "amount: money! | Amount accounted for by receipts"
+      - "refund: money! default=0"
+      - "currency: currency!"
+      - "retired_on: date!"
+      - "verified_by: uuid!"

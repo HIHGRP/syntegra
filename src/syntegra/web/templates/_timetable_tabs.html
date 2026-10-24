@@ -1,0 +1,10 @@
+{# Tabs shared by the timetable, school day, cover and rooms pages (CR-009 phase 2). #}
+{% macro timetable_tabs(here, school, schools) %}
+<nav class="tabs no-print" aria-label="Timetable pages">
+  <a href="/timetable?school={{ school.id }}"{% if here == "timetable" %} aria-current="page"{% endif %}>Timetable</a>
+  <a href="/timetable/builder?school={{ school.id }}"{% if here == "builder" %} aria-current="page"{% endif %}>School day and builder</a>
+  {% if ctx.has("cover:view") %}<a href="/cover?school={{ school.id }}"{% if here == "cover" %} aria-current="page"{% endif %}>Cover</a>{% endif %}
+  {% if ctx.has("room:book") %}<a href="/rooms/bookings?school={{ school.id }}"{% if here == "rooms" %} aria-current="page"{% endif %}>Room bookings</a>{% endif %}
+</nav>
+{% if schools|length > 1 %}<form method="get" class="inline-form no-print"><label>School <select name="school" onchange="this.form.submit()">{% for s in schools %}<option value="{{ s.id }}"{% if s.id == school.id %} selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></label><noscript><button>Open</button></noscript></form>{% endif %}
+{% endmacro %}

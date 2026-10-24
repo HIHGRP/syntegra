@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from "_school_picker.html" import school_picker %}
+{% block title %}Log behaviour — {{ d.class.name }}{% endblock %}
+{% block content %}
+<div class="head-row"><h1>Log behaviour — {{ d.class.name }}</h1><p class="no-print"><a href="/behaviour?school={{ school.id }}">Behaviour overview</a> · <a href="/behaviour/policy?school={{ school.id }}">The school's policy</a></p></div>
+{{ school_picker(school, schools) }}
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<nav class="tabs" aria-label="Classes">{% for c in d.classes %}<a href="?school={{ school.id }}&amp;class={{ c.id }}"{% if c.id == d.class.id %} aria-current="page"{% endif %}>{{ c.name }}</a>{% endfor %}</nav>
+{% if not d.has_policy %}
+<div class="alert">The school has no behaviour policy yet. {% if d.can_manage %}<a href="/behaviour/policy?school={{ school.id }}">Adopt the state's default policy</a> first.{% else %}Ask the head to adopt one.{% endif %}</div>
+{% else %}
+<form method="post" class="card" id="log">
+  <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="school" value="{{ school.id }}"><input type="hidden" name="class" value="{{ d.class.id }}">
+  <h2>1. Who</h2>
+  <div class="pick-grid">{% for lr in d.learners %}<label class="chip"><input type="checkbox" name="learner_ids" value="{{ lr.id }}"{% if lr.id|string in chosen %} checked{% endif %}> {{ lr.name }}</label>{% endfor %}</div>
+  <h2>2. What</h2>
+  <div class="grid2">
+    <fieldset><legend>Positive</legend>{% for t in d.positive %}<label class="chip pos"><input type="radio" name="type_id" value="{{ t.id }}" required{% if posted.get('type_id') == t.id|string %} checked{% endif %}> {{ t.label }} <span class="pts">+{{ t.points }}</span></label>{% endfor %}</fieldset>
+    <fieldset><legend>Negative</legend>{% for t in d.negative %}<label class="chip neg"><input type="radio" name="type_id" value="{{ t.id }}"{% if posted.get('type_id') == t.id|string %} checked{% endif %}> {{ t.label }} <span class="pts">{{ t.points }}</span>{% if t.outcome and t.outcome != "none" %} <span class="hint opt">· {{ d.outcomes[t.outcome] }}</span>{% endif %}</label>{% endfor %}</fieldset>
+  </div>
+  <h2>3. Details</h2>
+  <div class="grid-form">
+    <label>Date<input type="date" name="on" value="{{ posted.get('on', today) }}" max="{{ today }}"></label>
+    <label>Time<input type="time" name="at" value="{{ posted.get('at', now) }}"></label>
+    <label>Outcome <span class="hint opt">— leave as the policy's default unless you decide otherwise</span><select name="outcome"><option value="">The policy's default</option>{% for k, v in d.outcomes.items() %}<option value="{{ k }}"{% if posted.get('outcome') == k %} selected{% endif %}>{{ v }}{% if k in d.head_decision %} (head's decision){% endif %}</option>{% endfor %}</select></label>
+    <label>What happened <span class="hint opt">— needed for serious incidents</span><textarea name="description" rows="3" maxlength="2000">{{ posted.get('description', '') }}</textarea></label>
+    <label>For bullying: who it was aimed at<select name="target_ids" multiple size="4">{% for lr in d.learners %}<option value="{{ lr.id }}">{{ lr.name }}</option>{% endfor %}</select></label>
+    <p><button class="primary">Record</button></p>
+  </div>
+  <p class="hint">Points come from the school's policy in force. Exclusions and suspensions are the head's decision: a teacher's proposal waits for it.</p>
+</form>
+{% endif %}
+{% endblock %}

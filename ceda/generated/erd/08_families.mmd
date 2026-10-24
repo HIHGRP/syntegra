@@ -1,0 +1,112 @@
+erDiagram
+    guardian {
+        BINARY_16_ id PK
+        VARCHAR_200_ given_name
+        VARCHAR_200_ family_name
+        VARCHAR_30_ title
+        VARCHAR_120_ name_phonetic
+        VARCHAR_16_ phone
+        VARCHAR_254_ email
+        VARCHAR_35_ preferred_language
+        VARCHAR_32_ preferred_channel
+        JSON address
+        BINARY_16_ user_id FK
+        VARCHAR_32_ status
+        BINARY_16_ merged_into FK
+    }
+    learner_guardian {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        BINARY_16_ guardian_id FK
+        VARCHAR_32_ relationship
+        BOOLEAN has_parental_responsibility
+        SMALLINT contact_priority
+        BOOLEAN lives_with
+        BOOLEAN is_contact_restricted
+        BOOLEAN is_authorised_collector
+        BOOLEAN is_payer
+        DATE valid_from
+        DATE valid_to
+    }
+    family {
+        BINARY_16_ id PK
+        VARCHAR_300_ name
+        BINARY_16_ primary_payer_guardian_id FK
+        BINARY_16_ billing_account_id FK
+        VARCHAR_32_ status
+    }
+    family_member {
+        BINARY_16_ id PK
+        BINARY_16_ family_id FK
+        VARCHAR_32_ member_kind
+        BINARY_16_ member_id
+        DATE valid_from
+        DATE valid_to
+    }
+    organisation_contact {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ kind
+        VARCHAR_300_ name
+        VARCHAR_200_ contact_person
+        VARCHAR_16_ phone
+        VARCHAR_254_ email
+        JSON address
+        BINARY_16_ learner_id FK
+        VARCHAR_80_ relationship
+        SMALLINT priority
+        VARCHAR_32_ preferred_channel
+    }
+    contact_restriction {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        BINARY_16_ guardian_id FK
+        VARCHAR_32_ restriction
+        MEDIUMBLOB order_reference
+        BINARY_16_ document_id
+        BINARY_16_ recorded_by
+        DATE valid_from
+        DATE valid_to
+    }
+    consent_record {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        BINARY_16_ guardian_id FK
+        VARCHAR_32_ consent_type
+        BINARY_16_ consent_request_id FK
+        INT request_version
+        VARCHAR_32_ decision
+        VARCHAR_32_ legal_basis
+        VARCHAR_32_ channel
+        VARCHAR_1000_ comment
+        JSON evidence
+        DATE expires_on
+        DATETIME_6_ withdrawn_at
+        DATE valid_from
+        DATE valid_to
+    }
+    account {
+        BINARY_16 id PK
+    }
+    app_user {
+        BINARY_16 id PK
+    }
+    consent_request {
+        BINARY_16 id PK
+    }
+    learner {
+        BINARY_16 id PK
+    }
+    account ||--o{ family : "billing_account_id"
+    app_user ||--o{ guardian : "user_id"
+    consent_request ||--o{ consent_record : "consent_request_id"
+    family ||--o{ family_member : "family_id"
+    guardian ||--o{ consent_record : "guardian_id"
+    guardian ||--o{ contact_restriction : "guardian_id"
+    guardian ||--o{ family : "primary_payer_guardian_id"
+    guardian ||--o{ guardian : "merged_into"
+    guardian ||--o{ learner_guardian : "guardian_id"
+    learner ||--o{ consent_record : "learner_id"
+    learner ||--o{ contact_restriction : "learner_id"
+    learner ||--o{ learner_guardian : "learner_id"
+    learner ||--o{ organisation_contact : "learner_id"

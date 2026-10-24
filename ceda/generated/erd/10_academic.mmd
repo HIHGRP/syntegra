@@ -1,0 +1,284 @@
+erDiagram
+    academic_period {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ parent_id FK
+        VARCHAR_32_ kind
+        VARCHAR_300_ name
+        JSON institution_types
+        DATE starts_on
+        DATE ends_on
+        SMALLINT teaching_days
+        VARCHAR_32_ status
+    }
+    calendar_event {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ period_id FK
+        VARCHAR_32_ kind
+        VARCHAR_300_ title
+        DATE starts_on
+        DATE ends_on
+        BOOLEAN reduces_teaching_days
+        BOOLEAN is_remote_mode
+        BINARY_16_ exception_id FK
+    }
+    subject {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ code
+        VARCHAR_300_ name
+        JSON levels
+        VARCHAR_32_ subject_group
+        BOOLEAN is_mandatory_core
+        VARCHAR_32_ status
+    }
+    stream_combination_rule {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ stream
+        VARCHAR_32_ exam_body
+        JSON rule
+        INT version
+        VARCHAR_32_ status
+    }
+    qualification {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ code
+        VARCHAR_300_ name
+        VARCHAR_32_ awarding_body
+        VARCHAR_16_ framework_level
+        JSON award_rules
+        VARCHAR_32_ status
+    }
+    programme {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        BINARY_16_ department_id FK
+        VARCHAR_32_ code
+        VARCHAR_300_ name
+        BINARY_16_ qualification_id FK
+        VARCHAR_32_ delivery_mode
+        VARCHAR_32_ programme_family
+        BINARY_16_ professional_body_id FK
+        SMALLINT duration_terms
+        JSON rules
+        VARCHAR_32_ accreditation_status
+        DATE accreditation_expires_on
+        VARCHAR_32_ status
+    }
+    programme_component {
+        BINARY_16_ id PK
+        BINARY_16_ programme_id FK
+        BINARY_16_ course_id FK
+        VARCHAR_16_ programme_level
+        SMALLINT semester_no
+        DECIMAL_4_1_ credits
+        BOOLEAN is_core
+        JSON prerequisite_course_ids
+        DATE valid_from
+        DATE valid_to
+    }
+    department {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        BINARY_16_ org_unit_id FK
+        BINARY_16_ faculty_org_unit_id FK
+        VARCHAR_300_ name
+        BINARY_16_ hod_staff_id FK
+        BINARY_16_ acting_hod_staff_id FK
+        JSON load_policy
+        VARCHAR_32_ status
+    }
+    subject_area {
+        BINARY_16_ id PK
+        BINARY_16_ department_id FK
+        VARCHAR_40_ code
+        VARCHAR_300_ name
+        VARCHAR_32_ benchmark
+        VARCHAR_40_ benchmark_area_code
+    }
+    course {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ department_id FK
+        BINARY_16_ subject_area_id FK
+        BINARY_16_ subject_id FK
+        VARCHAR_20_ code
+        VARCHAR_300_ title
+        DECIMAL_4_1_ units
+        VARCHAR_16_ course_level
+        SMALLINT semester_no
+        BOOLEAN is_service_course
+        BOOLEAN is_compulsory
+        VARCHAR_60_ benchmark_ref
+        BINARY_16_ outline_document_id
+        VARCHAR_32_ status
+    }
+    class_group {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        BINARY_16_ campus_id FK
+        BINARY_16_ period_id FK
+        VARCHAR_32_ kind
+        VARCHAR_32_ education_level
+        VARCHAR_300_ name
+        VARCHAR_32_ stream
+        BINARY_16_ programme_id FK
+        BINARY_16_ parent_class_id FK
+        BINARY_16_ form_teacher_staff_id FK
+        BINARY_16_ room_id FK
+        SMALLINT capacity
+        VARCHAR_35_ language_of_instruction
+        VARCHAR_32_ session_shift
+        BINARY_16_ rolled_from_id FK
+        VARCHAR_32_ status
+    }
+    class_membership {
+        BINARY_16_ id PK
+        BINARY_16_ class_group_id FK
+        BINARY_16_ learner_id FK
+        BINARY_16_ enrolment_id FK
+        BOOLEAN is_arm
+        DATE valid_from
+        DATE valid_to
+    }
+    class_subject_plan {
+        BINARY_16_ id PK
+        BINARY_16_ class_group_id FK
+        BINARY_16_ subject_id FK
+        BOOLEAN is_mandatory
+        SMALLINT periods_per_week
+        DECIMAL_6_1_ required_hours
+        VARCHAR_32_ room_type
+        BINARY_16_ curriculum_version_id FK
+        VARCHAR_35_ language_of_instruction
+        BINARY_16_ copied_from_id FK
+        DATE valid_from
+        DATE valid_to
+    }
+    teaching_assignment {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ class_subject_plan_id FK
+        BINARY_16_ course_section_id FK
+        BINARY_16_ staff_id FK
+        BINARY_16_ staff_post_id FK
+        VARCHAR_32_ role
+        BINARY_16_ authorisation_id FK
+        BINARY_16_ exception_id FK
+        VARCHAR_500_ justification
+        DECIMAL_5_2_ weekly_periods
+        BINARY_16_ of_record_key
+        DATE valid_from
+        DATE valid_to
+    }
+    course_section {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ course_id FK
+        BINARY_16_ period_id FK
+        VARCHAR_8_ section_code
+        SMALLINT capacity
+        JSON consuming_department_ids
+        JSON assessment_scheme
+        JSON external_examiner
+        VARCHAR_32_ allocation_status
+        BINARY_16_ approved_by
+    }
+    course_registration {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        BINARY_16_ enrolment_id FK
+        BINARY_16_ course_section_id FK
+        BOOLEAN is_carry_over
+        DECIMAL_4_1_ units
+        BINARY_16_ adviser_staff_id FK
+        DATETIME_6_ approved_at
+        VARCHAR_32_ status
+    }
+    campus {
+        BINARY_16 id PK
+    }
+    curriculum_version {
+        BINARY_16 id PK
+    }
+    enrolment {
+        BINARY_16 id PK
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    learner {
+        BINARY_16 id PK
+    }
+    org_unit {
+        BINARY_16 id PK
+    }
+    policy_exception {
+        BINARY_16 id PK
+    }
+    professional_body {
+        BINARY_16 id PK
+    }
+    room {
+        BINARY_16 id PK
+    }
+    staff {
+        BINARY_16 id PK
+    }
+    staff_post {
+        BINARY_16 id PK
+    }
+    staff_qualification {
+        BINARY_16 id PK
+    }
+    academic_period ||--o{ academic_period : "parent_id"
+    academic_period ||--o{ calendar_event : "period_id"
+    academic_period ||--o{ class_group : "period_id"
+    academic_period ||--o{ course_section : "period_id"
+    campus ||--o{ class_group : "campus_id"
+    class_group ||--o{ class_group : "parent_class_id"
+    class_group ||--o{ class_group : "rolled_from_id"
+    class_group ||--o{ class_membership : "class_group_id"
+    class_group ||--o{ class_subject_plan : "class_group_id"
+    class_subject_plan ||--o{ class_subject_plan : "copied_from_id"
+    class_subject_plan ||--o{ teaching_assignment : "class_subject_plan_id"
+    course ||--o{ course_section : "course_id"
+    course ||--o{ programme_component : "course_id"
+    course_section ||--o{ course_registration : "course_section_id"
+    course_section ||--o{ teaching_assignment : "course_section_id"
+    curriculum_version ||--o{ class_subject_plan : "curriculum_version_id"
+    department ||--o{ course : "department_id"
+    department ||--o{ programme : "department_id"
+    department ||--o{ subject_area : "department_id"
+    enrolment ||--o{ class_membership : "enrolment_id"
+    enrolment ||--o{ course_registration : "enrolment_id"
+    institution ||--o{ class_group : "institution_id"
+    institution ||--o{ department : "institution_id"
+    institution ||--o{ programme : "institution_id"
+    learner ||--o{ class_membership : "learner_id"
+    learner ||--o{ course_registration : "learner_id"
+    org_unit ||--o{ department : "faculty_org_unit_id"
+    org_unit ||--o{ department : "org_unit_id"
+    policy_exception ||--o{ calendar_event : "exception_id"
+    policy_exception ||--o{ teaching_assignment : "exception_id"
+    professional_body ||--o{ programme : "professional_body_id"
+    programme ||--o{ class_group : "programme_id"
+    programme ||--o{ programme_component : "programme_id"
+    qualification ||--o{ programme : "qualification_id"
+    room ||--o{ class_group : "room_id"
+    staff ||--o{ class_group : "form_teacher_staff_id"
+    staff ||--o{ course_registration : "adviser_staff_id"
+    staff ||--o{ department : "acting_hod_staff_id"
+    staff ||--o{ department : "hod_staff_id"
+    staff ||--o{ teaching_assignment : "staff_id"
+    staff_post ||--o{ teaching_assignment : "staff_post_id"
+    staff_qualification ||--o{ teaching_assignment : "authorisation_id"
+    subject ||--o{ class_subject_plan : "subject_id"
+    subject ||--o{ course : "subject_id"
+    subject_area ||--o{ course : "subject_area_id"

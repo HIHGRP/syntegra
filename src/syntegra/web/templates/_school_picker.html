@@ -1,0 +1,2 @@
+{# School chooser for staff whose scope holds more than one school (CR-009). #}
+{% macro school_picker(school, schools) %}{% if schools|length > 1 %}<form method="get" class="inline-form no-print"><label>School <select name="school" onchange="this.form.submit()">{% for s in schools %}<option value="{{ s.id }}"{% if s.id == school.id %} selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></label><noscript><button>Open</button></noscript></form>{% endif %}{% endmacro %}

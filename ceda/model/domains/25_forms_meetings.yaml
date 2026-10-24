@@ -1,0 +1,108 @@
+domain: forms_meetings
+code: FRM
+title: Forms and Daybook engine and parents' meetings
+module: forms
+zone: ops
+retention: RS-OPS-7
+summary: >
+  The no-code forms builder (Daybook forms) with versioned definitions, per-form security, multi-stage
+  workflow, optional cost and Pay Now step, and automatic filing to the learner, staff or family Daybook
+  timeline (FR-FRM-101–108). Parents' meetings across days with in-person, video and hybrid slots,
+  clash prevention, travel gaps, interpreters, consent-only recording and attendance notes
+  (FR-PTM-101–106).
+
+entities:
+  form_definition:
+    title: Form template (versioned; text, number, date, choice, signature, upload, body-map, cost and table fields)
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: appj
+    retention: RS-CONFIG
+    reqs: [FR-FRM-101, FR-FRM-102, FR-FRM-104, FR-FRM-106, FR-FRM-107]
+    pages: [FRM-101]
+    attrs:
+      - "code: code(40)!"
+      - "title: title!"
+      - "field_schema: json! | Fields, mandatory and conditional rules"
+      - "raised_by_roles: json! | Staff, learners, parents, on behalf"
+      - "confidentiality: enum(classification)!"
+      - "workflow_definition_id: ref(workflow_definition) soft"
+      - "cost: money"
+      - "currency: currency"
+      - "requires_payment_before_continue: bool! default=false"
+      - "files_to: enum(daybook_target)!"
+      - "is_template_library: bool! default=false"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, code, version]]
+
+  form_response:
+    title: Submitted form (keeps the version it was submitted on; filed to the Daybook timeline)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-FRM-102, FR-FRM-103, FR-FRM-105, FR-FRM-107, FR-FRM-108]
+    pages: [FRM-102]
+    events: [FRM.SUBMITTED]
+    attrs:
+      - "form_id: ref(form_definition) soft"
+      - "form_version: int_u!"
+      - "subject_kind: enum(person_kind)!"
+      - "subject_id: uuid!"
+      - "submitted_by: uuid!"
+      - "on_behalf_of: uuid"
+      - "answers: json!"
+      - "attachment_document_ids: json"
+      - "invoice_id: ref(invoice)"
+      - "workflow_instance_id: ref(workflow_instance)"
+      - "submitted_at: ts!"
+      - "status: enum(form_status)!"
+    ix: [[subject_kind, subject_id]]
+
+  meeting_event:
+    title: Parents' meeting event across one or more days (in-person, video and hybrid slots per teacher)
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-PTM-101, FR-PTM-104]
+    pages: [PTM-101]
+    attrs:
+      - "title: title!"
+      - "class_group_ids: json!"
+      - "days: json! | Dates and session windows"
+      - "slot_minutes: smallint!"
+      - "travel_gap_minutes: smallint! default=5"
+      - "modes: json! | in_person, video, hybrid"
+      - "booking_opens_at: ts!"
+      - "booking_closes_at: ts!"
+      - "status: enum(record_status)!"
+
+  meeting_booking:
+    title: Booked slot for a parent with a teacher (clash prevention; interpreter; attendance and notes to the learner timeline)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    origin: appj
+    scope_note: Inherits the event's scope.
+    reqs: [FR-PTM-102, FR-PTM-103, FR-PTM-105, FR-PTM-106]
+    pages: [PTM-101]
+    attrs:
+      - "meeting_event_id: ref(meeting_event)!"
+      - "staff_id: ref(staff)!"
+      - "guardian_id: ref(guardian)!"
+      - "learner_id: ref(learner)!"
+      - "starts_at: ts!"
+      - "mode: enum(meeting_mode)!"
+      - "interpreter_language: lang"
+      - "video_room_ref: str(200)"
+      - "recording_consent_all: bool! default=false"
+      - "attended: bool"
+      - "note: str(1000)"
+      - "status: enum(booking_status)!"
+    uq: [[meeting_event_id, staff_id, starts_at]]

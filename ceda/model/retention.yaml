@@ -1,0 +1,43 @@
+# CEDA retention schedule. Every operational entity carries one of these series (entity 'retention' or
+# its domain default). Values marked basis: MFS are stated in SYN-MFS-002 v2.4; values marked
+# basis: proposed are CEDA proposals that the state records manager and the state archives must confirm
+# under open decision D10 (MFS §13.6, §15.7). The records module enforces disposal through record_series
+# (file plan) which maps each record series to one of these codes; legal holds always suspend disposal.
+#
+# Fields: trigger = event that starts the clock; years = retention after the trigger (null = permanent);
+# action = what happens at the end (dispose, anonymise, archive_permanent, review, drop_partition, purge).
+
+series:
+  - {code: RS-LRN-PERM, title: Learner record (identity, enrolment register, results, transcripts, report cards), trigger: record created, years: null, action: archive_permanent, basis: MFS, note: "Admission registers and result records are kept permanently (MFS §13.6)."}
+  - {code: RS-CERT-PERM, title: Certificate registry and lifecycle, trigger: record created, years: null, action: archive_permanent, basis: MFS, note: "Certificates, events and signatures are never deleted (FR-CER-08)."}
+  - {code: RS-CUR-PERM, title: Curriculum versions, frameworks and grading scales, trigger: superseded, years: null, action: archive_permanent, basis: MFS, note: "Historical records keep the version they used (Gov §12)."}
+  - {code: RS-INS-PERM, title: Institution register, approvals, licences, inspections and regulatory files, trigger: institution closed, years: null, action: archive_permanent, basis: proposed}
+  - {code: RS-STF-FILE, title: Staff personal file, posts, qualifications, absence and training, trigger: staff date of birth, years: 75, action: dispose, basis: MFS, note: "Staff files kept 75 years from date of birth (MFS §13.6)."}
+  - {code: RS-FIN, title: Financial records (ledger, invoices, payments, payroll, procurement), trigger: end of financial year, years: 7, action: dispose, basis: MFS, note: "Financial vouchers kept for 7 years (MFS §13.6)."}
+  - {code: RS-FUND, title: Funding and loan applications, agreements, schedules, disbursements and repayments, trigger: agreement completed or written off, years: 7, action: dispose, basis: proposed, note: "Kept 7 years after the last repayment or write-off; declined applications 2 years (review under D10)."}
+  - {code: RS-SDAF, title: SDAF rates, counts, demands, collections, remittances and statements, trigger: statement signed, years: 10, action: review, basis: proposed, note: "Public-finance evidence for the Auditor-General; confirm under D10 and D26."}
+  - {code: RS-PLATFORM, title: Tenancy, plans and operator commercial records, trigger: contract end, years: 7, action: dispose, basis: proposed}
+  - {code: RS-CONFIG, title: Configuration, policy, workflow and reference data versions, trigger: superseded, years: null, action: archive_permanent, basis: proposed, note: "Kept so past decisions remain explainable."}
+  - {code: RS-IAM, title: User accounts, roles and grants, trigger: account deactivated, years: 2, action: anonymise, basis: proposed}
+  - {code: RS-SESSION, title: Sessions and personal navigation state, trigger: session end, years: 0.25, action: purge, basis: proposed}
+  - {code: RS-MDM, title: Matching, merge journal and data-quality records, trigger: decision, years: 7, action: dispose, basis: proposed, note: "Merge journals of learners with certificates follow RS-LRN-PERM."}
+  - {code: RS-AUDIT, title: Audit trail, access logs, verification of identity, agent actions, trigger: event, years: 7, action: drop_partition, basis: MFS, note: "Audit ≥ 7 years, configurable per jurisdiction; certificate and safeguarding audit retained with the record (Book 3 §15)."}
+  - {code: RS-OUTBOX, title: Transactional outbox, trigger: published, years: 0.02, action: drop_partition, basis: proposed, note: "7 days after publication."}
+  - {code: RS-TRANSIENT, title: Idempotency keys, trigger: created, years: 0.003, action: purge, basis: MFS, note: "Idempotency keys retained 24 h (Book 3 §26.1)."}
+  - {code: RS-ATT, title: Attendance registers and marks, trigger: end of session, years: 7, action: drop_partition, basis: proposed, note: "Aggregates are kept permanently in the warehouse."}
+  - {code: RS-BEH, title: Behaviour, detentions, seating and on-report records, trigger: learner leaves institution, years: 6, action: dispose, basis: proposed, note: "Exclusion and suspension decisions follow RS-LRN-PERM."}
+  - {code: RS-SAF, title: Safeguarding cases, concerns, chronologies, referrals, allegations and contact restrictions, trigger: learner date of birth, years: 25, action: review, basis: proposed, note: "Follows the state records schedule (MFS §18.11); allegations about adults reviewed at retirement age or 10 years, whichever is longer."}
+  - {code: RS-SEND, title: SEND profiles, plans, provision and adjustments, trigger: learner date of birth, years: 25, action: review, basis: proposed}
+  - {code: RS-HEALTH, title: Health and care logs, trigger: learner date of birth, years: 25, action: review, basis: proposed}
+  - {code: RS-LMS, title: Course spaces, content, assignments and submissions, trigger: end of session, years: 2, action: dispose, basis: proposed, note: "Marks posted to the markbook follow RS-LRN-PERM; coursework used as certification evidence is kept with results."}
+  - {code: RS-COMMS, title: Messages, conversations and campaigns, trigger: sent, years: 2, action: drop_partition, basis: proposed, note: "Delivery metadata 7 years in the warehouse; letters stored to records follow their record series."}
+  - {code: RS-OPS-7, title: Operational records (general), trigger: closed, years: 7, action: dispose, basis: proposed}
+  - {code: RS-OPS-3, title: Operational logs and short-lived records, trigger: created, years: 3, action: dispose, basis: proposed}
+  - {code: RS-OPS-LOG, title: Platform operations evidence (backups, DR tests), trigger: created, years: 3, action: dispose, basis: proposed}
+  - {code: RS-RECRUIT, title: Recruitment (unsuccessful applicants, enquiries), trigger: process closed, years: 0.5, action: dispose, basis: proposed}
+  - {code: RS-VERIFY, title: Certificate and passport verification logs, trigger: verified, years: 7, action: drop_partition, basis: proposed}
+  - {code: RS-INTEL, title: Alerts, investigations, recommendations, flags and agents, trigger: closed, years: 7, action: dispose, basis: proposed}
+  - {code: RS-AI-LOG, title: Assistant conversations and LLM prompt/output logs, trigger: created, years: 0.083, action: purge, basis: MFS, note: "Prompt and output logging with retention 30 days (Book 3 §28.3)."}
+  - {code: RS-RPT, title: Report definitions, schedules and government returns, trigger: superseded, years: 10, action: review, basis: proposed}
+  - {code: RS-INTG, title: Integration, exchange and data-subject request records, trigger: closed, years: 7, action: dispose, basis: proposed}
+  - {code: RS-DOC, title: Documents and digitisation records (default — each document follows its record series), trigger: per record series, years: null, action: review, basis: MFS, note: "Nothing is destroyed until the digital copy has passed QA and the records manager has approved (MFS §13.2)."}

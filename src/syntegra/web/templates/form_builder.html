@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_school_picker.html" import school_picker %}
+{% block title %}The school's forms{% endblock %}
+{% block content %}
+<div class="head-row"><h1>The school's forms</h1><p class="no-print"><a href="/daybook?school={{ d.institution.id }}">Forms to fill in</a></p></div>
+<p class="muted">{{ d.institution.name }} · Build a form once; parents or staff fill it in; the answers come back here, kept with the version they answered.</p>
+{{ school_picker(school, schools) }}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<section class="card scroll-x" id="forms">
+  <table class="compact"><thead><tr><th scope="col">Form</th><th scope="col">Filled in by</th><th scope="col">Level</th><th scope="col">Version in use</th><th scope="col" class="num">Answers</th><th scope="col"></th></tr></thead>
+  <tbody>{% for r in d.forms %}{% set f = r.published or r.draft or r.withdrawn %}<tr>
+    <td><a href="/forms/builder/{{ (r.published or r.draft or r.withdrawn).id }}">{{ f.title }}</a></td><td>{{ f.filled_by_label }}</td><td><span class="cls cls-{{ f.level }}">{{ f.level }}</span></td>
+    <td>{% if r.published %}v{{ r.published.version }} <span class="pill pill-ok">published</span>{% elif r.withdrawn %}<span class="pill">withdrawn</span>{% else %}—{% endif %}{% if r.draft %} · <a href="/forms/builder/{{ r.draft.id }}">v{{ r.draft.version }} draft</a>{% endif %}</td>
+    <td class="num">{{ r.answers }}</td><td>{% if r.answers %}<a href="/forms/builder/{{ f.id }}/answers">Answers</a>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="6" class="muted">No forms yet.</td></tr>{% endfor %}</tbody></table>
+</section>
+<form method="post" class="card" id="new-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="school" value="{{ d.institution.id }}">
+  <h2>Start a new form</h2>
+  <div class="grid-form">
+    <label>Title<input name="title" maxlength="300" required value="{{ posted.get('title', '') }}" placeholder="Medical information and emergency contacts"></label>
+    <label>Filled in by<select name="filled_by">{% for k, v in d.filled_by.items() %}<option value="{{ k }}"{% if posted.get('filled_by') == k %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+    <label>Who may read the answers<select name="level">{% for k, v in d.levels.items() %}<option value="{{ k }}"{% if posted.get('level', 'confidential') == k %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+  </div>
+  <label>Introduction <span class="hint opt">— shown at the top of the form</span><textarea name="intro" rows="2" maxlength="1000">{{ posted.get('intro', '') }}</textarea></label>
+  <p><button class="primary">Create the draft</button></p>
+</form>
+{% endblock %}

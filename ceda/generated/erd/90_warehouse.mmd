@@ -1,0 +1,503 @@
+erDiagram
+    dim_date {
+        INT date_key PK
+        DATE calendar_date
+        SMALLINT day_of_week
+        SMALLINT iso_week
+        SMALLINT month_no
+        SMALLINT year_no
+        BOOLEAN is_weekend
+        VARCHAR_20_ state_session_label
+        VARCHAR_20_ state_term_label
+        BOOLEAN is_state_school_day
+    }
+    dim_scope {
+        BIGINT scope_key PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ level
+        VARCHAR_40_ code
+        VARCHAR_300_ name
+        VARCHAR_512_ path
+        VARCHAR_6_ state_code
+        VARCHAR_40_ lga_code
+        VARCHAR_32_ ownership
+        DATE row_valid_from
+        DATE row_valid_to
+        BOOLEAN is_current
+    }
+    dim_scope_closure {
+        BIGINT ancestor_key PK
+        BIGINT descendant_key PK
+        SMALLINT depth
+    }
+    dim_institution {
+        BIGINT institution_key PK
+        BINARY_16_ institution_id
+        BIGINT scope_key
+        BIGINT lga_scope_key
+        VARCHAR_20_ institution_code
+        VARCHAR_300_ name
+        VARCHAR_32_ category
+        VARCHAR_32_ ownership
+        BOOLEAN is_public
+        VARCHAR_32_ location_class
+        VARCHAR_60_ comparison_group
+        VARCHAR_32_ onboarding_status
+        DATE row_valid_from
+        DATE row_valid_to
+        BOOLEAN is_current
+    }
+    dim_learner {
+        BIGINT learner_key PK
+        BINARY_32_ learner_pseudo
+        SMALLINT birth_year
+        VARCHAR_32_ sex
+        BOOLEAN is_historic
+        DATE row_valid_from
+        DATE row_valid_to
+        BOOLEAN is_current
+    }
+    dim_staff {
+        BIGINT staff_key PK
+        BINARY_32_ staff_pseudo
+        VARCHAR_32_ sex
+        VARCHAR_32_ staff_category
+        VARCHAR_32_ academic_rank
+        BOOLEAN is_qualified_teacher
+        BOOLEAN is_trcn_registered
+        DATE row_valid_from
+        DATE row_valid_to
+        BOOLEAN is_current
+    }
+    dim_subject {
+        BIGINT subject_key PK
+        BINARY_16_ subject_id
+        VARCHAR_32_ code
+        VARCHAR_300_ name
+        VARCHAR_32_ subject_group
+        BOOLEAN is_mandatory_core
+    }
+    dim_curriculum_node {
+        BIGINT node_key PK
+        BINARY_16_ node_id
+        VARCHAR_48_ curriculum_code
+        VARCHAR_32_ version_label
+        VARCHAR_48_ node_code
+        VARCHAR_32_ kind
+        VARCHAR_32_ requirement
+        BIGINT subject_key
+        DECIMAL_6_1_ min_hours
+    }
+    dim_class {
+        BIGINT class_key PK
+        BINARY_16_ class_group_id
+        BIGINT institution_key
+        VARCHAR_32_ education_level
+        VARCHAR_32_ stream
+        VARCHAR_20_ session_label
+        VARCHAR_300_ name
+    }
+    dim_period {
+        BIGINT period_key PK
+        BINARY_16_ period_id
+        VARCHAR_32_ kind
+        VARCHAR_40_ label
+        DATE starts_on
+        DATE ends_on
+    }
+    fact_enrolment_census {
+        BIGINT period_key PK
+        BIGINT learner_key PK
+        BIGINT institution_key
+        VARCHAR_32_ education_level
+        BOOLEAN is_billable
+        BOOLEAN is_exempt
+    }
+    agg_enrolment_daily {
+        INT date_key PK
+        BIGINT institution_key PK
+        VARCHAR_32_ education_level PK
+        VARCHAR_32_ sex PK
+        INT enrolled
+        INT new_entrants
+        INT leavers
+        INT dropouts
+    }
+    fact_attendance {
+        INT date_key PK
+        BINARY_16_ register_id PK
+        BIGINT learner_key PK
+        BIGINT institution_key
+        BIGINT class_key
+        VARCHAR_32_ register_kind
+        VARCHAR_32_ code
+        BOOLEAN is_present
+        BOOLEAN is_late
+        BOOLEAN is_authorised_absence
+        SMALLINT minutes_late
+    }
+    agg_attendance_daily {
+        INT date_key PK
+        BIGINT class_key PK
+        BIGINT institution_key
+        INT possible_sessions
+        INT present_sessions
+        INT late_sessions
+        INT authorised_absences
+        INT unauthorised_absences
+        SMALLINT registers_due
+        SMALLINT registers_on_time
+        SMALLINT registers_missing
+    }
+    agg_learner_attendance_term {
+        BIGINT period_key PK
+        BIGINT learner_key PK
+        BIGINT institution_key
+        INT possible_sessions
+        INT present_sessions
+        DECIMAL_6_3_ attendance_rate
+        BOOLEAN is_persistent_absence
+        BOOLEAN is_severe_absence
+    }
+    fact_staff_presence {
+        INT date_key PK
+        BIGINT staff_key PK
+        BIGINT institution_key PK
+        BOOLEAN is_expected
+        BOOLEAN is_present
+        VARCHAR_32_ absence_type
+    }
+    fact_class_subject_coverage {
+        INT date_key PK
+        BIGINT class_key PK
+        BIGINT subject_key PK
+        BIGINT institution_key
+        BOOLEAN is_mandatory
+        BOOLEAN has_teacher_of_record
+        BOOLEAN is_teacher_qualified
+        DECIMAL_7_1_ required_hours_to_date
+        DECIMAL_7_1_ scheduled_hours_to_date
+        DECIMAL_7_1_ delivered_hours_to_date
+        SMALLINT objectives_due
+        SMALLINT objectives_delivered
+        SMALLINT objectives_assessed_due
+        SMALLINT objectives_assessed
+        SMALLINT open_gaps
+    }
+    fact_coverage_gap {
+        BINARY_16_ gap_id PK
+        BIGINT institution_key
+        BIGINT class_key
+        BIGINT subject_key
+        VARCHAR_32_ rule
+        VARCHAR_32_ severity
+        INT opened_date_key
+        INT closed_date_key
+        SMALLINT escalation_level
+        SMALLINT learners_affected
+    }
+    fact_curriculum_delivery {
+        BINARY_16_ delivery_id PK
+        BIGINT node_key PK
+        INT date_key
+        BIGINT class_key
+        BIGINT staff_key
+        INT delivered_minutes
+    }
+    fact_assessment_result {
+        BINARY_16_ assessment_id PK
+        BIGINT learner_key PK
+        INT date_key
+        BIGINT class_key
+        BIGINT subject_key
+        VARCHAR_32_ assessment_kind
+        DECIMAL_6_3_ score_pct
+        BOOLEAN is_missing_work
+        DECIMAL_6_2_ target_gap_points
+    }
+    fact_exam_result {
+        BINARY_16_ series_id PK
+        BIGINT learner_key PK
+        BIGINT subject_key PK
+        BIGINT institution_key
+        VARCHAR_32_ exam_body
+        SMALLINT exam_year
+        VARCHAR_16_ grade_label
+        BOOLEAN is_pass
+        BOOLEAN is_credit
+    }
+    fact_behaviour {
+        BINARY_16_ behaviour_event_id PK
+        INT date_key
+        BIGINT learner_key
+        BIGINT institution_key
+        BIGINT class_key
+        VARCHAR_32_ polarity
+        VARCHAR_32_ category
+        SMALLINT points
+        VARCHAR_32_ outcome
+    }
+    agg_wellbeing_safeguarding_count {
+        INT date_key PK
+        BIGINT institution_key PK
+        VARCHAR_40_ measure PK
+        VARCHAR_40_ category PK
+        INT count_value
+    }
+    fact_lms_activity {
+        BINARY_16_ assignment_id PK
+        INT date_key
+        BIGINT institution_key
+        BIGINT class_key
+        BIGINT staff_key
+        VARCHAR_32_ assignment_kind
+        SMALLINT learners_expected
+        SMALLINT submitted
+        SMALLINT on_time
+        SMALLINT late
+        SMALLINT missing
+        SMALLINT marked
+        SMALLINT returned_online
+    }
+    fact_digital_skill {
+        INT date_key PK
+        BINARY_32_ person_pseudo PK
+        VARCHAR_32_ person_kind
+        BIGINT institution_key
+        VARCHAR_32_ strand PK
+        SMALLINT level
+    }
+    fact_message {
+        BINARY_16_ message_id PK
+        INT date_key
+        BIGINT institution_key
+        VARCHAR_32_ channel
+        VARCHAR_32_ direction
+        BOOLEAN is_delivered
+        BOOLEAN is_read
+        INT response_minutes
+        BIGINT cost_minor
+        CHAR_3_ currency
+    }
+    fact_finance {
+        INT date_key PK
+        BIGINT institution_key PK
+        VARCHAR_32_ charge_type_code PK
+        VARCHAR_24_ measure PK
+        BIGINT amount_minor
+        CHAR_3_ currency
+    }
+    fact_sdaf {
+        BIGINT period_key PK
+        BIGINT institution_key PK
+        INT billable_learners
+        INT exempt_learners
+        BIGINT billed_minor
+        BIGINT exempted_minor
+        BIGINT collected_minor
+        BIGINT remitted_minor
+        CHAR_3_ currency
+    }
+    fact_certificate_event {
+        BINARY_16_ event_id PK
+        INT date_key
+        BIGINT institution_key
+        VARCHAR_24_ event_kind
+        VARCHAR_32_ credential_kind
+        VARCHAR_24_ channel
+    }
+    fact_digitisation {
+        INT date_key PK
+        BINARY_16_ batch_id PK
+        VARCHAR_80_ hub
+        BIGINT lga_scope_key
+        INT pages_captured
+        INT pages_indexed
+        DECIMAL_6_3_ key_field_accuracy
+        DECIMAL_7_1_ hours_scan_to_searchable
+    }
+    fact_data_quality {
+        INT date_key PK
+        BIGINT institution_key PK
+        DECIMAL_7_6_ completeness
+        DECIMAL_7_6_ uniqueness
+        DECIMAL_7_6_ validity
+        DECIMAL_7_6_ timeliness
+        DECIMAL_7_6_ consistency
+        DECIMAL_7_6_ verification
+        DECIMAL_7_3_ dqi
+    }
+    fact_health_index {
+        INT date_key PK
+        BIGINT institution_key PK
+        VARCHAR_40_ indicator PK
+        DECIMAL_12_4_ raw_value
+        DECIMAL_7_3_ normalised_score
+        DECIMAL_6_4_ weight
+        INT policy_version
+        BOOLEAN is_partial
+    }
+    fact_compliance_score {
+        INT date_key PK
+        BIGINT institution_key PK
+        VARCHAR_32_ component PK
+        DECIMAL_7_3_ score
+        DECIMAL_6_4_ weight
+        VARCHAR_24_ band
+    }
+    fact_infrastructure {
+        BIGINT period_key PK
+        BIGINT institution_key PK
+        SMALLINT classrooms
+        DECIMAL_6_2_ learners_per_classroom
+        SMALLINT toilets
+        BOOLEAN has_water
+        BOOLEAN has_power
+        INT ict_devices
+        DECIMAL_7_3_ condition_score
+        JSON textbook_ratio
+    }
+    fact_alert {
+        BINARY_16_ alert_id PK
+        BIGINT scope_key
+        VARCHAR_32_ severity
+        VARCHAR_40_ rule_key
+        INT raised_date_key
+        INT resolved_date_key
+        SMALLINT escalations
+    }
+    agg_metric {
+        VARCHAR_40_ metric_code PK
+        BIGINT scope_key PK
+        VARCHAR_16_ grain PK
+        VARCHAR_20_ period_label PK
+        BINARY_32_ dims_hash PK
+        JSON dims
+        DECIMAL_18_6_ value
+        DECIMAL_18_6_ numerator
+        DECIMAL_18_6_ denominator
+        BOOLEAN is_suppressed
+        VARCHAR_32_ label_kind
+        DATETIME_6_ computed_at
+    }
+    live_kpi {
+        VARCHAR_40_ metric_code PK
+        BIGINT scope_key PK
+        DATE as_of_date PK
+        DECIMAL_18_6_ value
+        DECIMAL_18_6_ numerator
+        DECIMAL_18_6_ denominator
+        BOOLEAN is_suppressed
+        DATETIME_6_ refreshed_at
+    }
+    feature_learner_weekly {
+        INT week_start_key PK
+        BIGINT learner_key PK
+        BIGINT institution_key
+        DECIMAL_7_6_ attendance_rate_4w
+        DECIMAL_8_5_ attendance_trend
+        DECIMAL_8_5_ attainment_trend
+        SMALLINT negative_behaviour_4w
+        SMALLINT missing_work_4w
+        SMALLINT transitions
+        BOOLEAN label_dropout_next_term
+    }
+    dim_facility {
+        BIGINT facility_key PK
+        VARCHAR_32_ subject_kind
+        BINARY_16_ subject_id
+        BIGINT institution_key
+        VARCHAR_300_ name
+        VARCHAR_32_ room_type
+        VARCHAR_32_ asset_category
+        SMALLINT capacity
+        SMALLINT built_year
+        DATE row_valid_from
+        DATE row_valid_to
+        BOOLEAN is_current
+    }
+    fact_facility_condition {
+        INT date_key PK
+        BIGINT facility_key PK
+        BIGINT institution_key
+        VARCHAR_32_ condition_grade
+        VARCHAR_32_ usability
+        BOOLEAN is_usable
+        DATE assessed_on
+        INT days_since_assessment
+        INT learners_affected
+        BIGINT repair_estimate_minor
+        CHAR_3_ currency
+        SMALLINT open_actions
+        SMALLINT open_critical_actions
+        SMALLINT overdue_maintenance
+    }
+    fact_maintenance_work {
+        INT date_key PK
+        BIGINT institution_key PK
+        INT requests_open
+        INT requests_completed_30d
+        INT preventive_completed_30d
+        DECIMAL_8_2_ mean_days_to_complete
+        INT maintenance_due
+        INT maintenance_overdue
+        INT actions_open
+        INT actions_overdue
+        BIGINT cost_30d_minor
+        CHAR_3_ currency
+    }
+    agg_infrastructure_scope {
+        INT date_key PK
+        BIGINT scope_key PK
+        VARCHAR_32_ level
+        INT institutions
+        INT institutions_assessed
+        INT sites
+        INT sites_fenced
+        INT sites_encroached
+        INT buildings
+        INT buildings_unsafe
+        INT classrooms
+        INT classrooms_usable
+        INT learners
+        DECIMAL_8_2_ learners_per_usable_classroom
+        INT toilets_usable
+        INT institutions_with_water
+        INT institutions_with_power
+        INT facilities_unsafe_in_use
+        INT actions_open
+        INT actions_critical_open
+        INT actions_overdue
+        BIGINT repair_backlog_minor
+        CHAR_3_ currency
+        DECIMAL_7_3_ infrastructure_index
+    }
+    fact_budget_execution {
+        INT date_key PK
+        BIGINT institution_key PK
+        VARCHAR_32_ cost_centre_code PK
+        VARCHAR_16_ economic_code PK
+        VARCHAR_32_ funding_source_kind PK
+        SMALLINT fiscal_year
+        BIGINT original_minor
+        BIGINT revised_minor
+        BIGINT committed_minor
+        BIGINT actual_minor
+        BIGINT available_minor
+        CHAR_3_ currency
+    }
+    fact_funding {
+        INT date_key PK
+        BIGINT institution_key PK
+        VARCHAR_32_ programme_code PK
+        VARCHAR_32_ beneficiary_kind PK
+        INT applications
+        INT approved
+        INT agreements_in_arrears
+        BIGINT approved_amount_minor
+        BIGINT disbursed_minor
+        BIGINT repaid_minor
+        BIGINT outstanding_minor
+        BIGINT arrears_minor
+        CHAR_3_ currency
+    }

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Release register{% endblock %}
+{% block content %}
+<h1>Release register</h1>
+<p class="muted">Every copy of a document that left Syntegra — stamped scans, searchable copies, Word copies and certified true copies — with who received it, when, why and the SHA-256 of the exact bytes released. Each stamped page carries its release code.</p>
+
+<form method="post" enctype="multipart/form-data" class="card filters" id="check-code">
+  <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+  <label class="grow">Release code on the copy<input name="code" value="{{ code }}" placeholder="e.g. K7Q2-M9XD-4TPA" autocomplete="off" required></label>
+  <label>The copy you were given (optional)<input type="file" name="file"></label>
+  <button class="primary">Check</button>
+</form>
+
+{% if error %}<div class="alert alert-error" role="alert" id="check-error">{{ error }}</div>{% endif %}
+{% if found %}
+<section class="card" id="check-result">
+  <h2>Release <code>{{ found.code }}</code></h2>
+  <dl>
+    <dt>Document</dt><dd><a href="/documents/{{ found.document_id }}"><code>{{ found.reference_no }}</code></a> {{ found.title }}</dd>
+    <dt>Copy</dt><dd>{{ found.kind_label }} · {{ found.size_bytes|filesize }}</dd>
+    <dt>Released to</dt><dd>{{ found.released_to }}</dd>
+    <dt>When</dt><dd>{{ found.released_at|localtime }}</dd>
+    <dt>Purpose</dt><dd>{{ found.purpose or "—" }}</dd>
+    {% if found.reason %}<dt>Reason</dt><dd>{{ found.reason }}</dd>{% endif %}
+    <dt>SHA-256 released</dt><dd><code class="hash">{{ found.sha256 }}</code></dd>
+    {% if found.presented_sha256 is defined %}
+    <dt>The file you gave</dt><dd><code class="hash">{{ found.presented_sha256 }}</code><br>
+      {% if found.presented_matches %}<span class="pill pill-ok" id="match">Identical to the copy released</span>
+      {% elif found.presented_is_master %}<span class="pill pill-ok" id="match">Identical to the master</span>
+      {% else %}<span class="pill pill-bad" id="mismatch">Not the copy released — it has been changed, or it is a different copy</span>{% endif %}</dd>
+    {% endif %}
+  </dl>
+</section>
+{% endif %}
+
+<section class="card" id="releases">
+  <h2>{% if document %}Copies of this document{% else %}Recent releases{% endif %}</h2>
+  {% if rows %}
+  <div class="scroll-x"><table>
+    <thead><tr><th>Release code</th><th>Document</th><th>Copy</th><th>Released to</th><th>When</th><th>Purpose or reason</th></tr></thead>
+    <tbody>{% for r in rows %}
+      <tr><td><a href="/records/releases?code={{ r.code }}"><code>{{ r.code }}</code></a></td>
+        <td><a href="/documents/{{ r.document_id }}"><code>{{ r.reference_no }}</code></a></td>
+        <td>{{ r.kind_label }}</td><td>{{ r.released_to }}</td><td>{{ r.released_at|localtime }}</td>
+        <td>{{ r.reason or r.purpose or "—" }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="muted">No copies have been released yet.</p>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Support profile — {{ d.profile.name }}{% endblock %}
+{% block content %}{% set p = d.profile %}
+<p class="no-print"><a href="/send">← Register</a></p>
+<h1>Support profile — {{ p.name }}</h1>
+<p class="muted">{{ p.class }} · {{ p.school }} · {{ p.level }} · review by {{ p.review_due_on|date if p.review_due_on else "—" }}{% if p.overdue %} <span class="pill pill-bad">overdue</span>{% endif %}</p>
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<div class="grid2c">
+<section class="card"><h2>Profile</h2>
+  <p>{% for n in d.needs %}<span class="pill{% if n.primary %} pill-ok{% endif %}">{{ n.area }}{% if n.primary %} · primary{% endif %}</span> {% endfor %}</p>
+  <dl class="profile">{% for f in p.fields %}{% if f.text %}<dt>{{ f.label }}</dt><dd>{{ f.text }}</dd>{% endif %}{% endfor %}</dl>
+  {% if d.can_manage %}<details class="no-print"><summary>Update the profile</summary>
+    <form method="post" class="grid-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="profile">
+      <label>Level of support<select name="support_level">{% for k, v in d.support_levels.items() %}<option value="{{ k }}"{% if k == p.level_code %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+      <label>Review by<input type="date" name="review" value="{{ p.review_due_on or '' }}"></label>
+      {% for f in p.fields %}<label>{{ f.label }}<textarea name="{{ f.key }}" rows="2" maxlength="2000">{{ f.text }}</textarea></label>{% endfor %}
+      <p><button>Save</button></p></form></details>{% endif %}
+</section>
+<section class="card" id="adjustments"><h2>What teachers see</h2>
+  <p class="muted">Adjustments and teaching strategies, shown to the learner's teachers on their lesson page — without the needs behind them.</p>
+  <table class="compact"><tbody>{% for a in d.adjustments %}<tr><td><strong>{{ a.kind }}</strong><br>{{ a.note }}<br><span class="hint opt">{{ a.applies_to }} · since {{ a.since|date }}{% if a.until %} until {{ a.until|date }}{% endif %}</span></td>
+    <td>{% if d.can_manage %}<form method="post" class="inline-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="end_adjust"><input type="hidden" name="adjustment_id" value="{{ a.id }}"><button>End</button></form>{% endif %}</td></tr>
+  {% else %}<tr><td class="muted">None yet.</td></tr>{% endfor %}</tbody></table>
+  {% if d.can_manage %}<form method="post" class="grid-form no-print"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="adjust">
+    <label>Kind<select name="kind">{% for k, v in d.adjustment_kinds.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+    <label>For the teacher<input name="note" required maxlength="300" placeholder="e.g. Give instructions one step at a time, and check understanding"></label>
+    <fieldset><legend>Applies to</legend>{% for k in ("lessons", "assessments", "exams") %}<label class="chip"><input type="checkbox" name="applies_to" value="{{ k }}"{% if k == "lessons" %} checked{% endif %}> {{ k }}</label>{% endfor %}</fieldset>
+    <label>Until <span class="hint opt">— leave empty for ongoing</span><input type="date" name="until"></label>
+    <p><button class="primary">Add</button></p></form>{% endif %}
+</section>
+</div>
+<section class="card" id="plan"><h2>Support plan{% if d.plan %} — {{ d.plan.type }}, version {{ d.plan.version }}{% endif %}</h2>
+  {% if d.plan %}{% set pl = d.plan %}
+  <p class="muted">Reviewed every {{ pl.cycle }} month{{ "" if pl.cycle == 1 else "s" }} · next review {{ pl.next_review_on|date }}{% if pl.overdue %} <span class="pill pill-bad">overdue</span>{% endif %}{% if pl.participants %} · with {{ pl.participants|join(", ") }}{% endif %}</p>
+  <ol>{% for o in pl.outcomes %}<li>{{ o }}</li>{% endfor %}</ol>
+  {% if d.can_manage %}<details class="no-print"><summary>Record a review</summary>
+    <form method="post" class="grid-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="review"><input type="hidden" name="plan_id" value="{{ pl.id }}">
+      <label>What the review found <span class="hint opt">— progress against each outcome, and any changes</span><textarea name="notes" rows="4" required minlength="20"></textarea></label>
+      <label>Who took part <span class="hint opt">— separated by commas</span><input name="attendees" placeholder="SENCO, form teacher, mother, learner"></label>
+      <p><button class="primary">Record the review</button></p></form></details>{% endif %}
+  {% else %}<p class="muted">No plan yet.</p>{% endif %}
+  {% if d.can_manage %}<details class="no-print"{% if not d.plan %} open{% endif %}><summary>{{ "Write a new version" if d.plan else "Write the plan" }}</summary>
+    <form method="post" class="grid-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="plan">
+      <label>Kind of plan<select name="plan_type">{% for k, v in d.plan_types.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+      <label>Review every (months)<input type="number" name="cycle" min="1" max="12" value="3"></label>
+      <label>Outcomes <span class="hint opt">— one per line</span><textarea name="outcomes" rows="4" required>{{ posted.get('outcomes', '') }}</textarea></label>
+      <label>Who takes part <span class="hint opt">— separated by commas</span><input name="participants" placeholder="SENCO, form teacher, parents, learner"></label>
+      <p><button class="primary">Publish the plan</button></p></form></details>{% endif %}
+</section>
+{% if d.reviews %}<section class="card"><h2>Reviews</h2>{% for r in d.reviews %}<div class="referral"><strong>{{ r.on|date }}</strong> <span class="muted">plan v{{ r.version }}{% if r.attendees %} · {{ r.attendees|join(", ") }}{% endif %}</span><p>{{ r.notes }}</p></div>{% endfor %}</section>{% endif %}
+<section class="card scroll-x"><h2>Access log</h2><table class="compact"><tbody>{% for x in d.access_log %}<tr><td>{{ x.at|localtime }}</td><td>{{ x.who }}</td></tr>{% endfor %}</tbody></table></section>
+{% endblock %}

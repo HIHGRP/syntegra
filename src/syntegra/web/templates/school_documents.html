@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ reg.institution.name }} — documents{% endblock %}
+{% block content %}
+<p class="eyebrow">School documents · <code>{{ reg.institution.code }}</code></p>
+<div class="head-row">
+  <h1>{{ reg.institution.name }}</h1>
+  {% if ctx.has("document:upload") %}<a class="button primary" href="/documents/upload?institution={{ reg.institution.id }}">Upload documents</a>{% endif %}
+</div>
+<p class="muted">{{ reg.institution.address }}</p>
+{% if added %}<div class="alert alert-ok" role="status" id="added">Uploaded and indexed — the new documents are highlighted below.</div>{% endif %}
+<div class="kpis">
+  <div class="kpi"><span class="v">{{ reg.total }}</span>document{{ "s" if reg.total != 1 else "" }}{% if q %} matching{% endif %}</div>
+  <div class="kpi"><span class="v">{{ reg.groups|length }}</span>categor{{ "ies" if reg.groups|length != 1 else "y" }}</div>
+  <div class="kpi"><span class="v">{{ reg.size|filesize }}</span>storage used</div>
+</div>
+{% if reg.hidden_above_level %}<p class="hint" id="hidden-note">{{ reg.hidden_above_level }} more document{{ "s" if reg.hidden_above_level != 1 else "" }} of this school {{ "are" if reg.hidden_above_level != 1 else "is" }} above your access level and not listed.</p>{% endif %}
+{% if reg.restricted_hidden %}<p class="hint" id="restricted-note">{{ reg.restricted_hidden }} restricted document{{ "s" if reg.restricted_hidden != 1 else "" }} of this school {{ "are" if reg.restricted_hidden != 1 else "is" }} listed only for a declared purpose — choose one below.</p>{% elif reg.restricted_left_out and q %}<p class="hint" id="restricted-note">Restricted documents are left out of this search; choose a purpose to include them.</p>{% endif %}
+<form method="get" class="filters" role="search"><label class="grow">Search this school's documents<input name="q" value="{{ q }}" placeholder="words, names, a year or a reference number"></label>{% if purposes %}<label>Purpose (to include restricted documents)<select name="purpose" id="purpose"><option value="">No purpose — leave restricted documents out</option>
+  {% for p in purposes %}<option value="{{ p.code }}"{% if purpose == p.code %} selected{% endif %}>{{ p.label }}</option>{% endfor %}
+</select></label>{% endif %}<button>{% if purposes %}Show{% else %}Search{% endif %}</button>{% if q or purpose %}<a href="?">Show all</a>{% endif %}</form>
+{% for title, rows in reg.groups %}
+<section class="card">
+  <h2>{{ title }} <span class="muted">({{ rows|length }})</span></h2>
+  <div class="scroll-x"><table>
+    <thead><tr><th>Reference</th><th>Title</th><th>Dates</th><th>Session / class</th><th>Level</th><th class="num">Size</th></tr></thead>
+    <tbody>{% for r in rows %}
+      <tr{% if r.id in added %} class="row-new"{% endif %}><td><a href="/documents/{{ r.id }}{% if reg.purpose and r.level.number >= 4 %}?purpose={{ reg.purpose|urlencode }}{% endif %}"><code>{{ r.reference_no }}</code></a></td><td>{{ r.title }}</td>
+        <td>{{ r.date_from|date("%d %b %Y") if r.date_from else "—" }}{% if r.date_to and r.date_to != r.date_from %} – {{ r.date_to|date("%d %b %Y") }}{% endif %}</td>
+        <td>{{ r.session_label or "" }}</td>
+        <td><span class="level level-{{ r.level.number }}">{{ r.level.label }}</span></td><td class="num">{{ r.size_bytes|filesize }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+</section>
+{% else %}
+<section class="card"><p class="muted">{% if q %}Nothing matched “{{ q }}”.{% else %}No documents have been uploaded for this school yet.{% endif %}</p></section>
+{% endfor %}
+{% endblock %}

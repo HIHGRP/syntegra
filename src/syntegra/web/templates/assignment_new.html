@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Set work — {{ s.title }}{% endblock %}
+{% block content %}
+<p class="crumb no-print"><a href="/courses/{{ s.id }}">← {{ s.title }}</a></p>
+<h1>Set work — {{ s.title }}</h1>
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<form method="post" class="card" id="set-work"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+  <div class="grid-form"><label>Title<input name="title" maxlength="300" required value="{{ posted.get('title', '') }}"></label>
+    <label>Kind<select name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}"{% if posted.get('kind') == k %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+    <label>Out of <span class="hint opt">— marks, optional</span><input class="num4" name="max_mark" inputmode="decimal" value="{{ posted.get('max_mark', '20') }}"></label></div>
+  <label>Instructions<textarea name="instructions" rows="6" required>{{ posted.get('instructions', '') }}</textarea></label>
+  <div class="grid-form">
+    <label>Opens<input type="date" name="opens_on" value="{{ posted.get('opens_on', today) }}" required></label><label>at<input type="time" name="opens_at" value="{{ posted.get('opens_at', '07:00') }}"></label>
+    <label>Due<input type="date" name="due_on" min="{{ today }}" value="{{ posted.get('due_on', '') }}" required></label><label>at<input type="time" name="due_at" value="{{ posted.get('due_at', '18:00') }}"></label></div>
+  <div class="grid-form"><label>Late work<select name="late_policy">{% for k, v in late.items() %}<option value="{{ k }}"{% if posted.get('late_policy') == k %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+    <label class="check"><input type="checkbox" name="resubmit"{% if posted.get('resubmit') %} checked{% endif %}> Learners may hand in a new version</label></div>
+  <p><button class="primary">Set the work</button></p>
+</form>
+{% endblock %}

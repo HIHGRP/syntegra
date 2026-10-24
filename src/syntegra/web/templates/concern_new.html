@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "_school_picker.html" import school_picker %}
+{% block title %}Record a safeguarding concern{% endblock %}
+{% block content %}
+<h1>Record a safeguarding concern</h1>
+<p class="muted">If a child is in immediate danger, act now: tell the designated safeguarding lead in person and call the police (112) — then record it here.</p>
+{{ school_picker(school, schools) }}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+{% if receipt %}
+<section class="card receipt" id="receipt" role="status">
+  <h2>Concern received — receipt {{ receipt.receipt }}</h2>
+  <p>Your concern has gone to the designated safeguarding lead at {{ receipt.school }} ({{ receipt.at.strftime("%d %b %Y %H:%M") }}). It is sealed: you will not see it again, or what happens next — that protects the child and you.</p>
+  <p class="muted">Keep the receipt code. If you remember anything else, record a new concern quoting it.</p>
+</section>
+{% endif %}
+{% if classes %}<form method="get" class="picker no-print" id="pick-class"><input type="hidden" name="school" value="{{ school.id }}">
+  <label>Class<select name="class" onchange="this.form.submit()">{% for c in classes %}<option value="{{ c.id }}"{% if c.id == class_id %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></label><noscript><button>Show the class</button></noscript></form>{% endif %}
+<form method="post" class="card" id="concern">
+  <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="school" value="{{ school.id }}"><input type="hidden" name="class" value="{{ class_id or '' }}">
+  <h2>The child</h2>
+  {% if classes %}
+  <div class="grid-form">
+    <label>Learner<select name="learner_id"><option value="">—</option>{% for lr in learners %}<option value="{{ lr.id }}"{% if posted.get('learner_id') == lr.id|string %} selected{% endif %}>{{ lr.name }}</option>{% endfor %}</select></label>
+  </div>
+  <p class="hint">Or give the learner number instead:</p>
+  {% endif %}
+  <label>Learner number <span class="hint opt">— LRN-…, from the learner's card or register</span><input name="lrn" maxlength="16" value="{{ posted.get('lrn', '') }}" placeholder="LRN-0000-0000-00"></label>
+  <h2>What you saw or heard</h2>
+  <div class="grid-form">
+    <label>Kind of concern<select name="category" required>{% for k, v in categories.items() %}<option value="{{ k }}"{% if posted.get('category') == k %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+    <label>When <span class="hint opt">— if you know</span><input type="date" name="on" max="{{ today }}" value="{{ posted.get('on', '') }}"></label>
+  </div>
+  <label>In your own words <span class="hint opt">— the facts: what was said or seen, by whom, where. Do not investigate or question the child.</span><textarea name="what" rows="7" required minlength="20" maxlength="8000">{{ posted.get('what', '') }}</textarea></label>
+  <p><button class="primary">Send to the safeguarding lead</button></p>
+</form>
+{% if receipts %}
+<section class="card scroll-x"><h2>Your receipts</h2>
+  <table class="compact"><thead><tr><th scope="col">Receipt</th><th scope="col">Recorded</th><th scope="col">Kind</th></tr></thead>
+  <tbody>{% for r in receipts %}<tr><td><code>{{ r.receipt }}</code></td><td>{{ r.at.strftime("%d %b %Y %H:%M") }}</td><td>{{ r.category }}</td></tr>{% endfor %}</tbody></table>
+  <p class="muted">Only the receipts are shown — never the concern or the case.</p>
+</section>
+{% endif %}
+{% endblock %}

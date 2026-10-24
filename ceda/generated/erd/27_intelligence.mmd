@@ -1,0 +1,349 @@
+erDiagram
+    alert_rule {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ rule_key
+        BINARY_16_ policy_rule_id FK
+        VARCHAR_40_ metric_id
+        VARCHAR_32_ severity
+        VARCHAR_16_ owner_role
+        SMALLINT due_days
+        JSON escalation
+        INT version
+        VARCHAR_32_ status
+    }
+    alert {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ rule_key
+        VARCHAR_32_ severity
+        VARCHAR_32_ priority
+        VARCHAR_300_ title
+        TEXT what_changed
+        TEXT why_it_matters
+        JSON evidence
+        TEXT recommended_action
+        VARCHAR_40_ subject_kind
+        BINARY_16_ subject_id
+        VARCHAR_16_ owner_role
+        BINARY_16_ owner_user_id
+        DATETIME_6_ due_at
+        VARCHAR_160_ dedupe_key
+        SMALLINT escalation_level
+        DATETIME_6_ snoozed_until
+        BINARY_16_ investigation_id FK
+        DATETIME_6_ resolved_at
+        VARCHAR_32_ status
+    }
+    alert {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ rule_key
+        VARCHAR_32_ severity
+        VARCHAR_32_ priority
+        VARCHAR_300_ title
+        TEXT what_changed
+        TEXT why_it_matters
+        JSON evidence
+        TEXT recommended_action
+        VARCHAR_40_ subject_kind
+        BINARY_16_ subject_id
+        VARCHAR_16_ owner_role
+        BINARY_16_ owner_user_id
+        DATETIME_6_ due_at
+        VARCHAR_160_ dedupe_key
+        SMALLINT escalation_level
+        DATETIME_6_ snoozed_until
+        BINARY_16_ investigation_id FK
+        DATETIME_6_ resolved_at
+        VARCHAR_32_ status
+    }
+    alert_event {
+        BINARY_16_ id PK
+        BINARY_16_ alert_id FK
+        VARCHAR_32_ event_kind
+        BINARY_16_ actor
+        VARCHAR_1000_ note
+        DATETIME_6_ occurred_at
+    }
+    alert_event {
+        BINARY_16_ id PK
+        BINARY_16_ alert_id FK
+        VARCHAR_32_ event_kind
+        BINARY_16_ actor
+        VARCHAR_1000_ note
+        DATETIME_6_ occurred_at
+    }
+    investigation {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ title
+        VARCHAR_32_ stage
+        TEXT problem
+        JSON evidence
+        TEXT root_cause
+        BINARY_16_ intervention_ref
+        BINARY_16_ responsible_user_id
+        DATE due_on
+        TEXT outcome
+        BINARY_16_ owner_user_id
+        VARCHAR_32_ status
+    }
+    investigation {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ title
+        VARCHAR_32_ stage
+        TEXT problem
+        JSON evidence
+        TEXT root_cause
+        BINARY_16_ intervention_ref
+        BINARY_16_ responsible_user_id
+        DATE due_on
+        TEXT outcome
+        BINARY_16_ owner_user_id
+        VARCHAR_32_ status
+    }
+    improvement_plan {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id
+        TEXT problem
+        JSON contributing_indicators
+        JSON actions
+        BINARY_16_ owner_user_id
+        DATE review_on
+        JSON target
+        JSON outcome
+        VARCHAR_32_ status
+    }
+    recommendation {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ model_version_id
+        VARCHAR_32_ kind
+        VARCHAR_40_ subject_kind
+        BINARY_16_ subject_id
+        TEXT finding
+        JSON evidence
+        DECIMAL_7_6_ confidence
+        TEXT recommendation
+        VARCHAR_32_ decision
+        VARCHAR_1000_ decision_reason
+        BINARY_16_ decided_by
+        DATETIME_6_ decided_at
+        JSON outcome
+        VARCHAR_32_ status
+    }
+    risk_flag {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        VARCHAR_32_ flag_kind
+        DECIMAL_7_6_ probability
+        JSON explanation
+        BINARY_16_ model_version_id
+        DATE scored_on
+        BINARY_16_ recommendation_id FK
+        VARCHAR_500_ dismissed_reason
+        VARCHAR_32_ status
+    }
+    ai_model {
+        BINARY_16_ id PK
+        VARCHAR_40_ code
+        VARCHAR_300_ name
+        TEXT purpose
+        VARCHAR_200_ owner
+        TEXT training_data
+        JSON excluded_features
+        VARCHAR_32_ oversight_level
+        VARCHAR_200_ dpia_document_ref
+        VARCHAR_32_ status
+    }
+    ai_model_version {
+        BINARY_16_ id PK
+        BINARY_16_ model_id FK
+        VARCHAR_32_ version_label
+        VARCHAR_500_ artifact_uri
+        JSON metrics
+        JSON fairness
+        JSON drift
+        BINARY_16_ approved_by FK
+        DATE review_on
+        VARCHAR_32_ status
+    }
+    model_deployment {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ model_version_id
+        BINARY_16_ approved_by FK
+        TEXT conditions
+        DATE valid_from
+        DATE valid_to
+    }
+    agent_template {
+        BINARY_16_ id PK
+        VARCHAR_40_ code
+        VARCHAR_300_ name
+        TEXT watches
+        JSON tools
+        VARCHAR_32_ max_level
+        JSON human_only_actions
+        INT version
+        VARCHAR_32_ status
+    }
+    agent {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ template_code
+        INT template_version
+        BINARY_16_ service_identity_id
+        BINARY_16_ owner_user_id
+        VARCHAR_32_ level
+        VARCHAR_32_ state_max_level
+        JSON triggers
+        JSON limits
+        JSON sandbox_result
+        BINARY_16_ approved_by
+        BINARY_16_ head_approved_by
+        DATE next_reapproval_on
+        DECIMAL_7_6_ error_rate
+        DATETIME_6_ paused_at
+        BINARY_16_ paused_by
+        VARCHAR_32_ status
+    }
+    agent {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ template_code
+        INT template_version
+        BINARY_16_ service_identity_id
+        BINARY_16_ owner_user_id
+        VARCHAR_32_ level
+        VARCHAR_32_ state_max_level
+        JSON triggers
+        JSON limits
+        JSON sandbox_result
+        BINARY_16_ approved_by
+        BINARY_16_ head_approved_by
+        DATE next_reapproval_on
+        DECIMAL_7_6_ error_rate
+        DATETIME_6_ paused_at
+        BINARY_16_ paused_by
+        VARCHAR_32_ status
+    }
+    agent_action {
+        BINARY_16_ id PK
+        BINARY_16_ agent_id FK
+        BINARY_16_ owner_user_id
+        JSON trigger_detail
+        JSON evidence
+        VARCHAR_200_ rule_applied
+        VARCHAR_64_ tool
+        JSON parameters
+        VARCHAR_32_ level
+        VARCHAR_32_ outcome
+        TEXT explanation
+        DATETIME_6_ undo_until
+        BINARY_16_ undone_action_id
+        DATETIME_6_ occurred_at PK
+    }
+    agent_action {
+        BINARY_16_ id PK
+        BINARY_16_ agent_id FK
+        BINARY_16_ owner_user_id
+        JSON trigger_detail
+        JSON evidence
+        VARCHAR_200_ rule_applied
+        VARCHAR_64_ tool
+        JSON parameters
+        VARCHAR_32_ level
+        VARCHAR_32_ outcome
+        TEXT explanation
+        DATETIME_6_ undo_until
+        BINARY_16_ undone_action_id
+        DATETIME_6_ occurred_at PK
+    }
+    assistant_conversation {
+        BINARY_16_ id PK
+        BINARY_16_ user_id
+        VARCHAR_200_ title
+        JSON messages
+        DATETIME_6_ expires_at
+    }
+    llm_call_log {
+        BINARY_16_ id PK
+        VARCHAR_32_ caller_kind
+        BINARY_16_ caller_id
+        VARCHAR_80_ model
+        VARCHAR_32_ region
+        VARCHAR_1024_ prompt_ref
+        VARCHAR_1024_ output_ref
+        INT tokens_in
+        INT tokens_out
+        DATETIME_6_ called_at PK
+    }
+    document_extraction {
+        BINARY_16_ id PK
+        BINARY_16_ document_id FK
+        VARCHAR_40_ schema_code
+        JSON fields
+        JSON findings
+        BINARY_16_ validated_by
+        DATETIME_6_ validated_at
+        VARCHAR_32_ status
+    }
+    planning_scenario {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ title
+        JSON assumptions
+        JSON outputs
+        JSON compared_with_ids
+        INT version
+        VARCHAR_32_ status
+    }
+    resource_proposal {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ imbalance_kind
+        JSON evidence
+        TEXT proposal
+        BINARY_16_ decided_by
+        VARCHAR_32_ decision
+        VARCHAR_32_ status
+    }
+    practice_share {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ title
+        JSON evidence
+        VARCHAR_40_ subject_kind
+        BINARY_16_ subject_id
+        DATETIME_6_ consent_given_at
+        VARCHAR_32_ status
+    }
+    app_user {
+        BINARY_16 id PK
+    }
+    document {
+        BINARY_16 id PK
+    }
+    learner {
+        BINARY_16 id PK
+    }
+    platform_user {
+        BINARY_16 id PK
+    }
+    policy_rule {
+        BINARY_16 id PK
+    }
+    agent ||--o{ agent_action : "agent_id"
+    ai_model ||--o{ ai_model_version : "model_id"
+    alert ||--o{ alert_event : "alert_id"
+    app_user ||--o{ model_deployment : "approved_by"
+    document ||--o{ document_extraction : "document_id"
+    investigation ||--o{ alert : "investigation_id"
+    learner ||--o{ risk_flag : "learner_id"
+    platform_user ||--o{ ai_model_version : "approved_by"
+    policy_rule ||--o{ alert_rule : "policy_rule_id"
+    recommendation ||--o{ risk_flag : "recommendation_id"

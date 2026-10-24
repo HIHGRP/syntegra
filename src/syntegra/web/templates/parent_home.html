@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<h1>Welcome, {{ parent }}</h1>
+<p class="muted">Your {{ "child" if kids|length == 1 else "children" }} at {{ session.affiliation_name if session and session.affiliation_name else "school" }}.</p>
+<section class="kpis" aria-label="Summary">
+  <div class="kpi"><span class="v">{{ inbox.unread }}</span><span class="k"><a href="/conversations">unread message{{ "" if inbox.unread == 1 else "s" }}</a></span></div>
+  <div class="kpi"><span class="v">{{ kids|sum(attribute="due", start=[])|length }}</span><span class="k"><a href="/work">pieces of work due</a></span></div>
+  <div class="kpi"><span class="v">{{ kids|sum(attribute="forms_todo", start=[])|length }}</span><span class="k"><a href="/daybook">forms to fill in</a></span></div>
+</section>
+{% for k in kids %}
+<section class="card child" id="child-{{ loop.index }}">
+  <div class="head-row"><h2>{{ k.name }}</h2><p class="muted">{{ k.class_name }}</p></div>
+  <div class="grid2">
+    <div>
+      <h3 class="sub">Work due</h3>
+      <ul class="plain">{% for w in k.due %}<li><a href="/work/{{ w.id }}">{{ w.title }}</a> <span class="hint opt">{{ w.space }} · due {{ w.due|localtime("%a %d %b %H:%M") }}</span></li>{% else %}<li class="muted">Nothing due.</li>{% endfor %}</ul>
+      {% if k.marks %}<h3 class="sub">Latest marks</h3><ul class="plain">{% for w in k.marks %}<li>{{ w.title }} — <strong>{{ "%g"|format(w.score) }}{% if w.max_mark %} / {{ "%g"|format(w.max_mark) }}{% endif %}</strong></li>{% endfor %}</ul>{% endif %}
+    </div>
+    <div>
+      <h3 class="sub">Clubs and activities</h3>
+      <ul class="plain">{% for a in k.activities %}<li>{{ a.name }} — {{ a.when }}{% if a.enrolment.allocation == "waitlisted" %} <span class="pill">waiting list, {{ a.enrolment.position }}</span>{% endif %}</li>{% else %}<li class="muted">None yet. <a href="/activities">See what is on</a>.</li>{% endfor %}</ul>
+      <h3 class="sub">Parents' meetings</h3>
+      <ul class="plain">{% for e in k.events %}<li><a href="/parents-meetings/{{ e.id }}">{{ e.title }}</a> — book your slots{% if e.closes %} by {{ e.closes|localtime("%d %B") }}{% endif %}</li>{% else %}<li class="muted">No meeting open for booking.</li>{% endfor %}</ul>
+      {% if k.forms_todo %}<h3 class="sub">Forms the school needs</h3><ul class="plain">{% for f in k.forms_todo %}<li><a href="/daybook/{{ f.id }}?learner={{ k.id }}">{{ f.title }}</a></li>{% endfor %}</ul>{% endif %}
+    </div>
+  </div>
+  <p><a class="button" href="/conversations?learner={{ k.id }}">Message {{ k.given }}'s teachers</a></p>
+</section>
+{% else %}
+<div class="card"><p>No children are linked to your account at this school. If this is wrong, ask the school office: they link parents to learners when a child is registered.</p></div>
+{% endfor %}
+{% if inbox.conversations %}
+<section class="card"><h2>Latest messages</h2>
+  <ul class="plain inbox">{% for c in inbox.conversations[:5] %}<li><a href="/conversations/{{ c.id }}">{{ c.staff }} about {{ c.learner }}</a>{% if c.unread %} <span class="pill pill-live">{{ c.unread }} new</span>{% endif %}<br><span class="hint opt">{{ c.last }}</span></li>{% endfor %}</ul></section>
+{% endif %}
+{% endblock %}

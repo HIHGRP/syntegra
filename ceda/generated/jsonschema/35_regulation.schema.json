@@ -1,0 +1,436 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/35_regulation.schema.json",
+  "title": "CEDA REG — Education watchdogs, regulators and examination bodies — their dependencies and every institution's regulatory profile",
+  "$defs": {
+    "RegulatoryBody": {
+      "title": "RegulatoryBody",
+      "description": "Education watchdog — ministry, regulator, examination, admission, curriculum, teacher, funding or professional body",
+      "type": "object",
+      "x-ceda": {
+        "entity": "regulatory_body",
+        "zone": "platform",
+        "domain": "REG",
+        "kind": "reference",
+        "classification": "public",
+        "history": "lifecycle",
+        "module": "regulation"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 16,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "Matches the regulator code list where one exists, e.g. NUC, WAEC, JAMB"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "body_type": {
+          "type": "string",
+          "enum": [
+            "ministry",
+            "regulator_accreditor",
+            "examination_body",
+            "admissions_body",
+            "curriculum_authority",
+            "teacher_regulator",
+            "professional_council",
+            "funding_agency",
+            "sector_regulator",
+            "training_institute"
+          ]
+        },
+        "statutory_basis": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 300,
+              "description": "Establishing law"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "jurisdiction": {
+          "type": "string",
+          "enum": [
+            "federal",
+            "regional",
+            "state"
+          ]
+        },
+        "levels": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Education levels the body covers (education_level codes)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "functions": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 65535,
+              "description": "What the body does for institutions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "website": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uri",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "data_status": {
+          "type": "string",
+          "enum": [
+            "verified",
+            "illustrative",
+            "to_confirm"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "code",
+        "name",
+        "body_type",
+        "jurisdiction",
+        "data_status",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "BodyDependency": {
+      "title": "BodyDependency",
+      "description": "Dependency between two watchdogs (supervised by, recognises the results of, accredits with, funded by, member of)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "body_dependency",
+        "zone": "platform",
+        "domain": "REG",
+        "kind": "reference",
+        "classification": "public",
+        "history": "lifecycle",
+        "module": "regulation"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "from_body_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "regulatory_body"
+        },
+        "to_body_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "regulatory_body"
+        },
+        "dependency_type": {
+          "type": "string",
+          "enum": [
+            "supervised_by",
+            "recognises_results_of",
+            "accredits_with",
+            "funded_by",
+            "member_of"
+          ]
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 300
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "data_status": {
+          "type": "string",
+          "enum": [
+            "verified",
+            "illustrative",
+            "to_confirm"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "from_body_id",
+        "to_body_id",
+        "dependency_type",
+        "data_status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "InstitutionRegulation": {
+      "title": "InstitutionRegulation",
+      "description": "Link from an institution to a watchdog it depends on — relationship, what it covers, effective dates",
+      "type": "object",
+      "x-ceda": {
+        "entity": "institution_regulation",
+        "zone": "registry",
+        "domain": "REG",
+        "kind": "link",
+        "classification": "internal",
+        "history": "effective",
+        "module": "regulation"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "regulatory_body_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Soft reference to regulatory_body (platform zone)"
+        },
+        "body_code": {
+          "type": "string",
+          "maxLength": 16,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "Denormalised code of the body, e.g. NECO"
+        },
+        "relationship": {
+          "type": "string",
+          "enum": [
+            "supervision",
+            "accreditation",
+            "licensing",
+            "curriculum",
+            "examination",
+            "admission",
+            "teacher_registration",
+            "professional_regulation",
+            "funding",
+            "affiliation"
+          ]
+        },
+        "covers": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200,
+              "description": "e.g. BECE and SSCE, UTME admissions, ND/HND programmes, teacher registration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "levels": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Education levels the link applies to"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_mandatory": {
+          "type": "boolean"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "rule",
+            "institution",
+            "import"
+          ]
+        },
+        "data_status": {
+          "type": "string",
+          "enum": [
+            "verified",
+            "illustrative",
+            "to_confirm"
+          ]
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective from (inclusive) — history: effective",
+          "readOnly": true
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective to (inclusive); NULL = open-ended — history: effective",
+          "readOnly": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "institution_id",
+        "regulatory_body_id",
+        "body_code",
+        "relationship",
+        "is_mandatory",
+        "source",
+        "data_status",
+        "valid_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

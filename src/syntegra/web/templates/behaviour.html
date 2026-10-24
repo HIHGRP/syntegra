@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "_school_picker.html" import school_picker %}
+{% block title %}Behaviour{% endblock %}
+{% block content %}
+<div class="head-row"><h1>Behaviour</h1><p class="no-print">{% if ctx.has("behaviour:log") %}<a href="/behaviour/new?school={{ d.institution.id }}">Log behaviour</a> · {% endif %}<a href="/behaviour/policy?school={{ d.institution.id }}">The school's policy</a></p></div>
+<p class="muted">{{ d.institution.name }} · {{ d.start|date }} – {{ d.end|date }}</p>
+{{ school_picker(school, schools) }}
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<form method="get" class="picker no-print"><input type="hidden" name="school" value="{{ d.institution.id }}">
+  <label>Class<select name="class"><option value="">Whole school</option>{% for c in d.classes %}<option value="{{ c.id }}"{% if d.class_id == c.id %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></label>
+  <label>From<input type="date" name="from" value="{{ d.start }}"></label><label>To<input type="date" name="to" value="{{ d.end }}"></label>
+  <p><button>Show</button></p></form>
+<section class="kpis" aria-label="Summary">
+  <div class="kpi"><span class="v">{{ d.totals.positive }}</span><span class="k">positive entries</span></div>
+  <div class="kpi"><span class="v">{{ d.totals.negative }}</span><span class="k">negative entries</span></div>
+  <div class="kpi"><span class="v">{{ "%+d"|format(d.totals.points) }}</span><span class="k">net points · {{ d.totals.learners }} learners</span></div>
+  <div class="kpi"><span class="v">{{ d.waiting|length }}</span><span class="k">waiting for the head{% if d.totals.bullying %} · {{ d.totals.bullying }} bullying{% endif %}</span></div>
+</section>
+{% if d.waiting %}
+<section class="card scroll-x" id="waiting"><h2>Waiting for the head's decision</h2>
+  <table class="compact"><thead><tr><th scope="col">Learner</th><th scope="col">Behaviour</th><th scope="col">Proposed</th><th scope="col">Recorded</th><th scope="col">What happened</th><th scope="col"><span class="sr">Decide</span></th></tr></thead>
+  <tbody>{% for e in d.waiting %}<tr><td>{{ e.learner }}<br><span class="hint opt">{{ e.class }}</span></td><td>{{ e.behaviour }}</td><td><span class="pill pill-bad">{{ e.outcome }}</span></td><td>{{ e.at.strftime("%d %b %H:%M") }} · {{ e.by }}</td><td>{{ e.description or "—" }}</td>
+    <td>{% if d.can_manage %}<form method="post" class="inline-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="decide"><input type="hidden" name="event_id" value="{{ e.id }}"><select name="outcome" aria-label="Decision for {{ e.learner }}">{% for k, v in d.outcomes.items() %}<option value="{{ k }}"{% if v == e.outcome %} selected{% endif %}>{{ v }}</option>{% endfor %}</select><button class="primary">Decide</button></form>{% endif %}</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endif %}
+<div class="grid2">
+<section class="card scroll-x"><h2>By category</h2>
+  <table class="compact"><thead><tr><th scope="col">Category</th><th scope="col" class="num">Positive</th><th scope="col" class="num">Negative</th></tr></thead>
+  <tbody>{% for c in d.categories %}<tr><td>{{ c.label }}</td><td class="num">{{ c.positive or "" }}</td><td class="num">{{ c.negative or "" }}</td></tr>{% else %}<tr><td colspan="3" class="muted">Nothing recorded.</td></tr>{% endfor %}</tbody></table></section>
+<section class="card scroll-x"><h2>By day of the week</h2>
+  <table class="compact"><thead><tr><th scope="col">Day</th><th scope="col">Positive · negative</th></tr></thead>
+  <tbody>{% set most = (d.by_day|map(attribute="negative")|max) or 1 %}{% for r in d.by_day %}<tr><td>{{ r.day }}</td><td><span class="meter" aria-hidden="true"><span style="width: {{ r.negative * 100 // most }}%; background: var(--bad)"></span></span>{{ r.positive }} · {{ r.negative }}</td></tr>{% endfor %}</tbody></table></section>
+</div>
+<div class="grid2">
+<section class="card scroll-x"><h2>Most positive</h2>
+  <table class="compact"><thead><tr><th scope="col">Learner</th><th scope="col">Class</th><th scope="col" class="num">Positive</th><th scope="col" class="num">Points</th></tr></thead>
+  <tbody>{% for x in d.top_positive if x.positive %}<tr><td><a href="/learners/{{ x.learner_id }}">{{ x.name }}</a></td><td>{{ x.class }}</td><td class="num">{{ x.positive }}</td><td class="num">{{ "%+d"|format(x.points) }}</td></tr>{% else %}<tr><td colspan="4" class="muted">—</td></tr>{% endfor %}</tbody></table></section>
+<section class="card scroll-x"><h2>Needing attention</h2>
+  <table class="compact"><thead><tr><th scope="col">Learner</th><th scope="col">Class</th><th scope="col" class="num">Negative</th><th scope="col" class="num">Points</th></tr></thead>
+  <tbody>{% for x in d.concerns %}<tr><td><a href="/learners/{{ x.learner_id }}">{{ x.name }}</a></td><td>{{ x.class }}</td><td class="num">{{ x.negative }}</td><td class="num">{{ "%+d"|format(x.points) }}</td></tr>{% else %}<tr><td colspan="4" class="muted">—</td></tr>{% endfor %}</tbody></table></section>
+</div>
+{% if not d.class_id %}<section class="card scroll-x"><h2>By class</h2>
+  <table class="compact"><thead><tr><th scope="col">Class</th><th scope="col" class="num">Positive</th><th scope="col" class="num">Negative</th><th scope="col" class="num">Net points</th></tr></thead>
+  <tbody>{% for c in d.by_class %}<tr><td>{{ c.name }}</td><td class="num">{{ c.positive }}</td><td class="num">{{ c.negative }}</td><td class="num">{{ "%+d"|format(c.points) }}</td></tr>{% endfor %}</tbody></table></section>{% endif %}
+<section class="card scroll-x"><h2>Latest entries</h2>
+  <table class="compact"><thead><tr><th scope="col">When</th><th scope="col">Learner</th><th scope="col">Behaviour</th><th scope="col" class="num">Points</th><th scope="col">Outcome</th><th scope="col">By</th><th scope="col"><span class="sr">Withdraw</span></th></tr></thead>
+  <tbody>{% for e in d.recent %}<tr><td>{{ e.at.strftime("%a %d %b %H:%M") }}</td><td>{{ e.learner }} <span class="hint opt">{{ e.class }}</span></td><td>{{ e.behaviour }}{% if e.targets %}<br><span class="hint opt">aimed at {{ e.targets|join("; ") }}</span>{% endif %}</td><td class="num">{{ "%+d"|format(e.points) }}</td><td>{{ e.outcome }}{% if e.awaiting %} <span class="pill">waiting</span>{% endif %}</td><td>{{ e.by }}</td>
+    <td>{% if d.can_manage %}<form method="post" class="inline-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="withdraw"><input type="hidden" name="event_id" value="{{ e.id }}"><button>Withdraw</button></form>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="7" class="muted">Nothing recorded in this period.</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endblock %}

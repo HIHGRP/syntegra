@@ -1,0 +1,402 @@
+domain: assessment
+code: ASM
+title: Assessment, grading, moderation, targets, report cards, examinations, results, GPA and transcripts
+module: assessment
+zone: ops
+retention: RS-LRN-PERM
+summary: >
+  Assessments traceable to curriculum objectives, configurable grading scales, markbooks with hard and
+  soft validation, moderation, target grades, report cards (FR-ASM-01–07, 101–103), internal and
+  external examinations with entries, sittings, seating and invigilation, immutable committed results,
+  GPA/CGPA and classification, and signed transcripts (FR-EXM-01–08, 101–102). Results are permanent
+  records (MFS §13.6). Exam-body results arriving by file or API are matched to Learner 360 before commit.
+
+entities:
+  grading_scale:
+    title: Configurable grading scale (percentage, letter, grade points, GPA, pass/fail, competency levels, degree classes)
+    kind: config
+    zone: registry
+    class: public
+    history: versioned
+    scope: owned
+    origin: appj
+    retention: RS-CUR-PERM
+    reqs: [FR-ASM-03]
+    pages: [ASM-03]
+    attrs:
+      - "code: code(32)!"
+      - "name: title!"
+      - "scale_kind: enum(scale_kind)!"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, code, version]]
+
+  grade_band:
+    title: Band of a grading scale (contiguous and non-overlapping)
+    kind: config
+    zone: registry
+    class: public
+    history: versioned
+    origin: ceda
+    retention: RS-CUR-PERM
+    scope_note: Inherits the scale's scope.
+    reqs: [FR-ASM-03]
+    pages: [ASM-03]
+    attrs:
+      - "grading_scale_id: ref(grading_scale)!"
+      - "label: code(16)! | A1, B2, C4, Distinction, Level 3"
+      - "min_score: dec(7,3)!"
+      - "max_score: dec(7,3)!"
+      - "grade_points: dec(4,2)"
+      - "is_pass: bool!"
+      - "is_credit: bool! default=false | Counts as a credit (5 credits incl. English and Mathematics)"
+      - "sort_order: smallint!"
+    uq: [[grading_scale_id, label]]
+    checks:
+      range: "max_score >= min_score"
+
+  assessment:
+    title: Assessment 360 definition (formative, summative, coursework, practical, competency, CA test, examination)
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-ASM-01, FR-ASM-02, FR-CUR-111, FR-LMS-112]
+    pages: [ASM-02, ASM-01]
+    events: [ASM.ASSESSMENT_CREATED]
+    attrs:
+      - "class_subject_plan_id: ref(class_subject_plan)"
+      - "course_section_id: ref(course_section)"
+      - "assignment_id: ref(assignment) | LMS assignment that posts its marks here"
+      - "title: title!"
+      - "assessment_kind: enum(assessment_kind)!"
+      - "max_mark: dec(7,3)!"
+      - "weight: pct!"
+      - "assessed_on: date"
+      - "grading_scale_id: ref(grading_scale) soft"
+      - "node_ids: json | Curriculum objectives assessed (G7)"
+      - "is_moderated: bool! default=false"
+      - "locked_at: ts | Results locked after approval"
+      - "status: enum(assessment_status)!"
+
+  markbook_column:
+    title: Teacher marksheet column (yes/no, numeric, grade, date, comment) for offline spreadsheet round-trips
+    kind: config
+    class: internal
+    history: none
+    scope: "derived: the class-subject"
+    origin: ceda
+    reqs: [FR-ASM-103]
+    pages: [ASM-01]
+    attrs:
+      - "class_subject_plan_id: ref(class_subject_plan)!"
+      - "assessment_id: ref(assessment)"
+      - "label: str(80)!"
+      - "column_kind: enum(markbook_column_kind)!"
+      - "sort_order: smallint!"
+
+  assessment_result:
+    title: Mark per learner per assessment (hard ≤ max mark; corrections after lock need head approval)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: "derived: the assessment's class"
+    origin: appj
+    reqs: [FR-ASM-02, FR-ASM-05, FR-LMS-112]
+    pages: [ASM-01, LRN-04]
+    events: [ASM.RESULTS_LOCKED]
+    attrs:
+      - "assessment_id: ref(assessment)!"
+      - "learner_id: ref(learner)!"
+      - "score: dec(7,3)"
+      - "grade_label: code(16)"
+      - "objective_results: json | Per curriculum objective (curriculum evidence)"
+      - "is_missing_work: bool! default=false"
+      - "access_arrangement: str(200) | Applied adjustment (no need detail)"
+      - "comment: str(1000)"
+      - "entered_by: uuid!"
+      - "corrected_after_lock: bool! default=false"
+    uq: [[assessment_id, learner_id]]
+    ix: [[learner_id]]
+
+  moderation_sample:
+    title: Moderation sample with moderator mark and tolerance outcome
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: "derived: the assessment's class"
+    origin: ceda
+    reqs: [FR-ASM-04, FR-LMS-111]
+    pages: [ASM-05, LMS-104]
+    attrs:
+      - "assessment_id: ref(assessment)"
+      - "submission_mark_id: ref(submission_mark)"
+      - "learner_id: ref(learner)!"
+      - "original_score: dec(7,3)!"
+      - "moderated_score: dec(7,3)"
+      - "moderator_staff_id: ref(staff)!"
+      - "within_tolerance: bool"
+      - "note: str(1000)"
+
+  target_grade:
+    title: Target grade from prior attainment and tracking points, with RAG progress
+    kind: transaction
+    class: confidential
+    history: effective
+    scope: "derived: the learner's class"
+    origin: ceda
+    reqs: [FR-ASM-101, FR-ILP-101]
+    pages: [ASM-01, LRN-04]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "subject_id: ref(subject)!"
+      - "target_label: code(16)!"
+      - "method: enum(target_method)!"
+      - "working_at_label: code(16)"
+      - "rag: enum(rag)"
+      - "gap_points: dec(6,2)"
+
+  external_assessment_import:
+    title: Historical or external assessment data import for longitudinal tracking and benchmarking
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-ASM-102]
+    pages: [ASM-01]
+    attrs:
+      - "source: str(200)!"
+      - "cohort_label: str(60)"
+      - "rows_total: int_u!"
+      - "rows_matched: int_u!"
+      - "import_job_id: ref(import_job)"
+      - "status: enum(import_status)!"
+
+  report_card_run:
+    title: Report-card generation run (templates, completeness checks, publication to the parent portal)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-ASM-06, FR-ASM-07]
+    pages: [ASM-04]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "period_id: ref(academic_period)!"
+      - "template_code: code(40)!"
+      - "class_group_ids: json!"
+      - "completeness: json | Missing marks and comments per class"
+      - "withholding_policy_id: ref(policy_rule) soft | Only an explicitly approved policy; never for SEND or safeguarding-flagged learners"
+      - "published_at: ts"
+      - "status: enum(run_status)!"
+
+  report_card:
+    title: Published report card of a learner for a period (document stored to the learner record)
+    kind: transaction
+    class: confidential
+    history: append
+    scope: "derived: the learner's class"
+    origin: ceda
+    reqs: [FR-ASM-06, FR-LRN-102]
+    pages: [ASM-04, FAM-03]
+    attrs:
+      - "run_id: ref(report_card_run)!"
+      - "learner_id: ref(learner)!"
+      - "document_id: uuid! | PDF in the records zone"
+      - "content_hash: hash!"
+      - "released_at: ts"
+    uq: [[run_id, learner_id]]
+
+  exam_series:
+    title: Examination 360 series (internal or external body, qualification, curriculum, programme)
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-EXM-01, FR-EXM-05, FR-MED-102]
+    pages: [EXM-01, EXM-05]
+    attrs:
+      - "exam_body: cl(exam_body)!"
+      - "name: title!"
+      - "qualification_id: ref(qualification) soft"
+      - "programme_id: ref(programme) soft"
+      - "curriculum_version_id: ref(curriculum_version) soft"
+      - "entry_opens_on: date"
+      - "entry_closes_on: date"
+      - "results_release_at: ts"
+      - "status: enum(series_status)!"
+
+  exam_paper:
+    title: Paper or component of a series (subject, duration, OSCE station)
+    kind: config
+    class: internal
+    history: none
+    scope: "derived: the series"
+    origin: ceda
+    reqs: [FR-EXM-03, FR-MED-102]
+    pages: [EXM-03, MED-03]
+    attrs:
+      - "series_id: ref(exam_series)!"
+      - "subject_id: ref(subject) soft"
+      - "paper_code: code(20)!"
+      - "title: title!"
+      - "duration_minutes: minutes!"
+      - "is_osce_station: bool! default=false"
+      - "station_rubric: json | OSCE station design and scoring"
+    uq: [[series_id, paper_code]]
+
+  exam_entry:
+    title: Candidate entry (eligibility checks, access arrangements, fees)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-EXM-02, FR-INS-07, FR-PVT-114]
+    pages: [EXM-02]
+    attrs:
+      - "series_id: ref(exam_series)!"
+      - "learner_id: ref(learner)!"
+      - "enrolment_id: ref(enrolment)!"
+      - "candidate_number: code(32)"
+      - "subjects: json!"
+      - "eligibility: json | Checks: enrolment, subjects studied, identity verified, attendance, institution authorisation"
+      - "access_arrangements: json | Authorised arrangements (no need detail)"
+      - "is_external_candidate: bool! default=false"
+      - "invoice_id: ref(invoice)"
+      - "status: enum(entry_status)!"
+    uq: [[series_id, learner_id]]
+
+  exam_sitting:
+    title: Sitting of a paper — room, desk layout, seat allocation and invigilators
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-EXM-03, FR-EXM-101]
+    pages: [EXM-03]
+    attrs:
+      - "paper_id: ref(exam_paper)!"
+      - "room_id: ref(room)!"
+      - "starts_at: ts!"
+      - "desk_layout: json!"
+      - "seat_allocations: json! | Candidate → desk label"
+      - "invigilator_staff_ids: json"
+      - "status: enum(record_status)!"
+
+  exam_result:
+    title: Result per candidate per paper (immutable once committed)
+    kind: transaction
+    class: confidential
+    history: append
+    scope: "derived: the entry"
+    origin: appj
+    reqs: [FR-EXM-04, FR-EXM-102]
+    pages: [EXM-04, EXM-05, LRN-04]
+    events: [EXAM.RESULTS_COMMITTED]
+    attrs:
+      - "entry_id: ref(exam_entry)!"
+      - "paper_id: ref(exam_paper)!"
+      - "score: dec(7,3)"
+      - "grade_label: code(16)!"
+      - "result_import_id: ref(result_import)"
+      - "committed_at: ts!"
+      - "committed_by: uuid!"
+    uq: [[entry_id, paper_id]]
+
+  result_import:
+    title: Import of results from an exam body (file or API) with candidate matching and anomaly review
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-EXM-04, FR-EXM-08]
+    pages: [EXM-04, EXM-08]
+    attrs:
+      - "series_id: ref(exam_series)!"
+      - "source_document_id: uuid"
+      - "rows_total: int_u!"
+      - "rows_matched: int_u!"
+      - "rows_in_review: int_u!"
+      - "anomalies: json"
+      - "status: enum(import_status)!"
+
+  exam_anomaly:
+    title: Statistical anomaly for human review (distribution shift, similarity cluster, improbable improvement) — never auto-penalised
+    kind: queue
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-EXM-08]
+    pages: [EXM-08, CMD-15]
+    attrs:
+      - "series_id: ref(exam_series)!"
+      - "anomaly_kind: enum(anomaly_kind)!"
+      - "evidence: json!"
+      - "affected_entry_ids: json"
+      - "assigned_to: uuid"
+      - "outcome: enum(review_outcome)"
+      - "status: enum(queue_status)!"
+
+  grade_broadsheet:
+    title: Grade broadsheet per class, subject and series (spreadsheet export)
+    kind: projection
+    class: confidential
+    history: snapshot
+    scope: owned
+    origin: ceda
+    reqs: [FR-EXM-102]
+    pages: [EXM-05]
+    attrs:
+      - "series_id: ref(exam_series)"
+      - "class_group_id: ref(class_group)!"
+      - "generated_at: ts!"
+      - "document_id: uuid!"
+
+  academic_standing:
+    title: GPA/CGPA, credits, progression and classification per learner per period (borderline cases flagged)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: "derived: the enrolment's institution"
+    origin: ceda
+    reqs: [FR-EXM-06, FR-HED-05]
+    pages: [EXM-07, HED-06]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "enrolment_id: ref(enrolment)!"
+      - "period_id: ref(academic_period)!"
+      - "credits_attempted: dec(6,1)!"
+      - "credits_earned: dec(6,1)!"
+      - "gpa: dec(4,2)"
+      - "cgpa: dec(4,2)"
+      - "progression: enum(progression_decision)"
+      - "classification: cl(degree_class)"
+      - "is_borderline: bool! default=false"
+      - "board_decision: str(500)"
+      - "status: enum(record_status)!"
+    uq: [[enrolment_id, period_id]]
+
+  transcript:
+    title: Digitally signed, verifiable transcript (registered in the certificate registry as a credential of kind transcript)
+    kind: transaction
+    class: confidential
+    history: append
+    scope: "derived: the learner"
+    origin: ceda
+    reqs: [FR-EXM-07]
+    pages: [EXM-06]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "enrolment_id: ref(enrolment)!"
+      - "certificate_id: ref(certificate) | Registry record carrying number, hash and signature"
+      - "document_id: uuid!"
+      - "content_hash: hash!"
+      - "issued_at: ts!"

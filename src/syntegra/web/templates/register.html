@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Register · {{ cls.name }}{% endblock %}
+{% block content %}
+<h1>{{ cls.name }} — {{ day | date }}</h1>
+{% if ctx.has("seating:view") or ctx.has("class:manage") %}<p class="actions">{% if ctx.has("class:manage") %}<a href="/classes/{{ cls.id }}/plan">Subjects and teachers</a> {% endif %}{% if ctx.has("seating:view") %}<a href="/classes/{{ cls.id }}/seating">Seating plan</a>{% endif %}</p>{% endif %}
+<p class="muted">Register status: <strong>{{ reg.status.replace("_", " ") }}</strong> · due {{ reg.due_at | date("%H:%M") }} UTC · {{ roster | length }} learners</p>
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+<form method="post" class="register">
+  <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+  <input type="hidden" name="row_version" value="{{ reg.row_version }}">
+  <table>
+    <thead><tr><th scope="col">Learner</th>{% for c in codes %}<th scope="col" class="code">{{ c }}</th>{% endfor %}<th scope="col">Min late</th></tr></thead>
+    <tbody>
+    {% for m in roster %}{% set l = names[m.learner_id] %}{% set cur = marks.get(m.learner_id) %}
+    <tr>
+      <th scope="row"><a href="/learners/{{ l.id }}">{{ l.legal_family_name }}, {{ l.preferred_name or l.legal_given_name }}</a></th>
+      {% for c in codes %}
+      <td class="code"><label class="sr" for="m-{{ l.id }}-{{ c }}">{{ c }}</label>
+        <input id="m-{{ l.id }}-{{ c }}" type="radio" name="mark_{{ l.id }}" value="{{ c }}" {% if cur and cur.code == c %}checked{% endif %}></td>
+      {% endfor %}
+      <td><input class="num" type="number" min="1" max="240" name="late_{{ l.id }}" value="{{ cur.minutes_late if cur and cur.minutes_late else '' }}" aria-label="Minutes late"></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="legend muted">P present · L late · A absent (unauthorised) · M medical · E excused · AA approved activity · NR not required</p>
+  <button class="primary">Save register</button>
+</form>
+{% endblock %}

@@ -1,0 +1,197 @@
+domain: attendance
+code: ATT
+title: Attendance registers, absence reporting and follow-up, staff sign-in, visitors and evacuation roll call
+module: attendance
+zone: ops
+retention: RS-ATT
+summary: >
+  Daily (AM/PM) and lesson registers with country attendance codes, offline capture with idempotent sync
+  and documented conflict rules (FR-ATT-01–08, 101–106). The register header records who submitted what
+  and when (register compliance, ATT-102); marks are partitioned by month because at state scale they are
+  the largest operational table (≈ 26 million marks per school day for 5 million learners — CEDA §12).
+  Parent-reported absences pre-fill registers; first-day contact and escalation are tracked; evacuation
+  roll calls are built from live attendance, staff sign-in and the visitor log.
+
+entities:
+  attendance_register:
+    title: Register header — one daily (AM/PM) or lesson register for a class or section on a date
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-ATT-01, FR-ATT-04, FR-ATT-104, FR-CMD-112, FR-ATT-106]
+    pages: [ATT-01, ATT-102, ATT-02]
+    events: [ATT.REGISTER_SUBMITTED, ATT.REGISTER_MISSING]
+    attrs:
+      - "class_group_id: ref(class_group)!"
+      - "register_kind: enum(register_kind)!"
+      - "session_date: date!"
+      - "lesson_occurrence_id: ref(lesson_occurrence) | Lesson registers"
+      - "due_at: ts! | Deadline (missing-register nudge at +10 min, escalation at +30 min)"
+      - "taken_by_staff_id: ref(staff)"
+      - "submitted_at: ts"
+      - "device_captured_at: ts | Offline capture time"
+      - "marks_count: smallint"
+      - "release_to_parents_at: ts | Live or delayed sharing per institution setting"
+      - "status: enum(register_status)!"
+      - "lesson_key: uuid derived | lesson_occurrence_id, or all-zero for daily registers (uniqueness)"
+    generated:
+      lesson_key: "IFNULL(`lesson_occurrence_id`, UNHEX(REPEAT('0', 32)))"
+    uq: [[class_group_id, register_kind, session_date, lesson_key]]
+    ix: [[session_date, status]]
+
+  attendance_mark:
+    title: Attendance mark per learner per register (partitioned by month; integrity checked nightly)
+    kind: transaction
+    class: confidential
+    history: none
+    scope: "derived: the register's class"
+    origin: appj
+    partition: {type: range_month, column: session_date}
+    reqs: [FR-ATT-01, FR-ATT-02, FR-ATT-03, FR-ATT-05, FR-LMS-114]
+    pages: [ATT-01, ATT-02, LRN-04]
+    notes: >
+      Offline conflict rule: the latest teacher mark wins; office overrides are audited (FR-ATT-03). Each mark
+      carries the idempotency key of the client operation that wrote it.
+    attrs:
+      - "register_id: ref(attendance_register)!"
+      - "learner_id: ref(learner)!"
+      - "enrolment_id: ref(enrolment)!"
+      - "session_date: date!"
+      - "code: cl(attendance_code)! | Present, Late, Absent (unauthorised), Medical, Excused, Approved activity, Not required"
+      - "minutes_late: smallint"
+      - "reason_source: enum(reason_source)"
+      - "absence_report_id: ref(absence_report)"
+      - "recorded_by: uuid!"
+      - "source: enum(mark_source)! | teacher, office, kiosk, biometric_device, lms_live_class, parent_prefill"
+      - "client_op_id: uuid | Offline idempotency key"
+      - "device_captured_at: ts"
+    uq: [[register_id, learner_id, session_date]]
+    ix: [[learner_id, session_date]]
+
+  absence_report:
+    title: Absence reported by a parent (app, WhatsApp, web, office) — acknowledged, accepted (pre-fills code) or queried
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: "derived: the learner's institution"
+    origin: appj
+    reqs: [FR-ATT-103, FR-FAM-07, FR-FAM-08, FR-ATT-02, FR-COM-107]
+    pages: [ATT-103, FAM-03, COM-101]
+    events: [ATT.ABSENCE_REPORTED]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "institution_id: ref(institution)!"
+      - "reported_by_guardian_id: ref(guardian)"
+      - "channel: enum(channel)!"
+      - "from_date: date!"
+      - "to_date: date!"
+      - "reason: cl(absence_reason)!"
+      - "message_text: str(2000)"
+      - "attachment_document_id: uuid | Medical note"
+      - "proposed_code: cl(attendance_code)"
+      - "conversation_id: ref(conversation)"
+      - "handled_by: uuid"
+      - "status: enum(absence_report_status)!"
+    checks:
+      dates: "to_date >= from_date"
+
+  absence_contact:
+    title: First-day absence contact attempt and outcome (escalation and DSL alert for vulnerable learners not reached)
+    kind: event
+    class: confidential
+    history: append
+    scope: "derived: the learner's institution"
+    origin: ceda
+    reqs: [FR-ATT-06, FR-ATT-101]
+    pages: [ATT-03]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "session_date: date!"
+      - "contacted_guardian_id: ref(guardian)"
+      - "channel: enum(channel)!"
+      - "message_id: ref(message)"
+      - "outcome: enum(contact_outcome)!"
+      - "reason_given: str(500)"
+      - "escalated_to: enum(escalation_target)"
+      - "attempted_at: ts!"
+
+  staff_attendance:
+    title: Staff sign-in and sign-out (manual, kiosk or biometric device — templates never leave the device)
+    kind: event
+    class: confidential
+    history: append
+    scope: owned
+    origin: ceda
+    retention: RS-OPS-3
+    partition: {type: range_month, column: signed_on}
+    reqs: [FR-ATT-08, FR-ATT-105]
+    pages: [ATT-101, ATT-02]
+    attrs:
+      - "staff_id: ref(staff)!"
+      - "signed_on: date!"
+      - "direction: enum(sign_direction)!"
+      - "at: ts!"
+      - "source: enum(mark_source)!"
+      - "device_ref: code(64)"
+
+  visitor_visit:
+    title: Visitor log entry (included in evacuation roll calls)
+    kind: event
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-OPS-3
+    reqs: [FR-ATT-102, FR-ATT-105]
+    pages: [ATT-101]
+    attrs:
+      - "visitor_name: name! pii"
+      - "organisation: title"
+      - "phone: phone pii"
+      - "host_staff_id: ref(staff)"
+      - "purpose: str(300)"
+      - "badge_no: code(20)"
+      - "arrived_at: ts!"
+      - "departed_at: ts"
+
+  evacuation_event:
+    title: Evacuation or drill (start, all-clear, timings as safe-schools inspection evidence)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-ATT-102, FR-ATT-105]
+    pages: [ATT-101]
+    events: [ATT.EVACUATION_STARTED]
+    attrs:
+      - "campus_id: ref(campus)!"
+      - "kind: enum(evacuation_kind)!"
+      - "started_at: ts!"
+      - "all_clear_at: ts"
+      - "incident_lead_staff_id: ref(staff)"
+      - "expected_count: int_u"
+      - "accounted_count: int_u"
+      - "status: enum(evacuation_status)!"
+
+  evacuation_mark:
+    title: Roll-call mark for a person at an assembly point (learner, staff or visitor), captured offline
+    kind: event
+    class: confidential
+    history: append
+    origin: appj
+    scope_note: Inherits the evacuation event's scope.
+    reqs: [FR-ATT-105]
+    pages: [ATT-101]
+    attrs:
+      - "evacuation_event_id: ref(evacuation_event)!"
+      - "person_kind: enum(roll_call_person)!"
+      - "person_id: uuid!"
+      - "assembly_point: str(60)!"
+      - "marshal_staff_id: ref(staff)!"
+      - "state: enum(roll_call_state)!"
+      - "marked_at: ts!"
+      - "client_op_id: uuid"
+    uq: [[evacuation_event_id, person_kind, person_id, state]]

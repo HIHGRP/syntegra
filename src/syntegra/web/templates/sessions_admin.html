@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Active sessions{% endblock %}
+{% block content %}
+<h1>Active sessions</h1>
+<p class="muted">One account can be used by one person at a time. A session counts as <strong>in use</strong> while there has been activity in the last {{ window }} minutes; a second sign-in with the same account is refused until then. Sessions quieter than that end automatically when the account signs in again.</p>
+{% if done %}<div class="alert alert-ok" role="status">{{ done }}</div>{% endif %}
+{% if error %}<div class="alert alert-error" role="alert">{{ error }}</div>{% endif %}
+<section class="card">
+  <h2>{{ rows|length }} session{{ "s" if rows|length != 1 else "" }} open in your scope</h2>
+  {% if not rows %}<p class="muted">No one in your scope is signed in.</p>{% else %}
+  <div class="scroll-x"><table id="sessions">
+    <thead><tr><th>User</th><th>Role</th><th>School or office</th><th>Device</th><th>Address</th><th>Signed in</th><th>Last active</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td><strong>{{ r.user }}</strong><br><span class="muted">{{ r.username }}</span></td>
+        <td>{{ r.role or "—" }}</td>
+        <td>{{ r.affiliation or "—" }}{% if r.address %}<br><span class="muted">{{ r.address }}</span>{% endif %}{% if r.affiliation and not r.confirmed %}<br><span class="sev sev-warn">not yet confirmed</span>{% endif %}</td>
+        <td>{{ r.device }}</td>
+        <td><code>{{ r.ip or "—" }}</code></td>
+        <td>{{ r.started_at|localtime("%d %b %H:%M") }}</td>
+        <td>{{ r.last_seen_at|localtime("%H:%M") }}</td>
+        <td>{% if r.in_use %}<span class="pill pill-live">in use</span>{% else %}<span class="pill">quiet</span>{% endif %}{% if r.is_me %} <span class="pill">you</span>{% endif %}</td>
+        <td>{% if not r.is_me %}
+          <details><summary>End session</summary>
+            <form method="post" class="inline-form">
+              <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+              <input type="hidden" name="session_id" value="{{ r.session_id }}">
+              <label>Reason<input name="reason" required minlength="5" placeholder="e.g. account shared; left the school"></label>
+              <button class="danger">End session</button>
+            </form>
+          </details>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% endif %}
+</section>
+{% endblock %}

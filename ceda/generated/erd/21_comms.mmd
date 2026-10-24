@@ -1,0 +1,196 @@
+erDiagram
+    message_channel {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ channel
+        VARCHAR_40_ provider
+        VARCHAR_300_ display_name
+        VARCHAR_128_ address
+        VARCHAR_255_ credentials_vault_ref
+        BIGINT monthly_spend_cap_minor
+        CHAR_3_ currency
+        JSON quiet_hours
+        VARCHAR_32_ status
+    }
+    message_template {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ channel_id FK
+        VARCHAR_64_ template_key
+        VARCHAR_32_ category
+        JSON variants
+        VARCHAR_128_ provider_template_ref
+        VARCHAR_32_ approval_status
+        INT version
+        BOOLEAN is_mail_merge
+        VARCHAR_32_ status
+    }
+    channel_contact {
+        BINARY_16_ id PK
+        VARCHAR_32_ person_kind
+        BINARY_16_ person_id
+        VARCHAR_32_ channel
+        BINARY_32_ endpoint_hmac
+        VARBINARY_1024_ endpoint_enc
+        CHAR_4_ endpoint_last4
+        BOOLEAN is_verified
+    }
+    channel_opt_in {
+        BINARY_16_ id PK
+        BINARY_16_ contact_id FK
+        VARCHAR_32_ decision
+        VARCHAR_32_ category
+        VARCHAR_1000_ wording
+        VARCHAR_32_ source
+        DATETIME_6_ decided_at
+    }
+    conversation {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ channel_id FK
+        BINARY_16_ contact_id FK
+        VARCHAR_128_ external_thread_ref
+        VARCHAR_40_ linked_record_kind
+        BINARY_16_ linked_record_id
+        VARCHAR_32_ assigned_office
+        BINARY_16_ assigned_user_id
+        DATETIME_6_ service_window_ends_at
+        DATETIME_6_ sla_due_at
+        BOOLEAN is_bot_handled
+        VARCHAR_32_ status
+    }
+    message {
+        BINARY_16_ id PK
+        DATE created_on PK
+        BINARY_16_ conversation_id FK
+        BINARY_16_ campaign_id FK
+        BINARY_16_ notification_id FK
+        VARCHAR_32_ direction
+        VARCHAR_32_ channel
+        VARCHAR_32_ recipient_kind
+        BINARY_16_ recipient_id
+        BINARY_16_ about_learner_id FK
+        BINARY_16_ template_id FK
+        VARCHAR_35_ language
+        TEXT body
+        VARCHAR_32_ priority
+        BIGINT estimated_cost_minor
+        BIGINT actual_cost_minor
+        CHAR_3_ currency
+        VARCHAR_128_ provider_message_ref
+        VARCHAR_32_ delivery_status
+        DATETIME_6_ delivered_at
+        DATETIME_6_ read_at
+        VARCHAR_300_ failure_reason
+        BINARY_16_ sent_by
+    }
+    broadcast_campaign {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ title
+        JSON audience_rule
+        BINARY_16_ template_id FK
+        DATETIME_6_ scheduled_at
+        SMALLINT throttle_per_second
+        INT recipients_estimated
+        BIGINT cost_estimate_minor
+        CHAR_3_ currency
+        JSON results
+        BINARY_16_ approved_by
+        VARCHAR_32_ status
+    }
+    notification_rule {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_64_ event_type
+        JSON recipient_rule
+        JSON channel_policy
+        BOOLEAN is_digest
+        BOOLEAN bypass_quiet_hours
+        INT version
+        VARCHAR_32_ status
+    }
+    notification {
+        BINARY_16_ id PK
+        DATE created_on PK
+        BINARY_16_ user_id
+        BINARY_16_ rule_id FK
+        BINARY_16_ event_id
+        VARCHAR_300_ title
+        VARCHAR_1000_ body
+        VARCHAR_500_ link
+        VARCHAR_32_ priority
+        DATETIME_6_ read_at
+        DATETIME_6_ acknowledged_at
+    }
+    staff_announcement {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ title
+        TEXT body
+        JSON audience_rule
+        BOOLEAN requires_acknowledgement
+        DATETIME_6_ expires_at
+        DATETIME_6_ published_at
+        VARCHAR_32_ status
+    }
+    announcement_recipient {
+        BINARY_16_ id PK
+        BINARY_16_ announcement_id FK
+        BINARY_16_ user_id
+        DATETIME_6_ delivered_at
+        DATETIME_6_ read_at
+        DATETIME_6_ acknowledged_at
+    }
+    consent_request {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ consent_type
+        VARCHAR_300_ title
+        TEXT body
+        INT version
+        JSON learner_ids
+        DATETIME_6_ respond_by
+        BINARY_16_ trip_id FK
+        VARCHAR_32_ status
+    }
+    mail_merge_job {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ template_id FK
+        JSON recipient_rule
+        VARCHAR_32_ output
+        INT documents_created
+        VARCHAR_32_ status
+    }
+    workspace_channel {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ channel_id FK
+        VARCHAR_128_ external_channel_ref
+        VARCHAR_32_ audience
+        JSON membership_rule
+        DATETIME_6_ last_synced_at
+        VARCHAR_32_ status
+    }
+    learner {
+        BINARY_16 id PK
+    }
+    trip {
+        BINARY_16 id PK
+    }
+    broadcast_campaign ||--o{ message : "campaign_id"
+    channel_contact ||--o{ channel_opt_in : "contact_id"
+    channel_contact ||--o{ conversation : "contact_id"
+    conversation ||--o{ message : "conversation_id"
+    learner ||--o{ message : "about_learner_id"
+    message_channel ||--o{ conversation : "channel_id"
+    message_channel ||--o{ message_template : "channel_id"
+    message_channel ||--o{ workspace_channel : "channel_id"
+    message_template ||--o{ broadcast_campaign : "template_id"
+    message_template ||--o{ mail_merge_job : "template_id"
+    message_template ||--o{ message : "template_id"
+    notification ||--o{ message : "notification_id"
+    notification_rule ||--o{ notification : "rule_id"
+    staff_announcement ||--o{ announcement_recipient : "announcement_id"
+    trip ||--o{ consent_request : "trip_id"

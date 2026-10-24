@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "_timetable_tabs.html" import timetable_tabs with context %}
+{% block title %}Timetable — {{ d.title }}{% endblock %}
+{% block content %}
+<h1>Timetable — {{ d.title }}</h1>
+<p class="muted">{{ d.institution.name }} · {% if d.timetable %}version {{ d.timetable.version }}, published {{ d.timetable.published_at|localtime }}{% else %}no published timetable{% endif %} · week of {{ d.week.monday|date }}</p>
+{{ timetable_tabs("timetable", school, schools) }}
+<form method="get" class="picker no-print" id="pick">
+  <input type="hidden" name="school" value="{{ school.id }}"><input type="hidden" name="week" value="{{ d.week.monday }}">
+  <label>Class <select name="class" onchange="this.form.teacher.value='';this.form.room.value='';this.form.submit()"><option value="">—</option>{% for c in d.classes %}<option value="{{ c.id }}"{% if d.view == "class" and c.id == d.picked %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></label>
+  <label>Teacher <select name="teacher" onchange="this.form.class.value='';this.form.room.value='';this.form.submit()"><option value="">—</option>{% for t in d.teachers %}<option value="{{ t.id }}"{% if d.view == "teacher" and t.id == d.picked %} selected{% endif %}>{{ t.name }}</option>{% endfor %}</select></label>
+  <label>Room <select name="room" onchange="this.form.class.value='';this.form.teacher.value='';this.form.submit()"><option value="">—</option>{% for r in d.rooms %}<option value="{{ r.id }}"{% if d.view == "room" and r.id == d.picked %} selected{% endif %}>{{ r.name }}</option>{% endfor %}</select></label>
+  <noscript><button>Show</button></noscript>
+</form>
+<p class="no-print"><a href="?school={{ school.id }}&amp;{{ 'class' if d.view == 'class' else 'teacher' if d.view == 'teacher' else 'room' }}={{ d.picked }}&amp;week={{ d.week.prev }}">← Previous week</a> · <a href="?school={{ school.id }}&amp;{{ 'class' if d.view == 'class' else 'teacher' if d.view == 'teacher' else 'room' }}={{ d.picked }}&amp;week={{ d.week.next }}">Next week →</a> · {{ d.lessons }} lessons{% if d.changes %} · <strong>{{ d.changes }} change{{ "" if d.changes == 1 else "s" }} this week</strong>{% endif %}</p>
+<section class="card scroll-x">
+  <table class="timetable">
+    <thead><tr><th scope="col">Period</th>{% for day in d.days %}<th scope="col"{% if day.today %} class="today"{% endif %}>{{ day.name }}<br><span class="hint opt">{{ day.on|date }}</span></th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for r in d.rows %}
+      {% if r.teaching %}
+      <tr><th scope="row">{{ r.code }}<br><span class="hint opt">{{ r.starts }}–{{ r.ends }}</span></th>
+        {% for cell in r.cells %}<td{% if d.days[loop.index0].today %} class="today"{% endif %}>{% for e in cell %}
+          {% if e.subject is defined %}<div class="lesson{% if e.change %} changed{% endif %}{% if e.covering %} covering{% endif %}"><strong>{{ e.subject }}</strong>
+            <span>{% if d.view != "class" %}{{ e.class }}{% endif %}{% if d.view != "teacher" %}{% if d.view != "class" %} · {% endif %}{{ e.teacher }}{% endif %}{% if d.view != "room" and e.room %} · {{ e.room }}{% endif %}</span>
+            {% if e.covering %}<span class="pill">You cover</span>{% elif e.change %}<span class="pill pill-bad">{{ e.change }}</span>{% endif %}</div>
+          {% else %}<div class="lesson booked"><strong>Booked</strong> <span>{{ e.starts.strftime("%H:%M") }}–{{ e.ends.strftime("%H:%M") }} · {{ e.booking }}{% if e.status == "requested" %} (waiting){% endif %}</span></div>{% endif %}
+        {% endfor %}</td>{% endfor %}</tr>
+      {% else %}
+      <tr class="pause"><th scope="row">{{ "Break" if r.code == "BRK" else "Lunch" if r.code == "LUN" else r.code }}</th><td colspan="{{ d.days|length }}">{{ r.starts }}–{{ r.ends }}</td></tr>
+      {% endif %}
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% if d.view == "room" %}
+<section class="card scroll-x"><h2>Bookings this week</h2>
+  <table class="compact"><thead><tr><th scope="col">When</th><th scope="col">Purpose</th><th scope="col">Status</th></tr></thead>
+  <tbody>{% for b in d.bookings %}<tr><td>{{ b.on.strftime("%a") }} {{ b.on|date }}, {{ b.starts.strftime("%H:%M") }}–{{ b.ends.strftime("%H:%M") }}</td><td>{{ b.purpose }}</td><td>{{ "waiting for approval" if b.status == "requested" else b.status }}</td></tr>{% else %}<tr><td colspan="3" class="muted">No bookings this week.</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endif %}
+{% endblock %}

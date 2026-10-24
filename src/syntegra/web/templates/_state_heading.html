@@ -1,0 +1,10 @@
+{# The state's coat of arms and name above official registration pages, when the emblem is installed. #}
+{% macro state_heading(tenant, office="Ministry of Education") %}{% set emblem = state_emblem(tenant) %}{% if emblem %}
+<div class="state-heading" id="state-heading">
+  <img src="{{ emblem }}" alt="Coat of arms of {{ tenant.name }}" width="96" height="78">
+  <div><strong>{{ tenant.name }} Government</strong><span>{{ tenant.name }} {{ office }}</span></div>
+</div>{% endif %}{% endmacro %}
+
+{% macro body_emblem(tenant, body) %}{% set emblem = state_emblem(tenant) %}{% if emblem and body.jurisdiction == "state" and tenant.name in body.name %}<img class="body-emblem" src="{{ emblem }}" alt="" width="28" height="23"> {% endif %}{% endmacro %}
+
+{% macro name_emblem(tenant, name) %}{% set emblem = state_emblem(tenant) %}{% if emblem and tenant.name in name %}<img class="body-emblem" src="{{ emblem }}" alt="" width="28" height="23"> {% endif %}{% endmacro %}

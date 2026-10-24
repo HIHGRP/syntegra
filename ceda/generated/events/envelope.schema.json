@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/event-envelope.schema.json",
+  "title": "Syntegra domain event envelope (CloudEvents 1.0 structured mode)",
+  "type": "object",
+  "required": [
+    "specversion",
+    "id",
+    "source",
+    "type",
+    "time",
+    "subject",
+    "tenantid",
+    "scopenodeid",
+    "actor",
+    "schemaversion",
+    "correlationid",
+    "data"
+  ],
+  "properties": {
+    "specversion": {
+      "const": "1.0"
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID v7 of the outbox row"
+    },
+    "source": {
+      "type": "string",
+      "description": "/syntegra/{region}/{zone}/{module}"
+    },
+    "type": {
+      "type": "string",
+      "pattern": "^io\\.syntegra\\.[a-z0-9]+\\.[a-z0-9_]+\\.v[0-9]+$",
+      "description": "io.syntegra.<domain>.<event>.v<major>, e.g. io.syntegra.lrn.created.v1"
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "subject": {
+      "type": "string",
+      "description": "<aggregate>/<uuid>"
+    },
+    "datacontenttype": {
+      "const": "application/json"
+    },
+    "tenantid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "scopenodeid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "actor": {
+      "type": "string",
+      "description": "user:<uuid> | agent:<uuid> for owner:<uuid> | system:<job>"
+    },
+    "schemaversion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "correlationid": {
+      "type": "string"
+    },
+    "causationid": {
+      "type": "string"
+    },
+    "classification": {
+      "enum": [
+        "public",
+        "internal",
+        "confidential"
+      ]
+    },
+    "data": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,46 @@
+erDiagram
+    federal_body {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_16_ code
+        VARCHAR_300_ name
+        VARCHAR_32_ category
+        BINARY_16_ parent_body_id FK
+        VARCHAR_2048_ website
+        VARCHAR_32_ data_status
+        VARCHAR_32_ status
+    }
+    federal_body_unit {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ body_id FK
+        BINARY_16_ parent_unit_id FK
+        VARCHAR_32_ unit_type
+        VARCHAR_40_ code
+        VARCHAR_300_ name
+        VARCHAR_32_ data_status
+        VARCHAR_32_ status
+    }
+    federal_institution {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        BINARY_16_ body_id FK
+        BINARY_16_ unit_id FK
+        VARCHAR_32_ institution_type
+        VARCHAR_32_ geopolitical_zone
+        VARCHAR_32_ gender_intake
+        VARCHAR_32_ day_boarding
+        VARCHAR_32_ admission_basis
+        SMALLINT established_year
+        VARCHAR_32_ data_status
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    federal_body ||--o{ federal_body : "parent_body_id"
+    federal_body ||--o{ federal_body_unit : "body_id"
+    federal_body ||--o{ federal_institution : "body_id"
+    federal_body_unit ||--o{ federal_body_unit : "parent_unit_id"
+    federal_body_unit ||--o{ federal_institution : "unit_id"
+    institution ||--o| federal_institution : "institution_id"

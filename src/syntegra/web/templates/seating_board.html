@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% from "_seat_macros.html" import room %}
+{% block title %}{{ d.class.name }} — seating{% endblock %}
+{% block content %}
+<p class="no-print"><a href="/classes/{{ d.class.id }}/seating">← Back to the seating plan</a> · <span class="muted">Board-safe view: names only</span></p>
+<h1>{{ d.class.name }}{% if d.plan %} · {{ d.plan.room }}{% endif %}</h1>
+{% if d.plan %}{{ room(d.plan, true) }}{% else %}<p class="muted">No seating plan yet.</p>{% endif %}
+{% endblock %}

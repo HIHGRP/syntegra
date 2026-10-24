@@ -1,0 +1,38 @@
+# Local stack: MySQL 9.7 LTS, Valkey and the Syntegra web app (single-tenancy zone aliases).
+#   podman compose -f deploy/compose.yaml up -d db valkey
+#   python manage.py migrate --database=default && for z in platform registry ops vault records dw; do
+#     python manage.py migrate --database=$z; done && python manage.py syntegra_bootstrap
+#   python manage.py runserver
+name: syntegra
+services:
+  db:
+    image: docker.io/library/mysql:9.7
+    environment:
+      MYSQL_ROOT_PASSWORD: ceda
+    command: ["--innodb-buffer-pool-size=1G", "--transaction-isolation=READ-COMMITTED", "--binlog-format=ROW"]
+    ports: ["3306:3306"]
+    volumes: ["db:/var/lib/mysql"]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-pceda"]
+      interval: 5s
+      retries: 30
+  valkey:
+    image: docker.io/valkey/valkey:8
+    ports: ["6379:6379"]
+  web:
+    build: {context: .., dockerfile: deploy/Containerfile}
+    depends_on:
+      db: {condition: service_healthy}
+    environment:
+      DJANGO_SETTINGS_MODULE: syntegra.settings.dev
+      SYNTEGRA_DB_HOST: db
+      SYNTEGRA_VALKEY_URL: redis://valkey:6379/0
+      SYNTEGRA_ALLOWED_HOSTS: localhost,127.0.0.1
+      # document scans are the only copy of each master (CR-007): keep them on a volume, never in the container
+      SYNTEGRA_OBJECT_STORE_DIR: /var/lib/syntegra/objects
+    command: ["sh", "-c", "python manage.py migrate --database=default && for z in platform registry ops vault records dw; do python manage.py migrate --database=$$z; done && python manage.py syntegra_bootstrap && gunicorn syntegra.wsgi:application -b 0.0.0.0:8000"]
+    ports: ["8000:8000"]
+    volumes: ["objects:/var/lib/syntegra/objects"]
+volumes:
+  db: {}
+  objects: {}

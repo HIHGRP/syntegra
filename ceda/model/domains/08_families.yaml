@@ -1,0 +1,166 @@
+domain: families
+code: FAM
+title: Family 360, guardians, contacts, contact restrictions and consent
+module: families
+zone: registry
+retention: RS-LRN-PERM
+summary: >
+  Guardians are person masters matched on phone, e-mail, NIN and name before creation (FR-FAM-01) and
+  held in the state registry beside the learner. The learner–guardian relationship carries parental
+  responsibility, contact priority, lives-with and effective dates; one guardian may belong to several
+  households and one learner may have guardians in several (FR-FAM-03). Households as billing groups,
+  organisation contacts and the consent record are operational (ops zone). Court orders and contact
+  restriction detail are special category (vault); the registry carries only the restriction flag the
+  messaging, collection and portal rules need (FR-FAM-04).
+
+entities:
+  guardian:
+    title: Parent/Guardian 360 master
+    kind: master
+    class: confidential
+    history: lifecycle
+    scope: "derived: through the learners the guardian is linked to"
+    origin: appj
+    reqs: [FR-FAM-01, FR-FAM-06]
+    pages: [FAM-01, FAM-02, FAM-03]
+    events: [FAM.GUARDIAN_CREATED]
+    attrs:
+      - "given_name: name! pii"
+      - "family_name: name! pii"
+      - "title: str(30)"
+      - "name_phonetic: str(120)!"
+      - "phone: phone pii ix | E.164; inbound WhatsApp matching uses phone_hmac in channel contacts"
+      - "email: email pii"
+      - "preferred_language: lang"
+      - "preferred_channel: enum(channel)"
+      - "address: json pii"
+      - "user_id: ref(app_user) | Parent portal account"
+      - "status: enum(person_status)!"
+      - "merged_into: ref(guardian)"
+
+  learner_guardian:
+    title: Relationship between a learner and a guardian (parental responsibility, priority, lives-with, restriction flag)
+    kind: link
+    class: confidential
+    history: effective
+    scope: "derived: the learner"
+    origin: appj
+    reqs: [FR-FAM-02, FR-FAM-04, FR-LRN-06, FR-EYR-101]
+    pages: [FAM-01, FAM-02, LRN-04]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "guardian_id: ref(guardian)!"
+      - "relationship: cl(relationship)!"
+      - "has_parental_responsibility: bool!"
+      - "contact_priority: smallint"
+      - "lives_with: bool"
+      - "is_contact_restricted: bool! default=false | Detail held in the vault (contact_restriction)"
+      - "is_authorised_collector: bool! default=false"
+      - "is_payer: bool! default=false"
+    uq: [[learner_id, guardian_id, valid_from]]
+    ix: [[guardian_id]]
+
+  family:
+    title: Family 360 household and billing group (per operating tenant)
+    kind: master
+    zone: ops
+    class: confidential
+    history: lifecycle
+    scope: "derived: the institutions of its learners"
+    origin: appj
+    reqs: [FR-FAM-03, FR-BIL-07]
+    pages: [FAM-01, BIL-04]
+    attrs:
+      - "name: title!"
+      - "primary_payer_guardian_id: ref(guardian) | Registry guardian (soft)"
+      - "billing_account_id: ref(account)"
+      - "status: enum(record_status)!"
+
+  family_member:
+    title: Membership of a learner or guardian in a household
+    kind: link
+    zone: ops
+    class: confidential
+    history: effective
+    scope: "derived: the family"
+    origin: appj
+    reqs: [FR-FAM-03]
+    pages: [FAM-01]
+    attrs:
+      - "family_id: ref(family)!"
+      - "member_kind: enum(family_member_kind)!"
+      - "member_id: uuid! | learner or guardian id (registry)"
+    uq: [[family_id, member_kind, member_id, valid_from]]
+
+  organisation_contact:
+    title: Organisation contact (other schools, doctors, suppliers, agencies) and additional learner contacts
+    kind: master
+    zone: ops
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-OPS-7
+    reqs: [FR-FAM-101]
+    pages: [FAM-01]
+    attrs:
+      - "kind: enum(org_contact_kind)!"
+      - "name: title!"
+      - "contact_person: name pii"
+      - "phone: phone pii"
+      - "email: email pii"
+      - "address: json"
+      - "learner_id: ref(learner) | When the contact is linked to one learner (with relationship and priority)"
+      - "relationship: str(80)"
+      - "priority: smallint"
+      - "preferred_channel: enum(channel)"
+
+  contact_restriction:
+    title: Court order or contact restriction detail (no communications, collection or portal access to the restricted child)
+    kind: master
+    zone: vault
+    class: special
+    history: effective
+    scope: "derived: the learner; DSL and named users only"
+    origin: ceda
+    retention: RS-SAF
+    reqs: [FR-FAM-04, FR-COM-02]
+    pages: [FAM-01, SAF-03]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "guardian_id: ref(guardian)!"
+      - "restriction: enum(restriction_kind)!"
+      - "order_reference: sealed special | Court order reference and terms"
+      - "document_id: uuid | Order copy (records zone, special category)"
+      - "recorded_by: uuid!"
+
+  consent_record:
+    title: Consent given or refused by a guardian (or learner of age) for a learner — the consent record
+    kind: transaction
+    zone: ops
+    class: confidential
+    history: effective
+    scope: "derived: the learner's institution"
+    origin: appj
+    appj_name: consent_response
+    reqs: [FR-FAM-05, FR-COM-120, FR-EYR-02, FR-OPS-06, FR-PTM-103]
+    pages: [FAM-04, COM-104, OPS-06]
+    events: [FAM.CONSENT_CHANGED]
+    notes: >
+      Appendix J called this consent_response; CEDA keeps one consent record for all sources (consent
+      request, form, admission, WhatsApp button). Withdrawal propagates immediately to messaging, photo
+      sharing and trip lists.
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "guardian_id: ref(guardian) | NULL when the learner gives consent themselves"
+      - "consent_type: cl(consent_type)! | photography, trips, data_sharing, medical, biometrics, digital_services, video_recording …"
+      - "consent_request_id: ref(consent_request)"
+      - "request_version: int_u | Version of the request answered"
+      - "decision: enum(consent_decision)!"
+      - "legal_basis: enum(legal_basis)!"
+      - "channel: enum(channel)!"
+      - "comment: str(1000)"
+      - "evidence: json | Wording shown, device, time"
+      - "expires_on: date"
+      - "withdrawn_at: ts"
+    ix: [[learner_id, consent_type]]

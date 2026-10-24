@@ -1,0 +1,253 @@
+domain: security_training
+code: STI
+title: Education and training institutions of the security agencies — agency structures, ranks, courses, intakes
+module: security_training
+zone: registry
+retention: RS-LRN-PERM
+summary: >
+  The Armed Forces (Defence Headquarters, Army, Navy, Air Force), the Nigeria Police Force and the paramilitary,
+  law-enforcement, emergency and security services each run their own academies, staff and war colleges, depots
+  and training schools (change request CR-004). Every agency is modelled individually: its organisational structure
+  (headquarters, services, directorates, commands, training commands, formations, zones, state commands) is a tree
+  of scope nodes and is the access hierarchy; its ranks are held in seniority order; each of its institutions has
+  its own course catalogue (curriculum) of versioned courses broken into modules, run as intakes, with every
+  trainee's outcome on the lifelong learner record. All of this lives in a national sector registry (tenant kind
+  sector_registry, code ng-fse) isolated from the 37 state registries. CEDA holds education and training
+  administration only — never operational, deployment, intelligence, weapons or tactical content.
+
+entities:
+  security_agency:
+    title: Security agency (armed service, police, paramilitary, law-enforcement, emergency or security service)
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-INS-PERM
+    reqs: [FR-STI-01]
+    pages: [STI-01]
+    notes: scope_node_id is the agency's own node (level agency) under the sector registry's root.
+    attrs:
+      - "code: code(16)! | e.g. NA, NN, NAF, DHQ, NPF, NSCDC, NCoS, NIS, NCS, FFS, FRSC, NDLEA, DSS, EFCC"
+      - "name: title!"
+      - "category: enum(agency_category)!"
+      - "supervising_ministry: str(200) | Ministry or office the agency reports to"
+      - "establishing_law: str(300) | Act establishing the agency"
+      - "website: url"
+      - "data_status: enum(reference_data_status)! | verified by the agency, illustrative, or to be confirmed"
+      - "status: enum(record_status)!"
+    uq: [[code]]
+
+  agency_unit:
+    title: Unit of an agency's own structure (headquarters, service, directorate, command, formation, state command)
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-INS-PERM
+    reqs: [FR-STI-02, FR-STI-08]
+    pages: [STI-01]
+    notes: scope_node_id is the unit's own node, a child of its parent unit's node (or of the agency's node).
+    attrs:
+      - "agency_id: ref(security_agency)!"
+      - "parent_unit_id: ref(agency_unit)"
+      - "unit_type: enum(agency_unit_type)!"
+      - "code: code(40)! | Unique within the agency, e.g. TRADOC, NAVTRAC, ATC, LA-CMD"
+      - "name: title!"
+      - "headquarters_state: subdivision | ISO 3166-2 state of the unit's headquarters"
+      - "headquarters_town: str(120)"
+      - "data_status: enum(reference_data_status)!"
+      - "status: enum(record_status)!"
+    uq: [[agency_id, code]]
+    ix: [[parent_unit_id]]
+
+  agency_rank:
+    title: Rank of an agency in seniority order (officer, warrant, non-commissioned, senior and junior staff, cadet, recruit)
+    kind: reference
+    class: public
+    history: versioned
+    origin: ceda
+    retention: RS-CONFIG
+    scope_note: Belongs to its agency.
+    reqs: [FR-STI-03]
+    pages: [STI-01, STI-04]
+    attrs:
+      - "agency_id: ref(security_agency)!"
+      - "code: code(24)! | e.g. LT, CAPT, ASP, CPL"
+      - "title: str(80)!"
+      - "abbreviation: str(16)"
+      - "rank_category: enum(rank_category)!"
+      - "seniority: smallint! | 1 = most junior"
+      - "data_status: enum(reference_data_status)!"
+    uq: [[agency_id, code]]
+
+  security_institution:
+    title: Security-agency profile of an education or training institution (agency, owning command, type, access regime)
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-INS-PERM
+    reqs: [FR-STI-04, FR-STI-08]
+    pages: [STI-01, STI-02]
+    notes: >
+      One profile per institution; the institution master (domain INS) keeps name, location, levels and status.
+      scope_node_id is the institution's node, which is a child of its owning unit's node.
+    attrs:
+      - "institution_id: ref(institution)! uq"
+      - "agency_id: ref(security_agency)!"
+      - "unit_id: ref(agency_unit)! | Owning command, training command or directorate"
+      - "institution_type: enum(security_institution_type)!"
+      - "access_regime: enum(security_access_regime)! | content_not_held: CEDA holds administration only"
+      - "accreditation: json | Academic regulators and affiliations, e.g. NUC, NBTE, affiliated university"
+      - "commandant_title: str(80) | Commandant, Rector, Vice-Chancellor, Director, Principal"
+      - "established_year: smallint"
+      - "data_status: enum(reference_data_status)!"
+    ix: [[agency_id], [unit_id]]
+
+  security_course:
+    title: Course in an institution's catalogue — its curriculum (versioned; award, duration, entry, target ranks)
+    kind: master
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-CUR-PERM
+    reqs: [FR-STI-05, FR-STI-12]
+    pages: [STI-02, STI-03, STI-05]
+    events: [STI.COURSE_PUBLISHED]
+    notes: scope_node_id is the institution's node. Degree-bearing courses also point to their academic programme.
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "agency_id: ref(security_agency)!"
+      - "code: code(32)! | Unique within the institution"
+      - "title: title!"
+      - "category: enum(training_course_category)!"
+      - "award: enum(training_award)!"
+      - "award_title: str(120) | e.g. B.Sc., psc, fdc, Certificate of Basic Training"
+      - "programme_id: ref(programme) | Academic programme for degree, diploma and NCE courses"
+      - "curriculum_id: ref(curriculum) | Curriculum 360 of the academic component, when held"
+      - "accrediting_body: cl(regulator)"
+      - "duration_weeks: smallint"
+      - "entry_requirements: json | Entry qualifications, age limits, medical and other conditions (as published)"
+      - "target_ranks: json | Rank codes the course is for (e.g. officer cadets, CAPT–MAJ)"
+      - "description: text"
+      - "version: semver!"
+      - "content_held: bool! default=true | false: the agency does not release module detail (access regime)"
+      - "data_status: enum(reference_data_status)!"
+      - "status: enum(version_status)!"
+    uq: [[institution_id, code, version]]
+    ix: [[agency_id, category]]
+
+  security_course_module:
+    title: Module (syllabus heading) of a training course — area, contact hours, assessment
+    kind: config
+    class: internal
+    history: versioned
+    origin: ceda
+    retention: RS-CUR-PERM
+    scope_note: Inherits the course's scope.
+    reqs: [FR-STI-06, FR-STI-09, FR-STI-12]
+    pages: [STI-03]
+    attrs:
+      - "course_id: ref(security_course)!"
+      - "sequence: smallint!"
+      - "code: code(32)!"
+      - "title: str(200)! | Syllabus heading only — never operational or tactical content"
+      - "area: enum(training_module_area)!"
+      - "contact_hours: smallint"
+      - "assessment: enum(training_assessment)!"
+      - "is_mandatory: bool! default=true"
+    uq: [[course_id, code]]
+
+  security_course_intake:
+    title: Intake (run) of a course, e.g. 77 Regular Course, with dates and capacity
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-LRN-PERM
+    reqs: [FR-STI-07]
+    pages: [STI-03, STI-04]
+    notes: scope_node_id is the institution's node.
+    attrs:
+      - "course_id: ref(security_course)!"
+      - "intake_code: code(40)! | e.g. RC77, SC-2026-1"
+      - "name: title!"
+      - "starts_on: date!"
+      - "ends_on: date"
+      - "capacity: int_u"
+      - "status: enum(intake_status)!"
+    uq: [[course_id, intake_code]]
+
+  trainee_record:
+    title: A trainee on an intake — rank at entry and outcome, on the lifelong learner record
+    kind: transaction
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-STI-07]
+    pages: [STI-04, LRN-04]
+    events: [STI.TRAINEE_OUTCOME_RECORDED]
+    notes: scope_node_id is the institution's node. Service numbers are external identifiers (scheme SVC-NO).
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "intake_id: ref(security_course_intake)!"
+      - "enrolment_id: ref(enrolment)"
+      - "rank_at_entry_id: ref(agency_rank)"
+      - "outcome: enum(trainee_outcome)!"
+      - "result: str(120) | Grade, class of degree or order of merit, as awarded"
+      - "outcome_on: date"
+      - "outcome_reason: text"
+      - "recorded_by: ref(app_user)"
+    uq: [[learner_id, intake_id]]
+    ix: [[intake_id, outcome]]
+
+  # ---------------------------------------------------------------- curricula through each agency's structure (CR-006)
+  security_course_unit:
+    title: Unit of the agency's structure that sponsors, approves, delivers or holds quotas on a course
+    kind: link
+    class: internal
+    history: lifecycle
+    origin: ceda
+    scope_note: Inherits the course's scope.
+    reqs: [FR-STI-10]
+    pages: [STI-03, STI-05]
+    attrs:
+      - "course_id: ref(security_course)!"
+      - "unit_id: ref(agency_unit)!"
+      - "role: enum(course_unit_role)!"
+      - "quota: smallint | Places per intake held by the unit"
+      - "note: str(200)"
+      - "data_status: enum(reference_data_status)!"
+    uq: [[course_id, unit_id, role]]
+    ix: [[unit_id]]
+
+  security_career_requirement:
+    title: Course (or course category) an agency requires for commissioning, confirmation, promotion, appointment or command at a rank
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-CONFIG
+    reqs: [FR-STI-11]
+    pages: [STI-05]
+    notes: scope_node_id is the agency's node.
+    attrs:
+      - "agency_id: ref(security_agency)!"
+      - "rank_id: ref(agency_rank)! | The rank the requirement leads to"
+      - "requirement_kind: enum(career_requirement_kind)!"
+      - "course_code: code(32) | A specific course in the agency's institutions, e.g. JSC"
+      - "course_category: enum(training_course_category) | Any course of this category, when no single course is named"
+      - "is_mandatory: bool! default=true"
+      - "note: str(300)"
+      - "data_status: enum(reference_data_status)!"
+      - "status: enum(record_status)!"
+    uq: [[agency_id, rank_id, requirement_kind, course_code]]
+    checks:
+      names_a_course: "course_code IS NOT NULL OR course_category IS NOT NULL"

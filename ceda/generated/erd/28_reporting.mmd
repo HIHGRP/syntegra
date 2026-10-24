@@ -1,0 +1,83 @@
+erDiagram
+    metric_definition {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ metric_code
+        VARCHAR_300_ name
+        JSON definition
+        DECIMAL_12_4_ target
+        VARCHAR_32_ direction
+        VARCHAR_32_ label_kind
+        BOOLEAN is_equity_indicator
+        VARCHAR_32_ ceda_version
+        INT version
+        VARCHAR_32_ status
+    }
+    report_definition {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_48_ code
+        VARCHAR_300_ title
+        VARCHAR_32_ report_kind
+        JSON query
+        SMALLINT min_cell_size
+        BINARY_16_ owner_user_id FK
+        INT version
+        VARCHAR_32_ status
+    }
+    report_schedule {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ report_definition_id FK
+        VARCHAR_64_ cron
+        JSON recipients
+        VARCHAR_32_ format
+        DATETIME_6_ last_run_at
+        VARCHAR_32_ status
+    }
+    report_export {
+        BINARY_16_ id PK
+        BINARY_16_ requested_by
+        VARCHAR_200_ source
+        VARCHAR_32_ format
+        INT row_count
+        VARCHAR_1024_ object_key
+        DATETIME_6_ expires_at
+    }
+    return_definition {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ code
+        VARCHAR_300_ title
+        VARCHAR_200_ recipient
+        JSON spec
+        JSON calendar
+        INT version
+        VARCHAR_32_ status
+    }
+    return_submission {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ return_definition_id FK
+        BINARY_16_ institution_id FK
+        VARCHAR_20_ period_label
+        DATETIME_6_ generated_at
+        JSON anomalies
+        BINARY_16_ certified_by FK
+        DATETIME_6_ certified_at
+        DATETIME_6_ submitted_at
+        BINARY_32_ content_hash
+        VARCHAR_64_ recipient_ref
+        VARCHAR_32_ status
+    }
+    app_user {
+        BINARY_16 id PK
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    app_user ||--o{ report_definition : "owner_user_id"
+    app_user ||--o{ return_submission : "certified_by"
+    institution ||--o{ return_submission : "institution_id"
+    report_definition ||--o{ report_schedule : "report_definition_id"
+    return_definition ||--o{ return_submission : "return_definition_id"

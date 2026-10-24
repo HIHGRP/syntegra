@@ -1,0 +1,33 @@
+{
+  "realm": "abia",
+  "displayName": "Abia State Government ID (staging)",
+  "enabled": true,
+  "sslRequired": "none",
+  "clients": [
+    {
+      "clientId": "syntegra-staging",
+      "name": "Syntegra (staging)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "staging-client-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "redirectUris": ["https://web:8000/auth/sso/gov_sso/callback"],
+      "attributes": {"pkce.code.challenge.method": "S256"}
+    }
+  ],
+  "users": [
+    {
+      "username": "sso.officer",
+      "email": "sso.officer@abiastate.gov.ng",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Staging",
+      "lastName": "Officer",
+      "credentials": [{"type": "password", "value": "Staging-idp-password-2026", "temporary": false}]
+    }
+  ]
+}

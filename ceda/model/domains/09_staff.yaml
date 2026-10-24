@@ -1,0 +1,380 @@
+domain: staff
+code: STF
+title: Staff / Teacher 360, authorisations, HR, cover, recruitment, CPD, training and payroll
+module: people
+zone: registry
+retention: RS-STF-FILE
+summary: >
+  One record per staff member across posts and institutions (FR-STF-01). The staff identity, posts and
+  teaching authorisations (qualifications, TRCN registration, subject-and-level authorisations, safer-
+  recruitment checks) form the state teacher register in the registry zone, because the coverage engine
+  (G2, G3, G9, G11), teacher deployment (STF-10) and private-institution regulation all need them.
+  Day-to-day HR — absence and cover, recruitment, appraisal, CPD, statutory training and payroll — is
+  operational (ops zone). Allegations about adults are in the vault (domain SAF).
+
+entities:
+  staff:
+    title: Staff / Teacher 360 master (one person, many posts)
+    kind: master
+    class: confidential
+    history: lifecycle
+    scope: "derived: through the person's posts"
+    origin: appj
+    reqs: [FR-STF-01, FR-ACA-113, FR-ACA-116, FR-DOC-108]
+    pages: [STF-01, STF-02, STF-03, STF-08, HOM-05]
+    events: [STF.CREATED, STF.LEFT]
+    attrs:
+      - "staff_number: code(20)! uq | STF-NNNN-NNNN with check digit"
+      - "given_name: name! pii"
+      - "middle_names: name pii"
+      - "family_name: name! pii"
+      - "name_phonetic: str(120)!"
+      - "date_of_birth: date pii"
+      - "sex: cl(sex)"
+      - "phone: phone pii"
+      - "email: email pii"
+      - "user_id: ref(app_user)"
+      - "is_historic: bool! default=false | Created from a digitised personal file"
+      - "status: enum(staff_status)!"
+      - "merged_into: ref(staff)"
+
+  staff_post:
+    title: Post held by a staff member at an institution (employer, unit, title, grade, contract, FTE, line manager)
+    kind: link
+    class: confidential
+    history: effective
+    scope: owned
+    origin: appj
+    reqs: [FR-STF-01, FR-STF-11, FR-ACA-116, FR-CUR-109]
+    pages: [STF-02, STF-03, STF-10, ACA-102]
+    events: [STF.POST_STARTED, STF.POST_ENDED]
+    notes: Temporary posts (NYSC, volunteers) carry an end date and access expires automatically (MFS §4.4).
+    attrs:
+      - "staff_id: ref(staff)!"
+      - "institution_id: ref(institution)!"
+      - "org_unit_id: ref(org_unit)"
+      - "job_title: title!"
+      - "staff_category: cl(staff_category)! | teaching, non_teaching, lecturer, graduate_assistant …"
+      - "academic_rank: cl(academic_rank) | Professor, Senior Lecturer, Lecturer I … (load policy)"
+      - "grade_step: code(20)"
+      - "contract: enum(contract_kind)!"
+      - "fte: dec(4,2)!"
+      - "employer_scope_id: ref(scope_node) | e.g. SUBEB, TESCOM, the private provider"
+      - "line_manager_staff_id: ref(staff)"
+      - "is_temporary: bool! default=false"
+      - "leaving_reason: cl(leaving_reason)"
+    ix: [[staff_id], [institution_id]]
+
+  staff_qualification:
+    title: Qualification, professional registration, teaching authorisation (subject × level) or check, with expiry and verification
+    kind: master
+    class: confidential
+    history: lifecycle
+    scope: "derived: the staff member"
+    origin: appj
+    reqs: [FR-STF-02, FR-STF-04, FR-CUR-105, FR-ACA-113, FR-STF-102, FR-MED-103]
+    pages: [STF-02, STF-08, CUR-102, ACA-101]
+    events: [STF.AUTHORISATION_CHANGED]
+    attrs:
+      - "staff_id: ref(staff)!"
+      - "kind: enum(qualification_kind)!"
+      - "title: title!"
+      - "subject_id: ref(subject) | For teaching authorisations"
+      - "subject_area_code: code(40) | Tertiary specialism (subject area)"
+      - "levels: cls(education_level)"
+      - "issuer: cl(regulator) | TRCN, university, professional body"
+      - "reference: code(64)"
+      - "issued_on: date"
+      - "expires_on: date"
+      - "verification: enum(verification_status)!"
+      - "verified_by: ref(app_user)"
+      - "document_id: uuid | Certificate scan (records zone)"
+    ix: [[staff_id, kind], [subject_id], [expires_on]]
+
+  professional_registration_check:
+    title: Verification of a professional registration with its register (TRCN, MDCN, NMCN …)
+    kind: event
+    class: confidential
+    history: append
+    origin: ceda
+    retention: RS-AUDIT
+    scope_note: Inherits the staff member's visibility.
+    reqs: [FR-STF-02]
+    pages: [STF-08]
+    attrs:
+      - "qualification_id: ref(staff_qualification)!"
+      - "register: cl(regulator)!"
+      - "outcome: enum(verification_outcome)!"
+      - "checked_at: ts!"
+      - "provider_ref: code(128)"
+
+  staff_absence:
+    title: Staff absence (triggers the cover process and G8 checks)
+    kind: transaction
+    zone: ops
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-STF-FILE
+    reqs: [FR-STF-06]
+    pages: [STF-06]
+    events: [STF.ABSENCE_RECORDED]
+    attrs:
+      - "staff_id: ref(staff)!"
+      - "staff_post_id: ref(staff_post)"
+      - "absence_type: cl(absence_type)!"
+      - "starts_at: ts!"
+      - "ends_at: ts!"
+      - "is_planned: bool! default=false"
+      - "reason_note: sealed special | Medical or personal detail (encrypted)"
+      - "approved_by: uuid"
+      - "status: enum(absence_status)!"
+    checks:
+      window: "ends_at > starts_at"
+
+  cover_assignment:
+    title: Cover for a lesson affected by staff absence (never auto-assigned unqualified; G8)
+    kind: transaction
+    zone: ops
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-OPS-7
+    reqs: [FR-TIM-05, FR-STF-06]
+    pages: [TIM-03, STF-06]
+    events: [TT.COVER_ASSIGNED]
+    attrs:
+      - "absence_id: ref(staff_absence)!"
+      - "lesson_occurrence_id: ref(lesson_occurrence)!"
+      - "cover_staff_id: ref(staff)"
+      - "is_qualified: bool!"
+      - "rank_evidence: json | Qualified → free → lowest cover load → same department"
+      - "alternative: enum(cover_alternative) | supervised_study_with_lms_work when no qualified cover"
+      - "proposed_by: uuid | Cover Agent service identity or SLT user"
+      - "confirmed_by: uuid"
+      - "status: enum(cover_status)!"
+
+  vacancy:
+    title: Vacancy in the recruitment workflow
+    kind: transaction
+    zone: ops
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-RECRUIT
+    reqs: [FR-STF-05]
+    pages: [STF-04]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "org_unit_id: ref(org_unit)"
+      - "title: title!"
+      - "subjects: json | Subjects and levels needed (links to coverage gaps)"
+      - "coverage_gap_id: ref(coverage_gap) | Gap that justified the vacancy"
+      - "closing_on: date"
+      - "workflow_instance_id: ref(workflow_instance)"
+      - "status: enum(vacancy_status)!"
+
+  job_application:
+    title: Application for a vacancy (blind scoring by default; references and checks before offer)
+    kind: transaction
+    zone: ops
+    class: restricted
+    history: lifecycle
+    scope: "derived: the vacancy"
+    origin: ceda
+    retention: RS-RECRUIT
+    reqs: [FR-STF-05]
+    pages: [STF-05, STF-04]
+    attrs:
+      - "vacancy_id: ref(vacancy)!"
+      - "applicant_name: name! pii"
+      - "applicant_email: email! pii"
+      - "applicant_phone: phone pii"
+      - "cv_document_id: uuid"
+      - "blind_score: dec(6,2)"
+      - "scores: json | Per criterion and panel member"
+      - "stage: enum(recruitment_stage)!"
+      - "staff_id: ref(staff) | Set on appointment (after identity matching)"
+
+  appraisal:
+    title: Annual appraisal with objectives, evidence, ratings and development plan
+    kind: transaction
+    zone: ops
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-STF-08]
+    pages: [STF-09]
+    attrs:
+      - "staff_id: ref(staff)!"
+      - "reviewer_staff_id: ref(staff)!"
+      - "cycle_label: code(20)! | e.g. 2026/2027"
+      - "objectives: json"
+      - "evidence: json"
+      - "rating: cl(appraisal_rating)"
+      - "development_plan: text"
+      - "status: enum(appraisal_status)!"
+    uq: [[staff_id, cycle_label]]
+
+  cpd_record:
+    title: CPD and professional learning record (including LMS training and evidenced digital teaching practice)
+    kind: transaction
+    zone: ops
+    class: confidential
+    history: lifecycle
+    scope: "derived: the staff member's posts"
+    origin: ceda
+    reqs: [FR-STF-07, FR-LMS-123, FR-LRN-101, FR-CUR-108]
+    pages: [STF-07]
+    attrs:
+      - "staff_id: ref(staff)!"
+      - "title: title!"
+      - "provider_name: title"
+      - "cpd_kind: cl(cpd_kind)!"
+      - "hours: dec(6,2)!"
+      - "subject_id: ref(subject) | Route to a teaching authorisation"
+      - "completed_on: date!"
+      - "evidence_document_id: uuid"
+      - "source_kind: code(40) | lms_course, digital_practice, external"
+      - "source_id: uuid"
+      - "expires_on: date"
+
+  training_course:
+    title: Safeguarding or statutory training course (native LMS staff course space or SCORM/xAPI package)
+    kind: config
+    zone: ops
+    class: internal
+    history: versioned
+    scope: owned
+    origin: appj
+    retention: RS-OPS-7
+    reqs: [FR-STF-105, FR-STF-103]
+    pages: [STF-101]
+    attrs:
+      - "code: code(40)!"
+      - "title: title!"
+      - "topic: cl(training_topic)! | child protection, safe schools, first aid, fire safety, data protection, online safety, SEND awareness"
+      - "course_space_id: ref(course_space)"
+      - "package_format: enum(content_package)"
+      - "pass_mark: pct"
+      - "renewal_months: smallint"
+      - "required_for_roles: json | Role codes"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, code, version]]
+
+  training_completion:
+    title: Completion of a training course by an adult (writes to Staff 360, CPD and the Education Passport)
+    kind: transaction
+    zone: ops
+    class: confidential
+    history: lifecycle
+    scope: "derived: the staff member's posts"
+    origin: appj
+    retention: RS-STF-FILE
+    reqs: [FR-STF-105, FR-STF-106, FR-STF-103]
+    pages: [STF-101]
+    events: [STF.TRAINING_COMPLETED]
+    attrs:
+      - "course_id: ref(training_course)!"
+      - "staff_id: ref(staff)!"
+      - "assigned_on: date!"
+      - "completed_on: date"
+      - "score: pct"
+      - "passed: bool"
+      - "certificate_document_id: uuid"
+      - "expires_on: date"
+      - "status: enum(training_status)!"
+    ix: [[staff_id, course_id]]
+
+  staff_pulse_response:
+    title: Anonymous staff wellbeing pulse response (reported only in aggregate; no staff identifier stored)
+    kind: event
+    zone: ops
+    class: internal
+    history: append
+    scope: owned
+    origin: ceda
+    retention: RS-OPS-3
+    reqs: [FR-STF-104]
+    pages: [STF-101]
+    attrs:
+      - "survey_code: code(40)!"
+      - "org_unit_id: ref(org_unit)"
+      - "answers: json!"
+      - "submitted_on: date! | Date only — no timestamp to resist re-identification"
+
+  payroll_tax_table:
+    title: Versioned payroll statutory table (PAYE, pension/PenCom, NHF)
+    kind: config
+    zone: ops
+    class: internal
+    history: versioned
+    origin: ceda
+    retention: RS-FIN
+    scope_note: Tenant-wide statutory configuration.
+    reqs: [FR-STF-09]
+    pages: [PAY-01]
+    attrs:
+      - "table_kind: enum(payroll_table_kind)!"
+      - "version: int_u!"
+      - "bands: json!"
+      - "effective_from: date!"
+      - "status: enum(version_status)!"
+    uq: [[table_kind, version]]
+
+  payroll_run:
+    title: Pay run (two-person approval, bank file export, ledger posting)
+    kind: transaction
+    zone: ops
+    class: restricted
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    retention: RS-FIN
+    reqs: [FR-STF-09]
+    pages: [PAY-01, PAY-02]
+    events: [PAY.RUN_APPROVED]
+    attrs:
+      - "employer_scope_id: ref(scope_node)!"
+      - "period_label: code(7)! | YYYY-MM"
+      - "pay_date: date!"
+      - "gross_total: money!"
+      - "net_total: money!"
+      - "currency: currency!"
+      - "prepared_by: uuid!"
+      - "approved_by: uuid"
+      - "second_approver_id: uuid"
+      - "bank_file_document_id: uuid"
+      - "journal_id: ref(journal)"
+      - "status: enum(payrun_status)!"
+    uq: [[employer_scope_id, period_label]]
+    checks:
+      two_person: "second_approver_id IS NULL OR approved_by IS NULL OR second_approver_id <> approved_by"
+
+  payslip:
+    title: Payslip of one staff post in a pay run
+    kind: transaction
+    zone: ops
+    class: restricted
+    history: append
+    origin: ceda
+    retention: RS-FIN
+    scope_note: Visible to payroll officers and the employee.
+    reqs: [FR-STF-09]
+    pages: [PAY-02]
+    attrs:
+      - "payroll_run_id: ref(payroll_run)!"
+      - "staff_post_id: ref(staff_post)!"
+      - "gross: money!"
+      - "deductions: money!"
+      - "net: money!"
+      - "currency: currency!"
+      - "line_items: json! | Earnings and deductions by code with tax table versions used"
+      - "bank_account: secret restricted mask4 | Payee bank account"
+      - "exception_flags: json | Exceptions reviewed before approval"
+    uq: [[payroll_run_id, staff_post_id]]

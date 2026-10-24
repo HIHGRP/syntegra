@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Establishment and vacancies{% endblock %}
+{% block content %}
+<h1>Establishment and vacancies</h1>
+<p class="actions">{% if ctx.has("hr:establishment") %}<a href="/forms/hr-position">Create a position</a>{% endif %}{% if ctx.has("hr:appoint") %}<a href="/forms/hr-appoint">Appoint</a>{% endif %}{% if ctx.has("hr:posting_request") %}<a href="/forms/hr-posting">Request a posting</a>{% endif %}<a href="/forms">All HR forms</a></p>
+<form method="get" class="inline"><label class="sr" for="inst">Institution</label>
+  <select id="inst" name="institution_id">{% for i in institutions %}<option value="{{ i.id }}" {% if chosen == i.id|string %}selected{% endif %}>{{ i.name }}</option>{% endfor %}</select>
+  <button>Show</button></form>
+{% if data %}
+<section class="tiles">
+  <article class="tile"><h2>Approved positions</h2><p class="big">{{ data.approved }}</p></article>
+  <article class="tile"><h2>Filled</h2><p class="big">{{ data.filled }}</p><p class="muted">{{ "—" if data.fill_rate is none else "{:.0%}".format(data.fill_rate) }} fill rate</p></article>
+  <article class="tile"><h2>Vacant</h2><p class="big">{{ data.vacant }}</p></article>
+  <article class="tile"><h2>Posts without a position</h2><p class="big">{{ data.posts_without_position }}</p></article>
+</section>
+<table><thead><tr><th scope="col">Position</th><th scope="col">Title</th><th scope="col">Funding</th><th scope="col">Status</th><th scope="col">Holder</th></tr></thead>
+<tbody>{% for p in data.positions %}<tr><td><code>{{ p.position_code }}</code></td><td>{{ p.title }}</td><td>{{ p.funding.replace("_", " ") }}</td><td>{{ p.status }}</td><td>{{ "vacant" if not p.holder_staff_id else "filled" }}</td></tr>{% endfor %}</tbody></table>
+{% endif %}
+{% endblock %}

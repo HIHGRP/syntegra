@@ -1,0 +1,404 @@
+domain: behaviour
+code: BEH
+title: Behaviour, rewards, seating plans and influences, intelligence events, detentions, on-call and on-report
+module: success
+zone: ops
+retention: RS-BEH
+summary: >
+  Versioned behaviour policies built on the state minimum framework, two-tap logging online or offline,
+  badges, data-rich seating plans with board-safe display and logged printing, pairwise influence
+  evidence (≥ 20 shared-lesson events, no protected characteristics), threshold rules ("intelligence
+  events") with simulation and reversible firings, a detention ladder with parent notice and transport
+  checks, on-call requests routed by the timetable rota and on-report cards (MFS §18.4–18.5,
+  FR-BEH-01–04, 101–115). No rule, agent or AI applies a sanction above detention (§18.11).
+
+entities:
+  behaviour_framework:
+    title: State minimum behaviour framework (required categories, maximum points, head-decision outcomes)
+    kind: config
+    zone: registry
+    class: public
+    history: versioned
+    scope: owned
+    origin: ceda
+    retention: RS-CONFIG
+    reqs: [FR-BEH-106]
+    pages: [BEH-101]
+    attrs:
+      - "version: int_u!"
+      - "required_categories: json!"
+      - "max_points_per_event: smallint!"
+      - "head_decision_outcomes: json! | Outcomes above detention"
+      - "after_school_detention_rule: json | Per-LGA permission and default parent notice (D21)"
+      - "status: enum(version_status)!"
+      - "effective_from: date!"
+    uq: [[scope_node_id, version]]
+
+  behaviour_policy:
+    title: Versioned behaviour policy of an institution (immutable once published; never re-scores past events)
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: appj
+    retention: RS-CONFIG
+    reqs: [FR-BEH-106, FR-BEH-01]
+    pages: [BEH-101]
+    events: [BEH.POLICY_PUBLISHED]
+    attrs:
+      - "institution_id: ref(institution)!"
+      - "framework_version: int_u! | State framework version it conforms to"
+      - "version: int_u!"
+      - "missing_homework_is_behaviour: bool! default=false"
+      - "effective_from: date!"
+      - "status: enum(version_status)!"
+    uq: [[institution_id, version]]
+
+  behaviour_type:
+    title: Positive or negative behaviour with icon, points, default outcome and use in reports/influences
+    kind: config
+    class: internal
+    history: versioned
+    origin: appj
+    retention: RS-CONFIG
+    scope_note: Inherits the policy's scope.
+    reqs: [FR-BEH-106]
+    pages: [BEH-101, BEH-01]
+    attrs:
+      - "policy_id: ref(behaviour_policy)!"
+      - "code: code(32)!"
+      - "label: title!"
+      - "polarity: enum(polarity)!"
+      - "category: cl(behaviour_category)! | bullying, violence, lateness, positive conduct …"
+      - "points: smallint!"
+      - "icon: code(40)"
+      - "default_outcome: enum(behaviour_outcome)"
+      - "detention_type_id: ref(detention_type)"
+      - "counts_in_reports: bool! default=true"
+      - "counts_in_influences: bool! default=true"
+    uq: [[policy_id, code]]
+
+  behaviour_event:
+    title: Behaviour log entry (two taps from register, class list, seating plan or app; online or offline)
+    kind: event
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-BEH-01, FR-BEH-02, FR-BEH-03, FR-BEH-04, FR-BEH-107]
+    pages: [BEH-01, BEH-02, BEH-102]
+    events: [BEH.EVENT_RECORDED]
+    notes: Exclusions and suspensions are recorded as head decisions with reason and appeal route (outcome above detention).
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "behaviour_type_id: ref(behaviour_type)!"
+      - "points: smallint! | Points of the policy version in force"
+      - "lesson_occurrence_id: ref(lesson_occurrence)"
+      - "room_id: ref(room)"
+      - "location: str(120)"
+      - "occurred_at: ts!"
+      - "recorded_by_staff_id: ref(staff)!"
+      - "description: str(2000)"
+      - "target_learner_ids: json | Targets of bullying (routes to the pastoral lead)"
+      - "outcome: enum(behaviour_outcome)"
+      - "decision_by: uuid | Head for outcomes above detention"
+      - "appeal_status: enum(appeal_status)"
+      - "client_op_id: uuid | Offline idempotency key"
+      - "reversed_at: ts"
+    ix: [[learner_id, occurred_at]]
+
+  reward_badge:
+    title: Achievement badge awarded at a points threshold or by rule (recognition only; never a credential)
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    retention: RS-CONFIG
+    reqs: [FR-BEH-108]
+    pages: [BEH-101]
+    attrs:
+      - "code: code(32)!"
+      - "label: title!"
+      - "rule: json! | Points threshold or rule"
+      - "image_ref: object_key"
+      - "status: enum(record_status)!"
+    uq: [[scope_node_id, code]]
+
+  badge_award:
+    title: Badge awarded to a learner
+    kind: event
+    class: confidential
+    history: append
+    origin: appj
+    scope_note: Inherits the learner's institution scope.
+    reqs: [FR-BEH-108, FR-OPS-05]
+    pages: [BEH-101, LRN-06]
+    attrs:
+      - "badge_id: ref(reward_badge)!"
+      - "learner_id: ref(learner)!"
+      - "awarded_at: ts!"
+      - "source: enum(badge_source)!"
+      - "intel_firing_id: ref(intel_firing)"
+
+  room_layout:
+    title: Reusable room desk layout for seating plans
+    kind: config
+    class: internal
+    history: none
+    origin: ceda
+    retention: RS-CONFIG
+    scope_note: Inherits the room's scope.
+    reqs: [FR-BEH-110]
+    pages: [BEH-102]
+    attrs:
+      - "room_id: ref(room)!"
+      - "name: str(80)!"
+      - "desks: json! | Desk positions and labels"
+
+  seating_field_set:
+    title: Set of up to 16 learner data fields shown on seating plans for a class, subject or level
+    kind: config
+    class: internal
+    history: none
+    scope: owned
+    origin: appj
+    retention: RS-CONFIG
+    reqs: [FR-BEH-110, FR-BEH-102]
+    pages: [BEH-102]
+    attrs:
+      - "name: str(80)!"
+      - "applies_to: json! | Class, subject or level"
+      - "fields: json! | Up to 16 field codes (SEND, free meals/CCT, gifted, working and target grade RAG, attendance, home language)"
+      - "board_safe_fields: json! | Fields still shown in board-safe view (never sensitive ones)"
+    checks:
+      max_fields: "JSON_LENGTH(`fields`) <= 16"
+
+  seating_plan:
+    title: Seating plan for a class in a room (drag-and-drop or strategy-generated)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: "derived: the class"
+    origin: appj
+    reqs: [FR-BEH-101, FR-BEH-110]
+    pages: [BEH-102, ACA-05]
+    attrs:
+      - "class_group_id: ref(class_group)!"
+      - "subject_id: ref(subject)"
+      - "room_layout_id: ref(room_layout)!"
+      - "field_set_id: ref(seating_field_set)"
+      - "strategy: enum(seating_strategy)"
+      - "placements: json! | Learner → desk"
+      - "is_active: bool! default=true"
+
+  seating_plan_print:
+    title: Logged, watermarked print of a seating plan for observers or inspectors
+    kind: event
+    class: confidential
+    history: append
+    origin: ceda
+    scope_note: Inherits the plan's scope.
+    reqs: [FR-BEH-110]
+    pages: [BEH-102]
+    attrs:
+      - "seating_plan_id: ref(seating_plan)!"
+      - "printed_by: uuid!"
+      - "viewer_name: name! | Watermarked on the print"
+      - "printed_at: ts!"
+
+  influence_score:
+    title: Pairwise influence between two learners from behaviour in shared lessons (adjacent vs apart; ≥ 20 events)
+    kind: projection
+    class: confidential
+    history: none
+    scope: "derived: the class; visible only to its teachers and pastoral staff"
+    origin: appj
+    reqs: [FR-BEH-109]
+    pages: [BEH-102]
+    attrs:
+      - "class_group_id: ref(class_group)!"
+      - "learner_a_id: ref(learner)!"
+      - "learner_b_id: ref(learner)!"
+      - "shared_events: int_u!"
+      - "negative_adjacent: int_u!"
+      - "negative_apart: int_u!"
+      - "positive_adjacent: int_u!"
+      - "positive_apart: int_u!"
+      - "computed_at: ts!"
+    uq: [[class_group_id, learner_a_id, learner_b_id]]
+    checks:
+      ordered_pair: "learner_a_id < learner_b_id"
+
+  intel_rule:
+    title: Threshold rule over behaviour, attendance, homework or wellbeing data with actions (simulated before activation)
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: appj
+    retention: RS-CONFIG
+    reqs: [FR-BEH-105, FR-BEH-115]
+    pages: [BEH-103]
+    attrs:
+      - "name: title!"
+      - "source_data: enum(intel_source)!"
+      - "rule_expression: json! | e.g. 10 negative events in 7 days; 100 positive points"
+      - "actions: json! | notify, message_parent, detention, on_report, intervention, badge, dsl_alert"
+      - "is_positive_milestone: bool! default=false"
+      - "simulation_result: json | Learners who would have triggered in the last 30 days"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+
+  intel_firing:
+    title: Each time an intelligence rule fires (append-only; staff may reverse its effects)
+    kind: event
+    class: confidential
+    history: append
+    origin: appj
+    scope_note: Inherits the learner's institution scope.
+    reqs: [FR-BEH-115]
+    pages: [BEH-103]
+    attrs:
+      - "rule_id: ref(intel_rule)!"
+      - "learner_id: ref(learner)!"
+      - "evidence: json!"
+      - "actions_taken: json!"
+      - "agent_action_id: ref(agent_action) | Behaviour agent action"
+      - "fired_at: ts!"
+
+  intel_firing_reversal:
+    title: Staff reversal of an intelligence-rule firing's effects
+    kind: event
+    class: confidential
+    history: append
+    origin: ceda
+    scope_note: Inherits the firing's scope.
+    reqs: [FR-BEH-115]
+    pages: [BEH-103]
+    attrs:
+      - "firing_id: ref(intel_firing)! uq"
+      - "reversed_by: uuid!"
+      - "reason: str(500)!"
+
+  detention_type:
+    title: Detention level in the institution ladder (duration, default room and supervisor, escalation to next level)
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    retention: RS-CONFIG
+    reqs: [FR-BEH-104, FR-BEH-111]
+    pages: [BEH-104]
+    attrs:
+      - "name: title! | Lunchtime, Head of year, Senior leadership"
+      - "ladder_level: smallint!"
+      - "duration_minutes: minutes!"
+      - "default_room_id: ref(room)"
+      - "default_supervisor_staff_id: ref(staff)"
+      - "is_after_school: bool! default=false"
+      - "parent_notice_hours: smallint! default=24"
+      - "next_level_id: ref(detention_type)"
+      - "status: enum(record_status)!"
+
+  detention:
+    title: Detention session and attendance (Attended, Pending, Not attended, Escalated)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-BEH-104, FR-BEH-111]
+    pages: [BEH-104]
+    events: [BEH.DETENTION_SET]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "detention_type_id: ref(detention_type)!"
+      - "behaviour_event_id: ref(behaviour_event)"
+      - "intel_firing_id: ref(intel_firing)"
+      - "escalated_from_id: ref(detention)"
+      - "scheduled_at: ts!"
+      - "room_id: ref(room)"
+      - "supervisor_staff_id: ref(staff)"
+      - "parent_notified_at: ts"
+      - "transport_checked: bool! default=false"
+      - "minutes_owed: minutes!"
+      - "attendance: enum(detention_attendance)!"
+
+  oncall_request:
+    title: On-call request raised from a classroom (routed to the rota; acknowledgement target 2 min; emergency reason)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: appj
+    retention: RS-OPS-7
+    reqs: [FR-BEH-113]
+    pages: [BEH-105]
+    events: [BEH.ONCALL_RAISED]
+    attrs:
+      - "room_id: ref(room)"
+      - "class_group_id: ref(class_group)"
+      - "raised_by_staff_id: ref(staff)!"
+      - "reason: enum(oncall_reason)!"
+      - "learner_id: ref(learner)"
+      - "responder_staff_id: ref(staff)"
+      - "raised_at: ts!"
+      - "acknowledged_at: ts"
+      - "escalated_at: ts"
+      - "resolved_at: ts"
+      - "outcome: str(500)"
+      - "status: enum(oncall_status)!"
+
+  on_report_card:
+    title: Learner on report for a period at tutor, head-of-year or senior-leadership level
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-BEH-112]
+    pages: [BEH-106]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "level: enum(report_level)!"
+      - "owner_staff_id: ref(staff)!"
+      - "starts_on: date!"
+      - "ends_on: date!"
+      - "outcome: str(1000)"
+      - "intervention_id: ref(intervention)"
+      - "status: enum(on_report_status)!"
+
+  on_report_target:
+    title: Personalised target on an on-report card
+    kind: config
+    class: confidential
+    history: none
+    origin: appj
+    scope_note: Inherits the card's scope.
+    reqs: [FR-BEH-112]
+    pages: [BEH-106]
+    attrs:
+      - "card_id: ref(on_report_card)!"
+      - "target_text: str(300)!"
+      - "sort_order: smallint!"
+
+  on_report_rating:
+    title: Rating and comment for a target in one lesson, or a parent or learner comment (append-only)
+    kind: event
+    class: confidential
+    history: append
+    origin: appj
+    scope_note: Inherits the card's scope.
+    reqs: [FR-BEH-112]
+    pages: [BEH-106]
+    attrs:
+      - "card_id: ref(on_report_card)!"
+      - "target_id: ref(on_report_target)"
+      - "lesson_occurrence_id: ref(lesson_occurrence)"
+      - "author_kind: enum(comment_author)!"
+      - "author_id: uuid!"
+      - "rating: smallint"
+      - "comment: str(1000)"
+      - "rated_at: ts!"

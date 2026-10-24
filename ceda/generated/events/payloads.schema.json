@@ -1,0 +1,3848 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/event-payloads.schema.json",
+  "title": "Syntegra domain event payloads",
+  "$defs": {
+    "PLT.TENANT_PROVISIONED": {
+      "type": "object",
+      "description": "A tenant (state, private provider, network) is provisioned",
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "global",
+            "country",
+            "state",
+            "network",
+            "private_provider",
+            "institution",
+            "department",
+            "sector_registry"
+          ]
+        },
+        "parent_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "tenant_id",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "PLT.TENANT_STATUS_CHANGED": {
+      "type": "object",
+      "description": "Tenant activated, suspended or closed",
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "proposed",
+            "provisioning",
+            "active",
+            "suspended",
+            "closed"
+          ]
+        }
+      },
+      "required": [
+        "tenant_id",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "GOV.SCOPE_CHANGED": {
+      "type": "object",
+      "description": "Hierarchy node created, moved or closed (closure table rebuilt)",
+      "properties": {
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "parent_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "level": {
+          "type": "string",
+          "enum": [
+            "global",
+            "country",
+            "state",
+            "authority",
+            "lga",
+            "network",
+            "institution",
+            "campus",
+            "faculty",
+            "department",
+            "programme",
+            "class",
+            "agency",
+            "formation"
+          ]
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "scope_node_id",
+        "level",
+        "valid_from"
+      ],
+      "additionalProperties": false
+    },
+    "GOV.CONFIG_PUBLISHED": {
+      "type": "object",
+      "description": "A configuration layer section is published",
+      "properties": {
+        "config_version_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "section": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "config_version_id",
+        "scope_node_id",
+        "section",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "GOV.POLICY_PUBLISHED": {
+      "type": "object",
+      "description": "A rule version is published after its tests pass",
+      "properties": {
+        "policy_rule_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "rule_key": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "effective_from": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "policy_rule_id",
+        "rule_key",
+        "version",
+        "effective_from"
+      ],
+      "additionalProperties": false
+    },
+    "GOV.EXCEPTION_APPROVED": {
+      "type": "object",
+      "description": "A time-boxed exception is approved",
+      "properties": {
+        "policy_exception_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "rule_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "end_on": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "policy_exception_id",
+        "rule_id",
+        "scope_node_id",
+        "end_on"
+      ],
+      "additionalProperties": false
+    },
+    "WF.STARTED": {
+      "type": "object",
+      "description": "Workflow instance started",
+      "properties": {
+        "workflow_instance_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "subject_kind": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "subject_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "workflow_instance_id",
+        "subject_kind",
+        "subject_id"
+      ],
+      "additionalProperties": false
+    },
+    "WF.COMPLETED": {
+      "type": "object",
+      "description": "Workflow reached a terminal state",
+      "properties": {
+        "workflow_instance_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "state": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        }
+      },
+      "required": [
+        "workflow_instance_id",
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "WF.TASK_ASSIGNED": {
+      "type": "object",
+      "description": "Human task created or reassigned",
+      "properties": {
+        "workflow_task_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "assignee_user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "due_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "workflow_task_id"
+      ],
+      "additionalProperties": false
+    },
+    "WF.TASK_COMPLETED": {
+      "type": "object",
+      "description": "Task completed (synced to workspace messaging)",
+      "properties": {
+        "workflow_task_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "decision": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        }
+      },
+      "required": [
+        "workflow_task_id"
+      ],
+      "additionalProperties": false
+    },
+    "WF.TASK_ESCALATED": {
+      "type": "object",
+      "description": "SLA breached",
+      "properties": {
+        "workflow_task_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "escalated_to_scope_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "workflow_task_id"
+      ],
+      "additionalProperties": false
+    },
+    "IAM.USER_CREATED": {
+      "type": "object",
+      "description": "Account created or invited",
+      "properties": {
+        "user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "person_kind": {
+          "type": "string",
+          "enum": [
+            "learner",
+            "guardian",
+            "staff",
+            "provider_person",
+            "applicant",
+            "visitor"
+          ]
+        }
+      },
+      "required": [
+        "user_id"
+      ],
+      "additionalProperties": false
+    },
+    "IAM.USER_DEACTIVATED": {
+      "type": "object",
+      "description": "Account deactivated (e.g. HR leaving date) — workspace channels removed",
+      "properties": {
+        "user_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "user_id"
+      ],
+      "additionalProperties": false
+    },
+    "IAM.GRANT_CHANGED": {
+      "type": "object",
+      "description": "Role-at-scope granted, changed or ended",
+      "properties": {
+        "role_grant_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "scope_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        }
+      },
+      "required": [
+        "role_grant_id",
+        "user_id",
+        "scope_id",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "AUTH.SIGNED_IN": {
+      "type": "object",
+      "description": "Successful sign-in",
+      "properties": {
+        "user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "session_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "user_id",
+        "session_id"
+      ],
+      "additionalProperties": false
+    },
+    "AUTH.FAILED": {
+      "type": "object",
+      "description": "Failed sign-in",
+      "properties": {
+        "user_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "AUTH.LOCKED": {
+      "type": "object",
+      "description": "Account locked after repeated failures",
+      "properties": {
+        "user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "locked_until": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "user_id",
+        "locked_until"
+      ],
+      "additionalProperties": false
+    },
+    "AUTH.MFA_PASSED": {
+      "type": "object",
+      "description": "MFA verified",
+      "properties": {
+        "user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "session_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "user_id",
+        "session_id"
+      ],
+      "additionalProperties": false
+    },
+    "AUTH.MFA_FAILED": {
+      "type": "object",
+      "description": "MFA failed",
+      "properties": {
+        "user_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "user_id"
+      ],
+      "additionalProperties": false
+    },
+    "AUTH.CONCURRENT_REFUSED": {
+      "type": "object",
+      "description": "Sign-in refused because the account already has a session in use (CR-007)",
+      "properties": {
+        "user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "active_session_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "user_id",
+        "active_session_id"
+      ],
+      "additionalProperties": false
+    },
+    "AUTH.SESSION_ENDED": {
+      "type": "object",
+      "description": "Session ended by sign-out",
+      "properties": {
+        "user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "session_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "signed_out",
+            "idle_timeout",
+            "expired",
+            "replaced",
+            "ended_by_administrator",
+            "account_inactive"
+          ]
+        }
+      },
+      "required": [
+        "user_id",
+        "session_id",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "ID.NIN_VERIFIED": {
+      "type": "object",
+      "description": "National identifier verification returned",
+      "properties": {
+        "identity_verification_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "person_kind": {
+          "type": "string",
+          "enum": [
+            "learner",
+            "guardian",
+            "staff",
+            "provider_person",
+            "applicant",
+            "visitor"
+          ]
+        },
+        "person_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "match",
+            "partial_match",
+            "no_match",
+            "manual_review",
+            "error"
+          ]
+        }
+      },
+      "required": [
+        "identity_verification_id",
+        "person_kind",
+        "person_id",
+        "outcome"
+      ],
+      "additionalProperties": false
+    },
+    "LRN.MATCH_REVIEWED": {
+      "type": "object",
+      "description": "Probable-duplicate review opened",
+      "properties": {
+        "match_review_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "entity_kind": {
+          "type": "string",
+          "enum": [
+            "learner",
+            "guardian",
+            "staff",
+            "institution",
+            "provider",
+            "supplier",
+            "course",
+            "programme"
+          ]
+        }
+      },
+      "required": [
+        "match_review_id",
+        "entity_kind"
+      ],
+      "additionalProperties": false
+    },
+    "MDM.MATCH_DECIDED": {
+      "type": "object",
+      "description": "Steward decided a pair",
+      "properties": {
+        "match_review_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "same",
+            "different",
+            "unsure"
+          ]
+        }
+      },
+      "required": [
+        "match_review_id",
+        "decision"
+      ],
+      "additionalProperties": false
+    },
+    "MDM.MERGED": {
+      "type": "object",
+      "description": "Two master records merged (references re-pointed)",
+      "properties": {
+        "merge_journal_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "entity_kind": {
+          "type": "string",
+          "enum": [
+            "learner",
+            "guardian",
+            "staff",
+            "institution",
+            "provider",
+            "supplier",
+            "course",
+            "programme"
+          ]
+        },
+        "survivor_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "merged_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "merge_journal_id",
+        "entity_kind",
+        "survivor_id",
+        "merged_id"
+      ],
+      "additionalProperties": false
+    },
+    "MDM.UNMERGED": {
+      "type": "object",
+      "description": "Merge reversed within 90 days",
+      "properties": {
+        "merge_journal_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "survivor_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "merged_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "merge_journal_id",
+        "survivor_id",
+        "merged_id"
+      ],
+      "additionalProperties": false
+    },
+    "INS.APPLICATION_SUBMITTED": {
+      "type": "object",
+      "description": "Institution registration or approval application submitted",
+      "properties": {
+        "provider_application_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "new",
+            "regularisation",
+            "renewal",
+            "variation"
+          ]
+        }
+      },
+      "required": [
+        "provider_application_id",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "INS.REGISTERED": {
+      "type": "object",
+      "description": "Institution 360 activated",
+      "properties": {
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "ownership": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        }
+      },
+      "required": [
+        "institution_id",
+        "scope_node_id",
+        "ownership"
+      ],
+      "additionalProperties": false
+    },
+    "INS.STATUS_CHANGED": {
+      "type": "object",
+      "description": "Institution lifecycle or onboarding status changed",
+      "properties": {
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "proposed",
+            "active",
+            "suspended",
+            "closed",
+            "merged"
+          ]
+        },
+        "onboarding_status": {
+          "type": "string",
+          "enum": [
+            "not_onboarded",
+            "onboarding",
+            "live",
+            "suspended",
+            "closed"
+          ]
+        }
+      },
+      "required": [
+        "institution_id",
+        "status",
+        "onboarding_status"
+      ],
+      "additionalProperties": false
+    },
+    "INS.MERGED": {
+      "type": "object",
+      "description": "Institutions amalgamated",
+      "properties": {
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "merged_into": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "institution_id",
+        "merged_into"
+      ],
+      "additionalProperties": false
+    },
+    "INS.LICENCE_EXPIRED": {
+      "type": "object",
+      "description": "Licence passed expiry (issuance and new entries blocked)",
+      "properties": {
+        "licence_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "operating_licence",
+            "private_approval",
+            "accreditation",
+            "exam_centre",
+            "certificate_issuer",
+            "programme_accreditation",
+            "federal_approval"
+          ]
+        }
+      },
+      "required": [
+        "licence_id",
+        "institution_id",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "INS.LICENCE_RENEWED": {
+      "type": "object",
+      "description": "Licence renewed",
+      "properties": {
+        "licence_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "expires_on": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "licence_id"
+      ],
+      "additionalProperties": false
+    },
+    "INSP.FINDING_RECORDED": {
+      "type": "object",
+      "description": "Finding saved in the inspection workspace",
+      "properties": {
+        "inspection_finding_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "inspection_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "requires_action": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "inspection_finding_id",
+        "inspection_id",
+        "requires_action"
+      ],
+      "additionalProperties": false
+    },
+    "INSP.REPORT_APPROVED": {
+      "type": "object",
+      "description": "Report approved (corrective actions created)",
+      "properties": {
+        "inspection_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "inspection_id",
+        "institution_id"
+      ],
+      "additionalProperties": false
+    },
+    "INSP.ACTION_VERIFIED": {
+      "type": "object",
+      "description": "Corrective action evidence verified",
+      "properties": {
+        "corrective_action_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "corrective_action_id",
+        "institution_id"
+      ],
+      "additionalProperties": false
+    },
+    "PVT.PROVIDER_REGISTERED": {
+      "type": "object",
+      "description": "Proprietor organisation registered",
+      "properties": {
+        "provider_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "provider_id"
+      ],
+      "additionalProperties": false
+    },
+    "ADM.APPLICATION_SUBMITTED": {
+      "type": "object",
+      "description": "Provider application submitted (Licensing Agent)",
+      "properties": {
+        "provider_application_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "provider_application_id"
+      ],
+      "additionalProperties": false
+    },
+    "PVT.DECISION_MADE": {
+      "type": "object",
+      "description": "Four-eyes decision recorded",
+      "properties": {
+        "provider_application_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "approve",
+            "approve_with_conditions",
+            "defer",
+            "refuse"
+          ]
+        }
+      },
+      "required": [
+        "provider_application_id",
+        "decision"
+      ],
+      "additionalProperties": false
+    },
+    "PVT.APPROVAL_ISSUED": {
+      "type": "object",
+      "description": "Approval certificate issued (tenant created)",
+      "properties": {
+        "approval_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "expires_on": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "approval_id",
+        "institution_id",
+        "expires_on"
+      ],
+      "additionalProperties": false
+    },
+    "PVT.APPROVAL_RENEWED": {
+      "type": "object",
+      "description": "Approval renewed",
+      "properties": {
+        "approval_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "expires_on": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "approval_id",
+        "expires_on"
+      ],
+      "additionalProperties": false
+    },
+    "PVT.SANCTION_APPLIED": {
+      "type": "object",
+      "description": "Sanction step takes effect (admissions/exam entries blocked)",
+      "properties": {
+        "sanction_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "step": {
+          "type": "string",
+          "enum": [
+            "warning",
+            "conditions",
+            "admissions_suspended",
+            "suspension",
+            "closure"
+          ]
+        }
+      },
+      "required": [
+        "sanction_id",
+        "institution_id",
+        "step"
+      ],
+      "additionalProperties": false
+    },
+    "LRN.CREATED": {
+      "type": "object",
+      "description": "Learner 360 created after matching",
+      "properties": {
+        "learner_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "global_learner_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "learner_id",
+        "global_learner_id"
+      ],
+      "additionalProperties": false
+    },
+    "LRN.ROLL_IMPORTED": {
+      "type": "object",
+      "description": "An onboarding institution's existing roll is imported (one event for the whole roll)",
+      "properties": {
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "learners": {
+          "type": "integer"
+        },
+        "first_glid": {
+          "type": "string"
+        },
+        "last_glid": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "institution_id",
+        "learners",
+        "first_glid",
+        "last_glid"
+      ],
+      "additionalProperties": false
+    },
+    "LRN.UPDATED": {
+      "type": "object",
+      "description": "Identity attributes changed (field names only)",
+      "properties": {
+        "learner_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "changed_fields": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "learner_id"
+      ],
+      "additionalProperties": false
+    },
+    "LRN.MERGED": {
+      "type": "object",
+      "description": "Learner record became an alias",
+      "properties": {
+        "learner_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "merged_into": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "learner_id",
+        "merged_into"
+      ],
+      "additionalProperties": false
+    },
+    "LRN.VIEWED_SPECIAL": {
+      "type": "object",
+      "description": "Special-category tab opened with purpose",
+      "properties": {
+        "learner_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "viewer_user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "purpose_code": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        }
+      },
+      "required": [
+        "learner_id",
+        "viewer_user_id",
+        "purpose_code"
+      ],
+      "additionalProperties": false
+    },
+    "LRN.TRANSFERRED": {
+      "type": "object",
+      "description": "Transfer completed",
+      "properties": {
+        "learner_transfer_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "to_institution_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "learner_transfer_id",
+        "learner_id"
+      ],
+      "additionalProperties": false
+    },
+    "LRN.LEFT": {
+      "type": "object",
+      "description": "Leaver recorded (unknown destination at compulsory age → CME referral)",
+      "properties": {
+        "enrolment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "destination_known": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "enrolment_id",
+        "learner_id",
+        "destination_known"
+      ],
+      "additionalProperties": false
+    },
+    "ENR.STARTED": {
+      "type": "object",
+      "description": "Enrolment became active",
+      "properties": {
+        "enrolment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "enrolment_id",
+        "learner_id",
+        "institution_id"
+      ],
+      "additionalProperties": false
+    },
+    "ENR.ENDED": {
+      "type": "object",
+      "description": "Enrolment ended",
+      "properties": {
+        "enrolment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "active",
+            "completed",
+            "withdrawn",
+            "transferred",
+            "suspended"
+          ]
+        }
+      },
+      "required": [
+        "enrolment_id",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "FAM.GUARDIAN_CREATED": {
+      "type": "object",
+      "description": "Guardian master created",
+      "properties": {
+        "guardian_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "guardian_id"
+      ],
+      "additionalProperties": false
+    },
+    "FAM.CONSENT_CHANGED": {
+      "type": "object",
+      "description": "Consent given, refused or withdrawn (propagates immediately)",
+      "properties": {
+        "consent_record_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "consent_type": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "given",
+            "refused",
+            "withdrawn"
+          ]
+        }
+      },
+      "required": [
+        "consent_record_id",
+        "learner_id",
+        "consent_type",
+        "decision"
+      ],
+      "additionalProperties": false
+    },
+    "STF.CREATED": {
+      "type": "object",
+      "description": "Staff 360 created",
+      "properties": {
+        "staff_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "staff_id"
+      ],
+      "additionalProperties": false
+    },
+    "STF.LEFT": {
+      "type": "object",
+      "description": "Staff member left all posts",
+      "properties": {
+        "staff_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "staff_id"
+      ],
+      "additionalProperties": false
+    },
+    "STF.POST_STARTED": {
+      "type": "object",
+      "description": "Post started",
+      "properties": {
+        "staff_post_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "staff_post_id",
+        "staff_id",
+        "institution_id"
+      ],
+      "additionalProperties": false
+    },
+    "STF.POST_ENDED": {
+      "type": "object",
+      "description": "Post ended (G9 handover check)",
+      "properties": {
+        "staff_post_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "staff_post_id",
+        "staff_id"
+      ],
+      "additionalProperties": false
+    },
+    "STF.AUTHORISATION_CHANGED": {
+      "type": "object",
+      "description": "Authorisation added, verified or expired (G3 re-check)",
+      "properties": {
+        "staff_qualification_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "staff_qualification_id",
+        "staff_id"
+      ],
+      "additionalProperties": false
+    },
+    "STF.ABSENCE_RECORDED": {
+      "type": "object",
+      "description": "Staff absence recorded (cover flow, G8)",
+      "properties": {
+        "staff_absence_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "starts_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ends_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "staff_absence_id",
+        "staff_id",
+        "starts_at",
+        "ends_at"
+      ],
+      "additionalProperties": false
+    },
+    "STF.TRAINING_COMPLETED": {
+      "type": "object",
+      "description": "Statutory training completed",
+      "properties": {
+        "training_completion_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "passed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "training_completion_id",
+        "staff_id",
+        "passed"
+      ],
+      "additionalProperties": false
+    },
+    "PAY.RUN_APPROVED": {
+      "type": "object",
+      "description": "Pay run approved by two people",
+      "properties": {
+        "payroll_run_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "payroll_run_id"
+      ],
+      "additionalProperties": false
+    },
+    "ACA.CLASS_ACTIVATED": {
+      "type": "object",
+      "description": "Class activated for the session",
+      "properties": {
+        "class_group_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "class_group_id",
+        "institution_id"
+      ],
+      "additionalProperties": false
+    },
+    "ACA.SUBJECT_PLAN_PUBLISHED": {
+      "type": "object",
+      "description": "Class subject plan published (course spaces created)",
+      "properties": {
+        "class_subject_plan_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "class_group_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "class_subject_plan_id",
+        "class_group_id"
+      ],
+      "additionalProperties": false
+    },
+    "ACA.COURSE_REGISTERED": {
+      "type": "object",
+      "description": "Course registration approved",
+      "properties": {
+        "course_registration_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "course_section_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "course_registration_id",
+        "learner_id",
+        "course_section_id"
+      ],
+      "additionalProperties": false
+    },
+    "CUR.APPROVED": {
+      "type": "object",
+      "description": "Curriculum version approved",
+      "properties": {
+        "curriculum_version_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "curriculum_version_id"
+      ],
+      "additionalProperties": false
+    },
+    "CUR.PUBLISHED": {
+      "type": "object",
+      "description": "Version published (adoption resolved, schemes redrafted, G10)",
+      "properties": {
+        "curriculum_version_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "curriculum_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "effective_from": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "curriculum_version_id",
+        "curriculum_id"
+      ],
+      "additionalProperties": false
+    },
+    "CUR.WITHDRAWN": {
+      "type": "object",
+      "description": "Version withdrawn",
+      "properties": {
+        "curriculum_version_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "curriculum_version_id"
+      ],
+      "additionalProperties": false
+    },
+    "CUR.ADOPTION_RESOLVED": {
+      "type": "object",
+      "description": "Applicable version stamped for an institution and level",
+      "properties": {
+        "curriculum_adoption_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "version_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "curriculum_adoption_id",
+        "institution_id",
+        "version_id"
+      ],
+      "additionalProperties": false
+    },
+    "CUR.ASSIGNMENT_CHANGED": {
+      "type": "object",
+      "description": "Teacher of record or co-teacher changed (G2/G3)",
+      "properties": {
+        "teaching_assignment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "teaching_assignment_id",
+        "staff_id"
+      ],
+      "additionalProperties": false
+    },
+    "CUR.LESSON_DELIVERED": {
+      "type": "object",
+      "description": "Lesson delivery logged (G6)",
+      "properties": {
+        "delivery_log_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "teaching_assignment_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "delivery_log_id",
+        "teaching_assignment_id"
+      ],
+      "additionalProperties": false
+    },
+    "CUR.GAP_OPENED": {
+      "type": "object",
+      "description": "Coverage invariant breached",
+      "properties": {
+        "coverage_gap_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "rule": {
+          "type": "string",
+          "enum": [
+            "g1",
+            "g2",
+            "g3",
+            "g4",
+            "g5",
+            "g6",
+            "g7",
+            "g8",
+            "g9",
+            "g10",
+            "g11",
+            "g12"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "moderate",
+            "info"
+          ]
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "coverage_gap_id",
+        "rule",
+        "severity",
+        "institution_id"
+      ],
+      "additionalProperties": false
+    },
+    "CUR.GAP_ESCALATED": {
+      "type": "object",
+      "description": "Gap passed its due date",
+      "properties": {
+        "coverage_gap_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "escalation_level": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "coverage_gap_id",
+        "escalation_level"
+      ],
+      "additionalProperties": false
+    },
+    "CUR.GAP_CLOSED": {
+      "type": "object",
+      "description": "Gap closed by a person",
+      "properties": {
+        "coverage_gap_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "coverage_gap_id"
+      ],
+      "additionalProperties": false
+    },
+    "TT.PUBLISHED": {
+      "type": "object",
+      "description": "Timetable version published",
+      "properties": {
+        "timetable_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "timetable_id",
+        "institution_id"
+      ],
+      "additionalProperties": false
+    },
+    "TT.COVER_ASSIGNED": {
+      "type": "object",
+      "description": "Cover confirmed",
+      "properties": {
+        "cover_assignment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "lesson_occurrence_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "is_qualified": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "cover_assignment_id",
+        "lesson_occurrence_id",
+        "is_qualified"
+      ],
+      "additionalProperties": false
+    },
+    "ATT.REGISTER_SUBMITTED": {
+      "type": "object",
+      "description": "Register submitted (live tiles, absence follow-up)",
+      "properties": {
+        "attendance_register_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "class_group_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "session_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "attendance_register_id",
+        "class_group_id",
+        "session_date"
+      ],
+      "additionalProperties": false
+    },
+    "ATT.REGISTER_MISSING": {
+      "type": "object",
+      "description": "Register not taken by deadline (Register Agent)",
+      "properties": {
+        "attendance_register_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "class_group_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "attendance_register_id",
+        "class_group_id"
+      ],
+      "additionalProperties": false
+    },
+    "ATT.ABSENCE_REPORTED": {
+      "type": "object",
+      "description": "Parent reported an absence",
+      "properties": {
+        "absence_report_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "from_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "absence_report_id",
+        "learner_id",
+        "from_date"
+      ],
+      "additionalProperties": false
+    },
+    "ATT.EVACUATION_STARTED": {
+      "type": "object",
+      "description": "Evacuation or drill started",
+      "properties": {
+        "evacuation_event_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "campus_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "evacuation_event_id",
+        "campus_id"
+      ],
+      "additionalProperties": false
+    },
+    "ASM.ASSESSMENT_CREATED": {
+      "type": "object",
+      "description": "Assessment created (G7 objective links)",
+      "properties": {
+        "assessment_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "assessment_id"
+      ],
+      "additionalProperties": false
+    },
+    "ASM.RESULTS_LOCKED": {
+      "type": "object",
+      "description": "Results approved and locked",
+      "properties": {
+        "assessment_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "assessment_id"
+      ],
+      "additionalProperties": false
+    },
+    "EXAM.RESULTS_COMMITTED": {
+      "type": "object",
+      "description": "Results committed immutably",
+      "properties": {
+        "series_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "results_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "series_id",
+        "results_count"
+      ],
+      "additionalProperties": false
+    },
+    "CERT.ISSUED": {
+      "type": "object",
+      "description": "Certificate signed and issued",
+      "properties": {
+        "certificate_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "certificate_id",
+        "institution_id"
+      ],
+      "additionalProperties": false
+    },
+    "CERT.REVOKED": {
+      "type": "object",
+      "description": "Certificate revoked (two approvers)",
+      "properties": {
+        "certificate_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "certificate_id"
+      ],
+      "additionalProperties": false
+    },
+    "CERT.REISSUED": {
+      "type": "object",
+      "description": "Reissue issued; original superseded at the same moment",
+      "properties": {
+        "certificate_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "supersedes_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "certificate_id",
+        "supersedes_id"
+      ],
+      "additionalProperties": false
+    },
+    "CERT.CORRECTED": {
+      "type": "object",
+      "description": "Correction issued",
+      "properties": {
+        "certificate_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "supersedes_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "certificate_id",
+        "supersedes_id"
+      ],
+      "additionalProperties": false
+    },
+    "CERT.SUSPENDED": {
+      "type": "object",
+      "description": "Certificate suspended",
+      "properties": {
+        "certificate_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "certificate_id"
+      ],
+      "additionalProperties": false
+    },
+    "CERT.VERIFIED": {
+      "type": "object",
+      "description": "Verification answered",
+      "properties": {
+        "verification_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "result": {
+          "type": "string",
+          "enum": [
+            "valid",
+            "superseded",
+            "revoked",
+            "corrected",
+            "suspended",
+            "not_found",
+            "rate_limited"
+          ]
+        }
+      },
+      "required": [
+        "verification_id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    "CERT.VERIFY_FAILED": {
+      "type": "object",
+      "description": "Verification failed (integrity patterns)",
+      "properties": {
+        "verification_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "verification_id"
+      ],
+      "additionalProperties": false
+    },
+    "CER.REISSUE_REQUESTED": {
+      "type": "object",
+      "description": "Reissue application submitted",
+      "properties": {
+        "reissue_case_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "lost_or_stolen",
+            "damaged",
+            "change_of_name",
+            "issuer_error",
+            "certified_copy",
+            "legacy_digital_copy"
+          ]
+        }
+      },
+      "required": [
+        "reissue_case_id",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "CER.REISSUE_DECIDED": {
+      "type": "object",
+      "description": "Reissue approved or rejected",
+      "properties": {
+        "reissue_case_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "submitted",
+            "identity_check",
+            "archive_search",
+            "awaiting_payment",
+            "in_review",
+            "approved",
+            "issued",
+            "delivered",
+            "rejected",
+            "withdrawn"
+          ]
+        }
+      },
+      "required": [
+        "reissue_case_id",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "BEH.POLICY_PUBLISHED": {
+      "type": "object",
+      "description": "Behaviour policy version published",
+      "properties": {
+        "behaviour_policy_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "behaviour_policy_id",
+        "institution_id"
+      ],
+      "additionalProperties": false
+    },
+    "BEH.EVENT_RECORDED": {
+      "type": "object",
+      "description": "Behaviour logged (intelligence events evaluated)",
+      "properties": {
+        "behaviour_event_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "polarity": {
+          "type": "string",
+          "enum": [
+            "positive",
+            "negative"
+          ]
+        }
+      },
+      "required": [
+        "behaviour_event_id",
+        "learner_id",
+        "polarity"
+      ],
+      "additionalProperties": false
+    },
+    "BEH.DETENTION_SET": {
+      "type": "object",
+      "description": "Detention created (parent notified)",
+      "properties": {
+        "detention_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "detention_id",
+        "learner_id"
+      ],
+      "additionalProperties": false
+    },
+    "BEH.ONCALL_RAISED": {
+      "type": "object",
+      "description": "On-call request raised",
+      "properties": {
+        "oncall_request_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "behaviour",
+            "medical",
+            "safeguarding",
+            "emergency",
+            "other"
+          ]
+        }
+      },
+      "required": [
+        "oncall_request_id",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "SAF.CONCERN_RAISED": {
+      "type": "object",
+      "description": "Concern recorded — notification carries no detail",
+      "properties": {
+        "safeguarding_concern_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "safeguarding_concern_id"
+      ],
+      "additionalProperties": false
+    },
+    "SAF.CASE_UPDATED": {
+      "type": "object",
+      "description": "Case updated — no detail",
+      "properties": {
+        "safeguarding_case_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "safeguarding_case_id"
+      ],
+      "additionalProperties": false
+    },
+    "SAF.CASE_VIEWED": {
+      "type": "object",
+      "description": "Case viewed",
+      "properties": {
+        "safeguarding_case_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "viewer_user_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "safeguarding_case_id",
+        "viewer_user_id"
+      ],
+      "additionalProperties": false
+    },
+    "SAF.STAFF_CASE_OPENED": {
+      "type": "object",
+      "description": "Staff case opened — designated officer notified without detail",
+      "properties": {
+        "staff_case_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "staff_case_id"
+      ],
+      "additionalProperties": false
+    },
+    "SEN.ADJUSTMENT_CHANGED": {
+      "type": "object",
+      "description": "Authorised adjustment changed (rooms, exams, assignments re-checked)",
+      "properties": {
+        "adjustment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "adjustment_id",
+        "learner_id"
+      ],
+      "additionalProperties": false
+    },
+    "WEL.CONCERN_REPORTED": {
+      "type": "object",
+      "description": "Wellbeing concern reported",
+      "properties": {
+        "wellbeing_concern_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "keyword_alert": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "wellbeing_concern_id",
+        "keyword_alert"
+      ],
+      "additionalProperties": false
+    },
+    "INT.INTERVENTION_CLOSED": {
+      "type": "object",
+      "description": "Intervention closed with outcome",
+      "properties": {
+        "intervention_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "planned",
+            "active",
+            "review_due",
+            "closed_success",
+            "closed_partial",
+            "closed_no_effect",
+            "cancelled"
+          ]
+        }
+      },
+      "required": [
+        "intervention_id",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "LMS.SPACE_CREATED": {
+      "type": "object",
+      "description": "Course space auto-created",
+      "properties": {
+        "course_space_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "course_space_id"
+      ],
+      "additionalProperties": false
+    },
+    "LMS.ASSIGNMENT_PUBLISHED": {
+      "type": "object",
+      "description": "Assignment published to learners and parents",
+      "properties": {
+        "assignment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "course_space_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "due_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "assignment_id",
+        "course_space_id",
+        "due_at"
+      ],
+      "additionalProperties": false
+    },
+    "LMS.SUBMITTED": {
+      "type": "object",
+      "description": "Submission received (receipt hash issued)",
+      "properties": {
+        "submission_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "assignment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "is_late": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "submission_id",
+        "assignment_id",
+        "is_late"
+      ],
+      "additionalProperties": false
+    },
+    "COM.MESSAGE_SENT": {
+      "type": "object",
+      "description": "Message sent",
+      "properties": {
+        "message_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "channel": {
+          "type": "string",
+          "enum": [
+            "in_app",
+            "push",
+            "sms",
+            "whatsapp",
+            "email",
+            "voice",
+            "ussd",
+            "workspace",
+            "web",
+            "post"
+          ]
+        }
+      },
+      "required": [
+        "message_id",
+        "channel"
+      ],
+      "additionalProperties": false
+    },
+    "COM.MESSAGE_RECEIVED": {
+      "type": "object",
+      "description": "Inbound message received and matched",
+      "properties": {
+        "message_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "channel": {
+          "type": "string",
+          "enum": [
+            "in_app",
+            "push",
+            "sms",
+            "whatsapp",
+            "email",
+            "voice",
+            "ussd",
+            "workspace",
+            "web",
+            "post"
+          ]
+        },
+        "conversation_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "message_id",
+        "channel"
+      ],
+      "additionalProperties": false
+    },
+    "FRM.SUBMITTED": {
+      "type": "object",
+      "description": "Form submitted",
+      "properties": {
+        "form_response_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "form_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "form_response_id",
+        "form_id"
+      ],
+      "additionalProperties": false
+    },
+    "DOC.INGESTED": {
+      "type": "object",
+      "description": "Document stored (search indexed unless special category)",
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "category_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "document_id",
+        "category_id"
+      ],
+      "additionalProperties": false
+    },
+    "DOC.INDEXED": {
+      "type": "object",
+      "description": "Document metadata and text indexed for full-text search (CR-007)",
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "char_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "document_id",
+        "char_count"
+      ],
+      "additionalProperties": false
+    },
+    "DOC.RENDITION_CREATED": {
+      "type": "object",
+      "description": "Searchable access copy made from the master (CR-008)",
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "searchable_pdf"
+          ]
+        }
+      },
+      "required": [
+        "document_id",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "DOC.RELEASED": {
+      "type": "object",
+      "description": "A copy of a document left the system",
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "stamped_original",
+            "stamped_searchable",
+            "word_copy",
+            "certified_original"
+          ]
+        },
+        "release_code": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        }
+      },
+      "required": [
+        "document_id",
+        "kind",
+        "release_code"
+      ],
+      "additionalProperties": false
+    },
+    "DOC.LINKED": {
+      "type": "object",
+      "description": "Document linked to a record",
+      "properties": {
+        "document_link_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "record_kind": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "record_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "document_link_id",
+        "record_kind",
+        "record_id"
+      ],
+      "additionalProperties": false
+    },
+    "BIL.RUN_ISSUED": {
+      "type": "object",
+      "description": "Billing run issued",
+      "properties": {
+        "billing_run_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "invoices": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "billing_run_id",
+        "invoices"
+      ],
+      "additionalProperties": false
+    },
+    "BIL.INVOICE_ISSUED": {
+      "type": "object",
+      "description": "Invoice issued",
+      "properties": {
+        "invoice_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "account_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "invoice_id",
+        "account_id"
+      ],
+      "additionalProperties": false
+    },
+    "BIL.INVOICE_OVERDUE": {
+      "type": "object",
+      "description": "Invoice overdue (Fee Agent; never restricts education)",
+      "properties": {
+        "invoice_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "invoice_id"
+      ],
+      "additionalProperties": false
+    },
+    "PMT.RECEIVED": {
+      "type": "object",
+      "description": "Payment confirmed",
+      "properties": {
+        "payment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "bank_transfer",
+            "virtual_account",
+            "card",
+            "direct_debit",
+            "mobile_money",
+            "ussd",
+            "gateway",
+            "remita",
+            "cash",
+            "cheque",
+            "government",
+            "employer",
+            "scholarship"
+          ]
+        }
+      },
+      "required": [
+        "payment_id",
+        "method"
+      ],
+      "additionalProperties": false
+    },
+    "PMT.ALLOCATED": {
+      "type": "object",
+      "description": "Payment allocated to an invoice",
+      "properties": {
+        "payment_allocation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "payment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "invoice_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "payment_allocation_id",
+        "payment_id",
+        "invoice_id"
+      ],
+      "additionalProperties": false
+    },
+    "SUB.RATE_CARD_PUBLISHED": {
+      "type": "object",
+      "description": "SDAF rate card published",
+      "properties": {
+        "sdaf_rate_card_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "effective_from": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "sdaf_rate_card_id",
+        "effective_from"
+      ],
+      "additionalProperties": false
+    },
+    "SUB.CENSUS_FROZEN": {
+      "type": "object",
+      "description": "Census frozen and hashed",
+      "properties": {
+        "census_snapshot_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "billable": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "census_snapshot_id",
+        "institution_id",
+        "billable"
+      ],
+      "additionalProperties": false
+    },
+    "SUB.DEMAND_ISSUED": {
+      "type": "object",
+      "description": "Demand notice or assessment issued",
+      "properties": {
+        "sdaf_demand_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "sdaf_demand_id",
+        "institution_id"
+      ],
+      "additionalProperties": false
+    },
+    "SUB.COLLECTION_POSTED": {
+      "type": "object",
+      "description": "State collection posted idempotently",
+      "properties": {
+        "sdaf_collection_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "demand_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "sdaf_collection_id",
+        "demand_id"
+      ],
+      "additionalProperties": false
+    },
+    "SUB.REMITTANCE_RECORDED": {
+      "type": "object",
+      "description": "Remittance to SDIN recorded",
+      "properties": {
+        "remittance_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "remittance_id"
+      ],
+      "additionalProperties": false
+    },
+    "SUB.STATEMENT_SIGNED": {
+      "type": "object",
+      "description": "Statement signed by state or operator",
+      "properties": {
+        "reconciliation_statement_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "state_signed",
+            "operator_signed",
+            "signed_locked",
+            "disputed"
+          ]
+        }
+      },
+      "required": [
+        "reconciliation_statement_id",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "SUB.SUBSCRIPTION_STATUS_CHANGED": {
+      "type": "object",
+      "description": "Subscription status changed (administrative restriction only)",
+      "properties": {
+        "subscription_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "trial",
+            "active",
+            "grace",
+            "restricted",
+            "suspended",
+            "terminated"
+          ]
+        }
+      },
+      "required": [
+        "subscription_id",
+        "tenant_id",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "SUB.INVOICE_ISSUED": {
+      "type": "object",
+      "description": "Operator invoice issued",
+      "properties": {
+        "subscription_invoice_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "subscription_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "subscription_invoice_id",
+        "subscription_id"
+      ],
+      "additionalProperties": false
+    },
+    "SUB.PAYMENT_RECEIVED": {
+      "type": "object",
+      "description": "Provider payment received (access restored)",
+      "properties": {
+        "subscription_payment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "invoice_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "subscription_payment_id",
+        "invoice_id"
+      ],
+      "additionalProperties": false
+    },
+    "ALERT.RAISED": {
+      "type": "object",
+      "description": "Alert raised (deduplicated)",
+      "properties": {
+        "alert_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "moderate",
+            "info"
+          ]
+        },
+        "subject_kind": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "subject_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "alert_id",
+        "severity",
+        "subject_kind",
+        "subject_id"
+      ],
+      "additionalProperties": false
+    },
+    "ALERT.ESCALATED": {
+      "type": "object",
+      "description": "Alert escalated",
+      "properties": {
+        "alert_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "escalation_level": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "alert_id",
+        "escalation_level"
+      ],
+      "additionalProperties": false
+    },
+    "ALERT.RESOLVED": {
+      "type": "object",
+      "description": "Alert resolved",
+      "properties": {
+        "alert_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "alert_id"
+      ],
+      "additionalProperties": false
+    },
+    "ALERT.SNOOZED": {
+      "type": "object",
+      "description": "Alert snoozed from the briefing",
+      "properties": {
+        "alert_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "snoozed_until": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "alert_id",
+        "snoozed_until"
+      ],
+      "additionalProperties": false
+    },
+    "INV.OPENED": {
+      "type": "object",
+      "description": "Investigation opened",
+      "properties": {
+        "investigation_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "investigation_id"
+      ],
+      "additionalProperties": false
+    },
+    "INV.ACTION_ADDED": {
+      "type": "object",
+      "description": "Investigation advanced",
+      "properties": {
+        "investigation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "stage": {
+          "type": "string",
+          "enum": [
+            "problem",
+            "evidence",
+            "root_cause",
+            "intervention",
+            "responsible_person",
+            "outcome"
+          ]
+        }
+      },
+      "required": [
+        "investigation_id",
+        "stage"
+      ],
+      "additionalProperties": false
+    },
+    "INV.CLOSED": {
+      "type": "object",
+      "description": "Investigation closed with outcome",
+      "properties": {
+        "investigation_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "investigation_id"
+      ],
+      "additionalProperties": false
+    },
+    "AI.RECOMMENDATION_DECIDED": {
+      "type": "object",
+      "description": "Human decided a recommendation (model evaluation)",
+      "properties": {
+        "recommendation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "accepted",
+            "modified",
+            "dismissed"
+          ]
+        }
+      },
+      "required": [
+        "recommendation_id",
+        "decision"
+      ],
+      "additionalProperties": false
+    },
+    "AI.QUERY": {
+      "type": "object",
+      "description": "Assistant query (audited as a read)",
+      "properties": {
+        "assistant_conversation_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "assistant_conversation_id"
+      ],
+      "additionalProperties": false
+    },
+    "AGT.PAUSED": {
+      "type": "object",
+      "description": "Kill switch used (queued actions held)",
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "paused_by": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "agent_id",
+        "paused_by"
+      ],
+      "additionalProperties": false
+    },
+    "AGT.LEVEL_LOWERED": {
+      "type": "object",
+      "description": "Error threshold breached (autonomy lowered one level)",
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "level": {
+          "type": "string",
+          "enum": [
+            "a0",
+            "a1",
+            "a2",
+            "a3"
+          ]
+        }
+      },
+      "required": [
+        "agent_id",
+        "level"
+      ],
+      "additionalProperties": false
+    },
+    "RPT.RETURN_SUBMITTED": {
+      "type": "object",
+      "description": "Government return certified and submitted",
+      "properties": {
+        "return_submission_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "return_submission_id"
+      ],
+      "additionalProperties": false
+    },
+    "ADM.APPLICATION_RECEIVED": {
+      "type": "object",
+      "description": "Admission application received (Admissions Agent acknowledges)",
+      "properties": {
+        "admission_application_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "admission_application_id",
+        "institution_id"
+      ],
+      "additionalProperties": false
+    },
+    "HR.POSITION_CHANGED": {
+      "type": "object",
+      "description": "Establishment position approved, frozen or abolished",
+      "properties": {
+        "position_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "proposed",
+            "approved",
+            "frozen",
+            "abolished"
+          ]
+        }
+      },
+      "required": [
+        "position_id",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "HR.POSTING_APPROVED": {
+      "type": "object",
+      "description": "Posting order approved (sending institution prepares handover — G9)",
+      "properties": {
+        "staff_posting_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "to_position_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "effective_on": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "staff_posting_id",
+        "staff_id",
+        "to_position_id",
+        "effective_on"
+      ],
+      "additionalProperties": false
+    },
+    "HR.POSTING_EFFECTIVE": {
+      "type": "object",
+      "description": "Posting took effect: old post ended, new post filled, grants moved",
+      "properties": {
+        "staff_posting_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "new_staff_post_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "staff_posting_id",
+        "staff_id",
+        "new_staff_post_id"
+      ],
+      "additionalProperties": false
+    },
+    "HR.LEAVE_APPROVED": {
+      "type": "object",
+      "description": "Leave approved — staff absence created and cover started (G8)",
+      "properties": {
+        "leave_request_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "starts_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "ends_on": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "leave_request_id",
+        "staff_id",
+        "starts_on",
+        "ends_on"
+      ],
+      "additionalProperties": false
+    },
+    "HR.PROMOTION_DECIDED": {
+      "type": "object",
+      "description": "Promotion board decision recorded",
+      "properties": {
+        "promotion_case_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "board_decision": {
+          "type": "string",
+          "enum": [
+            "approved",
+            "not_approved",
+            "deferred"
+          ]
+        }
+      },
+      "required": [
+        "promotion_case_id",
+        "board_decision"
+      ],
+      "additionalProperties": false
+    },
+    "HR.SEPARATION_RECORDED": {
+      "type": "object",
+      "description": "Staff member separated from a post (access ends, classes reassigned)",
+      "properties": {
+        "separation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "effective_on": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "separation_id",
+        "staff_id",
+        "effective_on"
+      ],
+      "additionalProperties": false
+    },
+    "HR.BANK_ACCOUNT_CHANGED": {
+      "type": "object",
+      "description": "Salary account changed after call-back and second approval (staff member notified)",
+      "properties": {
+        "staff_bank_account_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "staff_bank_account_id",
+        "staff_id"
+      ],
+      "additionalProperties": false
+    },
+    "HR.INTEGRITY_FLAG_RAISED": {
+      "type": "object",
+      "description": "Payroll integrity scan raised a flag",
+      "properties": {
+        "hr_integrity_flag_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "flag_kind": {
+          "type": "string",
+          "enum": [
+            "shared_bank_account",
+            "shared_bvn",
+            "concurrent_public_posts",
+            "paid_after_separation",
+            "past_retirement_date",
+            "no_attendance_30_days",
+            "failed_headcount",
+            "post_without_position",
+            "grade_outside_position"
+          ]
+        }
+      },
+      "required": [
+        "hr_integrity_flag_id",
+        "flag_kind"
+      ],
+      "additionalProperties": false
+    },
+    "HR.PAYROLL_HOLD_DECIDED": {
+      "type": "object",
+      "description": "A person decided to hold or release pay on a flag",
+      "properties": {
+        "hr_integrity_flag_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "payroll_hold": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "hr_integrity_flag_id",
+        "payroll_hold"
+      ],
+      "additionalProperties": false
+    },
+    "HR.HEADCOUNT_COMPLETED": {
+      "type": "object",
+      "description": "Headcount exercise closed",
+      "properties": {
+        "headcount_exercise_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "headcount_exercise_id",
+        "institution_id"
+      ],
+      "additionalProperties": false
+    },
+    "FCL.OBLIGATION_PUBLISHED": {
+      "type": "object",
+      "description": "Creditor published or reconfirmed an obligation",
+      "properties": {
+        "learner_obligation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "creditor_institution_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "learner_obligation_id",
+        "creditor_institution_id"
+      ],
+      "additionalProperties": false
+    },
+    "FCL.OBLIGATION_SETTLED": {
+      "type": "object",
+      "description": "Obligation settled, waived, written off, withdrawn or expired",
+      "properties": {
+        "learner_obligation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "outstanding",
+            "payment_plan",
+            "disputed",
+            "settled",
+            "written_off",
+            "waived",
+            "expired",
+            "withdrawn"
+          ]
+        }
+      },
+      "required": [
+        "learner_obligation_id",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "FCL.CHECK_PERFORMED": {
+      "type": "object",
+      "description": "Clearance check run; each creditor and the family are notified",
+      "properties": {
+        "clearance_check_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "result": {
+          "type": "string",
+          "enum": [
+            "clear",
+            "outstanding",
+            "disputed_only",
+            "protected"
+          ]
+        }
+      },
+      "required": [
+        "clearance_check_id",
+        "learner_id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    "FCL.DECISION_RECORDED": {
+      "type": "object",
+      "description": "Admission decision recorded on a clearance check",
+      "properties": {
+        "clearance_decision_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "admit",
+            "admit_with_payment_plan",
+            "defer_pending_settlement",
+            "admit_protected"
+          ]
+        }
+      },
+      "required": [
+        "clearance_decision_id",
+        "decision"
+      ],
+      "additionalProperties": false
+    },
+    "FCL.DISPUTE_RAISED": {
+      "type": "object",
+      "description": "Obligation disputed (shown as disputed until resolved)",
+      "properties": {
+        "obligation_dispute_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "learner_obligation_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "obligation_dispute_id",
+        "learner_obligation_id"
+      ],
+      "additionalProperties": false
+    },
+    "FCL.DISPUTE_RESOLVED": {
+      "type": "object",
+      "description": "LGA or state resolved a dispute",
+      "properties": {
+        "obligation_dispute_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "resolution": {
+          "type": "string",
+          "enum": [
+            "upheld",
+            "partly_upheld",
+            "rejected",
+            "withdrawn"
+          ]
+        }
+      },
+      "required": [
+        "obligation_dispute_id",
+        "resolution"
+      ],
+      "additionalProperties": false
+    },
+    "FCL.EXCHANGE_QUERY_RECEIVED": {
+      "type": "object",
+      "description": "Another state queried this registry; creditor institutions of a matched learner are notified",
+      "properties": {
+        "clearance_exchange_query_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "match_outcome": {
+          "type": "string",
+          "enum": [
+            "matched",
+            "possible_match",
+            "not_found",
+            "refused",
+            "unavailable",
+            "not_on_network"
+          ]
+        }
+      },
+      "required": [
+        "clearance_exchange_query_id",
+        "match_outcome"
+      ],
+      "additionalProperties": false
+    },
+    "STI.COURSE_PUBLISHED": {
+      "type": "object",
+      "description": "A course version of a security training institution was published",
+      "properties": {
+        "security_course_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "security_course_id",
+        "institution_id"
+      ],
+      "additionalProperties": false
+    },
+    "STI.TRAINEE_OUTCOME_RECORDED": {
+      "type": "object",
+      "description": "A trainee passed out, was commissioned, failed, relegated or withdrew",
+      "properties": {
+        "trainee_record_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "in_training",
+            "passed",
+            "passed_out",
+            "commissioned",
+            "failed",
+            "relegated",
+            "withdrawn",
+            "discharged"
+          ]
+        }
+      },
+      "required": [
+        "trainee_record_id",
+        "outcome"
+      ],
+      "additionalProperties": false
+    },
+    "REG.PROFILE_CHANGED": {
+      "type": "object",
+      "description": "An institution's regulatory profile gained, changed or ended a link",
+      "properties": {
+        "institution_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "body_code": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "relationship": {
+          "type": "string",
+          "enum": [
+            "supervision",
+            "accreditation",
+            "licensing",
+            "curriculum",
+            "examination",
+            "admission",
+            "teacher_registration",
+            "professional_regulation",
+            "funding",
+            "affiliation"
+          ]
+        }
+      },
+      "required": [
+        "institution_id",
+        "body_code",
+        "relationship"
+      ],
+      "additionalProperties": false
+    },
+    "FIN.FUNDS_COMMITTED": {
+      "type": "object",
+      "description": "A budget line is committed",
+      "properties": {
+        "budget_commitment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "budget_line_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "amount_minor": {
+          "type": "integer"
+        },
+        "currency": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "budget_commitment_id",
+        "budget_line_id",
+        "amount_minor",
+        "currency"
+      ],
+      "additionalProperties": false
+    },
+    "FIN.VIREMENT_APPROVED": {
+      "type": "object",
+      "description": "A virement is approved by a second person",
+      "properties": {
+        "budget_virement_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "from_line_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "to_line_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "amount_minor": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "budget_virement_id",
+        "from_line_id",
+        "to_line_id",
+        "amount_minor"
+      ],
+      "additionalProperties": false
+    },
+    "FIN.IMPREST_OVERDUE": {
+      "type": "object",
+      "description": "An imprest is not retired by its due date",
+      "properties": {
+        "imprest_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "retire_by": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "imprest_id",
+        "retire_by"
+      ],
+      "additionalProperties": false
+    },
+    "FND.APPLICATION_SUBMITTED": {
+      "type": "object",
+      "description": "An application is submitted",
+      "properties": {
+        "funding_application_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "programme_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "applicant_kind": {
+          "type": "string",
+          "enum": [
+            "institution",
+            "staff",
+            "learner"
+          ]
+        },
+        "eligible": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "funding_application_id",
+        "programme_id",
+        "applicant_kind"
+      ],
+      "additionalProperties": false
+    },
+    "FND.APPLICATION_DECIDED": {
+      "type": "object",
+      "description": "An application is approved or declined",
+      "properties": {
+        "funding_application_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "submitted",
+            "under_review",
+            "recommended",
+            "approved",
+            "declined",
+            "withdrawn",
+            "cancelled"
+          ]
+        }
+      },
+      "required": [
+        "funding_application_id",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "FND.AGREEMENT_SIGNED": {
+      "type": "object",
+      "description": "A funding agreement is signed",
+      "properties": {
+        "funding_agreement_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "instrument": {
+          "type": "string",
+          "enum": [
+            "loan",
+            "grant",
+            "scholarship",
+            "bursary",
+            "intervention",
+            "matching_grant",
+            "salary_advance",
+            "bond",
+            "guarantee",
+            "in_kind"
+          ]
+        },
+        "principal_minor": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "funding_agreement_id",
+        "instrument",
+        "principal_minor"
+      ],
+      "additionalProperties": false
+    },
+    "FND.DISBURSED": {
+      "type": "object",
+      "description": "Funds are disbursed",
+      "properties": {
+        "funding_disbursement_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "funding_agreement_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "amount_minor": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "funding_disbursement_id",
+        "funding_agreement_id",
+        "amount_minor"
+      ],
+      "additionalProperties": false
+    },
+    "FND.REPAYMENT_RECEIVED": {
+      "type": "object",
+      "description": "A repayment is received and allocated",
+      "properties": {
+        "funding_repayment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "funding_agreement_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "amount_minor": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "funding_repayment_id",
+        "funding_agreement_id",
+        "amount_minor"
+      ],
+      "additionalProperties": false
+    },
+    "FND.ARREARS_RAISED": {
+      "type": "object",
+      "description": "An instalment falls overdue",
+      "properties": {
+        "funding_agreement_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "arrears_minor": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "funding_agreement_id",
+        "arrears_minor"
+      ],
+      "additionalProperties": false
+    },
+    "EST.FACILITY_ASSESSED": {
+      "type": "object",
+      "description": "A facility's condition and usability are recorded",
+      "properties": {
+        "facility_assessment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "subject_kind": {
+          "type": "string",
+          "enum": [
+            "site",
+            "building",
+            "room",
+            "asset"
+          ]
+        },
+        "usability": {
+          "type": "string",
+          "enum": [
+            "fully_usable",
+            "usable_minor_repairs",
+            "usable_major_repairs",
+            "unsafe_restricted",
+            "unusable",
+            "condemned"
+          ]
+        }
+      },
+      "required": [
+        "facility_assessment_id",
+        "subject_kind",
+        "usability"
+      ],
+      "additionalProperties": false
+    },
+    "EST.ACTION_RAISED": {
+      "type": "object",
+      "description": "A proactive facility action is proposed to the head of institution",
+      "properties": {
+        "facility_action_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "rule": {
+          "type": "string",
+          "enum": [
+            "unsafe_in_use",
+            "assessment_overdue",
+            "never_assessed",
+            "maintenance_due",
+            "maintenance_overdue",
+            "condition_deteriorated",
+            "safety_check_overdue",
+            "predicted_failure",
+            "encroachment",
+            "no_title"
+          ]
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "moderate",
+            "info"
+          ]
+        }
+      },
+      "required": [
+        "facility_action_id",
+        "rule",
+        "priority"
+      ],
+      "additionalProperties": false
+    },
+    "EST.ACTION_ESCALATED": {
+      "type": "object",
+      "description": "A facility action passes its due date without being acted on",
+      "properties": {
+        "facility_action_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "escalation_level": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "facility_action_id",
+        "escalation_level"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

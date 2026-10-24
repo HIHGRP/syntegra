@@ -1,0 +1,1178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/36_funding.schema.json",
+  "title": "CEDA FND — Funding and loan platforms — capital for institutions, staff welfare and student support",
+  "$defs": {
+    "FundingProgramme": {
+      "title": "FundingProgramme",
+      "description": "Funding or loan programme — provider, beneficiary, purpose, instrument, terms and eligibility",
+      "type": "object",
+      "x-ceda": {
+        "entity": "funding_programme",
+        "zone": "ops",
+        "domain": "FND",
+        "kind": "config",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "funding"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "provider_name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "provider_kind": {
+          "type": "string",
+          "enum": [
+            "federal_government_agency",
+            "state_government",
+            "local_government",
+            "development_partner",
+            "bank",
+            "microfinance",
+            "cooperative",
+            "employer",
+            "institution",
+            "alumni",
+            "philanthropy",
+            "other"
+          ]
+        },
+        "provider_body_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 16,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Education body in the regulators' directory, e.g. TETFUND, UBEC, NELFUND"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "beneficiary_kind": {
+          "type": "string",
+          "enum": [
+            "institution",
+            "staff",
+            "learner"
+          ]
+        },
+        "purpose": {
+          "type": "string",
+          "enum": [
+            "capital_works",
+            "equipment",
+            "ict",
+            "research",
+            "staff_development",
+            "operations",
+            "tuition_fees",
+            "upkeep",
+            "housing",
+            "vehicle",
+            "welfare_emergency",
+            "salary_advance",
+            "scholarship",
+            "bursary",
+            "special_needs",
+            "other"
+          ]
+        },
+        "instrument": {
+          "type": "string",
+          "enum": [
+            "loan",
+            "grant",
+            "scholarship",
+            "bursary",
+            "intervention",
+            "matching_grant",
+            "salary_advance",
+            "bond",
+            "guarantee",
+            "in_kind"
+          ]
+        },
+        "interest_rate": {
+          "type": "string",
+          "format": "decimal",
+          "description": "Annual nominal rate; 0 for interest-free loans and for grants"
+        },
+        "tenor_months": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "moratorium_months": {
+          "type": "integer"
+        },
+        "repayment_basis": {
+          "type": "string",
+          "enum": [
+            "none",
+            "fixed_instalment",
+            "annuity",
+            "income_contingent",
+            "payroll_deduction",
+            "bullet"
+          ]
+        },
+        "max_amount_minor": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "description": "(minor units)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "eligibility": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Rules: beneficiary levels, ownership, category, minimum service years, maximum income, matching contribution …"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "terms": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Further terms as published (e.g. repayment as a share of salary after national service)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "opens_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "closes_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "data_status": {
+          "type": "string",
+          "enum": [
+            "verified",
+            "illustrative",
+            "to_confirm"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "code",
+        "name",
+        "provider_name",
+        "provider_kind",
+        "beneficiary_kind",
+        "purpose",
+        "instrument",
+        "interest_rate",
+        "moratorium_months",
+        "repayment_basis",
+        "currency",
+        "data_status",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "FundingApplication": {
+      "title": "FundingApplication",
+      "description": "Application to a funding programme by or for an institution, a member of staff or a learner",
+      "type": "object",
+      "x-ceda": {
+        "entity": "funding_application",
+        "zone": "ops",
+        "domain": "FND",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "funding"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "application_number": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "programme_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "funding_programme"
+        },
+        "applicant_kind": {
+          "type": "string",
+          "enum": [
+            "institution",
+            "staff",
+            "learner"
+          ]
+        },
+        "applicant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Institution, staff or learner id"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "amount_requested_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "purpose_detail": {
+          "type": "string",
+          "maxLength": 65535
+        },
+        "capital_plan_item_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "capital_plan_item",
+              "description": "What capital funding will pay for"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "documents": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Supporting document references"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "eligibility": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Each rule with its result, as evaluated at submission"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "eligible": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "submitted_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "submitted_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recommended_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recommendation": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 65535
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "decided_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "decided_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "decision_reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 65535
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "amount_approved_minor": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "description": "(minor units)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "submitted",
+            "under_review",
+            "recommended",
+            "approved",
+            "declined",
+            "withdrawn",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "application_number",
+        "programme_id",
+        "applicant_kind",
+        "applicant_id",
+        "institution_id",
+        "amount_requested_minor",
+        "currency",
+        "purpose_detail",
+        "submitted_by",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "FundingAgreement": {
+      "title": "FundingAgreement",
+      "description": "Funding agreement — principal, rate, tenor, moratorium, repayment basis, balances and arrears",
+      "type": "object",
+      "x-ceda": {
+        "entity": "funding_agreement",
+        "zone": "ops",
+        "domain": "FND",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "funding"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "agreement_number": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "application_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "funding_application"
+        },
+        "programme_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "funding_programme"
+        },
+        "beneficiary_kind": {
+          "type": "string",
+          "enum": [
+            "institution",
+            "staff",
+            "learner"
+          ]
+        },
+        "beneficiary_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "instrument": {
+          "type": "string",
+          "enum": [
+            "loan",
+            "grant",
+            "scholarship",
+            "bursary",
+            "intervention",
+            "matching_grant",
+            "salary_advance",
+            "bond",
+            "guarantee",
+            "in_kind"
+          ]
+        },
+        "principal_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "interest_rate": {
+          "type": "string",
+          "format": "decimal"
+        },
+        "tenor_months": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "moratorium_months": {
+          "type": "integer"
+        },
+        "repayment_basis": {
+          "type": "string",
+          "enum": [
+            "none",
+            "fixed_instalment",
+            "annuity",
+            "income_contingent",
+            "payroll_deduction",
+            "bullet"
+          ]
+        },
+        "first_repayment_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "disbursed_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "repaid_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "outstanding_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "arrears_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "signed_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "signed_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "signed",
+            "disbursing",
+            "in_moratorium",
+            "repaying",
+            "in_arrears",
+            "settled",
+            "completed",
+            "written_off",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "agreement_number",
+        "application_id",
+        "programme_id",
+        "beneficiary_kind",
+        "beneficiary_id",
+        "institution_id",
+        "instrument",
+        "principal_minor",
+        "interest_rate",
+        "moratorium_months",
+        "repayment_basis",
+        "disbursed_minor",
+        "repaid_minor",
+        "outstanding_minor",
+        "arrears_minor",
+        "currency",
+        "signed_on",
+        "signed_by",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "FundingDisbursement": {
+      "title": "FundingDisbursement",
+      "description": "Disbursement of an agreement to the institution, the beneficiary, a supplier or a contractor",
+      "type": "object",
+      "x-ceda": {
+        "entity": "funding_disbursement",
+        "zone": "ops",
+        "domain": "FND",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "funding"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "agreement_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "funding_agreement"
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "payee_kind": {
+          "type": "string",
+          "enum": [
+            "institution",
+            "beneficiary",
+            "supplier",
+            "contractor"
+          ]
+        },
+        "payee_reference": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 120,
+              "description": "Institution account, beneficiary or supplier"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "purpose": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "budget_line_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "budget_line",
+              "description": "Receiving budget line for institutional funding"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "capital_plan_item_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "capital_plan_item"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reference": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "disbursed_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "scheduled",
+            "paid",
+            "failed",
+            "reversed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "agreement_id",
+        "amount_minor",
+        "currency",
+        "payee_kind",
+        "purpose",
+        "reference",
+        "disbursed_on",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "RepaymentInstalment": {
+      "title": "RepaymentInstalment",
+      "description": "Instalment of a repayment schedule — principal, interest, amount paid and status",
+      "type": "object",
+      "x-ceda": {
+        "entity": "repayment_instalment",
+        "zone": "ops",
+        "domain": "FND",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "funding"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "agreement_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "funding_agreement"
+        },
+        "sequence": {
+          "type": "integer"
+        },
+        "due_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "principal_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "interest_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "paid_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "paid_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "due",
+            "partly_paid",
+            "paid",
+            "overdue",
+            "waived"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "agreement_id",
+        "sequence",
+        "due_on",
+        "principal_minor",
+        "interest_minor",
+        "paid_minor",
+        "currency",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "FundingRepayment": {
+      "title": "FundingRepayment",
+      "description": "Repayment received (payroll deduction, direct debit, transfer, employer remittance) and its allocation to instalments",
+      "type": "object",
+      "x-ceda": {
+        "entity": "funding_repayment",
+        "zone": "ops",
+        "domain": "FND",
+        "kind": "event",
+        "classification": "restricted",
+        "history": "append",
+        "module": "funding"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "agreement_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "funding_agreement"
+        },
+        "amount_minor": {
+          "type": "integer",
+          "description": "(minor units)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "payroll_deduction",
+            "direct_debit",
+            "bank_transfer",
+            "employer_remittance",
+            "cash",
+            "offset"
+          ]
+        },
+        "source_kind": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "payroll_run, bank_statement_line, remittance"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reference": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "received_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "allocations": {
+          "type": "object",
+          "description": "Instalment sequence → amount"
+        },
+        "recorded_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "agreement_id",
+        "amount_minor",
+        "currency",
+        "method",
+        "reference",
+        "received_on",
+        "allocations",
+        "recorded_by",
+        "created_at"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

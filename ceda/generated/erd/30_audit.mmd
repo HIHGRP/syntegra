@@ -1,0 +1,261 @@
+erDiagram
+    audit_event {
+        BINARY_16_ chain_id PK
+        BIGINT chain_seq PK
+        DATETIME_6_ occurred_at PK
+        BINARY_16_ event_id
+        VARCHAR_32_ actor_kind
+        BINARY_16_ actor_id
+        BINARY_16_ on_behalf_of_user_id
+        BINARY_16_ actor_grant_id
+        BINARY_16_ scope_node_id_at
+        VARCHAR_80_ action
+        VARCHAR_64_ record_kind
+        BINARY_16_ record_id
+        JSON field_changes
+        VARCHAR_1000_ reason
+        VARCHAR_40_ purpose_code
+        BINARY_16_ approval_ref
+        VARCHAR_64_ correlation_id
+        VARBINARY_16_ ip
+        VARCHAR_400_ user_agent
+        BINARY_32_ prev_hash
+        BINARY_32_ hash
+    }
+    audit_event {
+        BINARY_16_ chain_id PK
+        BIGINT chain_seq PK
+        DATETIME_6_ occurred_at PK
+        BINARY_16_ event_id
+        VARCHAR_32_ actor_kind
+        BINARY_16_ actor_id
+        BINARY_16_ on_behalf_of_user_id
+        BINARY_16_ actor_grant_id
+        BINARY_16_ scope_node_id_at
+        VARCHAR_80_ action
+        VARCHAR_64_ record_kind
+        BINARY_16_ record_id
+        JSON field_changes
+        VARCHAR_1000_ reason
+        VARCHAR_40_ purpose_code
+        BINARY_16_ approval_ref
+        VARCHAR_64_ correlation_id
+        VARBINARY_16_ ip
+        VARCHAR_400_ user_agent
+        BINARY_32_ prev_hash
+        BINARY_32_ hash
+    }
+    audit_event {
+        BINARY_16_ chain_id PK
+        BIGINT chain_seq PK
+        DATETIME_6_ occurred_at PK
+        BINARY_16_ event_id
+        VARCHAR_32_ actor_kind
+        BINARY_16_ actor_id
+        BINARY_16_ on_behalf_of_user_id
+        BINARY_16_ actor_grant_id
+        BINARY_16_ scope_node_id_at
+        VARCHAR_80_ action
+        VARCHAR_64_ record_kind
+        BINARY_16_ record_id
+        JSON field_changes
+        VARCHAR_1000_ reason
+        VARCHAR_40_ purpose_code
+        BINARY_16_ approval_ref
+        VARCHAR_64_ correlation_id
+        VARBINARY_16_ ip
+        VARCHAR_400_ user_agent
+        BINARY_32_ prev_hash
+        BINARY_32_ hash
+    }
+    audit_event {
+        BINARY_16_ chain_id PK
+        BIGINT chain_seq PK
+        DATETIME_6_ occurred_at PK
+        BINARY_16_ event_id
+        VARCHAR_32_ actor_kind
+        BINARY_16_ actor_id
+        BINARY_16_ on_behalf_of_user_id
+        BINARY_16_ actor_grant_id
+        BINARY_16_ scope_node_id_at
+        VARCHAR_80_ action
+        VARCHAR_64_ record_kind
+        BINARY_16_ record_id
+        JSON field_changes
+        VARCHAR_1000_ reason
+        VARCHAR_40_ purpose_code
+        BINARY_16_ approval_ref
+        VARCHAR_64_ correlation_id
+        VARBINARY_16_ ip
+        VARCHAR_400_ user_agent
+        BINARY_32_ prev_hash
+        BINARY_32_ hash
+    }
+    audit_event {
+        BINARY_16_ chain_id PK
+        BIGINT chain_seq PK
+        DATETIME_6_ occurred_at PK
+        BINARY_16_ event_id
+        VARCHAR_32_ actor_kind
+        BINARY_16_ actor_id
+        BINARY_16_ on_behalf_of_user_id
+        BINARY_16_ actor_grant_id
+        BINARY_16_ scope_node_id_at
+        VARCHAR_80_ action
+        VARCHAR_64_ record_kind
+        BINARY_16_ record_id
+        JSON field_changes
+        VARCHAR_1000_ reason
+        VARCHAR_40_ purpose_code
+        BINARY_16_ approval_ref
+        VARCHAR_64_ correlation_id
+        VARBINARY_16_ ip
+        VARCHAR_400_ user_agent
+        BINARY_32_ prev_hash
+        BINARY_32_ hash
+    }
+    audit_chain_head {
+        BINARY_16_ chain_id PK
+        SMALLINT lane
+        BIGINT last_seq
+        BINARY_32_ last_hash
+    }
+    audit_chain_head {
+        BINARY_16_ chain_id PK
+        SMALLINT lane
+        BIGINT last_seq
+        BINARY_32_ last_hash
+    }
+    audit_chain_head {
+        BINARY_16_ chain_id PK
+        SMALLINT lane
+        BIGINT last_seq
+        BINARY_32_ last_hash
+    }
+    audit_chain_head {
+        BINARY_16_ chain_id PK
+        SMALLINT lane
+        BIGINT last_seq
+        BINARY_32_ last_hash
+    }
+    audit_chain_head {
+        BINARY_16_ chain_id PK
+        SMALLINT lane
+        BIGINT last_seq
+        BINARY_32_ last_hash
+    }
+    audit_anchor {
+        BINARY_16_ id PK
+        BINARY_16_ chain_id
+        DATE anchor_date
+        BIGINT last_chain_seq
+        BINARY_32_ anchor_hash
+        VARCHAR_1024_ worm_object_key
+        DATETIME_6_ verified_at
+        BOOLEAN verification_ok
+    }
+    audit_anchor {
+        BINARY_16_ id PK
+        BINARY_16_ chain_id
+        DATE anchor_date
+        BIGINT last_chain_seq
+        BINARY_32_ anchor_hash
+        VARCHAR_1024_ worm_object_key
+        DATETIME_6_ verified_at
+        BOOLEAN verification_ok
+    }
+    audit_anchor {
+        BINARY_16_ id PK
+        BINARY_16_ chain_id
+        DATE anchor_date
+        BIGINT last_chain_seq
+        BINARY_32_ anchor_hash
+        VARCHAR_1024_ worm_object_key
+        DATETIME_6_ verified_at
+        BOOLEAN verification_ok
+    }
+    audit_anchor {
+        BINARY_16_ id PK
+        BINARY_16_ chain_id
+        DATE anchor_date
+        BIGINT last_chain_seq
+        BINARY_32_ anchor_hash
+        VARCHAR_1024_ worm_object_key
+        DATETIME_6_ verified_at
+        BOOLEAN verification_ok
+    }
+    audit_anchor {
+        BINARY_16_ id PK
+        BINARY_16_ chain_id
+        DATE anchor_date
+        BIGINT last_chain_seq
+        BINARY_32_ anchor_hash
+        VARCHAR_1024_ worm_object_key
+        DATETIME_6_ verified_at
+        BOOLEAN verification_ok
+    }
+    outbox_event {
+        BINARY_16_ id PK
+        DATE created_on PK
+        VARCHAR_80_ event_type
+        SMALLINT schema_version
+        VARCHAR_64_ aggregate_kind
+        BINARY_16_ aggregate_id
+        BINARY_16_ scope_node_id_at
+        VARCHAR_120_ actor
+        VARCHAR_64_ correlation_id
+        JSON payload
+        DATETIME_6_ published_at
+    }
+    outbox_event {
+        BINARY_16_ id PK
+        DATE created_on PK
+        VARCHAR_80_ event_type
+        SMALLINT schema_version
+        VARCHAR_64_ aggregate_kind
+        BINARY_16_ aggregate_id
+        BINARY_16_ scope_node_id_at
+        VARCHAR_120_ actor
+        VARCHAR_64_ correlation_id
+        JSON payload
+        DATETIME_6_ published_at
+    }
+    outbox_event {
+        BINARY_16_ id PK
+        DATE created_on PK
+        VARCHAR_80_ event_type
+        SMALLINT schema_version
+        VARCHAR_64_ aggregate_kind
+        BINARY_16_ aggregate_id
+        BINARY_16_ scope_node_id_at
+        VARCHAR_120_ actor
+        VARCHAR_64_ correlation_id
+        JSON payload
+        DATETIME_6_ published_at
+    }
+    outbox_event {
+        BINARY_16_ id PK
+        DATE created_on PK
+        VARCHAR_80_ event_type
+        SMALLINT schema_version
+        VARCHAR_64_ aggregate_kind
+        BINARY_16_ aggregate_id
+        BINARY_16_ scope_node_id_at
+        VARCHAR_120_ actor
+        VARCHAR_64_ correlation_id
+        JSON payload
+        DATETIME_6_ published_at
+    }
+    outbox_event {
+        BINARY_16_ id PK
+        DATE created_on PK
+        VARCHAR_80_ event_type
+        SMALLINT schema_version
+        VARCHAR_64_ aggregate_kind
+        BINARY_16_ aggregate_id
+        BINARY_16_ scope_node_id_at
+        VARCHAR_120_ actor
+        VARCHAR_64_ correlation_id
+        JSON payload
+        DATETIME_6_ published_at
+    }

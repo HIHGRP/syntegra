@@ -1,0 +1,289 @@
+erDiagram
+    behaviour_framework {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        INT version
+        JSON required_categories
+        SMALLINT max_points_per_event
+        JSON head_decision_outcomes
+        JSON after_school_detention_rule
+        VARCHAR_32_ status
+        DATE effective_from
+    }
+    behaviour_policy {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        INT framework_version
+        INT version
+        BOOLEAN missing_homework_is_behaviour
+        DATE effective_from
+        VARCHAR_32_ status
+    }
+    behaviour_type {
+        BINARY_16_ id PK
+        BINARY_16_ policy_id FK
+        VARCHAR_32_ code
+        VARCHAR_300_ label
+        VARCHAR_32_ polarity
+        VARCHAR_32_ category
+        SMALLINT points
+        VARCHAR_40_ icon
+        VARCHAR_32_ default_outcome
+        BINARY_16_ detention_type_id FK
+        BOOLEAN counts_in_reports
+        BOOLEAN counts_in_influences
+    }
+    behaviour_event {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        BINARY_16_ behaviour_type_id FK
+        SMALLINT points
+        BINARY_16_ lesson_occurrence_id FK
+        BINARY_16_ room_id FK
+        VARCHAR_120_ location
+        DATETIME_6_ occurred_at
+        BINARY_16_ recorded_by_staff_id FK
+        VARCHAR_2000_ description
+        JSON target_learner_ids
+        VARCHAR_32_ outcome
+        BINARY_16_ decision_by
+        VARCHAR_32_ appeal_status
+        BINARY_16_ client_op_id
+        DATETIME_6_ reversed_at
+    }
+    reward_badge {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ code
+        VARCHAR_300_ label
+        JSON rule
+        VARCHAR_1024_ image_ref
+        VARCHAR_32_ status
+    }
+    badge_award {
+        BINARY_16_ id PK
+        BINARY_16_ badge_id FK
+        BINARY_16_ learner_id FK
+        DATETIME_6_ awarded_at
+        VARCHAR_32_ source
+        BINARY_16_ intel_firing_id FK
+    }
+    room_layout {
+        BINARY_16_ id PK
+        BINARY_16_ room_id FK
+        VARCHAR_80_ name
+        JSON desks
+    }
+    seating_field_set {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_80_ name
+        JSON applies_to
+        JSON fields
+        JSON board_safe_fields
+    }
+    seating_plan {
+        BINARY_16_ id PK
+        BINARY_16_ class_group_id FK
+        BINARY_16_ subject_id FK
+        BINARY_16_ room_layout_id FK
+        BINARY_16_ field_set_id FK
+        VARCHAR_32_ strategy
+        JSON placements
+        BOOLEAN is_active
+    }
+    seating_plan_print {
+        BINARY_16_ id PK
+        BINARY_16_ seating_plan_id FK
+        BINARY_16_ printed_by
+        VARCHAR_200_ viewer_name
+        DATETIME_6_ printed_at
+    }
+    influence_score {
+        BINARY_16_ id PK
+        BINARY_16_ class_group_id FK
+        BINARY_16_ learner_a_id FK
+        BINARY_16_ learner_b_id FK
+        INT shared_events
+        INT negative_adjacent
+        INT negative_apart
+        INT positive_adjacent
+        INT positive_apart
+        DATETIME_6_ computed_at
+    }
+    intel_rule {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ name
+        VARCHAR_32_ source_data
+        JSON rule_expression
+        JSON actions
+        BOOLEAN is_positive_milestone
+        JSON simulation_result
+        INT version
+        VARCHAR_32_ status
+    }
+    intel_firing {
+        BINARY_16_ id PK
+        BINARY_16_ rule_id FK
+        BINARY_16_ learner_id FK
+        JSON evidence
+        JSON actions_taken
+        BINARY_16_ agent_action_id FK
+        DATETIME_6_ fired_at
+    }
+    intel_firing_reversal {
+        BINARY_16_ id PK
+        BINARY_16_ firing_id FK
+        BINARY_16_ reversed_by
+        VARCHAR_500_ reason
+    }
+    detention_type {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ name
+        SMALLINT ladder_level
+        INT duration_minutes
+        BINARY_16_ default_room_id FK
+        BINARY_16_ default_supervisor_staff_id FK
+        BOOLEAN is_after_school
+        SMALLINT parent_notice_hours
+        BINARY_16_ next_level_id FK
+        VARCHAR_32_ status
+    }
+    detention {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        BINARY_16_ detention_type_id FK
+        BINARY_16_ behaviour_event_id FK
+        BINARY_16_ intel_firing_id FK
+        BINARY_16_ escalated_from_id FK
+        DATETIME_6_ scheduled_at
+        BINARY_16_ room_id FK
+        BINARY_16_ supervisor_staff_id FK
+        DATETIME_6_ parent_notified_at
+        BOOLEAN transport_checked
+        INT minutes_owed
+        VARCHAR_32_ attendance
+    }
+    oncall_request {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ room_id FK
+        BINARY_16_ class_group_id FK
+        BINARY_16_ raised_by_staff_id FK
+        VARCHAR_32_ reason
+        BINARY_16_ learner_id FK
+        BINARY_16_ responder_staff_id FK
+        DATETIME_6_ raised_at
+        DATETIME_6_ acknowledged_at
+        DATETIME_6_ escalated_at
+        DATETIME_6_ resolved_at
+        VARCHAR_500_ outcome
+        VARCHAR_32_ status
+    }
+    on_report_card {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        VARCHAR_32_ level
+        BINARY_16_ owner_staff_id FK
+        DATE starts_on
+        DATE ends_on
+        VARCHAR_1000_ outcome
+        BINARY_16_ intervention_id FK
+        VARCHAR_32_ status
+    }
+    on_report_target {
+        BINARY_16_ id PK
+        BINARY_16_ card_id FK
+        VARCHAR_300_ target_text
+        SMALLINT sort_order
+    }
+    on_report_rating {
+        BINARY_16_ id PK
+        BINARY_16_ card_id FK
+        BINARY_16_ target_id FK
+        BINARY_16_ lesson_occurrence_id FK
+        VARCHAR_32_ author_kind
+        BINARY_16_ author_id
+        SMALLINT rating
+        VARCHAR_1000_ comment
+        DATETIME_6_ rated_at
+    }
+    agent_action {
+        BINARY_16 id PK
+    }
+    class_group {
+        BINARY_16 id PK
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    intervention {
+        BINARY_16 id PK
+    }
+    learner {
+        BINARY_16 id PK
+    }
+    lesson_occurrence {
+        BINARY_16 id PK
+    }
+    room {
+        BINARY_16 id PK
+    }
+    staff {
+        BINARY_16 id PK
+    }
+    subject {
+        BINARY_16 id PK
+    }
+    agent_action ||--o{ intel_firing : "agent_action_id"
+    behaviour_event ||--o{ detention : "behaviour_event_id"
+    behaviour_policy ||--o{ behaviour_type : "policy_id"
+    behaviour_type ||--o{ behaviour_event : "behaviour_type_id"
+    class_group ||--o{ influence_score : "class_group_id"
+    class_group ||--o{ oncall_request : "class_group_id"
+    class_group ||--o{ seating_plan : "class_group_id"
+    detention ||--o{ detention : "escalated_from_id"
+    detention_type ||--o{ behaviour_type : "detention_type_id"
+    detention_type ||--o{ detention : "detention_type_id"
+    detention_type ||--o{ detention_type : "next_level_id"
+    institution ||--o{ behaviour_policy : "institution_id"
+    intel_firing ||--o{ badge_award : "intel_firing_id"
+    intel_firing ||--o{ detention : "intel_firing_id"
+    intel_firing ||--o| intel_firing_reversal : "firing_id"
+    intel_rule ||--o{ intel_firing : "rule_id"
+    intervention ||--o{ on_report_card : "intervention_id"
+    learner ||--o{ badge_award : "learner_id"
+    learner ||--o{ behaviour_event : "learner_id"
+    learner ||--o{ detention : "learner_id"
+    learner ||--o{ influence_score : "learner_a_id"
+    learner ||--o{ influence_score : "learner_b_id"
+    learner ||--o{ intel_firing : "learner_id"
+    learner ||--o{ on_report_card : "learner_id"
+    learner ||--o{ oncall_request : "learner_id"
+    lesson_occurrence ||--o{ behaviour_event : "lesson_occurrence_id"
+    lesson_occurrence ||--o{ on_report_rating : "lesson_occurrence_id"
+    on_report_card ||--o{ on_report_rating : "card_id"
+    on_report_card ||--o{ on_report_target : "card_id"
+    on_report_target ||--o{ on_report_rating : "target_id"
+    reward_badge ||--o{ badge_award : "badge_id"
+    room ||--o{ behaviour_event : "room_id"
+    room ||--o{ detention : "room_id"
+    room ||--o{ detention_type : "default_room_id"
+    room ||--o{ oncall_request : "room_id"
+    room ||--o{ room_layout : "room_id"
+    room_layout ||--o{ seating_plan : "room_layout_id"
+    seating_field_set ||--o{ seating_plan : "field_set_id"
+    seating_plan ||--o{ seating_plan_print : "seating_plan_id"
+    staff ||--o{ behaviour_event : "recorded_by_staff_id"
+    staff ||--o{ detention : "supervisor_staff_id"
+    staff ||--o{ detention_type : "default_supervisor_staff_id"
+    staff ||--o{ on_report_card : "owner_staff_id"
+    staff ||--o{ oncall_request : "raised_by_staff_id"
+    staff ||--o{ oncall_request : "responder_staff_id"
+    subject ||--o{ seating_plan : "subject_id"

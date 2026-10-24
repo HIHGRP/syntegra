@@ -1,0 +1,130 @@
+# Syntegra Canonical Enterprise Data Architecture (CEDA) — model metadata.
+# This file fixes the conventions every domain file in model/domains/ is read against.
+# The narrative explanation of every rule here is in ceda/CEDA.md.
+
+ceda:
+  id: SYN-CEDA-001
+  version: 1.9.0
+  status: Baseline for build
+  date: 2026-10-23
+  derived_from: SYN-MFS-002 v2.4 (Master Functional Specification, consolidated single volume, 13 Oct 2026)
+  database: MySQL 9.7 LTS (InnoDB, utf8mb4)
+  application: Python 3.12, Django 5.2 LTS (+ FastAPI for high-throughput services)
+  platform: Red Hat Enterprise Linux 10 / OpenShift
+
+# ---------------------------------------------------------------------------
+# Data zones. Every entity lives in exactly one zone. A zone is a logical store
+# with its own MySQL schema, its own database account and its own encryption
+# key. Foreign keys are enforced inside a zone only; references that cross a
+# zone boundary are "soft" (BINARY(16) id, checked by the application and by the
+# nightly integrity job).
+# ---------------------------------------------------------------------------
+zones:
+  platform:
+    title: Platform control plane
+    schema: syn_platform
+    tenant_column: false
+    holds: Tenants, residency, operator plans and private-provider subscription billing, identifier allocation, global reference data. Never learner-level data.
+    instance: One per residency region (in-country for Nigeria); global roll-ups only from aggregates.
+    db_account: svc_platform
+    key: platform KEK-derived data key
+  registry:
+    title: State registry (master-data hub)
+    schema: syn_reg_{state}
+    tenant_column: true
+    tenant_rule: tenant_id is always the state tenant that owns the registry; private-provider ownership is carried by attributes such as operating_tenant_id and provider_tenant_id.
+    holds: The authoritative registers shared by every public and private tenant in a state — governance hierarchy, policy, institution register and regulation, curriculum library, person identity masters (learner, guardian, staff), teacher authorisations, certificate registry, programme financing (SDAF), matching and merge.
+    instance: One schema per state tenant (national deployments add one per state plus a federal registry for national masters).
+    db_account: svc_registry_{state}
+    key: per-state data key
+  ops:
+    title: Operational tenant store
+    schema: syn_ops_{tenant}
+    tenant_column: true
+    holds: Day-to-day institution operations — enrolment, classes, timetable, attendance, assessment, LMS, behaviour, finance, operations, communications, forms, intelligence outputs and the transactional outbox.
+    instance: One schema for all public institutions of a state; one per large private provider; one pooled schema for small private institutions (tenant_id separates them).
+    db_account: svc_ops_{tenant}
+    key: per-tenant data key
+  vault:
+    title: Special-category vault
+    schema: syn_vault_{tenant}
+    tenant_column: true
+    holds: Safeguarding, allegations about adults, community reports, SEND need detail and plans, health and care detail, contact-restriction detail, wellbeing concern text.
+    instance: One per operational tenant, separate schema, separate DB account, separate key; excluded from search, CDC to the warehouse and AI training.
+    db_account: svc_vault_{tenant}
+    key: per-tenant special-category key; per-record data keys for free text (crypto-shredding)
+  records:
+    title: Records and archives
+    schema: syn_rec_{tenant}
+    tenant_column: true
+    holds: Document metadata, file plan, retention, legal holds, disposal, digitisation programme (batches, custody, pages, extracted fields). Binary content lives in S3-compatible object storage (WORM buckets for masters, certificates and archives).
+    instance: One per state tenant (state digitisation programme) and per operational tenant; may be co-located in the ops schema for small tenants.
+    db_account: svc_records_{tenant}
+    key: per-tenant data key
+  dw:
+    title: Analytics warehouse
+    schema: syn_dw_{state}
+    tenant_column: true
+    holds: Conformed dimensions, facts, aggregates, feature store and the live KPI read model. Learner and staff keys are pseudonymised. Separate MySQL 9.7 cluster fed by CDC (NFR-PLAT-110).
+    instance: One per state; national/global marts built only from state aggregates.
+    db_account: svc_dw_{state}
+    key: per-state analytics key
+
+# ---------------------------------------------------------------------------
+# Standard columns. Added by the generator; never declared in domain files.
+# ---------------------------------------------------------------------------
+standard_columns:
+  id:            {type: uuid, nullable: false, doc: "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap"}
+  tenant_id:     {type: uuid, nullable: false, doc: "Owning tenant (zones with tenant_column = true)"}
+  scope_node_id: {type: uuid, nullable: false, doc: "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure"}
+  valid_from:    {type: date, nullable: false, doc: "Effective from (inclusive) — history: effective"}
+  valid_to:      {type: date, nullable: true,  doc: "Effective to (inclusive); NULL = open-ended — history: effective"}
+  created_at:    {type: ts, nullable: false, default: CURRENT_TIMESTAMP(6), doc: "UTC time the row was written"}
+  created_by:    {type: uuid, nullable: true, doc: "Actor: app_user.id or service_identity.id (agents, integrations)"}
+  updated_at:    {type: ts, nullable: false, default: CURRENT_TIMESTAMP(6), on_update: true, doc: "UTC time of last change (mutable entities only)"}
+  updated_by:    {type: uuid, nullable: true, doc: "Actor of last change (mutable entities only)"}
+  row_version:   {type: int_u, nullable: false, default: "1", doc: "Optimistic-lock counter; exposed as the API ETag (mutable entities only)"}
+
+# ---------------------------------------------------------------------------
+# Vocabularies used by entity metadata.
+# ---------------------------------------------------------------------------
+kinds:
+  master: Authoritative master record (a 360 object or a governed master list)
+  reference: Governed reference or code data
+  config: Versioned configuration or rule definition
+  transaction: Business transaction or operational record
+  link: Relationship between two or more records
+  event: Immutable business event or log entry (append-only)
+  snapshot: Periodic frozen snapshot (append-only)
+  projection: Read model maintained from other records or events
+  queue: Work queue or transient processing record
+
+history:
+  none: Mutable; prior values only in the audit trail
+  lifecycle: Mutable within a controlled status lifecycle; status transitions audited
+  effective: Effective-dated (valid_from / valid_to); history never overwritten; queries take an as_of date
+  versioned: Versioned; a published version is immutable and edits create a new version (copy-on-write)
+  append: Insert-only; UPDATE and DELETE privileges withheld and blocked by triggers
+  snapshot: Insert-only periodic snapshot
+
+classification:   # MFS §2.2 / Book 3 §4.2 — ordered lowest to highest
+  - public
+  - internal
+  - confidential
+  - restricted
+  - special
+
+origins:
+  appj: Table present in MFS Book 3 Appendix J (174 tables); re-specified by CEDA
+  ceda: Added by CEDA to give a stated MFS requirement a home in the data model
+
+naming:
+  max_identifier_length: 64
+  table: singular snake_case noun
+  foreign_key_column: "<role>_id"
+  timestamp_suffix: _at
+  date_suffix: _on (business dates) — valid_from / valid_to for effective dating
+  boolean_prefix: is_ / has_ (or a plain adjective for long-established names)
+  money: "<name>_minor BIGINT + currency CHAR(3) on the same row"
+  encrypted: "<name>_enc VARBINARY + <name>_hmac BINARY(32) (lookup) + <name>_last4 (masked display)"
+  constraint_names: "pk_ / uq_ / ix_ / fk_ / ck_ / tr_ + table + columns, hashed when longer than 64"

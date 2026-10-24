@@ -1,0 +1,162 @@
+erDiagram
+    learner {
+        BINARY_16_ id PK
+        CHAR_16_ global_learner_id
+        VARCHAR_200_ legal_given_name
+        VARCHAR_200_ legal_middle_names
+        VARCHAR_200_ legal_family_name
+        VARCHAR_200_ preferred_name
+        VARCHAR_120_ name_phonetic
+        DATE date_of_birth
+        VARCHAR_32_ dob_precision
+        VARCHAR_32_ sex
+        CHAR_2_ nationality
+        VARCHAR_6_ state_of_origin
+        JSON home_languages
+        BINARY_16_ photo_document_id
+        BOOLEAN is_historic
+        BOOLEAN is_minimal_documentation
+        VARCHAR_32_ identity_verified_level
+        VARCHAR_32_ status
+        BINARY_16_ merged_into FK
+        DATE deceased_on
+    }
+    enrolment {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        BINARY_16_ institution_id FK
+        BINARY_16_ operating_tenant_id
+        VARCHAR_32_ education_level
+        BINARY_16_ programme_id FK
+        BINARY_16_ class_group_id FK
+        VARCHAR_60_ cohort_label
+        BOOLEAN is_primary
+        VARCHAR_32_ basis
+        DATE start_on
+        DATE end_on
+        VARCHAR_32_ leaving_reason
+        JSON destination
+        BOOLEAN is_over_capacity_approved
+        VARCHAR_32_ status
+        BINARY_16_ active_primary_key
+    }
+    learner_transfer {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        BINARY_16_ from_enrolment_id FK
+        BINARY_16_ to_institution_id FK
+        BINARY_16_ to_enrolment_id FK
+        BINARY_16_ exchange_transfer_id FK
+        BINARY_16_ requested_by FK
+        DATE effective_on
+        JSON records_package
+        DATE dsl_handover_due_on
+        DATETIME_6_ dsl_acknowledged_at
+        DATETIME_6_ senco_acknowledged_at
+        VARCHAR_32_ status
+    }
+    cme_referral {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        BINARY_16_ enrolment_id FK
+        BINARY_16_ lga_scope_id FK
+        VARCHAR_500_ reason
+        BINARY_16_ assigned_to FK
+        VARCHAR_32_ outcome
+        DATETIME_6_ closed_at
+        VARCHAR_32_ status
+    }
+    passport_entry {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        VARCHAR_32_ entry_kind
+        VARCHAR_40_ source_kind
+        BINARY_16_ source_id
+        VARCHAR_300_ title
+        VARCHAR_300_ issuer_name
+        DATE awarded_on
+        JSON credential
+        BOOLEAN is_verified
+    }
+    passport_share {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        VARCHAR_300_ recipient_name
+        VARCHAR_254_ recipient_email
+        JSON entries
+        BINARY_32_ token_hash
+        DATETIME_6_ expires_at
+        DATETIME_6_ revoked_at
+        INT view_count
+    }
+    passport_view {
+        BINARY_16_ id PK
+        BINARY_16_ share_id FK
+        DATETIME_6_ viewed_at
+        CHAR_2_ ip_country
+    }
+    external_exam_record {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        VARCHAR_32_ exam_body
+        SMALLINT exam_year
+        BINARY_32_ candidate_number_hmac
+        JSON results
+        DATETIME_6_ verified_at
+        VARCHAR_128_ verification_ref
+        BOOLEAN holder_consents_display
+    }
+    historical_record_import {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        BINARY_16_ enrolment_id FK
+        BINARY_16_ source_institution_id FK
+        VARCHAR_120_ source_system
+        JSON datasets
+        DATETIME_6_ received_at
+        VARCHAR_32_ status
+    }
+    app_user {
+        BINARY_16 id PK
+    }
+    class_group {
+        BINARY_16 id PK
+    }
+    exchange_transfer {
+        BINARY_16 id PK
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    programme {
+        BINARY_16 id PK
+    }
+    scope_node {
+        BINARY_16 id PK
+    }
+    app_user ||--o{ cme_referral : "assigned_to"
+    app_user ||--o{ learner_transfer : "requested_by"
+    class_group ||--o{ enrolment : "class_group_id"
+    enrolment ||--o{ cme_referral : "enrolment_id"
+    enrolment ||--o{ historical_record_import : "enrolment_id"
+    enrolment ||--o{ learner_transfer : "from_enrolment_id"
+    enrolment ||--o{ learner_transfer : "to_enrolment_id"
+    exchange_transfer ||--o{ learner_transfer : "exchange_transfer_id"
+    institution ||--o{ enrolment : "institution_id"
+    institution ||--o{ historical_record_import : "source_institution_id"
+    institution ||--o{ learner_transfer : "to_institution_id"
+    learner ||--o{ cme_referral : "learner_id"
+    learner ||--o{ enrolment : "learner_id"
+    learner ||--o{ external_exam_record : "learner_id"
+    learner ||--o{ historical_record_import : "learner_id"
+    learner ||--o{ learner : "merged_into"
+    learner ||--o{ learner_transfer : "learner_id"
+    learner ||--o{ passport_entry : "learner_id"
+    learner ||--o{ passport_share : "learner_id"
+    passport_share ||--o{ passport_view : "share_id"
+    programme ||--o{ enrolment : "programme_id"
+    scope_node ||--o{ cme_referral : "lga_scope_id"

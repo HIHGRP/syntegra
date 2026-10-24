@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ learner.legal_given_name }} {{ learner.legal_family_name }}{% endblock %}
+{% block content %}
+<h1>{{ learner.legal_given_name }} {{ learner.legal_middle_names or "" }} {{ learner.legal_family_name }}</h1>
+<p class="muted"><code>{{ learner.global_learner_id }}</code> · {{ learner.sex }} · born {{ learner.date_of_birth | date }} · identity {{ learner.identity_verified_level.replace("_", " ") }} · {{ learner.status }}</p>
+{% if ctx.has("enrolment:transfer") or ctx.has("clearance:publish") %}<p class="actions">{% if ctx.has("enrolment:transfer") %}<a href="/forms/learner-transfer?learner={{ learner.global_learner_id }}">Transfer</a>{% endif %}{% if ctx.has("clearance:publish") %}<a href="/forms/obligation-publish?learner_id={{ learner.global_learner_id }}">Publish unpaid fees</a>{% endif %}</p>{% endif %}
+<section class="grid2">
+  <article class="card">
+    <h2>Enrolments</h2>
+    <table class="compact"><thead><tr><th scope="col">Institution</th><th scope="col">Level</th><th scope="col">From</th><th scope="col">To</th><th scope="col">Status</th></tr></thead>
+      <tbody>{% for e in enrolments %}<tr><td>{{ insts[e.institution_id].name }}{% if e.programme_id and programmes.get(e.programme_id) %}<br><span class="muted">{{ programmes[e.programme_id].name }}{% if e.cohort_label %} · {{ e.cohort_label }}{% endif %}</span>{% endif %}</td><td>{{ e.education_level }}</td><td>{{ e.start_on | date }}</td><td>{{ e.end_on | date }}</td><td>{{ e.status }}</td></tr>{% endfor %}</tbody></table>
+  </article>
+  {% if identifiers %}
+  <article class="card">
+    <h2>Identifiers</h2>
+    <ul class="people">{% for i in identifiers %}<li><strong>{{ {"NG-NIN": "NIN", "JAMB-REG": "JAMB registration", "INST-ID": "Matriculation number"}.get(i.scheme, i.scheme) }}</strong>
+      <span class="line">•••• {{ i.last4 }} <span class="muted">· {{ i.status }}</span></span></li>{% endfor %}</ul>
+  </article>
+  {% endif %}
+  <article class="card">
+    <h2>Parents and guardians</h2>
+    {% if guardians %}
+    <ul class="people">{% for g in guardians %}
+      <li><strong>{{ g.name }}</strong> <span class="muted">· {{ g.relationship.replace("_", " ") }}</span>
+        <span class="line">{% if g.is_contact_restricted %}<strong>Contact restricted</strong>{% else %}{{ g.phone or "" }}{% if g.phone and g.email %} · {% endif %}{{ g.email or "" }}{% endif %}</span>
+        <span class="line muted">{{ ["parental responsibility" if g.has_parental_responsibility else None, "lives with" if g.lives_with else None, "may collect" if g.is_authorised_collector else None, "payer" if g.is_payer else None] | select | join(" · ") }}</span></li>{% endfor %}
+    </ul>
+    {% else %}<p class="muted">No guardian recorded.</p>{% endif %}
+  </article>
+  {% if attendance %}
+  <article class="card">
+    <h2>Attendance (90 days)</h2>
+    <p class="big">{{ "—" if attendance.rate is none else "{:.1%}".format(attendance.rate) }}</p>
+    <p class="muted">{{ attendance.attended }} of {{ attendance.possible }} sessions · {{ attendance.unauthorised_absence }} unauthorised · {{ attendance.late }} late</p>
+    {% if attendance.flags["ATT-SEVERE"] %}<div class="alert alert-error">Severe absence — below the state threshold.</div>
+    {% elif attendance.flags["ATT-PERSISTENT"] %}<div class="alert">Persistent absence — below the state threshold.</div>{% endif %}
+  </article>
+  {% endif %}
+  {% if behaviour %}
+  <article class="card" id="behaviour">
+    <h2>Behaviour ({{ behaviour.days }} days)</h2>
+    <p class="big">{{ "%+d"|format(behaviour.points) }} <span class="muted">points</span></p>
+    <p class="muted">{{ behaviour.positive }} positive · {{ behaviour.negative }} negative</p>
+    <ul class="plain">{% for e in behaviour.recent %}<li>{{ e.at.strftime("%d %b") }} · {{ e.behaviour }} ({{ "%+d"|format(e.points) }}){% if e.outcome and e.outcome != "No further action" %} — {{ e.outcome }}{% endif %}</li>{% endfor %}</ul>
+  </article>
+  {% endif %}
+  {% if send_profile %}
+  <article class="card" id="send"><h2>Special educational needs</h2><p>On the register. <a href="/send/learners/{{ learner.id }}">Open the support profile</a> <span class="hint opt">(logged)</span></p></article>
+  {% endif %}
+  {% if results %}{% set r = results.row %}
+  <article class="card span-all scroll-x" id="results">
+    <h2>Results — {{ results.term.name if results.term else "this term" }}, {{ results.class.name }}</h2>
+    <p class="big">{{ r.average }}% <span class="muted">{{ r.grade }}</span></p>
+    <p class="muted">{{ r.position }} of {{ results.of }} in the class · class average {{ results.class_average }}%</p>
+    <table class="compact"><thead><tr><th scope="col">Subject</th><th scope="col" class="num">Total</th><th scope="col">Grade</th><th scope="col">Position</th><th scope="col" class="num">Class avg</th></tr></thead>
+      <tbody>{% for s in r.subjects %}<tr><td>{{ s.subject }}</td><td class="num">{{ s.total|round(0)|int if s.total is not none else "—" }}</td><td>{{ s.grade or "—" }}</td><td>{{ s.position or "—" }}</td><td class="num">{{ s.average if s.average is not none else "—" }}</td></tr>{% endfor %}</tbody></table>
+    <p><a href="/reports/class/{{ results.class.id }}/learner/{{ r.learner_id }}">Report card</a>{% if r.card %} · <a href="/documents/{{ r.card.document_id }}">Issued PDF</a>{% endif %}</p>
+  </article>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Report card — {{ d.row.name }}{% endblock %}
+{% block content %}{% set r = d.row %}{% set emblem = state_emblem(tenant) %}
+<p class="no-print"><a href="/reports/class/{{ d.class.id }}">← Report cards for {{ d.class.name }}</a> · <button type="button" onclick="window.print()">Print</button>{% if r.card %} · <a href="/documents/{{ r.card.document_id }}">Issued PDF</a> <span class="pill pill-ok">Issued {{ r.card.released_at|localtime }}</span>{% else %} <span class="pill">Not issued yet — preview</span>{% endif %}</p>
+<article class="report-card" id="report-card">
+  <header class="rc-head">
+    {% if emblem %}<img src="{{ emblem }}" alt="Coat of arms of {{ tenant.name }}" width="96" height="78">{% endif %}
+    <div><h1>{{ d.institution.name|upper }}</h1>
+      <p class="muted">{{ d.institution.address or d.institution.code }}{% if d.institution.phone %} · {{ d.institution.phone }}{% endif %}{% if d.institution.email %} · {{ d.institution.email }}{% endif %}</p>
+      <p><strong>Termly report card — {{ d.term.name if d.term else "Term" }}, {{ d.session }} session</strong></p></div>
+  </header>
+  <dl class="rc-facts">
+    <div><dt>Name</dt><dd>{{ r.name }}</dd></div><div><dt>Class</dt><dd>{{ d.class.name }}</dd></div>
+    <div><dt>Learner number</dt><dd>{{ r.lrn }}</dd></div><div><dt>Sex</dt><dd>{{ r.sex }}</dd></div>
+    <div><dt>Date of birth</dt><dd>{{ r.date_of_birth|date }}</dd></div><div><dt>Learners in class</dt><dd>{{ d.of }}</dd></div>
+    <div><dt>Attendance</dt><dd>{{ r.attendance.attended }} of {{ r.attendance.possible }} sessions{% if r.attendance.rate is not none %} ({{ (r.attendance.rate * 100)|round(0)|int }}%){% endif %}</dd></div>
+    <div><dt>Next term begins</dt><dd>{{ d.next_term|date if d.next_term else "—" }}</dd></div>
+  </dl>
+  <table class="compact rc-table">
+    <thead><tr><th scope="col">Subject</th><th scope="col" class="num">CA</th><th scope="col" class="num">Exam</th><th scope="col" class="num">Total</th><th scope="col">Grade</th><th scope="col">Position</th><th scope="col" class="num">Class avg</th><th scope="col" class="num">Highest</th><th scope="col" class="num">Lowest</th><th scope="col">Remark</th></tr></thead>
+    <tbody>{% for s in r.subjects %}<tr><th scope="row">{{ s.subject }}</th><td class="num">{{ s.ca|round(0)|int if s.ca is not none else "—" }}</td><td class="num">{{ s.exam|round(0)|int if s.exam is not none else "—" }}</td><td class="num"><strong>{{ s.total|round(0)|int if s.total is not none else "—" }}</strong></td><td>{{ s.grade or "—" }}</td><td>{{ s.position or "—" }}</td><td class="num">{{ s.average if s.average is not none else "—" }}</td><td class="num">{{ s.highest|round(0)|int if s.highest is not none else "—" }}</td><td class="num">{{ s.lowest|round(0)|int if s.lowest is not none else "—" }}</td><td>{{ s.remark or "—" }}</td></tr>{% endfor %}</tbody>
+  </table>
+  <p class="rc-summary"><span>Subjects taken <strong>{{ r.taken }}</strong></span><span>Total <strong>{{ r.total }}</strong></span><span>Average <strong>{{ r.average if r.average is not none else "—" }}%</strong> ({{ r.grade or "—" }})</span><span>Position in class <strong>{{ r.position or "—" }} of {{ d.of }}</strong></span><span>Class average <strong>{{ d.class_average }}%</strong></span></p>
+  <section class="rc-comment"><h2>Form teacher's comment{% if d.form_teacher %} — {{ d.form_teacher }}{% endif %}</h2><p>{{ r.comments.form }}</p></section>
+  <section class="rc-comment"><h2>{{ d.institution.head_title }}'s comment{% if d.institution.head_name %} — {{ d.institution.head_name }}{% endif %}</h2><p>{{ r.comments.head }}</p></section>
+  <table class="compact rc-key"><caption>Grading key (WAEC / NECO)</caption><tr>{% for g, band in d.key %}<td><strong>{{ g }}</strong> {{ band }}<br><span class="hint">{{ d.remarks[g] }}</span></td>{% endfor %}</tr></table>
+  <p class="hint">CA = continuous assessment. Totals are out of 100; equal totals share a position. Signature and stamp: ______________________</p>
+</article>
+{% endblock %}

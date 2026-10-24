@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}My profile{% endblock %}
+{% block content %}
+<h1>{{ me.display_name }}</h1>
+<p class="muted">{{ me.username }}{% if me.last_sign_in_at %} · signed in {{ me.last_sign_in_at|localtime }}{% endif %}</p>
+{% if request.GET.get("removed") %}<div class="alert" role="status" id="removed">The authenticator was removed.</div>{% endif %}
+
+<section class="card" id="security">
+  <h2>Second factor</h2>
+  {% if mfa.required %}<p>Your roles need a code from an authenticator app at every sign-in.</p>{% elif not mfa.factors %}<p>Add an authenticator app so that a stolen password is not enough to get into your account.</p>{% endif %}
+  {% if mfa.factors %}
+  <div class="scroll-x"><table id="factors">
+    <thead><tr><th>Authenticator</th><th>Added</th><th>Last used</th><th></th></tr></thead>
+    <tbody>{% for f in mfa.factors %}
+      <tr><td>{{ f.label }}</td><td>{{ f.added_at|localtime }}</td><td>{{ f.last_used_at|localtime if f.last_used_at else "—" }}</td>
+        <td><form method="post" action="/me/authenticator/{{ f.id }}/remove"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><button class="link">Remove</button></form></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  <p id="recovery-left">{{ mfa.recovery_codes_left }} of 10 recovery codes left.</p>
+  <form method="post" action="/me/recovery-codes"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><button>Make new recovery codes</button></form>
+  {% endif %}
+  <p><a class="button{% if not mfa.factors %} primary{% endif %}" href="/me/authenticator" id="add-authenticator">{% if mfa.factors %}Add another authenticator{% else %}Set up an authenticator app{% endif %}</a></p>
+</section>
+
+<section class="card" id="roles">
+  <h2>My roles</h2>
+  <div class="scroll-x"><table>
+    <thead><tr><th>Role</th><th>School or office</th><th>Access level</th></tr></thead>
+    <tbody>{% for g in grants %}<tr{% if g.grant_id == (ctx.grant_id|string) %} class="row-new"{% endif %}><td>{{ g.role_name }}</td><td>{{ g.affiliation.name }}</td><td>{{ g.access_level|title }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endblock %}

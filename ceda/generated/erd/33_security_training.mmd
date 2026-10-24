@@ -1,0 +1,167 @@
+erDiagram
+    security_agency {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_16_ code
+        VARCHAR_300_ name
+        VARCHAR_32_ category
+        VARCHAR_200_ supervising_ministry
+        VARCHAR_300_ establishing_law
+        VARCHAR_2048_ website
+        VARCHAR_32_ data_status
+        VARCHAR_32_ status
+    }
+    agency_unit {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ agency_id FK
+        BINARY_16_ parent_unit_id FK
+        VARCHAR_32_ unit_type
+        VARCHAR_40_ code
+        VARCHAR_300_ name
+        VARCHAR_6_ headquarters_state
+        VARCHAR_120_ headquarters_town
+        VARCHAR_32_ data_status
+        VARCHAR_32_ status
+    }
+    agency_rank {
+        BINARY_16_ id PK
+        BINARY_16_ agency_id FK
+        VARCHAR_24_ code
+        VARCHAR_80_ title
+        VARCHAR_16_ abbreviation
+        VARCHAR_32_ rank_category
+        SMALLINT seniority
+        VARCHAR_32_ data_status
+    }
+    security_institution {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        BINARY_16_ agency_id FK
+        BINARY_16_ unit_id FK
+        VARCHAR_32_ institution_type
+        VARCHAR_32_ access_regime
+        JSON accreditation
+        VARCHAR_80_ commandant_title
+        SMALLINT established_year
+        VARCHAR_32_ data_status
+    }
+    security_course {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        BINARY_16_ agency_id FK
+        VARCHAR_32_ code
+        VARCHAR_300_ title
+        VARCHAR_32_ category
+        VARCHAR_32_ award
+        VARCHAR_120_ award_title
+        BINARY_16_ programme_id FK
+        BINARY_16_ curriculum_id FK
+        VARCHAR_32_ accrediting_body
+        SMALLINT duration_weeks
+        JSON entry_requirements
+        JSON target_ranks
+        TEXT description
+        VARCHAR_32_ version
+        BOOLEAN content_held
+        VARCHAR_32_ data_status
+        VARCHAR_32_ status
+    }
+    security_course_module {
+        BINARY_16_ id PK
+        BINARY_16_ course_id FK
+        SMALLINT sequence
+        VARCHAR_32_ code
+        VARCHAR_200_ title
+        VARCHAR_32_ area
+        SMALLINT contact_hours
+        VARCHAR_32_ assessment
+        BOOLEAN is_mandatory
+    }
+    security_course_intake {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ course_id FK
+        VARCHAR_40_ intake_code
+        VARCHAR_300_ name
+        DATE starts_on
+        DATE ends_on
+        INT capacity
+        VARCHAR_32_ status
+    }
+    trainee_record {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        BINARY_16_ intake_id FK
+        BINARY_16_ enrolment_id FK
+        BINARY_16_ rank_at_entry_id FK
+        VARCHAR_32_ outcome
+        VARCHAR_120_ result
+        DATE outcome_on
+        TEXT outcome_reason
+        BINARY_16_ recorded_by FK
+    }
+    security_course_unit {
+        BINARY_16_ id PK
+        BINARY_16_ course_id FK
+        BINARY_16_ unit_id FK
+        VARCHAR_32_ role
+        SMALLINT quota
+        VARCHAR_200_ note
+        VARCHAR_32_ data_status
+    }
+    security_career_requirement {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ agency_id FK
+        BINARY_16_ rank_id FK
+        VARCHAR_32_ requirement_kind
+        VARCHAR_32_ course_code
+        VARCHAR_32_ course_category
+        BOOLEAN is_mandatory
+        VARCHAR_300_ note
+        VARCHAR_32_ data_status
+        VARCHAR_32_ status
+    }
+    app_user {
+        BINARY_16 id PK
+    }
+    curriculum {
+        BINARY_16 id PK
+    }
+    enrolment {
+        BINARY_16 id PK
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    learner {
+        BINARY_16 id PK
+    }
+    programme {
+        BINARY_16 id PK
+    }
+    agency_rank ||--o{ security_career_requirement : "rank_id"
+    agency_rank ||--o{ trainee_record : "rank_at_entry_id"
+    agency_unit ||--o{ agency_unit : "parent_unit_id"
+    agency_unit ||--o{ security_course_unit : "unit_id"
+    agency_unit ||--o{ security_institution : "unit_id"
+    app_user ||--o{ trainee_record : "recorded_by"
+    curriculum ||--o{ security_course : "curriculum_id"
+    enrolment ||--o{ trainee_record : "enrolment_id"
+    institution ||--o{ security_course : "institution_id"
+    institution ||--o| security_institution : "institution_id"
+    learner ||--o{ trainee_record : "learner_id"
+    programme ||--o{ security_course : "programme_id"
+    security_agency ||--o{ agency_rank : "agency_id"
+    security_agency ||--o{ agency_unit : "agency_id"
+    security_agency ||--o{ security_career_requirement : "agency_id"
+    security_agency ||--o{ security_course : "agency_id"
+    security_agency ||--o{ security_institution : "agency_id"
+    security_course ||--o{ security_course_intake : "course_id"
+    security_course ||--o{ security_course_module : "course_id"
+    security_course ||--o{ security_course_unit : "course_id"
+    security_course_intake ||--o{ trainee_record : "intake_id"

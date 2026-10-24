@@ -1,0 +1,19 @@
+{# Horizontal bar chart: one hue (magnitude), sorted by the caller, value labels in text colour, hover titles. #}
+{% macro hbar(rows, label, value, title, maximum=100, fmt="{:.1f}", width=640) %}
+{% set lw = 170 %}{% set vw = 52 %}{% set bw = width - lw - vw %}{% set rh = 24 %}{% set h = rows|length * rh + 24 %}
+<svg class="hbar" viewBox="0 0 {{ width }} {{ h }}" role="img" aria-label="{{ title }}">
+  <title>{{ title }}</title>
+  {% for t in (0.25, 0.5, 0.75, 1.0) %}<line x1="{{ lw + bw * t }}" x2="{{ lw + bw * t }}" y1="4" y2="{{ h - 18 }}"></line>
+  <text class="lbl" x="{{ lw + bw * t }}" y="{{ h - 4 }}" text-anchor="middle">{{ "{:.0f}".format(maximum * t) }}</text>{% endfor %}
+  <line x1="{{ lw }}" x2="{{ lw }}" y1="4" y2="{{ h - 18 }}"></line>
+  {% for r in rows %}{% set v = r[value] or 0 %}{% set w = [bw * v / maximum, 0]|max %}{% set y = 6 + loop.index0 * rh %}
+  <g><title>{{ r[label] }}: {{ fmt.format(v) }}</title>
+    <text class="lbl" x="{{ lw - 8 }}" y="{{ y + 11 }}" text-anchor="end">{{ r[label]|truncate(24, True, "…") }}</text>
+    {% if w > 4 %}<path d="M{{ lw }} {{ y }} h{{ w - 4 }} a4 4 0 0 1 4 4 v6 a4 4 0 0 1 -4 4 h-{{ w - 4 }} z"></path>{% endif %}
+    <text x="{{ lw + w + 6 }}" y="{{ y + 11 }}">{{ fmt.format(v) }}</text>
+  </g>{% endfor %}
+</svg>
+{% endmacro %}
+{% macro meter(v, maximum=100) %}<span class="meter" aria-hidden="true"><span style="width: {{ [[100 * (v or 0) / maximum, 0]|max, 100]|min }}%"></span></span>{% endmacro %}
+{% macro pct(v) %}{{ "—" if v is none else "{:.1f}%".format(100 * v) }}{% endmacro %}
+{% macro num(v, f="{:.1f}") %}{{ "—" if v is none else f.format(v) }}{% endmacro %}

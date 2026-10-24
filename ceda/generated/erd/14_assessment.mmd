@@ -1,0 +1,326 @@
+erDiagram
+    grading_scale {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ code
+        VARCHAR_300_ name
+        VARCHAR_32_ scale_kind
+        INT version
+        VARCHAR_32_ status
+    }
+    grade_band {
+        BINARY_16_ id PK
+        BINARY_16_ grading_scale_id FK
+        VARCHAR_16_ label
+        DECIMAL_7_3_ min_score
+        DECIMAL_7_3_ max_score
+        DECIMAL_4_2_ grade_points
+        BOOLEAN is_pass
+        BOOLEAN is_credit
+        SMALLINT sort_order
+    }
+    assessment {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ class_subject_plan_id FK
+        BINARY_16_ course_section_id FK
+        BINARY_16_ assignment_id FK
+        VARCHAR_300_ title
+        VARCHAR_32_ assessment_kind
+        DECIMAL_7_3_ max_mark
+        DECIMAL_6_3_ weight
+        DATE assessed_on
+        BINARY_16_ grading_scale_id FK
+        JSON node_ids
+        BOOLEAN is_moderated
+        DATETIME_6_ locked_at
+        VARCHAR_32_ status
+    }
+    markbook_column {
+        BINARY_16_ id PK
+        BINARY_16_ class_subject_plan_id FK
+        BINARY_16_ assessment_id FK
+        VARCHAR_80_ label
+        VARCHAR_32_ column_kind
+        SMALLINT sort_order
+    }
+    assessment_result {
+        BINARY_16_ id PK
+        BINARY_16_ assessment_id FK
+        BINARY_16_ learner_id FK
+        DECIMAL_7_3_ score
+        VARCHAR_16_ grade_label
+        JSON objective_results
+        BOOLEAN is_missing_work
+        VARCHAR_200_ access_arrangement
+        VARCHAR_1000_ comment
+        BINARY_16_ entered_by
+        BOOLEAN corrected_after_lock
+    }
+    moderation_sample {
+        BINARY_16_ id PK
+        BINARY_16_ assessment_id FK
+        BINARY_16_ submission_mark_id FK
+        BINARY_16_ learner_id FK
+        DECIMAL_7_3_ original_score
+        DECIMAL_7_3_ moderated_score
+        BINARY_16_ moderator_staff_id FK
+        BOOLEAN within_tolerance
+        VARCHAR_1000_ note
+    }
+    target_grade {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        BINARY_16_ subject_id FK
+        VARCHAR_16_ target_label
+        VARCHAR_32_ method
+        VARCHAR_16_ working_at_label
+        VARCHAR_32_ rag
+        DECIMAL_6_2_ gap_points
+        DATE valid_from
+        DATE valid_to
+    }
+    external_assessment_import {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_200_ source
+        VARCHAR_60_ cohort_label
+        INT rows_total
+        INT rows_matched
+        BINARY_16_ import_job_id FK
+        VARCHAR_32_ status
+    }
+    report_card_run {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        BINARY_16_ period_id FK
+        VARCHAR_40_ template_code
+        JSON class_group_ids
+        JSON completeness
+        BINARY_16_ withholding_policy_id FK
+        DATETIME_6_ published_at
+        VARCHAR_32_ status
+    }
+    report_card {
+        BINARY_16_ id PK
+        BINARY_16_ run_id FK
+        BINARY_16_ learner_id FK
+        BINARY_16_ document_id
+        BINARY_32_ content_hash
+        DATETIME_6_ released_at
+    }
+    exam_series {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ exam_body
+        VARCHAR_300_ name
+        BINARY_16_ qualification_id FK
+        BINARY_16_ programme_id FK
+        BINARY_16_ curriculum_version_id FK
+        DATE entry_opens_on
+        DATE entry_closes_on
+        DATETIME_6_ results_release_at
+        VARCHAR_32_ status
+    }
+    exam_paper {
+        BINARY_16_ id PK
+        BINARY_16_ series_id FK
+        BINARY_16_ subject_id FK
+        VARCHAR_20_ paper_code
+        VARCHAR_300_ title
+        INT duration_minutes
+        BOOLEAN is_osce_station
+        JSON station_rubric
+    }
+    exam_entry {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ series_id FK
+        BINARY_16_ learner_id FK
+        BINARY_16_ enrolment_id FK
+        VARCHAR_32_ candidate_number
+        JSON subjects
+        JSON eligibility
+        JSON access_arrangements
+        BOOLEAN is_external_candidate
+        BINARY_16_ invoice_id FK
+        VARCHAR_32_ status
+    }
+    exam_sitting {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ paper_id FK
+        BINARY_16_ room_id FK
+        DATETIME_6_ starts_at
+        JSON desk_layout
+        JSON seat_allocations
+        JSON invigilator_staff_ids
+        VARCHAR_32_ status
+    }
+    exam_result {
+        BINARY_16_ id PK
+        BINARY_16_ entry_id FK
+        BINARY_16_ paper_id FK
+        DECIMAL_7_3_ score
+        VARCHAR_16_ grade_label
+        BINARY_16_ result_import_id FK
+        DATETIME_6_ committed_at
+        BINARY_16_ committed_by
+    }
+    result_import {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ series_id FK
+        BINARY_16_ source_document_id
+        INT rows_total
+        INT rows_matched
+        INT rows_in_review
+        JSON anomalies
+        VARCHAR_32_ status
+    }
+    exam_anomaly {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ series_id FK
+        VARCHAR_32_ anomaly_kind
+        JSON evidence
+        JSON affected_entry_ids
+        BINARY_16_ assigned_to
+        VARCHAR_32_ outcome
+        VARCHAR_32_ status
+    }
+    grade_broadsheet {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ series_id FK
+        BINARY_16_ class_group_id FK
+        DATETIME_6_ generated_at
+        BINARY_16_ document_id
+    }
+    academic_standing {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        BINARY_16_ enrolment_id FK
+        BINARY_16_ period_id FK
+        DECIMAL_6_1_ credits_attempted
+        DECIMAL_6_1_ credits_earned
+        DECIMAL_4_2_ gpa
+        DECIMAL_4_2_ cgpa
+        VARCHAR_32_ progression
+        VARCHAR_32_ classification
+        BOOLEAN is_borderline
+        VARCHAR_500_ board_decision
+        VARCHAR_32_ status
+    }
+    transcript {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        BINARY_16_ enrolment_id FK
+        BINARY_16_ certificate_id FK
+        BINARY_16_ document_id
+        BINARY_32_ content_hash
+        DATETIME_6_ issued_at
+    }
+    academic_period {
+        BINARY_16 id PK
+    }
+    assignment {
+        BINARY_16 id PK
+    }
+    certificate {
+        BINARY_16 id PK
+    }
+    class_group {
+        BINARY_16 id PK
+    }
+    class_subject_plan {
+        BINARY_16 id PK
+    }
+    course_section {
+        BINARY_16 id PK
+    }
+    curriculum_version {
+        BINARY_16 id PK
+    }
+    enrolment {
+        BINARY_16 id PK
+    }
+    import_job {
+        BINARY_16 id PK
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    invoice {
+        BINARY_16 id PK
+    }
+    learner {
+        BINARY_16 id PK
+    }
+    policy_rule {
+        BINARY_16 id PK
+    }
+    programme {
+        BINARY_16 id PK
+    }
+    qualification {
+        BINARY_16 id PK
+    }
+    room {
+        BINARY_16 id PK
+    }
+    staff {
+        BINARY_16 id PK
+    }
+    subject {
+        BINARY_16 id PK
+    }
+    submission_mark {
+        BINARY_16 id PK
+    }
+    academic_period ||--o{ academic_standing : "period_id"
+    academic_period ||--o{ report_card_run : "period_id"
+    assessment ||--o{ assessment_result : "assessment_id"
+    assessment ||--o{ markbook_column : "assessment_id"
+    assessment ||--o{ moderation_sample : "assessment_id"
+    assignment ||--o{ assessment : "assignment_id"
+    certificate ||--o{ transcript : "certificate_id"
+    class_group ||--o{ grade_broadsheet : "class_group_id"
+    class_subject_plan ||--o{ assessment : "class_subject_plan_id"
+    class_subject_plan ||--o{ markbook_column : "class_subject_plan_id"
+    course_section ||--o{ assessment : "course_section_id"
+    curriculum_version ||--o{ exam_series : "curriculum_version_id"
+    enrolment ||--o{ academic_standing : "enrolment_id"
+    enrolment ||--o{ exam_entry : "enrolment_id"
+    enrolment ||--o{ transcript : "enrolment_id"
+    exam_entry ||--o{ exam_result : "entry_id"
+    exam_paper ||--o{ exam_result : "paper_id"
+    exam_paper ||--o{ exam_sitting : "paper_id"
+    exam_series ||--o{ exam_anomaly : "series_id"
+    exam_series ||--o{ exam_entry : "series_id"
+    exam_series ||--o{ exam_paper : "series_id"
+    exam_series ||--o{ grade_broadsheet : "series_id"
+    exam_series ||--o{ result_import : "series_id"
+    grading_scale ||--o{ assessment : "grading_scale_id"
+    grading_scale ||--o{ grade_band : "grading_scale_id"
+    import_job ||--o{ external_assessment_import : "import_job_id"
+    institution ||--o{ report_card_run : "institution_id"
+    invoice ||--o{ exam_entry : "invoice_id"
+    learner ||--o{ academic_standing : "learner_id"
+    learner ||--o{ assessment_result : "learner_id"
+    learner ||--o{ exam_entry : "learner_id"
+    learner ||--o{ moderation_sample : "learner_id"
+    learner ||--o{ report_card : "learner_id"
+    learner ||--o{ target_grade : "learner_id"
+    learner ||--o{ transcript : "learner_id"
+    policy_rule ||--o{ report_card_run : "withholding_policy_id"
+    programme ||--o{ exam_series : "programme_id"
+    qualification ||--o{ exam_series : "qualification_id"
+    report_card_run ||--o{ report_card : "run_id"
+    result_import ||--o{ exam_result : "result_import_id"
+    room ||--o{ exam_sitting : "room_id"
+    staff ||--o{ moderation_sample : "moderator_staff_id"
+    subject ||--o{ exam_paper : "subject_id"
+    subject ||--o{ target_grade : "subject_id"
+    submission_mark ||--o{ moderation_sample : "submission_mark_id"

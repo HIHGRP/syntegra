@@ -1,0 +1,20 @@
+# Traceability declarations that are not expressed on entities or metrics.
+#
+# behavioural_requirements: functional requirements of SYN-MFS-002 v2.4 that add no new data of their own —
+# they are UI, workflow, guardrail or engine behaviour over data already modelled. Each names the entity it
+# operates on so that every one of the 517 FRs is accounted for (the validator fails otherwise).
+#
+# appj_superseded: Appendix J tables deliberately not carried into CEDA, with the reason (none at v1.0 —
+# every one of the 174 tables is mapped; see generated/traceability/appj_mapping.md).
+
+behavioural_requirements:
+  - {id: FR-ACA-05, uses: class_group, note: "Teacher class page (ACA-05) is a view over class membership, timetable, adjustments and LMS homework."}
+  - {id: FR-ATT-07, uses: attendance_register, note: "Cross-module attendance flow is triggered by ATT.REGISTER_SUBMITTED and the alert rules; no new data."}
+  - {id: FR-BEH-103, uses: influence_score, note: "Superseded by FR-BEH-109 (MFS §18.12)."}
+  - {id: FR-FAM-104, uses: guardian, note: "Parent app is a channel over Family 360, timetable, LMS, results, fees, consents, meetings and messages."}
+  - {id: FR-INT-05, uses: agent_template, note: "Prohibited autonomous decisions are enforced in code: the services that expel, reject, dismiss, deny access or set safeguarding outcomes accept only human-authored commands; agent_template.human_only_actions records them."}
+  - {id: FR-STF-101, uses: staff, note: "Staff app (iOS, Android, PWA) is a channel over registers, timetable, cover, learner reports, medical alerts, incidents and messages."}
+  - {id: FR-ADM-203, uses: role_grant, note: "Guardrail (CR-008): an API write needs the access level of the web form that performs the same action — the grant's effective level (role clearance lowered by clearance_cap) is checked before the service runs; one rule for pages, forms and API."}
+  - {id: FR-SUB-116, uses: subscription, note: "Guardrail: subscription and SDAF status are never read by register, lesson, LMS, results, exam, transfer or certificate services; enforced by import contracts and tests."}
+
+appj_superseded: {}

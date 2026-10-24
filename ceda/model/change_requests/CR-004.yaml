@@ -1,0 +1,35 @@
+# CEDA change request register entry (see CR-001.yaml for the format).
+
+id: CR-004
+title: Education and training institutions of Nigeria's security agencies, their curricula and agency structures
+received: 2026-10-14
+status: adopted
+ceda_version: 1.5.0
+summary: >
+  Brings the education and training institutions of the Armed Forces (Defence Headquarters, Army, Navy, Air Force),
+  the Nigeria Police Force and the paramilitary, law-enforcement, emergency and security services into CEDA. Each
+  agency is modelled individually with its own organisational structure (headquarters, services, commands,
+  training commands, formations, state commands), its rank structure, its training institutions and, for every
+  institution, its own catalogue of courses (curricula) with modules, intakes and trainee records. They are held in
+  a national sector registry, separate from the 37 state registries, with access through each agency's structure.
+constraints:
+  - "CEDA holds education and training administration only: institutions, courses, syllabus headings, intakes, enrolment and outcomes. Operational, deployment, intelligence, weapons and tactical content is never stored; courses whose detail the agency withholds are marked content_not_held."
+  - "Trainee records are restricted personal data (NDPA 2023) visible only through the owning agency's structure and the trainee's own record; state ministries do not see them."
+  - "Reference data (agencies, structures, institutions, ranks, courses) is seeded from public sources, marked illustrative or to_confirm, and must be confirmed by each agency before live use."
+  - "Degree, diploma and certificate programmes keep their academic regulators (NUC, NBTE, NCCE) through the existing programme and curriculum entities."
+
+requirements:
+  - {id: FR-STI-01, module: STI, priority: SHALL, phase: P3, text: "Maintain a directory of Nigeria's security agencies (armed forces, police, paramilitary, law-enforcement, emergency and security services) with supervising ministry and establishing law."}
+  - {id: FR-STI-02, module: STI, priority: SHALL, phase: P3, text: "Model each agency's own organisational structure as a tree (headquarters, services, directorates, commands, training commands, formations, zones and state commands) that is also its access hierarchy."}
+  - {id: FR-STI-03, module: STI, priority: SHALL, phase: P3, text: "Hold each agency's rank structure (officer, warrant, non-commissioned, senior and junior staff, cadet and recruit ranks) in seniority order."}
+  - {id: FR-STI-04, module: STI, priority: SHALL, phase: P3, text: "Register every education and training institution of an agency (academy, defence university, staff, war and defence colleges, depot, training school, specialist school) with its owning command, location, type, accreditation and access regime."}
+  - {id: FR-STI-05, module: STI, priority: SHALL, phase: P3, text: "Hold each institution's own course catalogue — initial officer, cadet degree, recruit, junior leadership, promotion, specialist, command and staff, strategic and academic programmes — with award, duration, entry requirements, target ranks and accrediting body, versioned and published."}
+  - {id: FR-STI-06, module: STI, priority: SHALL, phase: P3, text: "Break each course into modules (syllabus headings) by area, contact hours, assessment and whether mandatory; never hold operational or tactical content."}
+  - {id: FR-STI-07, module: STI, priority: SHALL, phase: P3, text: "Run course intakes and record each trainee's enrolment, rank at entry and outcome (passed out, commissioned, failed, relegated, withdrawn) on the trainee's lifelong learner record."}
+  - {id: FR-STI-08, module: STI, priority: SHALL, phase: P3, text: "Hold security-sector training in a national sector registry isolated from state registries, with access granted at agency, command or institution level."}
+
+pages:
+  - {id: STI-01, title: Security agencies and training institutions, module: Security training, pattern: Register / list, route: "/security-training", classification: Internal, phase: P3, roles: [PLAT (Platform Administrator), FED (Federal Ministry Administrator), SADM (Security Training Administrator), STO (Security Training Officer)], purpose: "Directory of the security agencies, each agency's structure, and the education and training institutions under each command."}
+  - {id: STI-02, title: Training institution, module: Security training, pattern: Record 360, route: "/security-training/institutions/{id}", classification: Internal, phase: P3, roles: [SADM (Security Training Administrator), STO (Security Training Officer)], purpose: "Institution profile — agency, command, type, accreditation, access regime — and its course catalogue."}
+  - {id: STI-03, title: Training course curriculum, module: Security training, pattern: Record 360, route: "/security-training/courses/{id}", classification: Internal, phase: P3, roles: [SADM (Security Training Administrator), STO (Security Training Officer)], purpose: "One course's curriculum: award, duration, entry requirements, target ranks, modules with hours and assessment, and its intakes."}
+  - {id: STI-04, title: Course intake and trainees, module: Security training, pattern: Register / list, route: "/security-training/intakes/{id}", classification: Restricted, phase: P3, roles: [SADM (Security Training Administrator), STO (Security Training Officer)], purpose: "Trainees of one intake with rank at entry and outcome; records passing out and commissioning."}

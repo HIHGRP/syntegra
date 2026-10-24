@@ -1,0 +1,1944 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/03_iam.schema.json",
+  "title": "CEDA IAM — Identity, access, permissions and service identities",
+  "$defs": {
+    "AppUser": {
+      "title": "AppUser",
+      "description": "Sign-in identity (a person may also be a learner, guardian or staff member) — Administrator 360 root",
+      "type": "object",
+      "x-ceda": {
+        "entity": "app_user",
+        "zone": "registry",
+        "domain": "IAM",
+        "kind": "master",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "iam"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "username": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 254,
+          "description": "Sign-in name (e-mail or issued username)",
+          "x-personal-data": true
+        },
+        "display_name": {
+          "type": "string",
+          "maxLength": 200,
+          "x-personal-data": true
+        },
+        "phone": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\+[1-9][0-9]{6,14}$",
+              "description": "E.164; used for OTP and magic links",
+              "x-personal-data": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "person_kind": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "learner",
+                "guardian",
+                "staff",
+                "provider_person",
+                "applicant",
+                "visitor"
+              ],
+              "description": "Linked master record type"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "person_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "learner, guardian or staff id (registry)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "idp": {
+          "type": "string",
+          "enum": [
+            "local",
+            "gov_sso",
+            "entra",
+            "google",
+            "magic_link",
+            "otp"
+          ]
+        },
+        "idp_subject": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 255,
+              "description": "Subject at the federated IdP"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "password_hash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 255,
+              "description": "Argon2id (local accounts only)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "invited",
+            "active",
+            "locked",
+            "suspended",
+            "deactivated"
+          ]
+        },
+        "locked_until": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "description": "Lockout after 5 failures in 10 minutes"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "failed_attempts": {
+          "type": "integer"
+        },
+        "last_sign_in_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferences": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Language, text size, theme, density, digest, briefing horizons"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "deactivated_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "description": "Automatic from the HR leaving date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "username",
+        "display_name",
+        "idp",
+        "status",
+        "failed_attempts",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "MfaFactor": {
+      "title": "MfaFactor",
+      "description": "Multi-factor authentication factor (TOTP, FIDO2 passkey, SMS/e-mail OTP fallback)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "mfa_factor",
+        "zone": "registry",
+        "domain": "IAM",
+        "kind": "master",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "iam"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "factor_type": {
+          "type": "string",
+          "enum": [
+            "totp",
+            "passkey",
+            "sms_otp",
+            "email_otp"
+          ]
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 80
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "secret": {
+          "type": "string",
+          "x-classification": "restricted",
+          "writeOnly": true,
+          "description": "TOTP seed or WebAuthn credential (public key and id)"
+        },
+        "credential_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 255,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "WebAuthn credential id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_used_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_step": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "description": "TOTP time step of the last accepted code — a code is never accepted twice (FR-AUT-03)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "user_id",
+        "factor_type",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "MfaRecoveryCode": {
+      "title": "MfaRecoveryCode",
+      "description": "Single-use recovery code for the second factor (ten issued at enrolment, shown once, stored as keyed hashes)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "mfa_recovery_code",
+        "zone": "registry",
+        "domain": "IAM",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "iam"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "code_hash": {
+          "type": "string",
+          "contentEncoding": "base64",
+          "description": "Keyed hash of the code; the code itself is never stored"
+        },
+        "used_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "user_id",
+        "code_hash",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "UserSession": {
+      "title": "UserSession",
+      "description": "Server-side session (idle timeout 30 min for restricted/special roles, 8 h otherwise)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "user_session",
+        "zone": "registry",
+        "domain": "IAM",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "iam"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "session_hash": {
+          "type": "string",
+          "contentEncoding": "base64",
+          "description": "SHA-256 of the session token"
+        },
+        "active_grant_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "role_grant",
+              "description": "Role-at-scope chosen in AUT-03"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "device_label": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 120
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_trusted_device": {
+          "type": "boolean",
+          "description": "Trusted for 30 days"
+        },
+        "ip": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "ipv6"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "user_agent": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 400
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "mfa_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "auth_method": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "password, password+totp, password+recovery, sso:<provider>, sso:<provider>+idp_mfa"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "last_seen_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "revoked_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ended_reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "signed_out",
+                "idle_timeout",
+                "expired",
+                "replaced",
+                "ended_by_administrator",
+                "account_inactive"
+              ],
+              "description": "Why the session ended (CR-007)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "affiliation_scope_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Scope node of the school or office the user signed in for (soft; CR-007)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "affiliation_name": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 300,
+              "description": "School or office name as shown at sign-in"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "affiliation_address": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500,
+              "description": "School or office address as shown at sign-in"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "affiliation_confirmed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the user confirmed the school or office after the password"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "user_id",
+        "session_hash",
+        "is_trusted_device",
+        "started_at",
+        "last_seen_at",
+        "expires_at",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "CredentialReset": {
+      "title": "CredentialReset",
+      "description": "Password-reset or magic-link token (hashed, single use, short expiry; generic responses)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "credential_reset",
+        "zone": "registry",
+        "domain": "IAM",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "iam"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "purpose": {
+          "type": "string",
+          "enum": [
+            "password_reset",
+            "magic_link",
+            "mfa_recovery"
+          ]
+        },
+        "token_hash": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "requested_ip": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "ipv6"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "used_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "user_id",
+        "purpose",
+        "token_hash",
+        "expires_at",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "IdentityProviderConfig": {
+      "title": "IdentityProviderConfig",
+      "description": "Federated sign-in provider of a state (OpenID Connect — government IdP, Microsoft Entra ID, Google Workspace)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "identity_provider_config",
+        "zone": "registry",
+        "domain": "IAM",
+        "kind": "config",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "iam"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "provider": {
+          "type": "string",
+          "enum": [
+            "local",
+            "gov_sso",
+            "entra",
+            "google",
+            "magic_link",
+            "otp"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Button text, e.g. Sign in with Abia Government ID"
+        },
+        "issuer": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 2048,
+          "description": "OIDC issuer; discovery document at {issuer}/.well-known/openid-configuration"
+        },
+        "client_id": {
+          "type": "string",
+          "maxLength": 255
+        },
+        "client_secret": {
+          "type": "string",
+          "x-classification": "restricted",
+          "writeOnly": true,
+          "description": "Confidential-client secret (envelope-encrypted)"
+        },
+        "scopes": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Space-separated, always including openid and email"
+        },
+        "allowed_domains": {
+          "type": "object",
+          "description": "E-mail domains whose verified addresses may sign in through this provider"
+        },
+        "trust_idp_mfa": {
+          "type": "boolean",
+          "description": "Accept the provider's MFA (amr/acr) as the second factor"
+        },
+        "sort_order": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "provider",
+        "label",
+        "issuer",
+        "client_id",
+        "scopes",
+        "allowed_domains",
+        "trust_idp_mfa",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Role": {
+      "title": "Role",
+      "description": "Role template (41 built-in roles plus REV, ACG, OPF; built-ins cloneable, never editable)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "role",
+        "zone": "registry",
+        "domain": "IAM",
+        "kind": "config",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "iam"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 16,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "TCH, DSL, STA, PROP, REV …"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "clearance": {
+          "type": "string",
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "restricted",
+            "special"
+          ],
+          "description": "Highest classification the role normally receives — its access level (1 public … 5 special, CR-007)"
+        },
+        "is_builtin": {
+          "type": "boolean"
+        },
+        "cloned_from_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "role"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_by_clearance": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "public",
+                "internal",
+                "confidential",
+                "restricted",
+                "special"
+              ],
+              "description": "Custom role may never exceed its creator's clearance"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "code",
+        "name",
+        "clearance",
+        "is_builtin",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "RolePermission": {
+      "title": "RolePermission",
+      "description": "Permission granted by a role (resource:action with optional ABAC condition)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "role_permission",
+        "zone": "registry",
+        "domain": "IAM",
+        "kind": "config",
+        "classification": "internal",
+        "history": "none",
+        "module": "iam"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "role_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "role"
+        },
+        "permission": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "resource:action, e.g. learner:view, learner.nin:reveal, certificate:issue"
+        },
+        "abac_condition": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "own_classes, own_children, assigned_cases, assigned_inspections, own_placements"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "field_scope": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Restricted/special fields this permission reveals"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "role_id",
+        "permission",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "RoleGrant": {
+      "title": "RoleGrant",
+      "description": "Role granted to a user at a scope (role-at-scope), with clearance cap and access review date",
+      "type": "object",
+      "x-ceda": {
+        "entity": "role_grant",
+        "zone": "registry",
+        "domain": "IAM",
+        "kind": "link",
+        "classification": "internal",
+        "history": "effective",
+        "module": "iam"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "role_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "role"
+        },
+        "scope_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "scope_node"
+        },
+        "clearance_cap": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "public",
+                "internal",
+                "confidential",
+                "restricted",
+                "special"
+              ],
+              "description": "Narrows the role clearance for this grant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "granted_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "review_due_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date",
+              "description": "Access review"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "delegation_of_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "role_grant",
+              "description": "Delegated from another grant (Administrator 360 delegations)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "supervised_until": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date",
+              "description": "Time-limited supervised exception approved by the head while mandatory checks are pending (FR-STF-03)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "office_scope_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "School or office the holder works in when it differs from the grant's scope — e.g. a ministry official with state-wide scope works in the Ministry of Education (soft; CR-007)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective from (inclusive) — history: effective",
+          "readOnly": true
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective to (inclusive); NULL = open-ended — history: effective",
+          "readOnly": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "user_id",
+        "role_id",
+        "scope_id",
+        "status",
+        "valid_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "AccessReview": {
+      "title": "AccessReview",
+      "description": "Periodic access review decision on a grant",
+      "type": "object",
+      "x-ceda": {
+        "entity": "access_review",
+        "zone": "registry",
+        "domain": "IAM",
+        "kind": "event",
+        "classification": "internal",
+        "history": "append",
+        "module": "iam"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "grant_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "role_grant"
+        },
+        "reviewer_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "keep",
+            "reduce",
+            "revoke",
+            "escalate"
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reviewed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "grant_id",
+        "reviewer_id",
+        "decision",
+        "reviewed_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "BreakGlassGrant": {
+      "title": "BreakGlassGrant",
+      "description": "Time-boxed elevated emergency access (DPO and data owner notified; reviewed within 24 h)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "break_glass_grant",
+        "zone": "registry",
+        "domain": "IAM",
+        "kind": "transaction",
+        "classification": "restricted",
+        "history": "lifecycle",
+        "module": "iam"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "scope_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "scope_node"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 65535
+        },
+        "starts_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ends_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "dpo_notified_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reviewed_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reviewed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "review_outcome": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "keep",
+                "reduce",
+                "revoke",
+                "escalate"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "user_id",
+        "scope_id",
+        "reason",
+        "starts_at",
+        "ends_at",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ServiceIdentity": {
+      "title": "ServiceIdentity",
+      "description": "Non-human principal — automation agent, integration client or system job — bound to a human owner's grant",
+      "type": "object",
+      "x-ceda": {
+        "entity": "service_identity",
+        "zone": "registry",
+        "domain": "IAM",
+        "kind": "master",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "iam"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "agent",
+            "api_client",
+            "integration",
+            "system_job"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "owner_user_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "owner_grant_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "role_grant",
+          "description": "Grant the identity acts under"
+        },
+        "allowed_tools": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Declared typed commands (agents) or API scopes (clients)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "paused_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "description": "Kill switch"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "paused_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "kind",
+        "name",
+        "owner_user_id",
+        "owner_grant_id",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "PurposeCode": {
+      "title": "PurposeCode",
+      "description": "Purpose recorded when restricted fields are revealed or special-category records opened",
+      "type": "object",
+      "x-ceda": {
+        "entity": "purpose_code",
+        "zone": "registry",
+        "domain": "IAM",
+        "kind": "reference",
+        "classification": "public",
+        "history": "none",
+        "module": "iam"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "registration, safeguarding, investigation, transfer_query, exam_integrity, child_missing_education …"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "requires_reason_text": {
+          "type": "boolean"
+        },
+        "allowed_roles": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Role codes permitted to use the purpose"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "code",
+        "label",
+        "requires_reason_text",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "UserPin": {
+      "title": "UserPin",
+      "description": "Pinned page, record or saved view of a user (navigation v2)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "user_pin",
+        "zone": "registry",
+        "domain": "IAM",
+        "kind": "config",
+        "classification": "internal",
+        "history": "none",
+        "module": "iam"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "target_kind": {
+          "type": "string",
+          "enum": [
+            "page",
+            "record",
+            "saved_view"
+          ]
+        },
+        "target_ref": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Page id, record reference or saved-view id"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 120
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sort_order": {
+          "type": "integer"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "user_id",
+        "target_kind",
+        "target_ref",
+        "sort_order",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

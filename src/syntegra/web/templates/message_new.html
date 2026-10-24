@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_school_picker.html" import school_picker %}
+{% block title %}Message parents{% endblock %}
+{% block content %}
+<div class="head-row"><h1>Message parents</h1><p class="no-print"><a href="/conversations?school={{ d.institution.id }}">Your conversations</a></p></div>
+<p class="muted">{{ d.institution.name }} · Each parent gets the message in their own conversation with you, so replies are private.</p>
+{{ school_picker(school, schools) }}
+{% if message %}<div class="alert alert-ok" role="status" id="sent">{{ message }}{% if sent and sent.unreachable %} Not sent for {{ sent.unreachable|join(", ") }}: no parent the school can contact.{% endif %}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<form method="get" class="picker no-print"><input type="hidden" name="school" value="{{ d.institution.id }}">
+  <label>Class<select name="class" onchange="this.form.submit()">{% for c in d.classes %}<option value="{{ c.id }}"{% if d.class and d.class.id == c.id %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></label><noscript><button>Show</button></noscript></form>
+{% if d.class %}
+<form method="post" class="card" id="compose">
+  <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="school" value="{{ d.institution.id }}"><input type="hidden" name="class" value="{{ d.class.id }}">
+  <fieldset><legend>About which learners — {{ d.class.name }}</legend>
+    <p><label class="check"><input type="checkbox" onclick="for (const b of this.form.querySelectorAll('input[name=learner_ids]')) b.checked = this.checked"> The whole class</label></p>
+    <div class="pick-grid">{% for lr in d.learners %}<label class="chip"><input type="checkbox" name="learner_ids" value="{{ lr.id }}"{% if lr.id|string in chosen %} checked{% endif %}{% if lr.unreachable %} disabled{% endif %}> {{ lr.name }} <span class="hint opt">{% if lr.unreachable %}no contact{% else %}{% if lr.in_app %}app {{ lr.in_app }}{% endif %}{% if lr.in_app and lr.sms %} · {% endif %}{% if lr.sms %}SMS {{ lr.sms }}{% endif %}{% endif %}</span></label>{% endfor %}</div>
+    <p class="hint">“app” parents read it in Syntegra straight away; “SMS” parents have no account yet and are sent a text. Parents whose contact is restricted are never listed.</p>
+  </fieldset>
+  <label>Message <span class="hint opt">— up to 1,000 characters; no medical or safeguarding details</span><textarea name="body" rows="5" maxlength="1000" required>{{ posted.get('body', '') }}</textarea></label>
+  <p><button class="primary">Send</button></p>
+</form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,10 @@
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# application runtime
+var/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+__pycache__/

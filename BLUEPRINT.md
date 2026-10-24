@@ -4,6 +4,13 @@
 **Stack:** Python 3.12 · FastAPI · PostgreSQL · Redis · Celery · React · Kubernetes
 **Date:** 2026-10-11
 
+> **Precedence notice (13 Oct 2026).** This v1.0 blueprint predates SYN-MFS-002 v2.4 and the Canonical
+> Enterprise Data Architecture. The binding stack is now Python 3.12 · Django 5.2 LTS · MySQL 9.7 LTS ·
+> RHEL 10 (MFS §16), and all data modelling, physical schema, data placement, eventing, analytics and
+> data-governance decisions are governed by [`ceda/CEDA.md`](ceda/CEDA.md) and the model in [`ceda/model/`](ceda/model/).
+> Where this document conflicts with the MFS or CEDA (for example PostgreSQL, row-level security, the §5 data
+> model, ClickHouse), the MFS and CEDA govern.
+
 ---
 
 ## 1. Vision & Positioning

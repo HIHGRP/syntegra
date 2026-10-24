@@ -1,0 +1,5797 @@
+# Extracted from SYN-MFS-002 v2.4 (consolidated single volume) by ceda tooling.
+# Do not edit by hand; regenerate from the specification.
+pages:
+- id: ACA-01
+  title: Academic calendar
+  module: Academic structure
+  pattern: Settings / configuration
+  route: /academic/calendar
+  classification: Internal
+  phase: P1
+  roles:
+  - IADM (Institution Administrator)
+  - SLT (Senior Leadership)
+  - STA (State Ministry Administrator)
+  source: Gov §2
+  purpose: Sessions, terms/semesters, holidays, examination windows and key dates. Inherited from state/country calendar with
+    permitted institution variations.
+  objects:
+  - AcademicCalendar
+  api_calls:
+  - GET/POST /api/v1/calendars
+  events: []
+- id: ACA-02
+  title: Year groups, classes & programmes
+  module: Academic structure
+  pattern: Settings / configuration
+  route: /academic/structure
+  classification: Internal
+  phase: P1
+  roles:
+  - IADM (Institution Administrator)
+  - SLT (Senior Leadership)
+  - REG (Registrar / Admissions Officer)
+  source: §36, Gov §2
+  purpose: Configures education levels, year groups/grades, classes/arms, programmes and cohorts using the country education
+    model (e.g. ECCDE, Primary 1–6, JSS1–3, SS1–3; ND/HND; 100–600 level).
+  objects:
+  - EducationLevel
+  - Class
+  - Programme 360
+  api_calls:
+  - GET/POST /api/v1/academic/levels
+  - GET/POST /api/v1/classes
+  events: []
+- id: ACA-03
+  title: Subjects & courses
+  module: Academic structure
+  pattern: List / register
+  route: /academic/subjects
+  classification: Internal
+  phase: P1
+  roles:
+  - IADM (Institution Administrator)
+  - SLT (Senior Leadership)
+  - CURA (Curriculum Authority Officer)
+  source: §53
+  purpose: Subject/course catalogue mapped to Subject 360 master and to curriculum. Higher education uses courses/modules
+    with credit units.
+  objects:
+  - Subject 360
+  - Course
+  api_calls:
+  - GET /api/v1/subjects
+  events: []
+- id: ACA-04
+  title: Programme builder
+  module: Academic structure
+  pattern: Workspace
+  route: /academic/programmes/{id}
+  classification: Internal
+  phase: P5
+  roles:
+  - IADM (Institution Administrator)
+  - SLT (Senior Leadership)
+  - REG (Registrar / Admissions Officer)
+  - CURA (Curriculum Authority Officer)
+  source: §9, §10
+  purpose: Builds programmes (diplomas, degrees, TVET qualifications, professional programmes) from modules/courses with credits,
+    prerequisites, core/elective status and progression rules.
+  objects:
+  - Programme 360
+  - Qualification 360
+  api_calls:
+  - GET/PUT /api/v1/programmes/{id}
+  events: []
+  fields:
+  - label: Minimum credits to graduate
+    type: number
+    required: true
+    rule: null
+  - label: Minimum CGPA
+    type: number
+    required: true
+    rule: null
+  - label: Max duration (years)
+    type: number
+    required: true
+    rule: null
+  - label: Classification scheme
+    type: select
+    required: true
+    rule: null
+  - label: Accrediting body
+    type: select
+    required: false
+    rule: null
+- id: ACA-05
+  title: My class
+  module: Academic structure
+  pattern: Workspace
+  route: /classes/{id}
+  classification: Confidential
+  phase: P1
+  roles:
+  - TCH (Teacher / Lecturer)
+  - SLT (Senior Leadership)
+  source: §23
+  purpose: 'Teacher''s class page: roster, today''s lessons, register, markbook shortcuts, authorised adjustments for learners,
+    homework and messages.'
+  objects:
+  - Class
+  - Learner 360
+  - SEND 360
+  api_calls:
+  - GET /api/v1/classes/{id}
+  events: []
+- id: ACA-101
+  title: Class subject plan
+  module: Academic structure
+  pattern: Grid
+  roles:
+  - HEAD
+  - SLT
+  - IADM
+  phase: P1
+  route: /classes/{id}/plan
+  purpose: Build each class's subject offering with teacher of record, periods and curriculum version, validated live.
+- id: ACA-102
+  title: Department 360
+  module: Academic structure
+  pattern: Record 360
+  roles:
+  - HOD
+  - SLT
+  - REG
+  - STA
+  phase: P1
+  route: /departments/{id}
+  purpose: 'One record per academic department: HOD, subject areas, programmes, accreditation, courses, lecturers and load.'
+- id: ACA-103
+  title: Course allocation
+  module: Academic structure
+  pattern: Workspace
+  roles:
+  - HOD
+  - SLT
+  phase: P1
+  route: /departments/{id}/allocation/{semester}
+  purpose: Allocate every course section of the semester to a lecturer of record with specialism and load checks.
+- id: ADM-01
+  title: Tenants
+  module: Platform administration
+  pattern: List / register
+  route: /platform/tenants
+  classification: Internal
+  phase: P1
+  roles:
+  - PLAT (Platform Administrator)
+  source: §59
+  purpose: Provider view of tenants (global, country, regional, institutional, department), plans, data residency and health.
+  objects:
+  - Tenant
+  api_calls:
+  - GET /api/v1/platform/tenants
+  events: []
+- id: ADM-02
+  title: Country configuration
+  module: Platform administration
+  pattern: Settings / configuration
+  route: /config/country/{code}
+  classification: Internal
+  phase: P1
+  roles:
+  - PLAT (Platform Administrator)
+  - FED (Federal Ministry Administrator)
+  source: §36, §82, Gov §62
+  purpose: 'Country configuration layer: education levels, grade structures, calendars, qualifications, identifiers (e.g.
+    NIN), age-of-majority and consent rules, attendance codes, grading scales, currencies, languages, mandatory datasets.'
+  objects:
+  - CountryConfiguration
+  api_calls:
+  - GET/PUT /api/v1/config/countries/{code}
+  events: []
+  fields:
+  - label: Label
+    type: text
+    required: true
+    rule: null
+  - label: Format
+    type: text
+    required: true
+    rule: Regex ^\d{11}\$
+  - label: Required for learners aged
+    type: text
+    required: true
+    rule: e.g. ≥16 required; 0–15 if issued
+  - label: Verification adapter
+    type: select
+    required: false
+    rule: null
+  - label: Display mask
+    type: text
+    required: true
+    rule: null
+  - label: Use for matching
+    type: switch
+    required: false
+    rule: null
+- id: ADM-03
+  title: Institution setup
+  module: Platform administration
+  pattern: Wizard
+  route: /setup
+  classification: Internal
+  phase: P1
+  roles:
+  - IADM (Institution Administrator)
+  - HEAD (Head of Institution)
+  source: §61
+  purpose: 'Self-service onboarding for an institution: organisation, academic structure, users and roles, billing, workflows,
+    reports, branding and integrations — within mandatory government policies.'
+  objects:
+  - InstitutionConfiguration
+  api_calls:
+  - GET /api/v1/setup/status
+  events: []
+- id: ADM-04
+  title: Users
+  module: Platform administration
+  pattern: List / register
+  route: /admin/users
+  classification: Internal
+  phase: P1
+  roles:
+  - IADM (Institution Administrator)
+  - PLAT (Platform Administrator)
+  - STA (State Ministry Administrator)
+  - FED (Federal Ministry Administrator)
+  - HR (HR Officer)
+  source: §59
+  purpose: User accounts and role-at-scope grants; invitations, deactivation, access reviews.
+  objects:
+  - User
+  - RoleGrant
+  api_calls:
+  - GET /api/v1/users
+  events: []
+- id: ADM-05
+  title: Roles & permissions
+  module: Platform administration
+  pattern: Settings / configuration
+  route: /admin/roles
+  classification: Internal
+  phase: P1
+  roles:
+  - IADM (Institution Administrator)
+  - PLAT (Platform Administrator)
+  - DPO (Data Protection Officer)
+  source: §59
+  purpose: Role definitions and permission matrix (module × action), data-classification clearance and scope rules.
+  objects:
+  - Role
+  - Permission
+  api_calls:
+  - GET /api/v1/roles
+  events: []
+- id: ADM-06
+  title: Policy & rule engine
+  module: Platform administration
+  pattern: Workspace
+  route: /admin/policies
+  classification: Internal
+  phase: P2
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - IADM (Institution Administrator)
+  - CURA (Curriculum Authority Officer)
+  source: Gov §46–49, §62
+  purpose: 'Ministry Policy Engine: version-controlled rules (attendance minimums, curriculum, teacher qualifications, exam
+    eligibility, progression, certification, accreditation, registration) at global → country → state → authority → institution
+    → department levels, with conflict detection.'
+  objects:
+  - PolicyRule
+  api_calls:
+  - GET/POST /api/v1/policies
+  events: []
+  fields:
+  - label: Rule ID
+    type: text
+    required: true
+    rule: null
+  - label: Domain
+    type: select
+    required: true
+    rule: null
+  - label: Level
+    type: select
+    required: true
+    rule: null
+  - label: Expression
+    type: rich
+    required: true
+    rule: Rule DSL; validated and unit-tested
+  - label: Mandatory for lower levels
+    type: switch
+    required: false
+    rule: null
+  - label: Effective from
+    type: date
+    required: true
+    rule: null
+- id: ADM-07
+  title: Workflow designer
+  module: Platform administration
+  pattern: Workspace
+  route: /admin/workflows
+  classification: Internal
+  phase: P1
+  roles:
+  - IADM (Institution Administrator)
+  - PLAT (Platform Administrator)
+  - STA (State Ministry Administrator)
+  source: §55
+  purpose: 'Configures workflows on the Universal Workflow Engine: steps, assignees, SLAs, approvals, escalations and forms.'
+  objects:
+  - WorkflowDefinition
+  api_calls:
+  - GET/PUT /api/v1/workflow/definitions/{id}
+  events: []
+  fields:
+  - label: Assignee
+    type: select
+    required: true
+    rule: null
+  - label: SLA (hours)
+    type: number
+    required: false
+    rule: null
+  - label: Approval type
+    type: select
+    required: false
+    rule: null
+  - label: Escalate to
+    type: select
+    required: false
+    rule: null
+  - label: Form
+    type: select
+    required: false
+    rule: null
+- id: ADM-08
+  title: Integration marketplace
+  module: Platform administration
+  pattern: List / register
+  route: /admin/integrations
+  classification: Internal
+  phase: P1
+  roles:
+  - IADM (Institution Administrator)
+  - PLAT (Platform Administrator)
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  source: §56
+  purpose: Connectors for LMS, finance, payroll, HR, assessment, library, catering, transport, payments, identity, communication,
+    examination bodies, healthcare and government systems.
+  objects:
+  - Integration
+  api_calls:
+  - GET /api/v1/integrations
+  events: []
+- id: ADM-09
+  title: API clients & data exchange
+  module: Platform administration
+  pattern: List / register
+  route: /admin/data-exchange
+  classification: Internal
+  phase: P6
+  roles:
+  - PLAT (Platform Administrator)
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - DPO (Data Protection Officer)
+  source: §65
+  purpose: API clients and data-sharing agreements for the Global Education Data Exchange (records, transcripts, results,
+    funding, attendance, outcomes).
+  objects:
+  - DataSharingAgreement
+  - ApiClient
+  api_calls:
+  - GET /api/v1/data-exchange/agreements
+  events: []
+- id: ADM-10
+  title: Data governance
+  module: Platform administration
+  pattern: Workspace
+  route: /admin/data-governance
+  classification: Internal
+  phase: P1
+  roles:
+  - DPO (Data Protection Officer)
+  source: §40, Gov §61
+  purpose: 'Data Governance Engine: classification, retention schedules, consent and legal basis, residency, subject-access
+    and erasure requests, exports, minimisation reviews.'
+  objects:
+  - DataSubjectRequest
+  - RetentionRule
+  api_calls:
+  - GET /api/v1/privacy/requests
+  events: []
+- id: ADM-11
+  title: Audit log
+  module: Platform administration
+  pattern: List / register
+  route: /admin/audit
+  classification: Restricted
+  phase: P1
+  roles:
+  - DPO (Data Protection Officer)
+  - IADM (Institution Administrator)
+  - PLAT (Platform Administrator)
+  - INTEG (Integrity Investigator)
+  source: §63
+  purpose: 'Tamper-evident audit trail: who, what, when, where, why, previous value, new value, approval and related record.'
+  objects:
+  - AuditEvent
+  api_calls:
+  - GET /api/v1/audit/events
+  events: []
+- id: ADM-12
+  title: Languages
+  module: Platform administration
+  pattern: Settings / configuration
+  route: /admin/languages
+  classification: Internal
+  phase: P1
+  roles:
+  - PLAT (Platform Administrator)
+  - IADM (Institution Administrator)
+  source: §57
+  purpose: 'Platform-level translation: enabled languages, coverage, terminology overrides (e.g. ''pupil'' vs ''learner'',
+    ''term'' vs ''semester'') and RTL support.'
+  objects:
+  - Language
+  api_calls:
+  - GET /api/v1/i18n/languages
+  events: []
+- id: ADM-13
+  title: Branding
+  module: Platform administration
+  pattern: Settings / configuration
+  route: /admin/branding
+  classification: Internal
+  phase: P1
+  roles:
+  - IADM (Institution Administrator)
+  - NET (Network / Trust Executive)
+  source: §14
+  purpose: Tenant branding (logo, colours, crest, document templates) within accessibility constraints.
+  objects:
+  - Branding
+  api_calls:
+  - PUT /api/v1/tenant/branding
+  events: []
+  fields:
+  - label: Logo
+    type: file
+    required: false
+    rule: null
+  - label: Crest (for certificates)
+    type: file
+    required: false
+    rule: null
+  - label: Primary colour
+    type: colour
+    required: false
+    rule: Contrast ≥ 4.5:1 against white enforced
+  - label: Display name
+    type: text
+    required: true
+    rule: null
+  - label: Motto
+    type: text
+    required: false
+    rule: null
+- id: ADM-14
+  title: Subscription & licensing
+  module: Platform administration
+  pattern: Settings / configuration
+  route: /admin/subscription
+  classification: Internal
+  phase: P1
+  roles:
+  - PLAT (Platform Administrator)
+  - IADM (Institution Administrator)
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  source: §60
+  purpose: 'SaaS billing for the platform itself: per learner, institution, module, user, campus, enterprise, government contract,
+    national deployment, trust or university-group licence — combinable.'
+  objects:
+  - Subscription
+  api_calls:
+  - GET /api/v1/subscription
+  events: []
+- id: ADM-15
+  title: Data import & migration
+  module: Platform administration
+  pattern: Wizard
+  route: /admin/imports
+  classification: Internal
+  phase: P1
+  roles:
+  - IADM (Institution Administrator)
+  - DQ (Data Steward)
+  - PLAT (Platform Administrator)
+  source: §84 (45)
+  purpose: Imports legacy data (spreadsheets, CSV, previous MIS exports) through mapping, validation, matching against masters
+    and staged commit with rollback.
+  objects:
+  - ImportBatch
+  api_calls:
+  - POST /api/v1/imports
+  events: []
+- id: ADM-16
+  title: System health
+  module: Platform administration
+  pattern: Dashboard / command centre
+  route: /platform/health
+  classification: Internal
+  phase: P1
+  roles:
+  - PLAT (Platform Administrator)
+  source: §64
+  purpose: Availability, latency, error rates, queue depth, backup status and DR readiness per region.
+  objects:
+  - ServiceHealth
+  api_calls:
+  - GET /api/v1/platform/health
+  events: []
+- id: ADM-17
+  title: Master data stewardship
+  module: Platform administration
+  pattern: List / register
+  route: /mdm
+  classification: Restricted
+  phase: P1
+  roles:
+  - DQ (Data Steward)
+  source: §25, §53
+  purpose: Merge queue and stewardship across all master entities (learners, guardians, staff, institutions, suppliers, courses,
+    programmes, qualifications).
+  objects:
+  - MatchReview
+  api_calls:
+  - GET /api/v1/mdm/queue
+  events: []
+- id: ADM-18
+  title: Notification rules
+  module: Platform administration
+  pattern: Settings / configuration
+  route: /admin/notifications
+  classification: Internal
+  phase: P1
+  roles:
+  - IADM (Institution Administrator)
+  - PLAT (Platform Administrator)
+  source: §44
+  purpose: Event-to-notification rules, channels, templates, quiet hours, digests and escalation.
+  objects:
+  - NotificationRule
+  api_calls:
+  - GET/POST /api/v1/notification-rules
+  events: []
+- id: AGT-101
+  title: Agent library
+  module: Automation agents
+  pattern: Card gallery
+  roles:
+  - AGTO
+  - IADM
+  - STA
+  phase: P3
+  route: /agents/library
+  purpose: Browse and enable agent templates.
+- id: AGT-102
+  title: Configure agent
+  module: Automation agents
+  pattern: Wizard
+  roles:
+  - AGTO
+  phase: P3
+  route: /agents/{id}/configure
+  purpose: Set triggers, scope, level, tools, limits and templates; simulate; approve.
+- id: AGT-103
+  title: Agent console
+  module: Automation agents
+  pattern: Dashboard
+  roles:
+  - AGTO
+  - IADM
+  - HEAD
+  - STA
+  phase: P3
+  route: /agents
+  purpose: Monitor every agent's status, results and live activity; pause instantly.
+- id: AGT-104
+  title: Agent activity log
+  module: Automation agents
+  pattern: List / register
+  roles:
+  - AGTO
+  - DPO
+  - INTEG
+  phase: P3
+  route: /agents/activity
+  purpose: Searchable record of every agent action with trigger, evidence, rule, outcome and undo.
+- id: AIX-01
+  title: Recommendations queue
+  module: Intelligence
+  pattern: List / register
+  route: /ai/recommendations
+  classification: Internal
+  phase: P7
+  roles:
+  - SLT (Senior Leadership)
+  - HEAD (Head of Institution)
+  - LGA (Local Authority Education Officer)
+  - STA (State Ministry Administrator)
+  - FED (Federal Ministry Administrator)
+  - PAST (Pastoral & Attendance Lead)
+  - SENCO (SEND / Inclusion Coordinator)
+  source: §51
+  purpose: Every AI recommendation awaiting a human decision, each with finding, evidence, confidence, recommendation and
+    the approve/reject decision.
+  objects:
+  - Recommendation
+  api_calls:
+  - GET /api/v1/ai/recommendations
+  - POST /api/v1/ai/recommendations/{id}/decision
+  events: []
+- id: AIX-02
+  title: Document intelligence
+  module: Intelligence
+  pattern: Workspace
+  route: /ai/documents
+  classification: Internal
+  phase: P7
+  roles:
+  - REG (Registrar / Admissions Officer)
+  - IADM (Institution Administrator)
+  - FINO (Finance Officer / Bursar)
+  - HR (HR Officer)
+  source: §49
+  purpose: Extracts structured data from uploaded forms, PDFs, certificates, transcripts, reports, contracts and invoices;
+    flags missing data, duplicates, contradictions, expiry and key dates; a human validates consequential fields.
+  objects:
+  - Document
+  - Extraction
+  api_calls:
+  - POST /api/v1/ai/documents
+  - POST /api/v1/ai/documents/{id}/validation
+  events: []
+- id: AIX-03
+  title: Model governance
+  module: Intelligence
+  pattern: List / register
+  route: /ai/models
+  classification: Internal
+  phase: P7
+  roles:
+  - DPO (Data Protection Officer)
+  - PLAT (Platform Administrator)
+  - FED (Federal Ministry Administrator)
+  source: §81
+  purpose: 'Register of AI models and rules: purpose, owner, data used, excluded features, performance, fairness metrics,
+    drift, human-oversight level and approval.'
+  objects:
+  - Model
+  api_calls:
+  - GET /api/v1/ai/models
+  events: []
+- id: ASM-01
+  title: Markbook
+  module: Assessment
+  pattern: Grid
+  route: /markbook/{class}/{subject}
+  classification: Confidential
+  phase: P1
+  roles:
+  - TCH (Teacher / Lecturer)
+  - SLT (Senior Leadership)
+  source: §38, Gov §22
+  purpose: 'Gradebook for a class/subject: assessments as columns mapped to curriculum objectives, marks, grades per configured
+    scale, flags for missing work, and adjustments.'
+  objects:
+  - Assessment 360
+  - Curriculum 360
+  api_calls:
+  - GET/PUT /api/v1/markbooks/{class}/{subject}
+  events: []
+- id: ASM-02
+  title: Assessment setup
+  module: Assessment
+  pattern: Form
+  route: /assessments/new
+  classification: Internal
+  phase: P1
+  roles:
+  - TCH (Teacher / Lecturer)
+  - SLT (Senior Leadership)
+  - EXO (Exams Officer)
+  source: Gov §22
+  purpose: Defines an assessment and traces it to curriculum objectives (Curriculum → Subject → Objective → Assessment → Performance).
+  objects:
+  - Assessment 360
+  api_calls:
+  - POST /api/v1/assessments
+  events: []
+  fields:
+  - label: Title
+    type: text
+    required: true
+    rule: null
+  - label: Type
+    type: select
+    required: true
+    rule: null
+  - label: Classes
+    type: multiselect
+    required: true
+    rule: null
+  - label: Date
+    type: date
+    required: true
+    rule: null
+  - label: Max mark
+    type: number
+    required: true
+    rule: '> 0'
+  - label: Weight in term
+    type: number
+    required: false
+    rule: Weights of a term sum to 100%
+  - label: Objectives assessed
+    type: multiselect
+    required: true
+    rule: At least one curriculum objective
+  - label: Grading scale
+    type: select
+    required: true
+    rule: null
+  - label: Access arrangements apply
+    type: switch
+    required: false
+    rule: null
+- id: ASM-03
+  title: Grading scales
+  module: Assessment
+  pattern: Settings / configuration
+  route: /settings/grading
+  classification: Internal
+  phase: P1
+  roles:
+  - IADM (Institution Administrator)
+  - STA (State Ministry Administrator)
+  - CURA (Curriculum Authority Officer)
+  source: §38
+  purpose: 'Configurable grading: percentage, letters, grade points, GPA/CGPA, pass/fail, competency levels, degree classifications.'
+  objects:
+  - GradingScale
+  api_calls:
+  - GET/POST /api/v1/grading-scales
+  events: []
+- id: ASM-04
+  title: Report cards
+  module: Assessment
+  pattern: Workspace
+  route: /reports/learner
+  classification: Internal
+  phase: P1
+  roles:
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - TCH (Teacher / Lecturer)
+  source: §21, §38
+  purpose: Generates termly report cards / progress reports from markbooks, attendance, behaviour and teacher comments in
+    the institution's branded template.
+  objects:
+  - ReportCard
+  api_calls:
+  - POST /api/v1/report-cards/runs
+  events: []
+- id: ASM-05
+  title: Moderation
+  module: Assessment
+  pattern: Workspace
+  route: /moderation
+  classification: Internal
+  phase: P1
+  roles:
+  - SLT (Senior Leadership)
+  - EXO (Exams Officer)
+  source: §38
+  purpose: 'Internal moderation and verification of marking: samples, moderator marks, adjustments.'
+  objects:
+  - Moderation
+  api_calls:
+  - POST /api/v1/moderations
+  events: []
+- id: ATT-01
+  title: Take register
+  module: Attendance
+  pattern: Workspace
+  route: /registers/{lesson}
+  classification: Confidential
+  phase: P1
+  roles:
+  - TCH (Teacher / Lecturer)
+  source: §4, §20
+  purpose: Fast lesson/session register for teachers on any device. Pre-fills known absences (parent-reported, trips, exams).
+  objects:
+  - Attendance 360
+  - Learner 360
+  api_calls:
+  - GET /api/v1/registers/{lesson}
+  - PUT /api/v1/registers/{lesson}
+  events:
+  - ATT.REGISTER_SUBMITTED
+- id: ATT-02
+  title: Attendance dashboard
+  module: Attendance
+  pattern: Dashboard / command centre
+  route: /attendance
+  classification: Internal
+  phase: P1
+  roles:
+  - PAST (Pastoral & Attendance Lead)
+  - SLT (Senior Leadership)
+  - HEAD (Head of Institution)
+  - LGA (Local Authority Education Officer)
+  - STA (State Ministry Administrator)
+  source: §20, §43
+  purpose: 'Institution or authority attendance: today, trends, persistent absence, patterns by day/period/cohort, and early
+    warnings.'
+  objects:
+  - Attendance 360
+  api_calls:
+  - GET /api/v1/attendance/summary
+  events: []
+- id: ATT-03
+  title: Absence follow-up
+  module: Attendance
+  pattern: Workspace
+  route: /attendance/follow-up
+  classification: Internal
+  phase: P1
+  roles:
+  - PAST (Pastoral & Attendance Lead)
+  - IADM (Institution Administrator)
+  source: §20, §24
+  purpose: 'First-day absence contact and escalation workflow: call/SMS guardians, record reasons, escalate repeated absence.'
+  objects:
+  - Attendance 360
+  - Family 360
+  api_calls:
+  - GET /api/v1/attendance/unexplained
+  - POST /api/v1/attendance/contacts
+  events: []
+- id: ATT-101
+  title: Evacuation roll call
+  module: Attendance
+  pattern: Workspace
+  roles:
+  - TCH
+  - SLT
+  - OPS
+  phase: P1
+  route: /attendance/evacuation
+  purpose: Account for every learner, member of staff and visitor at assembly points during an evacuation or drill, in real
+    time, on mobile and offline.
+- id: ATT-102
+  title: Register compliance
+  module: Attendance
+  pattern: Dashboard / command centre
+  roles:
+  - SLT
+  - PAST
+  - HEAD
+  - LGA
+  phase: P1
+  route: /attendance/registers
+  purpose: See registers not taken or left incomplete, nudge teachers with a direct link and track register compliance by
+    teacher, institution and LGA.
+- id: ATT-103
+  title: Parent-reported absences
+  module: Attendance
+  pattern: List / register
+  roles:
+  - PAST
+  - TCH
+  - PAR
+  phase: P1
+  route: /attendance/reported
+  purpose: Receive absences reported by parents through the app, WhatsApp or web, acknowledge them, apply the attendance code
+    and query unauthorised reasons.
+- id: AUT-01
+  title: Sign in
+  module: Access
+  pattern: Authentication
+  route: /auth/sign-in
+  classification: Internal
+  phase: P1
+  roles:
+  - All authenticated users
+  source: §58, §59, §63
+  purpose: Authenticate every user through one entry point. Supports federated SSO (government identity provider, Microsoft
+    Entra ID, Google Workspace), local credentials for small institutions and passwordless magic links for parents.
+  objects:
+  - User
+  - Session
+  api_calls:
+  - POST /api/v1/auth/session
+  - GET /api/v1/auth/providers
+  events:
+  - AUTH.SIGNED_IN
+  - AUTH.FAILED
+  - AUTH.LOCKED
+  fields:
+  - label: Email or username
+    type: email
+    required: true
+    rule: Trimmed, case-insensitive; max 254 chars
+  - label: Password
+    type: password
+    required: true
+    rule: Never logged; 12+ chars policy enforced at creation
+  - label: Remember this device
+    type: checkbox
+    required: false
+    rule: null
+- id: AUT-02
+  title: Multi-factor verification
+  module: Access
+  pattern: Authentication
+  route: /auth/mfa
+  classification: Internal
+  phase: P1
+  roles:
+  - All authenticated users
+  source: §63
+  purpose: Second factor for users whose role clearance is restricted or special, and for any user on a new device.
+  objects: []
+  api_calls:
+  - POST /api/v1/auth/mfa/verify
+  events:
+  - AUTH.MFA_PASSED
+  - AUTH.MFA_FAILED
+  fields:
+  - label: 6-digit code
+    type: number
+    required: true
+    rule: Exactly 6 digits; TOTP ±1 step or SMS/e-mail OTP valid 5 min
+  - label: Use a passkey instead
+    type: switch
+    required: false
+    rule: null
+- id: AUT-03
+  title: Choose workspace
+  module: Access
+  pattern: Authentication
+  route: /auth/context
+  classification: Internal
+  phase: P1
+  roles:
+  - All authenticated users
+  source: §59, §62
+  purpose: Users holding several role-at-scope grants (e.g. a teacher who is also a parent, or a state officer seconded to
+    an LGA) choose the context they will work in. The context sets navigation, default dashboard and data scope.
+  objects:
+  - User
+  - RoleGrant
+  - Scope
+  api_calls:
+  - GET /api/v1/me/grants
+  - PUT /api/v1/me/context
+  events: []
+- id: AUT-04
+  title: Reset password
+  module: Access
+  pattern: Authentication
+  route: /auth/reset
+  classification: Internal
+  phase: P1
+  roles:
+  - All authenticated users
+  source: §63
+  purpose: Self-service password reset by e-mail link. Not available to SSO-only users.
+  objects: []
+  api_calls:
+  - POST /api/v1/auth/password-reset
+  events: []
+  fields:
+  - label: Email
+    type: email
+    required: true
+    rule: Response is identical whether or not the account exists
+- id: BEH-01
+  title: Log behaviour
+  module: Behaviour
+  pattern: Form
+  route: /behaviour/new
+  classification: Internal
+  phase: P2
+  roles:
+  - TCH (Teacher / Lecturer)
+  - PAST (Pastoral & Attendance Lead)
+  - SLT (Senior Leadership)
+  source: §75 B, §81
+  purpose: Quick capture of positive and negative behaviour events against the institution's behaviour policy.
+  objects:
+  - BehaviourEvent
+  - Learner 360
+  api_calls:
+  - POST /api/v1/behaviour-events
+  events:
+  - BEH.EVENT_RECORDED
+  fields:
+  - label: Learner(s)
+    type: multiselect
+    required: true
+    rule: null
+  - label: Type
+    type: radio
+    required: true
+    rule: null
+  - label: Category
+    type: select
+    required: true
+    rule: null
+  - label: Points
+    type: number
+    required: false
+    rule: From category default; ±policy maximum
+  - label: Lesson / location
+    type: select
+    required: false
+    rule: null
+  - label: Description
+    type: textarea
+    required: true
+    rule: Factual; min 10 chars
+  - label: Action taken
+    type: select
+    required: false
+    rule: null
+  - label: Notify guardian
+    type: switch
+    required: false
+    rule: null
+- id: BEH-02
+  title: Behaviour overview
+  module: Behaviour
+  pattern: Dashboard / command centre
+  route: /behaviour
+  classification: Internal
+  phase: P2
+  roles:
+  - PAST (Pastoral & Attendance Lead)
+  - SLT (Senior Leadership)
+  - HEAD (Head of Institution)
+  - LGA (Local Authority Education Officer)
+  source: §20
+  purpose: Patterns by learner, class, time, location and category; exclusions and suspension records.
+  objects:
+  - BehaviourEvent
+  api_calls:
+  - GET /api/v1/behaviour/summary
+  events: []
+- id: BEH-101
+  title: Behaviour policy and rewards
+  module: Behaviour
+  pattern: Settings / configuration
+  roles:
+  - HEAD
+  - SLT
+  - PAST
+  - LGA
+  phase: P2
+  route: /behaviour/policy
+  purpose: Turn the institution's behaviour policy into configured positive and negative behaviours, points, default outcomes,
+    rewards and achievement badges, within the minimum framework the state publishes.
+- id: BEH-102
+  title: Seating plan and influences
+  module: Behaviour
+  pattern: Workspace
+  roles:
+  - TCH
+  - HOD
+  - SLT
+  phase: P2
+  route: /classes/{id}/seating
+  purpose: Arrange a class on a room layout by drag and drop or by strategy, see each learner's context at a glance, log behaviour
+    in two taps and use influence data to decide who sits where.
+- id: BEH-103
+  title: Intelligence events
+  module: Behaviour
+  pattern: Settings / configuration
+  roles:
+  - SLT
+  - PAST
+  - HEAD
+  phase: P2
+  route: /behaviour/intel-events
+  purpose: Set thresholds on behaviour, attendance, homework and wellbeing data that trigger actions automatically, so low-level
+    patterns are dealt with early and positive milestones are celebrated.
+- id: BEH-104
+  title: Detention manager
+  module: Behaviour
+  pattern: List / register
+  roles:
+  - TCH
+  - PAST
+  - SLT
+  - PAR
+  - LRN
+  phase: P2
+  route: /behaviour/detentions
+  purpose: Issue, share and track detentions by type, location, duration and supervisor; escalate missed detentions up the
+    ladder automatically and report time owed.
+- id: BEH-105
+  title: On-call board
+  module: Behaviour
+  pattern: Dashboard / command centre
+  roles:
+  - SLT
+  - PAST
+  - TCH
+  phase: P2
+  route: /behaviour/on-call
+  purpose: Receive and respond to on-call requests raised from classrooms, with room, class and reason, acknowledgement times
+    and escalation.
+- id: BEH-106
+  title: On-report card
+  module: Behaviour
+  pattern: Record 360
+  roles:
+  - TCH
+  - PAST
+  - SLT
+  - PAR
+  - LRN
+  phase: P2
+  route: /learners/{id}/on-report
+  purpose: Put a learner on report for a set period with personalised targets; every timetabled teacher rates and comments
+    on each target, and parents can view and comment.
+- id: BIL-01
+  title: Fee structure & billing rules
+  module: Billing
+  pattern: Workspace
+  route: /billing/rules
+  classification: Internal
+  phase: P1
+  roles:
+  - FINO (Finance Officer / Bursar)
+  - IADM (Institution Administrator)
+  - NET (Network / Trust Executive)
+  source: §28, §29, §31, §32
+  purpose: 'Global Billing Rule Engine: define charge types and the rules that apply them by institution, campus, programme,
+    course, year group, learner category, residency, citizenship, scholarship, family, funding source and level.'
+  objects:
+  - ChargeType
+  - BillingRule
+  api_calls:
+  - GET/POST /api/v1/billing/rules
+  - POST /api/v1/billing/rules/test
+  events: []
+  fields:
+  - label: Charge
+    type: select
+    required: true
+    rule: null
+  - label: Billing basis
+    type: select
+    required: true
+    rule: null
+  - label: Conditions
+    type: rich
+    required: true
+    rule: Expression over learner/enrolment attributes; validated and test-run before saving
+  - label: Amount or formula
+    type: text
+    required: true
+    rule: e.g. 18500 or credits * 4200
+  - label: Currency
+    type: select
+    required: true
+    rule: null
+  - label: Discount stacking
+    type: select
+    required: false
+    rule: null
+  - label: Effective from
+    type: date
+    required: true
+    rule: null
+  - label: Effective to
+    type: date
+    required: false
+    rule: null
+- id: BIL-02
+  title: Billing run
+  module: Billing
+  pattern: Workflow / approval
+  route: /billing/runs/{id}
+  classification: Internal
+  phase: P1
+  roles:
+  - FINO (Finance Officer / Bursar)
+  source: §28
+  purpose: Generates invoices for a period from rules; preview, exceptions, approval and issue.
+  objects:
+  - Invoice
+  - BillingRun
+  api_calls:
+  - POST /api/v1/billing/runs
+  - POST /api/v1/billing/runs/{id}/approve
+  events:
+  - BIL.RUN_ISSUED
+- id: BIL-03
+  title: Learner account
+  module: Billing
+  pattern: Record 360
+  route: /accounts/learners/{id}
+  classification: Restricted
+  phase: P1
+  roles:
+  - FINO (Finance Officer / Bursar)
+  - REG (Registrar / Admissions Officer)
+  source: §21, §30
+  purpose: 'Individual learner ledger: charges, funding, discounts, payments, credits, balance and plan.'
+  objects:
+  - Finance 360
+  - Ledger
+  api_calls:
+  - GET /api/v1/accounts/learners/{id}
+  events: []
+- id: BIL-04
+  title: Family statement
+  module: Billing
+  pattern: Report / analysis
+  route: /accounts/families/{id}/statement
+  classification: Restricted
+  phase: P1
+  roles:
+  - FINO (Finance Officer / Bursar)
+  - PAR (Parent / Guardian)
+  source: §30
+  purpose: One consolidated statement per family/payer across children and institutions, while each learner keeps an individual
+    ledger.
+  objects:
+  - Family 360
+  - Finance 360
+  api_calls:
+  - GET /api/v1/accounts/families/{id}/statement
+  events: []
+- id: BIL-05
+  title: Invoices
+  module: Billing
+  pattern: List / register
+  route: /invoices
+  classification: Restricted
+  phase: P1
+  roles:
+  - FINO (Finance Officer / Bursar)
+  source: §28
+  purpose: All invoices with status, ageing and payer.
+  objects:
+  - Invoice
+  api_calls:
+  - GET /api/v1/invoices
+  events: []
+- id: BIL-06
+  title: Payment plans & hardship
+  module: Billing
+  pattern: Workspace
+  route: /billing/plans
+  classification: Restricted
+  phase: P1
+  roles:
+  - FINO (Finance Officer / Bursar)
+  - HEAD (Head of Institution)
+  source: §21
+  purpose: Instalment plans, hardship assessments, fee waivers and ethical recovery policy configuration.
+  objects:
+  - PaymentPlan
+  - RecoveryPolicy
+  api_calls:
+  - GET/POST /api/v1/billing/plans
+  events: []
+  fields:
+  - label: Reminder schedule (days after due)
+    type: text
+    required: true
+    rule: e.g. 3, 14, 30
+  - label: Offer payment plan automatically after
+    type: number
+    required: false
+    rule: null
+  - label: Late fee
+    type: money
+    required: false
+    rule: Must comply with jurisdiction rules; 0 by default
+  - label: Restrictions permitted
+    type: multiselect
+    required: false
+    rule: null
+  - label: Hardship review before any restriction
+    type: switch
+    required: true
+    rule: null
+- id: BIL-07
+  title: Funding sources & sponsors
+  module: Billing
+  pattern: List / register
+  route: /funding-sources
+  classification: Internal
+  phase: P1
+  roles:
+  - FINO (Finance Officer / Bursar)
+  - TVC (TVET Coordinator / Workplace Assessor)
+  source: §28, §33
+  purpose: Scholarships, bursaries, grants, sponsorships, employer funding, student loans and donor funding with caps and
+    rules.
+  objects:
+  - FundingSource
+  api_calls:
+  - GET /api/v1/funding-sources
+  events: []
+- id: BIL-08
+  title: Government funding reconciliation
+  module: Billing
+  pattern: Report / analysis
+  route: /funding/government
+  classification: Internal
+  phase: P6
+  roles:
+  - FINO (Finance Officer / Bursar)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - FED (Federal Ministry Administrator)
+  source: §33, §42
+  purpose: Capitation, per-learner funding, institutional and conditional grants, development and donor funding reconciled
+    so Government + Student payment + Scholarship + Sponsor = Total student funding, without double counting.
+  objects:
+  - Finance 360
+  - FundingSource
+  api_calls:
+  - GET /api/v1/funding/government/reconciliation
+  events: []
+- id: CER-01
+  title: Certificate register
+  module: Certificate 360
+  pattern: List / register
+  route: /certificates
+  classification: Restricted
+  phase: P2
+  roles:
+  - CERT (Certification Registrar)
+  - REG (Registrar / Admissions Officer)
+  - STA (State Ministry Administrator)
+  - FED (Federal Ministry Administrator)
+  - INTEG (Integrity Investigator)
+  source: Gov §24, Gov §27
+  purpose: Authoritative register of awards and certificates issued by authorities and institutions in scope.
+  objects:
+  - Certificate 360
+  api_calls:
+  - GET /api/v1/certificates
+  events: []
+- id: CER-02
+  title: Award eligibility run
+  module: Certificate 360
+  pattern: Workspace
+  route: /certificates/eligibility-runs/{id}
+  classification: Restricted
+  phase: P2
+  roles:
+  - CERT (Certification Registrar)
+  - REG (Registrar / Admissions Officer)
+  source: Gov §26
+  purpose: 'Batch Certificate Eligibility Engine for a cohort/series: each learner evaluated against the full chain from identity
+    to award approval.'
+  objects:
+  - Certificate 360
+  api_calls:
+  - POST /api/v1/certificates/eligibility-runs
+  events: []
+- id: CER-03
+  title: Issue certificate
+  module: Certificate 360
+  pattern: Workflow / approval
+  route: /certificates/issue/{learner}
+  classification: Restricted
+  phase: P2
+  roles:
+  - CERT (Certification Registrar)
+  source: Gov §26, Gov §53
+  purpose: Intelligent cross-check before issuance. Only when every mandatory check passes (or an authorised exception exists)
+    can a certificate be issued.
+  objects:
+  - Certificate 360
+  - Learner 360
+  - Institution 360
+  - Qualification 360
+  - Examination 360
+  api_calls:
+  - GET /api/v1/certificates/eligibility/{learner}
+  - POST /api/v1/certificates
+  events:
+  - CERT.ISSUED
+- id: CER-04
+  title: Certificate 360
+  module: Certificate 360
+  pattern: Record 360
+  route: /certificates/{id}
+  classification: Restricted
+  phase: P2
+  roles:
+  - CERT (Certification Registrar)
+  - REG (Registrar / Admissions Officer)
+  - INTEG (Integrity Investigator)
+  - STA (State Ministry Administrator)
+  source: Gov §27
+  purpose: Single certificate master record with everything that supports it, its verification history and lifecycle.
+  objects:
+  - Certificate 360
+  api_calls:
+  - GET /api/v1/certificates/{id}
+  events: []
+- id: CER-05
+  title: Revoke, correct or reissue
+  module: Certificate 360
+  pattern: Workflow / approval
+  route: /certificates/{id}/lifecycle
+  classification: Restricted
+  phase: P2
+  roles:
+  - CERT (Certification Registrar)
+  source: Gov §29
+  purpose: 'Lifecycle actions: revocation, suspension, correction, replacement and reissue — each with authorised user, reason,
+    date/time, evidence and approval. The original record is never deleted.'
+  objects:
+  - Certificate 360
+  api_calls:
+  - POST /api/v1/certificates/{id}/lifecycle-actions
+  events:
+  - CERT.REVOKED
+  - CERT.REISSUED
+  - CERT.CORRECTED
+  fields:
+  - label: Action
+    type: radio
+    required: true
+    rule: null
+  - label: Reason
+    type: select
+    required: true
+    rule: null
+  - label: Explanation
+    type: textarea
+    required: true
+    rule: null
+  - label: Evidence
+    type: file
+    required: true
+    rule: null
+  - label: Effective
+    type: date
+    required: true
+    rule: null
+- id: CER-06
+  title: Certificate templates & signatories
+  module: Certificate 360
+  pattern: Settings / configuration
+  route: /settings/certificates
+  classification: Internal
+  phase: P2
+  roles:
+  - CERT (Certification Registrar)
+  - IADM (Institution Administrator)
+  source: Gov §27
+  purpose: Certificate designs, security features, numbering rules and authorised signatories with signing keys.
+  objects:
+  - CertificateTemplate
+  - Signatory
+  api_calls:
+  - GET/POST /api/v1/certificate-templates
+  events: []
+- id: CER-07
+  title: Verification requests
+  module: Certificate 360
+  pattern: List / register
+  route: /certificates/verifications
+  classification: Internal
+  phase: P2
+  roles:
+  - CERT (Certification Registrar)
+  - INTEG (Integrity Investigator)
+  source: Gov §28, Gov §30
+  purpose: Log of all verifications (public, API, institutional) with failed lookups and suspected forgeries reported.
+  objects:
+  - Verification
+  api_calls:
+  - GET /api/v1/certificates/verifications
+  events: []
+- id: CER-101
+  title: Reissue requests
+  module: Certificate 360
+  pattern: List / register
+  roles:
+  - CERT
+  - REG
+  phase: P2
+  route: /certificates/reissues
+  purpose: Work queue of certificate reissue and copy requests.
+- id: CER-102
+  title: Reissue review
+  module: Certificate 360
+  pattern: Workflow / approval
+  roles:
+  - CERT
+  phase: P2
+  route: /certificates/reissues/{id}
+  purpose: Decide a reissue with the identity, archive and payment evidence in one place.
+- id: CMD-01
+  title: Global education dashboard
+  module: Command centre
+  pattern: Dashboard / command centre
+  route: /command/global
+  classification: Internal
+  phase: P7
+  roles:
+  - GLB (Global Education Administrator)
+  source: §48, §80
+  purpose: Cross-country view for international organisations and the global administrator. Shows aggregated, comparable indicators
+    only, always labelled as verified, calculated or estimated.
+  objects:
+  - Country 360
+  api_calls:
+  - GET /api/v1/analytics/global/indicators
+  events: []
+- id: CMD-02
+  title: National command centre
+  module: Command centre
+  pattern: Dashboard / command centre
+  route: /command/national
+  classification: Internal
+  phase: P6
+  roles:
+  - FED (Federal Ministry Administrator)
+  source: §47, Gov §3, Gov §54
+  purpose: Federal Ministry of Education control tower. Aggregated national view with drill-down Country → State → LGA → Institution
+    → Department → Programme → Class → Learner (to the depth the user's clearance allows).
+  objects:
+  - Country 360
+  - Ministry 360
+  - Institution 360
+  api_calls:
+  - GET /api/v1/analytics/scopes/{scope}/kpis
+  - GET /api/v1/analytics/scopes/{scope}/heatmap
+  events: []
+- id: CMD-03
+  title: State command centre
+  module: Command centre
+  pattern: Dashboard / command centre
+  route: /command/state/{state}
+  classification: Internal
+  phase: P6
+  roles:
+  - STA (State Ministry Administrator)
+  - FED (Federal Ministry Administrator)
+  source: Gov §4, Gov §6
+  purpose: 'State Ministry of Education operational and regulatory control tower: every registered institution in the state,
+    public and private, with comparison against LGAs, prior year and government targets.'
+  objects:
+  - Ministry 360
+  - Education Authority 360
+  - Institution 360
+  api_calls:
+  - GET /api/v1/analytics/scopes/{scope}/kpis
+  events: []
+- id: CMD-04
+  title: LGA / district command centre
+  module: Command centre
+  pattern: Dashboard / command centre
+  route: /command/authority/{id}
+  classification: Internal
+  phase: P6
+  roles:
+  - LGA (Local Authority Education Officer)
+  - STA (State Ministry Administrator)
+  source: §3, §17
+  purpose: 'Local education authority view: day-to-day operational monitoring of the institutions in one LGA or district.'
+  objects:
+  - Education Authority 360
+  - Institution 360
+  api_calls:
+  - GET /api/v1/analytics/scopes/{scope}/today
+  events: []
+- id: CMD-05
+  title: Network dashboard
+  module: Command centre
+  pattern: Dashboard / command centre
+  route: /command/network/{id}
+  classification: Internal
+  phase: P4
+  roles:
+  - NET (Network / Trust Executive)
+  source: §3, §59
+  purpose: 'For Multi-Academy Trusts, school groups, university groups and faith/community networks: performance, finance
+    and risk across member institutions.'
+  objects:
+  - Education Network 360
+  - Institution 360
+  api_calls:
+  - GET /api/v1/analytics/scopes/{scope}/kpis
+  events: []
+- id: CMD-06
+  title: Institution dashboard
+  module: Command centre
+  pattern: Dashboard / command centre
+  route: /institutions/{id}/dashboard
+  classification: Internal
+  phase: P1
+  roles:
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  source: §18, §19, §76
+  purpose: 'Head of institution home: today, this week, this month and this year for one school, college or university, with
+    the institution health index decomposed.'
+  objects:
+  - Institution 360
+  api_calls:
+  - GET /api/v1/institutions/{id}/dashboard
+  events: []
+- id: CMD-07
+  title: Hierarchy explorer
+  module: Command centre
+  pattern: Workspace
+  route: /explore/{scope}
+  classification: Internal
+  phase: P6
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - NET (Network / Trust Executive)
+  - HEAD (Head of Institution)
+  source: §17, Gov §3
+  purpose: 'Drill-down browser through the configured governance hierarchy. At every level the same indicator set is shown:
+    performance, attendance, behaviour, safeguarding, SEND, staffing, finance, infrastructure, curriculum, assessment, compliance,
+    risks and trends.'
+  objects:
+  - Scope
+  - All 360 objects
+  api_calls:
+  - GET /api/v1/hierarchy/{node}/children
+  - GET /api/v1/analytics/scopes/{scope}/indicators
+  events: []
+- id: CMD-08
+  title: Follow the problem
+  module: Command centre
+  pattern: Workspace
+  route: /investigations/{id}
+  classification: Internal
+  phase: P6
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - NET (Network / Trust Executive)
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  - INSP (Inspector / Quality Assurance Officer)
+  source: §77, §72, §73
+  purpose: Investigation workspace that moves an administrator from Symptom → Evidence → Root cause → Action → Outcome. Opened
+    from any alert, KPI or assistant answer.
+  objects:
+  - Investigation
+  - Intervention
+  - Institution 360
+  - Teacher 360
+  api_calls:
+  - POST /api/v1/investigations
+  - GET /api/v1/investigations/{id}
+  events:
+  - INV.OPENED
+  - INV.ACTION_ADDED
+  - INV.CLOSED
+- id: CMD-09
+  title: Alert centre
+  module: Command centre
+  pattern: List / register
+  route: /alerts
+  classification: Internal
+  phase: P6
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - NET (Network / Trust Executive)
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - TCH (Teacher / Lecturer)
+  - PAST (Pastoral & Attendance Lead)
+  - DSL (Designated Safeguarding Lead)
+  - SENCO (SEND / Inclusion Coordinator)
+  - EXO (Exams Officer)
+  - REG (Registrar / Admissions Officer)
+  - FINO (Finance Officer / Bursar)
+  - HR (HR Officer)
+  - OPSM (Operations & Facilities Manager)
+  - INSP (Inspector / Quality Assurance Officer)
+  - CURA (Curriculum Authority Officer)
+  - CERT (Certification Registrar)
+  - INTEG (Integrity Investigator)
+  - DQ (Data Steward)
+  - DPO (Data Protection Officer)
+  source: §43, §44
+  purpose: 'Global Education Alert Centre: every alert in the user''s scope, categorised Critical / High / Moderate / Informational,
+    with owner, due date and status.'
+  objects:
+  - Alert
+  - AlertRule
+  api_calls:
+  - GET /api/v1/alerts
+  - PATCH /api/v1/alerts/{id}
+  events:
+  - ALERT.RAISED
+  - ALERT.ESCALATED
+  - ALERT.RESOLVED
+- id: CMD-10
+  title: Alert detail
+  module: Command centre
+  pattern: Record 360
+  route: /alerts/{id}
+  classification: Internal
+  phase: P6
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - NET (Network / Trust Executive)
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - TCH (Teacher / Lecturer)
+  - PAST (Pastoral & Attendance Lead)
+  - DSL (Designated Safeguarding Lead)
+  - SENCO (SEND / Inclusion Coordinator)
+  - EXO (Exams Officer)
+  - REG (Registrar / Admissions Officer)
+  - FINO (Finance Officer / Bursar)
+  - HR (HR Officer)
+  - OPSM (Operations & Facilities Manager)
+  - INSP (Inspector / Quality Assurance Officer)
+  - CURA (Curriculum Authority Officer)
+  - CERT (Certification Registrar)
+  - INTEG (Integrity Investigator)
+  - DQ (Data Steward)
+  - DPO (Data Protection Officer)
+  source: §43
+  purpose: Single alert with full explanation, evidence and actions.
+  objects:
+  - Alert
+  api_calls:
+  - GET /api/v1/alerts/{id}
+  events: []
+- id: CMD-101
+  title: State education control room
+  module: Command centres
+  pattern: Dashboard
+  roles:
+  - STA
+  - FED
+  - LGA
+  phase: P1 / P6
+  route: /command/control-room
+  purpose: 'One screen for the whole state: KPIs, where to act, LGA health and every institution''s performance.'
+- id: CMD-102
+  title: Institution league with context
+  module: Command centres
+  pattern: Report / analysis
+  roles:
+  - STA
+  - LGA
+  - PRA
+  phase: P6
+  route: /command/compare
+  purpose: Compare institutions fairly within comparable context groups and against their own trend.
+- id: CMD-103
+  title: Coverage and onboarding tracker
+  module: Command centres
+  pattern: List / register
+  roles:
+  - STA
+  - LGA
+  - PLAT
+  phase: P1
+  route: /command/onboarding
+  purpose: Track every institution's onboarding readiness and data freshness against LGA targets.
+- id: CMD-104
+  title: Education Administrator 360
+  module: Command centres
+  pattern: Record 360
+  roles:
+  - STA
+  - LGA
+  - FED
+  - NET
+  - HEAD
+  phase: P6
+  route: /me/administrator
+  purpose: 'The administrator''s own record: scopes and delegations, portfolio of institutions, open alerts, investigations
+    and improvement plans they own, decisions with outcomes, and briefing preferences — the fifth fundamental intelligence
+    object.'
+- id: CMD-11
+  title: Compare
+  module: Command centre
+  pattern: Report / analysis
+  route: /compare
+  classification: Internal
+  phase: P6
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - NET (Network / Trust Executive)
+  - GLB (Global Education Administrator)
+  source: §45, §80
+  purpose: 'Cross-institution comparison: school vs school, LGA vs LGA, state vs state, programme vs programme. Contextual
+    indicators are always shown alongside outcomes to avoid misleading league tables.'
+  objects:
+  - Institution 360
+  - Education Authority 360
+  api_calls:
+  - POST /api/v1/analytics/comparisons
+  events: []
+  fields:
+  - label: Entity type
+    type: select
+    required: true
+    rule: null
+  - label: Entities (2–6)
+    type: multiselect
+    required: true
+    rule: 2–6 entities of the same type
+  - label: Peer group
+    type: select
+    required: false
+    rule: null
+- id: CMD-12
+  title: What's working
+  module: Command centre
+  pattern: Dashboard / command centre
+  route: /positive
+  classification: Internal
+  phase: P7
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - NET (Network / Trust Executive)
+  - HEAD (Head of Institution)
+  source: §79, §73
+  purpose: 'Positive intelligence: high-performing schools, outstanding teachers, successful interventions, improving attendance,
+    strong financial management — and the practice behind them, so it can be shared.'
+  objects:
+  - Intervention
+  - Institution 360
+  api_calls:
+  - GET /api/v1/intelligence/positive
+  events: []
+- id: CMD-13
+  title: Resource allocation
+  module: Command centre
+  pattern: Report / analysis
+  route: /resources/allocation
+  classification: Internal
+  phase: P6
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  source: §46
+  purpose: Evidence-based identification of resource imbalances (learners, classrooms, teachers, funding). Recommends, never
+    reallocates automatically.
+  objects:
+  - Institution 360
+  - Infrastructure 360
+  - Teacher 360
+  api_calls:
+  - GET /api/v1/intelligence/resource-imbalances
+  events: []
+- id: CMD-14
+  title: Planning scenarios
+  module: Command centre
+  pattern: Workspace
+  route: /planning
+  classification: Internal
+  phase: P7
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - GLB (Global Education Administrator)
+  source: §68, §69
+  purpose: 'Global Education Planning Engine. Example: ''If enrolment increases by 15% over five years, how many additional
+    teachers, classrooms and institutions will be required?'''
+  objects:
+  - PlanningScenario
+  api_calls:
+  - POST /api/v1/planning/scenarios
+  - GET /api/v1/planning/scenarios/{id}
+  events: []
+  fields:
+  - label: Name
+    type: text
+    required: true
+    rule: null
+  - label: Scope
+    type: select
+    required: true
+    rule: null
+  - label: Horizon (years)
+    type: number
+    required: true
+    rule: 1–15
+  - label: Enrolment change
+    type: number
+    required: true
+    rule: −50% to +200%
+  - label: Target PTR
+    type: number
+    required: true
+    rule: null
+  - label: Target learners per classroom
+    type: number
+    required: true
+    rule: null
+  - label: Teacher attrition / yr
+    type: number
+    required: false
+    rule: null
+  - label: Unit cost per classroom
+    type: money
+    required: false
+    rule: null
+- id: CMD-15
+  title: Integrity command centre
+  module: Command centre
+  pattern: Dashboard / command centre
+  route: /integrity
+  classification: Restricted
+  phase: P6
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - INTEG (Integrity Investigator)
+  - CERT (Certification Registrar)
+  source: Gov §31, Gov §60
+  purpose: 'Education Fraud & Integrity Command Centre: identity fraud, certificate fraud, fake institutions, unauthorised
+    qualifications, exam anomalies, duplicate learners, curriculum and accreditation violations.'
+  objects:
+  - Certificate 360
+  - Learner 360
+  - Examination 360
+  - Institution 360
+  api_calls:
+  - GET /api/v1/integrity/alerts
+  events: []
+- id: CMD-16
+  title: Data quality command centre
+  module: Command centre
+  pattern: Dashboard / command centre
+  route: /data-quality
+  classification: Internal
+  phase: P6
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - DQ (Data Steward)
+  - IADM (Institution Administrator)
+  source: §70, Gov §38, Gov §59
+  purpose: 'Data Quality Index by institution with the defects behind it: missing records, duplicates, invalid values, late
+    submissions, inconsistencies, unverified records.'
+  objects:
+  - DataQualityIssue
+  api_calls:
+  - GET /api/v1/data-quality/index
+  events: []
+- id: COM-01
+  title: Send a message
+  module: Communication
+  pattern: Form
+  route: /messages/new
+  classification: Internal
+  phase: P1
+  roles:
+  - TCH (Teacher / Lecturer)
+  - PAST (Pastoral & Attendance Lead)
+  - SLT (Senior Leadership)
+  - HEAD (Head of Institution)
+  - IADM (Institution Administrator)
+  - LGA (Local Authority Education Officer)
+  - STA (State Ministry Administrator)
+  source: §4, §57
+  purpose: Compose messages to guardians, learners and staff by audience rules; delivered by app, e-mail, SMS, WhatsApp or
+    voice per recipient preference and cost policy.
+  objects:
+  - Message
+  - Family 360
+  api_calls:
+  - POST /api/v1/messages
+  events:
+  - COM.MESSAGE_SENT
+  fields:
+  - label: Audience
+    type: multiselect
+    required: true
+    rule: null
+  - label: Channel
+    type: select
+    required: true
+    rule: null
+  - label: Language
+    type: select
+    required: false
+    rule: null
+  - label: Subject
+    type: text
+    required: true
+    rule: null
+  - label: Message
+    type: rich
+    required: true
+    rule: 'SMS: 160 chars/segment shown live'
+  - label: Schedule
+    type: date
+    required: false
+    rule: null
+  - label: Require acknowledgement
+    type: switch
+    required: false
+    rule: null
+- id: COM-02
+  title: Communication log & templates
+  module: Communication
+  pattern: List / register
+  route: /messages
+  classification: Internal
+  phase: P1
+  roles:
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - PAST (Pastoral & Attendance Lead)
+  source: §57
+  purpose: Sent messages, delivery/read status and reusable templates in multiple languages.
+  objects:
+  - Message
+  - Template
+  api_calls:
+  - GET /api/v1/messages
+  events: []
+- id: COM-101
+  title: Conversations inbox
+  module: Communication
+  pattern: Workspace
+  roles:
+  - IADM
+  - REG
+  - FINO
+  - TCH
+  - PAST
+  - STA
+  - LGA
+  phase: P1
+  route: /conversations
+  purpose: Handle two-way WhatsApp, SMS and app conversations with families, matched to their records.
+- id: COM-102
+  title: Channels and templates
+  module: Communication
+  pattern: Settings
+  roles:
+  - MSGA
+  - IADM
+  phase: P1
+  route: /admin/messaging
+  purpose: Connect WhatsApp, Zenzap and other channels; manage templates, opt-ins, quiet hours and spend caps.
+- id: COM-103
+  title: Broadcast campaigns
+  module: Communication
+  pattern: List / register
+  roles:
+  - HEAD
+  - SLT
+  - STA
+  - LGA
+  - MSGA
+  phase: P1
+  route: /broadcasts
+  purpose: Send scheduled messages to rule-defined audiences with cost estimate and results.
+- id: COM-104
+  title: Staff announcements and consent requests
+  module: Communication
+  pattern: Workspace
+  roles:
+  - SLT
+  - PAST
+  - TCH
+  - PAR
+  phase: P1
+  route: /communication/announcements
+  purpose: Send announcements to staff by relationship to a learner or role, and consent requests to parents with tracking,
+    reminders and comments.
+- id: CUR-01
+  title: Curriculum library
+  module: Curriculum 360
+  pattern: List / register
+  route: /curricula
+  classification: Internal
+  phase: P2
+  roles:
+  - CURA (Curriculum Authority Officer)
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - IADM (Institution Administrator)
+  - SLT (Senior Leadership)
+  - INSP (Inspector / Quality Assurance Officer)
+  - TCH (Teacher / Lecturer)
+  source: Gov §9–12, §37
+  purpose: 'All curricula the user may see: national/federal, state adaptations, international frameworks (Cambridge, IB,
+    Pearson), vocational/competency frameworks and institution-specific curricula, with versions and effective dates.'
+  objects:
+  - Curriculum 360
+  api_calls:
+  - GET /api/v1/curricula
+  events: []
+- id: CUR-02
+  title: Curriculum editor
+  module: Curriculum 360
+  pattern: Workspace
+  route: /curricula/{id}/versions/{v}/edit
+  classification: Internal
+  phase: P2
+  roles:
+  - CURA (Curriculum Authority Officer)
+  source: Gov §10, Gov §43
+  purpose: 'Authoring environment for a curriculum version: structure (subject → strand → topic → learning objective/competency),
+    mandatory/optional/recommended/restricted status, minimum teaching hours, instructional and resource requirements, assessment
+    requirements and progression rules.'
+  objects:
+  - Curriculum 360
+  - Subject 360
+  api_calls:
+  - GET/PUT /api/v1/curricula/{id}/versions/{v}
+  - POST /api/v1/curricula/{id}/versions/{v}/validate
+  events: []
+  fields:
+  - label: Statement
+    type: textarea
+    required: true
+    rule: null
+  - label: Status
+    type: select
+    required: true
+    rule: null
+  - label: Minimum hours
+    type: number
+    required: true
+    rule: '> 0; sum validated against subject minimum'
+  - label: Assessment required
+    type: switch
+    required: false
+    rule: null
+  - label: Assessment type
+    type: multiselect
+    required: false
+    rule: null
+  - label: Teacher qualification required
+    type: select
+    required: false
+    rule: null
+  - label: Resources required
+    type: multiselect
+    required: false
+    rule: null
+  - label: Competency code (optional)
+    type: text
+    required: false
+    rule: null
+- id: CUR-03
+  title: Curriculum approval
+  module: Curriculum 360
+  pattern: Workflow / approval
+  route: /curricula/{id}/versions/{v}/approval
+  classification: Internal
+  phase: P2
+  roles:
+  - CURA (Curriculum Authority Officer)
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  source: Gov §10, Gov §12
+  purpose: 'Approval and publication workflow: author → reviewer → approver → publish with effective date. Every change carries
+    author, approver, version, date, effective date, reason and audit trail.'
+  objects:
+  - Curriculum 360
+  api_calls:
+  - POST /api/v1/curricula/{id}/versions/{v}/decisions
+  events:
+  - CUR.APPROVED
+  - CUR.PUBLISHED
+  fields:
+  - label: Decision
+    type: radio
+    required: true
+    rule: null
+  - label: Effective date
+    type: date
+    required: true
+    rule: ≥ today + configured notice period (default 90 days)
+  - label: Reason / notes
+    type: textarea
+    required: true
+    rule: null
+- id: CUR-04
+  title: Curriculum 360
+  module: Curriculum 360
+  pattern: Record 360
+  route: /curricula/{id}
+  classification: Internal
+  phase: P2
+  roles:
+  - CURA (Curriculum Authority Officer)
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - INSP (Inspector / Quality Assurance Officer)
+  - SLT (Senior Leadership)
+  source: Gov §9, Gov §52
+  purpose: 'The curriculum as an intelligence object: authority, versions, applicable institutions, subjects, objectives,
+    assessments, qualifications, teacher requirements and live compliance across adopters.'
+  objects:
+  - Curriculum 360
+  api_calls:
+  - GET /api/v1/curricula/{id}
+  events: []
+- id: CUR-05
+  title: State adaptation
+  module: Curriculum 360
+  pattern: Workspace
+  route: /curricula/{id}/adaptations
+  classification: Internal
+  phase: P2
+  roles:
+  - CURA (Curriculum Authority Officer)
+  - STA (State Ministry Administrator)
+  source: Gov §11, Gov §47, Gov §48
+  purpose: State/local authorised additions or adaptations layered on a federal curriculum, with conflict detection against
+    higher-level mandatory rules.
+  objects:
+  - Curriculum 360
+  - PolicyRule
+  api_calls:
+  - GET/POST /api/v1/curricula/{id}/adaptations
+  events: []
+- id: CUR-06
+  title: Curriculum compliance
+  module: Curriculum 360
+  pattern: Report / analysis
+  route: /institutions/{id}/curriculum-compliance
+  classification: Internal
+  phase: P2
+  roles:
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - INSP (Inspector / Quality Assurance Officer)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - CURA (Curriculum Authority Officer)
+  source: Gov §13–16, Gov §44
+  purpose: 'Curriculum Compliance Engine result for an institution: compliance score with breakdown and specific deficiencies
+    — not just a percentage.'
+  objects:
+  - Curriculum 360
+  - Institution 360
+  api_calls:
+  - GET /api/v1/institutions/{id}/curriculum-compliance
+  events: []
+- id: CUR-07
+  title: Compliance heatmap
+  module: Curriculum 360
+  pattern: Report / analysis
+  route: /curricula/heatmap
+  classification: Internal
+  phase: P6
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - CURA (Curriculum Authority Officer)
+  - INSP (Inspector / Quality Assurance Officer)
+  source: Gov §17, Gov §18
+  purpose: 'Geographic and hierarchical heatmap of curriculum compliance: National → State → District → Institution, filterable
+    by subject, level, institution type, public/private, region and academic year.'
+  objects:
+  - Curriculum 360
+  api_calls:
+  - GET /api/v1/analytics/curriculum-heatmap
+  events: []
+- id: CUR-08
+  title: Policy conflicts & exceptions
+  module: Curriculum 360
+  pattern: List / register
+  route: /policy/exceptions
+  classification: Internal
+  phase: P2
+  roles:
+  - CURA (Curriculum Authority Officer)
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - HEAD (Head of Institution)
+  - IADM (Institution Administrator)
+  source: Gov §48, Gov §49
+  purpose: Conflicts between lower-level configuration and higher-level mandatory rules, and the exception requests that legitimately
+    override them for a period.
+  objects:
+  - PolicyException
+  - PolicyRule
+  api_calls:
+  - GET/POST /api/v1/policy/exceptions
+  events: []
+  fields:
+  - label: Rule
+    type: search
+    required: true
+    rule: null
+  - label: Institution / scope
+    type: search
+    required: true
+    rule: null
+  - label: Reason
+    type: textarea
+    required: true
+    rule: null
+  - label: Evidence
+    type: file
+    required: true
+    rule: null
+  - label: Start
+    type: date
+    required: true
+    rule: null
+  - label: End
+    type: date
+    required: true
+    rule: ≤ 12 months after start
+  - label: Review date
+    type: date
+    required: true
+    rule: null
+- id: CUR-09
+  title: Lesson plan & delivery log
+  module: Curriculum 360
+  pattern: Workspace
+  route: /teaching/plans
+  classification: Internal
+  phase: P2
+  roles:
+  - TCH (Teacher / Lecturer)
+  - SLT (Senior Leadership)
+  source: Gov §15
+  purpose: Teacher plans lessons against curriculum objectives and logs delivery; this is the primary evidence for curriculum
+    compliance.
+  objects:
+  - LessonPlan
+  - DeliveryLog
+  - Curriculum 360
+  api_calls:
+  - GET/POST /api/v1/teaching/plans
+  - POST /api/v1/teaching/deliveries
+  events: []
+  fields:
+  - label: Lesson
+    type: select
+    required: true
+    rule: null
+  - label: Objectives covered
+    type: multiselect
+    required: true
+    rule: null
+  - label: Delivered as planned
+    type: switch
+    required: false
+    rule: null
+  - label: Notes / adaptations
+    type: textarea
+    required: false
+    rule: null
+- id: CUR-101
+  title: Coverage assurance
+  module: Curriculum 360
+  pattern: Dashboard
+  roles:
+  - STA
+  - LGA
+  - HEAD
+  - SLT
+  - CURA
+  phase: P2
+  route: /coverage/{scope}
+  purpose: Show, for any scope, whether every mandatory subject in every class has a qualified teacher of record, enough scheduled
+    periods and evidence of delivery.
+- id: CUR-102
+  title: Teaching assignment matrix
+  module: Curriculum 360
+  pattern: Grid
+  roles:
+  - HEAD
+  - SLT
+  - HOD
+  - IADM
+  phase: P1
+  route: /institutions/{id}/assignments
+  purpose: Assign a teacher of record (and co-teachers) to every class-subject in one grid, with live authorisation and load
+    checks.
+- id: CUR-103
+  title: Gap register
+  module: Curriculum 360
+  pattern: List / register
+  roles:
+  - HEAD
+  - SLT
+  - HOD
+  - LGA
+  - STA
+  phase: P2
+  route: /gaps
+  purpose: List every open and closed coverage gap with severity, owner, due date, suggested fixes and history.
+- id: DOC-101
+  title: Digitisation programme
+  module: Records & archives
+  pattern: Dashboard
+  roles:
+  - RECM
+  - STA
+  - PLAT
+  phase: P1
+  route: /digitisation
+  purpose: Plan and monitor the state digitisation programme.
+- id: DOC-102
+  title: Batches and custody
+  module: Records & archives
+  pattern: List / register
+  roles:
+  - RECM
+  - DIGO
+  phase: P1
+  route: /digitisation/batches
+  purpose: Track boxes and volumes from collection to disposition.
+- id: DOC-103
+  title: Indexing and QA workstation
+  module: Records & archives
+  pattern: Workspace
+  roles:
+  - DIGO
+  - RECM
+  phase: P1
+  route: /digitisation/qa/{batch}
+  purpose: Verify extracted fields against the page image and link records.
+- id: DOC-104
+  title: Records search
+  module: Records & archives
+  pattern: Report / analysis
+  roles:
+  - REG
+  - HR
+  - RECM
+  - STA
+  - CERT
+  phase: P1
+  route: /records/search
+  purpose: Find any record by name variant, date, school, number or full text.
+- id: DOC-105
+  title: Document viewer
+  module: Records & archives
+  pattern: Record 360
+  roles:
+  - All with access
+  phase: P1
+  route: /documents/{id}
+  purpose: View a document with metadata, links, history and permitted downloads.
+- id: DOC-106
+  title: File plan and retention
+  module: Records & archives
+  pattern: Settings
+  roles:
+  - RECM
+  - DPO
+  phase: P1
+  route: /records/file-plan
+  purpose: Maintain record series, retention, legal holds and disposal approvals.
+- id: EXM-01
+  title: Examination series
+  module: Examinations
+  pattern: List / register
+  route: /exams/series
+  classification: Internal
+  phase: P1
+  roles:
+  - EXO (Exams Officer)
+  - EXAM (Examination Body Officer)
+  - SLT (Senior Leadership)
+  - REG (Registrar / Admissions Officer)
+  source: Gov §23
+  purpose: Internal and external examination series (e.g. BECE, WAEC/NECO SSCE, NABTEB, university semester exams) linked
+    to approved curriculum, qualification and programme.
+  objects:
+  - Examination 360
+  - Qualification 360
+  api_calls:
+  - GET /api/v1/exam-series
+  events: []
+- id: EXM-02
+  title: Candidate entries
+  module: Examinations
+  pattern: Workspace
+  route: /exams/series/{id}/entries
+  classification: Internal
+  phase: P1
+  roles:
+  - EXO (Exams Officer)
+  - REG (Registrar / Admissions Officer)
+  source: §38
+  purpose: 'Entering candidates: eligibility checks, subject combinations, access arrangements, fees, candidate numbers.'
+  objects:
+  - Examination 360
+  - Learner 360
+  api_calls:
+  - GET/POST /api/v1/exam-series/{id}/entries
+  events: []
+- id: EXM-03
+  title: Exam timetable & seating
+  module: Examinations
+  pattern: Grid
+  route: /exams/series/{id}/sittings
+  classification: Internal
+  phase: P1
+  roles:
+  - EXO (Exams Officer)
+  source: §38
+  purpose: Sittings, rooms, seating plans, invigilation rota, clashes and access-arrangement rooms.
+  objects:
+  - Sitting
+  api_calls:
+  - GET /api/v1/exam-series/{id}/sittings
+  events: []
+- id: EXM-04
+  title: Results entry & import
+  module: Examinations
+  pattern: Workspace
+  route: /exams/series/{id}/results
+  classification: Internal
+  phase: P1
+  roles:
+  - EXO (Exams Officer)
+  - EXAM (Examination Body Officer)
+  source: §38
+  purpose: Enters internal results or imports external board results (file/API), matching candidates to Learner 360.
+  objects:
+  - Examination 360
+  - Result
+  api_calls:
+  - POST /api/v1/exam-series/{id}/results/imports
+  events: []
+- id: EXM-05
+  title: Results approval & release
+  module: Examinations
+  pattern: Workflow / approval
+  route: /exams/series/{id}/release
+  classification: Internal
+  phase: P1
+  roles:
+  - EXO (Exams Officer)
+  - SLT (Senior Leadership)
+  - HEAD (Head of Institution)
+  - EXAM (Examination Body Officer)
+  - REG (Registrar / Admissions Officer)
+  source: §38
+  purpose: Approval of results by exam board/academic board and scheduled release to learners and parents.
+  objects:
+  - Examination 360
+  api_calls:
+  - POST /api/v1/exam-series/{id}/approvals
+  events: []
+- id: EXM-06
+  title: Transcripts
+  module: Examinations
+  pattern: Workspace
+  route: /transcripts
+  classification: Confidential
+  phase: P5
+  roles:
+  - REG (Registrar / Admissions Officer)
+  source: §10
+  purpose: Official transcripts generated from approved results across the learner's programme, digitally signed and verifiable.
+  objects:
+  - Transcript
+  - Learner 360
+  api_calls:
+  - POST /api/v1/transcripts
+  events: []
+  fields:
+  - label: Learner
+    type: search
+    required: true
+    rule: null
+  - label: Programme
+    type: select
+    required: true
+    rule: null
+  - label: Type
+    type: select
+    required: true
+    rule: null
+  - label: Deliver to
+    type: select
+    required: false
+    rule: null
+- id: EXM-07
+  title: GPA & classification
+  module: Examinations
+  pattern: Report / analysis
+  route: /academic/classification
+  classification: Internal
+  phase: P5
+  roles:
+  - REG (Registrar / Admissions Officer)
+  - SLT (Senior Leadership)
+  - EXO (Exams Officer)
+  source: §10, §38
+  purpose: Computes GPA/CGPA, credits earned, progression status and degree classification per programme rules.
+  objects:
+  - Result
+  - Programme 360
+  api_calls:
+  - GET /api/v1/programmes/{id}/classifications
+  events: []
+- id: EXM-08
+  title: Exam anomaly review
+  module: Examinations
+  pattern: List / register
+  route: /exams/anomalies
+  classification: Restricted
+  phase: P6
+  roles:
+  - EXAM (Examination Body Officer)
+  - INTEG (Integrity Investigator)
+  - EXO (Exams Officer)
+  source: Gov §31
+  purpose: Statistical anomalies in results (unusual grade distributions, identical answer patterns, out-of-pattern improvements)
+    for human review.
+  objects:
+  - Examination 360
+  api_calls:
+  - GET /api/v1/exam-anomalies
+  events: []
+- id: EYR-01
+  title: Observations & milestones
+  module: Early years
+  pattern: Workspace
+  route: /early-years/observations
+  classification: Internal
+  phase: P1
+  roles:
+  - TCH (Teacher / Lecturer)
+  - SLT (Senior Leadership)
+  - PAR (Parent / Guardian)
+  source: §4.1
+  purpose: Early-years learning observations (text, photo, video) against development milestones, shared with parents.
+  objects:
+  - Observation
+  - Learner 360
+  api_calls:
+  - POST /api/v1/early-years/observations
+  events: []
+  fields:
+  - label: Child(ren)
+    type: multiselect
+    required: true
+    rule: null
+  - label: Observation
+    type: textarea
+    required: true
+    rule: null
+  - label: Media
+    type: file
+    required: false
+    rule: null
+  - label: Development areas
+    type: multiselect
+    required: true
+    rule: null
+  - label: Milestone
+    type: select
+    required: false
+    rule: null
+  - label: Share with parents
+    type: switch
+    required: false
+    rule: null
+- id: EYR-02
+  title: Development tracker
+  module: Early years
+  pattern: Report / analysis
+  route: /early-years/tracker
+  classification: Internal
+  phase: P1
+  roles:
+  - TCH (Teacher / Lecturer)
+  - SLT (Senior Leadership)
+  source: §4.1
+  purpose: Cohort and individual development tracking, with nutrition, health information and daily care logs.
+  objects:
+  - Learner 360
+  api_calls:
+  - GET /api/v1/early-years/tracker
+  events: []
+- id: FAM-01
+  title: Family 360
+  module: Families
+  pattern: Record 360
+  route: /families/{id}
+  classification: Confidential
+  phase: P1
+  roles:
+  - REG (Registrar / Admissions Officer)
+  - IADM (Institution Administrator)
+  - FINO (Finance Officer / Bursar)
+  - HEAD (Head of Institution)
+  - PAST (Pastoral & Attendance Lead)
+  source: §30, §52
+  purpose: Household view linking guardians and children across one or many institutions, with relationships, parental responsibility,
+    contact priority, consolidated billing and communications.
+  objects:
+  - Family 360
+  - Parent/Guardian 360
+  - Learner 360
+  api_calls:
+  - GET /api/v1/families/{id}
+  events: []
+- id: FAM-02
+  title: Link a guardian
+  module: Families
+  pattern: Form
+  route: /guardians/new
+  classification: Restricted
+  phase: P1
+  roles:
+  - REG (Registrar / Admissions Officer)
+  - IADM (Institution Administrator)
+  source: §25
+  purpose: Creates or links a guardian with duplicate checks on phone, e-mail and NIN.
+  objects:
+  - Parent/Guardian 360
+  api_calls:
+  - POST /api/v1/match/guardians
+  - POST /api/v1/guardians
+  events: []
+  fields:
+  - label: Title
+    type: select
+    required: false
+    rule: null
+  - label: First name
+    type: text
+    required: true
+    rule: null
+  - label: Surname
+    type: text
+    required: true
+    rule: null
+  - label: Relationship to learner
+    type: select
+    required: true
+    rule: null
+  - label: Parental responsibility
+    type: switch
+    required: true
+    rule: null
+  - label: Mobile
+    type: tel
+    required: true
+    rule: E.164; uniqueness check → link existing guardian
+  - label: Email
+    type: email
+    required: false
+    rule: null
+  - label: NIN
+    type: nin
+    required: false
+    rule: null
+  - label: Preferred language
+    type: select
+    required: false
+    rule: null
+  - label: Preferred channel
+    type: select
+    required: false
+    rule: null
+  - label: Address
+    type: textarea
+    required: false
+    rule: null
+- id: FAM-03
+  title: Parent home
+  module: Families
+  pattern: Portal (parents, learners, employers)
+  route: /parent
+  classification: Internal
+  phase: P1
+  roles:
+  - PAR (Parent / Guardian)
+  source: §4, §34
+  purpose: 'Parent/guardian portal home (web and mobile): each linked child''s day, attendance, homework, results, fees, messages,
+    consents and events.'
+  objects:
+  - Family 360
+  - Learner 360
+  api_calls:
+  - GET /api/v1/me/children
+  events: []
+- id: FAM-04
+  title: Consents
+  module: Families
+  pattern: List / register
+  route: /consents
+  classification: Internal
+  phase: P1
+  roles:
+  - REG (Registrar / Admissions Officer)
+  - IADM (Institution Administrator)
+  - DPO (Data Protection Officer)
+  - PAR (Parent / Guardian)
+  source: §40
+  purpose: Consent and legal-basis records (photography, trips, data sharing, medical treatment, biometric use, digital services)
+    by learner and guardian.
+  objects:
+  - Consent
+  api_calls:
+  - GET /api/v1/consents
+  events: []
+- id: FIN-01
+  title: Budget planning
+  module: Finance
+  pattern: Workspace
+  route: /budgets/{id}
+  classification: Internal
+  phase: P4
+  roles:
+  - FINO (Finance Officer / Bursar)
+  - HEAD (Head of Institution)
+  - NET (Network / Trust Executive)
+  source: §75 F
+  purpose: Budget preparation by cost centre and account, linked to enrolment forecasts and staffing plans.
+  objects:
+  - Budget
+  api_calls:
+  - GET/PUT /api/v1/budgets/{id}
+  events: []
+- id: FIN-02
+  title: Budget vs actual
+  module: Finance
+  pattern: Report / analysis
+  route: /finance/performance
+  classification: Internal
+  phase: P4
+  roles:
+  - FINO (Finance Officer / Bursar)
+  - HEAD (Head of Institution)
+  - NET (Network / Trust Executive)
+  - STA (State Ministry Administrator)
+  source: §16
+  purpose: Budget monitoring with variance analysis and forecast to year end.
+  objects:
+  - Budget
+  - Ledger
+  api_calls:
+  - GET /api/v1/finance/performance
+  events: []
+- id: FIN-03
+  title: Procurement
+  module: Finance
+  pattern: Workflow / approval
+  route: /procurement
+  classification: Internal
+  phase: P4
+  roles:
+  - FINO (Finance Officer / Bursar)
+  - OPSM (Operations & Facilities Manager)
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  source: §55
+  purpose: Request → Approval → Purchase order → Goods received → Invoice → Payment → Reconciliation, with delegated limits.
+  objects:
+  - Requisition
+  - PurchaseOrder
+  - Supplier 360
+  api_calls:
+  - GET/POST /api/v1/requisitions
+  events: []
+- id: FIN-04
+  title: Supplier 360
+  module: Finance
+  pattern: Record 360
+  route: /suppliers/{id}
+  classification: Restricted
+  phase: P4
+  roles:
+  - FINO (Finance Officer / Bursar)
+  source: §53
+  purpose: Supplier master with bank details (restricted), contracts, POs, invoices, performance and duplicate detection.
+  objects:
+  - Supplier 360
+  api_calls:
+  - GET /api/v1/suppliers/{id}
+  events: []
+- id: FIN-05
+  title: General ledger
+  module: Finance
+  pattern: List / register
+  route: /ledger
+  classification: Internal
+  phase: P4
+  roles:
+  - FINO (Finance Officer / Bursar)
+  source: §75 F
+  purpose: Chart of accounts, journals and postings (or integration to an external accounting system via adapter).
+  objects:
+  - Journal
+  - Account
+  api_calls:
+  - GET /api/v1/ledger/journals
+  events: []
+- id: FIN-06
+  title: Currencies & tax
+  module: Finance
+  pattern: Settings / configuration
+  route: /settings/currency
+  classification: Internal
+  phase: P1
+  roles:
+  - FINO (Finance Officer / Bursar)
+  - IADM (Institution Administrator)
+  source: §35
+  purpose: Local and reporting currencies, exchange-rate sources and history, tax rules and billing calendar.
+  objects:
+  - Currency
+  api_calls:
+  - GET/POST /api/v1/currencies
+  events: []
+  fields:
+  - label: Tax
+    type: text
+    required: true
+    rule: null
+  - label: Rate
+    type: number
+    required: true
+    rule: null
+  - label: Applies to charges
+    type: multiselect
+    required: false
+    rule: null
+  - label: Effective from
+    type: date
+    required: true
+    rule: null
+- id: FRM-101
+  title: Form builder
+  module: Forms
+  pattern: Workspace
+  roles:
+  - IADM
+  - SLT
+  phase: P2
+  route: /forms/builder
+  purpose: Build digital forms and workflows to replace paper forms.
+- id: FRM-102
+  title: Forms and Daybook
+  module: Forms
+  pattern: List / register
+  roles:
+  - TCH
+  - PAST
+  - SLT
+  - PAR
+  - LRN
+  phase: P2
+  route: /daybook
+  purpose: Raise, track and file forms and Daybook entries.
+- id: HED-01
+  title: Admissions pipeline
+  module: Admissions
+  pattern: Workspace
+  route: /admissions
+  classification: Internal
+  phase: P1
+  roles:
+  - REG (Registrar / Admissions Officer)
+  - SLT (Senior Leadership)
+  source: §10, §55, §81
+  purpose: Applicant management from application to enrolment for schools, colleges, polytechnics and universities.
+  objects:
+  - Applicant
+  - Programme 360
+  api_calls:
+  - GET /api/v1/admissions/applications
+  events: []
+- id: HED-02
+  title: Application review
+  module: Admissions
+  pattern: Record 360
+  route: /admissions/applications/{id}
+  classification: Confidential
+  phase: P1
+  roles:
+  - REG (Registrar / Admissions Officer)
+  - SLT (Senior Leadership)
+  source: §10, §66
+  purpose: 'Single application: applicant, documents (with extracted data), scores, identity match, decision and offer.'
+  objects:
+  - Applicant
+  - Certificate 360
+  api_calls:
+  - GET /api/v1/admissions/applications/{id}
+  - POST /api/v1/admissions/applications/{id}/decisions
+  events: []
+  fields:
+  - label: Decision
+    type: radio
+    required: true
+    rule: null
+  - label: Conditions
+    type: textarea
+    required: false
+    rule: null
+  - label: Reason
+    type: textarea
+    required: true
+    rule: null
+- id: HED-03
+  title: Course registration
+  module: Higher education
+  pattern: Workspace
+  route: /registration/courses
+  classification: Internal
+  phase: P5
+  roles:
+  - LRN (Learner)
+  - REG (Registrar / Admissions Officer)
+  - TCH (Teacher / Lecturer)
+  source: §9, §10
+  purpose: Student course/module registration for a semester with credit limits, prerequisites, carry-overs and adviser approval.
+  objects:
+  - CourseRegistration
+  - Programme 360
+  api_calls:
+  - GET /api/v1/registration/available
+  - POST /api/v1/registration
+  events: []
+- id: HED-04
+  title: Accommodation
+  module: Higher education
+  pattern: Workspace
+  route: /accommodation
+  classification: Internal
+  phase: P5
+  roles:
+  - OPSM (Operations & Facilities Manager)
+  - REG (Registrar / Admissions Officer)
+  - LRN (Learner)
+  source: §10
+  purpose: Halls, rooms and bed spaces; applications, allocation (with accessibility needs), check-in/out and charges.
+  objects:
+  - Room
+  - Allocation
+  api_calls:
+  - GET /api/v1/accommodation/applications
+  events: []
+- id: HED-05
+  title: Research students & ethics
+  module: Higher education
+  pattern: Workspace
+  route: /research
+  classification: Internal
+  phase: P5
+  roles:
+  - SLT (Senior Leadership)
+  - TCH (Teacher / Lecturer)
+  - REG (Registrar / Admissions Officer)
+  source: §10
+  purpose: 'Postgraduate research: supervision, milestones, progression reviews, ethics applications and thesis examination.'
+  objects:
+  - ResearchCandidature
+  - EthicsApplication
+  api_calls:
+  - GET /api/v1/research/students
+  events: []
+- id: HED-06
+  title: Graduation & alumni
+  module: Higher education
+  pattern: Workspace
+  route: /graduation
+  classification: Internal
+  phase: P5
+  roles:
+  - REG (Registrar / Admissions Officer)
+  - SLT (Senior Leadership)
+  source: §10
+  purpose: Graduation list from classification and certificate eligibility, ceremony management and alumni records.
+  objects:
+  - Certificate 360
+  - Alumnus
+  api_calls:
+  - GET /api/v1/graduation/lists
+  events: []
+- id: HED-07
+  title: Scholarships & bursaries
+  module: Finance
+  pattern: Workspace
+  route: /scholarships
+  classification: Internal
+  phase: P4
+  roles:
+  - FINO (Finance Officer / Bursar)
+  - REG (Registrar / Admissions Officer)
+  - SLT (Senior Leadership)
+  source: §28, §33
+  purpose: Scholarship and bursary schemes, applications, awards and disbursement (linked to billing to prevent double funding).
+  objects:
+  - FundingSource
+  - Award
+  api_calls:
+  - GET /api/v1/scholarships
+  events: []
+- id: HOM-01
+  title: My briefing
+  module: Home
+  pattern: Dashboard / command centre
+  route: /
+  classification: Internal
+  phase: P6
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - NET (Network / Trust Executive)
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - TCH (Teacher / Lecturer)
+  - PAST (Pastoral & Attendance Lead)
+  - DSL (Designated Safeguarding Lead)
+  - SENCO (SEND / Inclusion Coordinator)
+  - EXO (Exams Officer)
+  - REG (Registrar / Admissions Officer)
+  - FINO (Finance Officer / Bursar)
+  - HR (HR Officer)
+  - OPSM (Operations & Facilities Manager)
+  - INSP (Inspector / Quality Assurance Officer)
+  - CURA (Curriculum Authority Officer)
+  - CERT (Certification Registrar)
+  - INTEG (Integrity Investigator)
+  - DQ (Data Steward)
+  - DPO (Data Protection Officer)
+  source: §76, §78, §79
+  purpose: Personalised executive briefing answering 'What needs my attention?' Generated every morning (06:00 local) and
+    refreshed live. Groups items into Priority 1 (critical, act now), Priority 2 (intervention needed), Priority 3 (emerging
+    risks) and Information (positive developments).
+  objects:
+  - Alert
+  - Education Administrator 360
+  api_calls:
+  - GET /api/v1/briefings/today
+  - POST /api/v1/alerts/{id}/snooze
+  events:
+  - ALERT.SNOOZED
+- id: HOM-02
+  title: Notifications
+  module: Home
+  pattern: List / register
+  route: /notifications
+  classification: Internal
+  phase: P1
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - NET (Network / Trust Executive)
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - TCH (Teacher / Lecturer)
+  - PAST (Pastoral & Attendance Lead)
+  - DSL (Designated Safeguarding Lead)
+  - SENCO (SEND / Inclusion Coordinator)
+  - EXO (Exams Officer)
+  - REG (Registrar / Admissions Officer)
+  - FINO (Finance Officer / Bursar)
+  - HR (HR Officer)
+  - OPSM (Operations & Facilities Manager)
+  - INSP (Inspector / Quality Assurance Officer)
+  - CURA (Curriculum Authority Officer)
+  - CERT (Certification Registrar)
+  - INTEG (Integrity Investigator)
+  - DQ (Data Steward)
+  - DPO (Data Protection Officer)
+  - PAR (Parent / Guardian)
+  - LRN (Learner)
+  source: §44
+  purpose: Unified inbox of system notifications, mentions, approvals and messages. Notifications are generated by the Notification
+    Engine from domain events and the user's subscription rules.
+  objects:
+  - Notification
+  api_calls:
+  - GET /api/v1/notifications
+  - PATCH /api/v1/notifications/{id}
+  events: []
+- id: HOM-03
+  title: My tasks
+  module: Home
+  pattern: List / register
+  route: /tasks
+  classification: Internal
+  phase: P1
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - NET (Network / Trust Executive)
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - TCH (Teacher / Lecturer)
+  - PAST (Pastoral & Attendance Lead)
+  - DSL (Designated Safeguarding Lead)
+  - SENCO (SEND / Inclusion Coordinator)
+  - EXO (Exams Officer)
+  - REG (Registrar / Admissions Officer)
+  - FINO (Finance Officer / Bursar)
+  - HR (HR Officer)
+  - OPSM (Operations & Facilities Manager)
+  - INSP (Inspector / Quality Assurance Officer)
+  - CURA (Curriculum Authority Officer)
+  - CERT (Certification Registrar)
+  - INTEG (Integrity Investigator)
+  - DQ (Data Steward)
+  - DPO (Data Protection Officer)
+  source: §55
+  purpose: Work queue of workflow steps assigned to the user or their role (approvals, reviews, sign-offs). Every workflow
+    in the platform uses the Universal Workflow Engine, so all pending work appears here.
+  objects:
+  - WorkflowInstance
+  - Task
+  api_calls:
+  - GET /api/v1/workflow/tasks
+  - POST /api/v1/workflow/tasks/{id}/complete
+  events: []
+- id: HOM-04
+  title: My profile & preferences
+  module: Home
+  pattern: Settings / configuration
+  route: /me
+  classification: Internal
+  phase: P1
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - NET (Network / Trust Executive)
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - TCH (Teacher / Lecturer)
+  - PAST (Pastoral & Attendance Lead)
+  - DSL (Designated Safeguarding Lead)
+  - SENCO (SEND / Inclusion Coordinator)
+  - EXO (Exams Officer)
+  - REG (Registrar / Admissions Officer)
+  - FINO (Finance Officer / Bursar)
+  - HR (HR Officer)
+  - OPSM (Operations & Facilities Manager)
+  - INSP (Inspector / Quality Assurance Officer)
+  - CURA (Curriculum Authority Officer)
+  - CERT (Certification Registrar)
+  - INTEG (Integrity Investigator)
+  - DQ (Data Steward)
+  - DPO (Data Protection Officer)
+  - PAR (Parent / Guardian)
+  - LRN (Learner)
+  source: §57, §58
+  purpose: Personal details, language, accessibility preferences, notification preferences and security (MFA devices, sessions).
+  objects: []
+  api_calls:
+  - GET/PUT /api/v1/me/preferences
+  events: []
+  fields:
+  - label: Display language
+    type: select
+    required: true
+    rule: null
+  - label: Date format
+    type: select
+    required: false
+    rule: null
+  - label: Text size
+    type: select
+    required: false
+    rule: null
+  - label: High-contrast theme
+    type: switch
+    required: false
+    rule: null
+  - label: Reduce motion
+    type: switch
+    required: false
+    rule: null
+  - label: Dyslexia-friendly font
+    type: switch
+    required: false
+    rule: null
+- id: HOM-05
+  title: Search
+  module: Home
+  pattern: List / register
+  route: /search?q=
+  classification: Internal
+  phase: P1
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - NET (Network / Trust Executive)
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - TCH (Teacher / Lecturer)
+  - PAST (Pastoral & Attendance Lead)
+  - DSL (Designated Safeguarding Lead)
+  - SENCO (SEND / Inclusion Coordinator)
+  - EXO (Exams Officer)
+  - REG (Registrar / Admissions Officer)
+  - FINO (Finance Officer / Bursar)
+  - HR (HR Officer)
+  - OPSM (Operations & Facilities Manager)
+  - INSP (Inspector / Quality Assurance Officer)
+  - CURA (Curriculum Authority Officer)
+  - CERT (Certification Registrar)
+  - INTEG (Integrity Investigator)
+  - DQ (Data Steward)
+  - DPO (Data Protection Officer)
+  source: §25
+  purpose: 'Global search across every record the user may see: learners, staff, institutions, curricula, certificates, invoices,
+    cases (only for cleared users), reports and pages. Results are permission-trimmed at query time.'
+  objects: []
+  api_calls:
+  - GET /api/v1/search
+  events: []
+- id: HOM-06
+  title: Education assistant
+  module: Intelligence
+  pattern: Workspace
+  route: /assistant
+  classification: Internal
+  phase: P7
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - NET (Network / Trust Executive)
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - TCH (Teacher / Lecturer)
+  - PAST (Pastoral & Attendance Lead)
+  - DSL (Designated Safeguarding Lead)
+  - SENCO (SEND / Inclusion Coordinator)
+  - EXO (Exams Officer)
+  - REG (Registrar / Admissions Officer)
+  - FINO (Finance Officer / Bursar)
+  - HR (HR Officer)
+  - OPSM (Operations & Facilities Manager)
+  - INSP (Inspector / Quality Assurance Officer)
+  - CURA (Curriculum Authority Officer)
+  - CERT (Certification Registrar)
+  - INTEG (Integrity Investigator)
+  - DQ (Data Steward)
+  - DPO (Data Protection Officer)
+  source: §50, §51, §81
+  purpose: Natural-language education administrator. Authorised users ask questions in plain language; answers are computed
+    from permission-trimmed data with every figure linked to its source records.
+  objects:
+  - All permitted 360 objects
+  api_calls:
+  - POST /api/v1/assistant/conversations/{id}/messages
+  events:
+  - AI.QUERY
+- id: ILP-101
+  title: Learning plans
+  module: Interventions
+  pattern: List / register
+  roles:
+  - TCH
+  - PAST
+  - SEND
+  - SLT
+  - HEAD
+  phase: P3
+  route: /learning-plans
+  purpose: Create and track personal learning plans for any learner from templates, see progress at a glance and never miss
+    a review.
+- id: ILP-102
+  title: Personal learning plan
+  module: Interventions
+  pattern: Record 360
+  roles:
+  - TCH
+  - PAST
+  - SEND
+  - LRN
+  - PAR
+  phase: P3
+  route: /learning-plans/{id}
+  purpose: One learner's plan with goals linked to curriculum objectives and targets, agreed actions, the learner's own voice,
+    parent comments, evidence and reviews.
+- id: INS-01
+  title: Institution register
+  module: Institutions
+  pattern: List / register
+  route: /institutions
+  classification: Internal
+  phase: P1
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - NET (Network / Trust Executive)
+  - INSP (Inspector / Quality Assurance Officer)
+  - DQ (Data Steward)
+  - GLB (Global Education Administrator)
+  source: §19, Gov §7
+  purpose: Authoritative register of every institution in the user's scope (Institution 360 master). Public and private, all
+    levels and types, with registration, licence and accreditation status.
+  objects:
+  - Institution 360
+  api_calls:
+  - GET /api/v1/institutions
+  events: []
+- id: INS-02
+  title: Institution 360
+  module: Institutions
+  pattern: Record 360
+  route: /institutions/{id}
+  classification: Internal
+  phase: P1
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - NET (Network / Trust Executive)
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - INSP (Inspector / Quality Assurance Officer)
+  source: §19, Gov §7, Gov §55
+  purpose: Single authoritative view of an institution. Every other module references this record; nothing about the institution
+    is stored elsewhere.
+  objects:
+  - Institution 360
+  - Campus 360
+  - Accreditation 360
+  - Inspection 360
+  api_calls:
+  - GET /api/v1/institutions/{id}
+  - GET /api/v1/institutions/{id}/summary
+  - POST /api/v1/institutions/{id}/change-requests
+  events: []
+- id: INS-03
+  title: Register an institution
+  module: Institutions
+  pattern: Wizard
+  route: /institutions/new
+  classification: Internal
+  phase: P1
+  roles:
+  - STA (State Ministry Administrator)
+  - FED (Federal Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - APP (Applicant)
+  source: §25, Gov §7, Gov §39
+  purpose: Controlled registration and licensing workflow for new institutions (public establishment or private application).
+    Runs duplicate detection before a new Institution 360 is created.
+  objects:
+  - Institution 360
+  - Licence
+  - WorkflowInstance
+  api_calls:
+  - POST /api/v1/institution-applications
+  - POST /api/v1/match/institutions
+  events:
+  - INS.APPLICATION_SUBMITTED
+  - INS.REGISTERED
+  fields:
+  - label: Proposed name
+    type: text
+    required: true
+    rule: Unique within state (fuzzy match ≥ 0.92 triggers duplicate review)
+  - label: Institution category
+    type: select
+    required: true
+    rule: null
+  - label: Ownership
+    type: select
+    required: true
+    rule: null
+  - label: Day / boarding
+    type: select
+    required: false
+    rule: null
+  - label: Gender intake
+    type: select
+    required: false
+    rule: null
+  - label: Proposed opening date
+    type: date
+    required: true
+    rule: Not in the past; ≥ 30 days after submission
+  - label: CAC registration number (private)
+    type: text
+    required: false
+    rule: Required for private-company ownership; format RC/BN + digits
+- id: INS-04
+  title: Licences & accreditation
+  module: Institutions
+  pattern: List / register
+  route: /institutions/licensing
+  classification: Internal
+  phase: P1
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - INSP (Inspector / Quality Assurance Officer)
+  - CERT (Certification Registrar)
+  source: Gov §7, §71
+  purpose: 'Licence and accreditation lifecycle across institutions: grants, renewals, conditions, suspensions and expiries,
+    including examination-centre and certificate-issuing authorisations.'
+  objects:
+  - Accreditation 360
+  - Licence
+  api_calls:
+  - GET /api/v1/licences
+  - POST /api/v1/licences/{id}/renewals
+  events: []
+- id: INS-05
+  title: Health index breakdown
+  module: Institutions
+  pattern: Report / analysis
+  route: /institutions/{id}/health
+  classification: Internal
+  phase: P6
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - NET (Network / Trust Executive)
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  source: §18
+  purpose: Decomposition of the Institution Performance & Health Index into its indicators, weights, sources and trends. The
+    score is never shown as an unexplained single number.
+  objects:
+  - Institution 360
+  - HealthIndexPolicy
+  api_calls:
+  - GET /api/v1/institutions/{id}/health-index
+  events: []
+- id: INS-06
+  title: Organisation structure
+  module: Institutions
+  pattern: Settings / configuration
+  route: /institutions/{id}/structure
+  classification: Internal
+  phase: P1
+  roles:
+  - IADM (Institution Administrator)
+  - HEAD (Head of Institution)
+  - STA (State Ministry Administrator)
+  source: §3, §61
+  purpose: Campuses, sites, faculties, schools, departments and units of an institution. Feeds every hierarchy-based permission
+    and report.
+  objects:
+  - Campus 360
+  - OrgUnit
+  api_calls:
+  - GET/POST /api/v1/institutions/{id}/units
+  events: []
+  fields:
+  - label: Unit name
+    type: text
+    required: true
+    rule: null
+  - label: Unit type
+    type: select
+    required: true
+    rule: null
+  - label: Parent unit
+    type: select
+    required: true
+    rule: null
+  - label: Head of unit
+    type: search
+    required: false
+    rule: null
+  - label: Cost centre
+    type: text
+    required: false
+    rule: Must exist in finance chart of accounts
+  - label: Effective from
+    type: date
+    required: true
+    rule: null
+- id: INS-07
+  title: Inspections
+  module: Inspection & compliance
+  pattern: List / register
+  route: /inspections
+  classification: Internal
+  phase: P6
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - INSP (Inspector / Quality Assurance Officer)
+  source: Gov §19
+  purpose: 'Inspection programme: risk-based scheduling, visits, outcomes and follow-up across institutions.'
+  objects:
+  - Inspection 360
+  api_calls:
+  - GET /api/v1/inspections
+  events: []
+- id: INS-08
+  title: Inspection workspace
+  module: Inspection & compliance
+  pattern: Workspace
+  route: /inspections/{id}
+  classification: Confidential
+  phase: P6
+  roles:
+  - INSP (Inspector / Quality Assurance Officer)
+  source: Gov §19
+  purpose: Inspector's working page during a visit (offline-capable on tablet). Pre-loads the applicable curriculum, required
+    subjects, teaching hours, assessments, implementation evidence, historical compliance and outstanding deficiencies.
+  objects:
+  - Inspection 360
+  - Curriculum 360
+  - Institution 360
+  api_calls:
+  - GET /api/v1/inspections/{id}/briefing
+  - POST /api/v1/inspections/{id}/findings
+  events:
+  - INSP.FINDING_RECORDED
+  - INSP.REPORT_APPROVED
+  fields:
+  - label: Area
+    type: select
+    required: true
+    rule: null
+  - label: Judgement
+    type: select
+    required: true
+    rule: null
+  - label: Evidence
+    type: textarea
+    required: true
+    rule: Min 30 chars
+  - label: Photo / document
+    type: file
+    required: false
+    rule: null
+  - label: Requires corrective action
+    type: switch
+    required: false
+    rule: null
+- id: INS-09
+  title: Compliance centre
+  module: Inspection & compliance
+  pattern: Dashboard / command centre
+  route: /institutions/{id}/compliance
+  classification: Internal
+  phase: P4
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - INSP (Inspector / Quality Assurance Officer)
+  source: §71
+  purpose: 'Institutional Compliance Centre: policy, safeguarding, staff training, certifications, health & safety, fire,
+    data protection, financial reporting, examination compliance, accreditation.'
+  objects:
+  - ComplianceRequirement
+  - Institution 360
+  api_calls:
+  - GET /api/v1/institutions/{id}/compliance
+  events: []
+- id: INS-10
+  title: Improvement workspace
+  module: Inspection & compliance
+  pattern: Workspace
+  route: /improvement/{id}
+  classification: Internal
+  phase: P6
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  source: §72, §73
+  purpose: 'Performance Improvement Engine workspace created when an institution is identified as weak: problem, evidence,
+    contributing indicators, actions, owner, review date and measured outcome (Detect → Understand → Act → Measure → Learn).'
+  objects:
+  - ImprovementPlan
+  - Intervention
+  api_calls:
+  - GET/POST /api/v1/improvement-plans
+  events: []
+- id: INS-11
+  title: Corrective action plan
+  module: Inspection & compliance
+  pattern: Workflow / approval
+  route: /corrective-actions/{id}
+  classification: Internal
+  phase: P6
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - INSP (Inspector / Quality Assurance Officer)
+  - HEAD (Head of Institution)
+  source: Gov §45
+  purpose: 'Government Intervention Engine: when compliance falls below threshold, a corrective action plan with assigned
+    officer, deadline, follow-up inspection and reassessment.'
+  objects:
+  - CorrectiveActionPlan
+  - Institution 360
+  api_calls:
+  - GET/PATCH /api/v1/corrective-actions/{id}
+  events: []
+- id: INT-01
+  title: Interventions
+  module: Interventions
+  pattern: Workspace
+  route: /interventions
+  classification: Internal
+  phase: P2
+  roles:
+  - PAST (Pastoral & Attendance Lead)
+  - SENCO (SEND / Inclusion Coordinator)
+  - SLT (Senior Leadership)
+  - TCH (Teacher / Lecturer)
+  source: §72, §73
+  purpose: Plans, tracks and evaluates interventions for learners and groups (academic, attendance, behaviour, wellbeing),
+    closing the loop to measured outcomes.
+  objects:
+  - Intervention
+  api_calls:
+  - GET/POST /api/v1/interventions
+  events: []
+  fields:
+  - label: Name
+    type: text
+    required: true
+    rule: null
+  - label: Type
+    type: select
+    required: true
+    rule: null
+  - label: Learners
+    type: multiselect
+    required: true
+    rule: null
+  - label: Baseline measure
+    type: select
+    required: true
+    rule: null
+  - label: Target
+    type: text
+    required: true
+    rule: null
+  - label: Review date
+    type: date
+    required: true
+    rule: null
+- id: INT-02
+  title: Early warning — learners
+  module: Interventions
+  pattern: List / register
+  route: /early-warning/learners
+  classification: Confidential
+  phase: P7
+  roles:
+  - PAST (Pastoral & Attendance Lead)
+  - SLT (Senior Leadership)
+  - HEAD (Head of Institution)
+  - SENCO (SEND / Inclusion Coordinator)
+  source: §43, §51, §81
+  purpose: 'Learner-level early warning: dropout, attendance, behaviour, academic decline, wellbeing and SEND support gaps,
+    with explanation for each flag.'
+  objects:
+  - RiskScore
+  - Learner 360
+  api_calls:
+  - GET /api/v1/early-warning/learners
+  events: []
+- id: LMS-101
+  title: Course space
+  module: LMS
+  pattern: Workspace
+  roles:
+  - TCH
+  - LRN
+  - HOD
+  phase: P2
+  route: /courses/{id}
+  purpose: 'The online space for a class-subject or course section: units, content, assignments, live classes and discussion.'
+- id: LMS-102
+  title: Create or edit assignment
+  module: LMS
+  pattern: Form
+  roles:
+  - TCH
+  phase: P2
+  route: /courses/{id}/assignments/new
+  purpose: Set coursework linked to curriculum objectives with clear submission, marking and accessibility settings.
+- id: LMS-103
+  title: Submission (learner)
+  module: LMS
+  pattern: Portal
+  roles:
+  - LRN
+  phase: P2
+  route: /work/{assignment}
+  purpose: Let a learner submit work from a phone, online or offline, and get a receipt.
+- id: LMS-104
+  title: Marking workspace
+  module: LMS
+  pattern: Grid
+  roles:
+  - TCH
+  phase: P2
+  route: /courses/{id}/assignments/{a}/marking
+  purpose: Mark submissions quickly with rubrics, annotations and feedback that flow to the markbook and curriculum evidence.
+- id: LMS-105
+  title: My marking
+  module: LMS
+  pattern: List / register
+  roles:
+  - TCH
+  phase: P2
+  route: /marking
+  purpose: Everything a teacher has to mark across classes, oldest first.
+- id: LMS-106
+  title: Quiz and question bank
+  module: LMS
+  pattern: Workspace
+  roles:
+  - TCH
+  - HOD
+  - LMSA
+  phase: P2
+  route: /question-banks/{id}
+  purpose: Author, review and reuse questions; build quizzes and secure CBT tests.
+- id: LMS-107
+  title: Learner work (my assignments)
+  module: LMS
+  pattern: Portal
+  roles:
+  - LRN
+  - PAR
+  phase: P2
+  route: /work
+  purpose: Show a learner (and parent) all work due, submitted and marked.
+- id: LMS-108
+  title: Digital learning dashboard
+  module: LMS
+  pattern: Dashboard
+  roles:
+  - HEAD
+  - HOD
+  - STA
+  - LGA
+  phase: P2
+  route: /digital-learning/{scope}
+  purpose: Show digital adoption and coursework indicators by scope.
+- id: LMS-109
+  title: Homework calendar
+  module: Digital learning
+  pattern: Workspace
+  roles:
+  - TCH
+  - LRN
+  - PAR
+  - HOD
+  phase: P2
+  route: /homework
+  purpose: Show learners and parents every homework with due dates and status, keep the homework load balanced across subjects,
+    and give teachers submission insights.
+- id: LRN-01
+  title: Learners
+  module: Learners
+  pattern: List / register
+  route: /learners
+  classification: Confidential
+  phase: P1
+  roles:
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - REG (Registrar / Admissions Officer)
+  - TCH (Teacher / Lecturer)
+  - PAST (Pastoral & Attendance Lead)
+  - DSL (Designated Safeguarding Lead)
+  - SENCO (SEND / Inclusion Coordinator)
+  - EXO (Exams Officer)
+  - LGA (Local Authority Education Officer)
+  - STA (State Ministry Administrator)
+  source: §10, Gov §32
+  purpose: Search and list learners in scope. Teachers see their own classes; institution staff see their institution; government
+    users see aggregated lists only where policy allows learner-level access.
+  objects:
+  - Learner 360
+  api_calls:
+  - GET /api/v1/learners
+  events: []
+- id: LRN-02
+  title: Register a learner
+  module: Learners
+  pattern: Wizard
+  route: /learners/new
+  classification: Restricted
+  phase: P1
+  roles:
+  - REG (Registrar / Admissions Officer)
+  - IADM (Institution Administrator)
+  - HEAD (Head of Institution)
+  source: §25, Gov §33–37
+  purpose: Single registration path for every learner (ages 0+). Captures identity, NIN where legally applicable, guardians
+    for minors, and runs the Identity Matching Engine before a Learner 360 is created.
+  objects:
+  - Learner 360
+  - Parent/Guardian 360
+  - Identity
+  api_calls:
+  - POST /api/v1/match/learners
+  - POST /api/v1/learners
+  - POST /api/v1/identity/nin/verify
+  events:
+  - LRN.MATCH_REVIEWED
+  - LRN.CREATED
+  - ID.NIN_VERIFIED
+  fields:
+  - label: Legal first name
+    type: text
+    required: true
+    rule: Unicode letters, space, hyphen, apostrophe
+  - label: Middle name(s)
+    type: text
+    required: false
+    rule: null
+  - label: Legal surname
+    type: text
+    required: true
+    rule: null
+  - label: Preferred name
+    type: text
+    required: false
+    rule: null
+  - label: Date of birth
+    type: date
+    required: true
+    rule: Not in future; age 0–100; age band check vs intended level (soft warning outside band, hard block outside policy
+      limit)
+  - label: Sex
+    type: select
+    required: true
+    rule: null
+  - label: NIN
+    type: nin
+    required: false
+    rule: 11 digits; required per jurisdiction rule ID-NG-01 (age ≥ 16) / ID-NG-02 (0–15 where issued); verified via NIMC
+      adapter
+  - label: Previous learner ID / UPN
+    type: text
+    required: false
+    rule: null
+  - label: Nationality
+    type: select
+    required: false
+    rule: null
+  - label: State of origin
+    type: select
+    required: false
+    rule: null
+  - label: Home language(s)
+    type: multiselect
+    required: false
+    rule: null
+  - label: Photograph
+    type: file
+    required: false
+    rule: JPG/PNG ≤ 5 MB; face detected; stored as restricted
+- id: LRN-03
+  title: Duplicate review
+  module: Learners
+  pattern: Workspace
+  route: /match-reviews/{id}
+  classification: Restricted
+  phase: P1
+  roles:
+  - REG (Registrar / Admissions Officer)
+  - DQ (Data Steward)
+  - IADM (Institution Administrator)
+  source: §25, Gov §37
+  purpose: Side-by-side comparison of a new record against a probable existing match. Authorised users merge, reject the match
+    or create a new record; every decision is retained in the duplicate history.
+  objects:
+  - Learner 360
+  - MatchReview
+  api_calls:
+  - GET /api/v1/match-reviews/{id}
+  - POST /api/v1/match-reviews/{id}/decision
+  events:
+  - MDM.MATCH_DECIDED
+- id: LRN-04
+  title: Learner 360
+  module: Learners
+  pattern: Record 360
+  route: /learners/{id}
+  classification: Special
+  phase: P2
+  roles:
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - REG (Registrar / Admissions Officer)
+  - TCH (Teacher / Lecturer)
+  - PAST (Pastoral & Attendance Lead)
+  - DSL (Designated Safeguarding Lead)
+  - SENCO (SEND / Inclusion Coordinator)
+  - EXO (Exams Officer)
+  - FINO (Finance Officer / Bursar)
+  source: §26, §66, Gov §32, Gov §64
+  purpose: 'Complete, permission-trimmed view of one learner across their lifetime: identity, enrolments, attendance, behaviour,
+    assessment, examinations, qualifications, certificates, finance, wellbeing, SEND and safeguarding (cleared users only).'
+  objects:
+  - Learner 360
+  - Attendance 360
+  - Assessment 360
+  - SEND 360
+  - Safeguarding 360
+  - Finance 360
+  api_calls:
+  - GET /api/v1/learners/{id}
+  - GET /api/v1/learners/{id}/summary
+  - GET /api/v1/learners/{id}/timeline
+  events:
+  - LRN.VIEWED_SPECIAL
+- id: LRN-05
+  title: Transfer a learner
+  module: Learners
+  pattern: Wizard
+  route: /learners/{id}/transfer
+  classification: Confidential
+  phase: P1
+  roles:
+  - REG (Registrar / Admissions Officer)
+  - IADM (Institution Administrator)
+  - LGA (Local Authority Education Officer)
+  - STA (State Ministry Administrator)
+  source: Gov §40
+  purpose: 'Moves a learner between institutions without creating a new person: closes the old enrolment, transfers the authorised
+    record set, opens the new enrolment.'
+  objects:
+  - Learner 360
+  - Enrolment
+  api_calls:
+  - POST /api/v1/learners/{id}/transfers
+  events:
+  - LRN.TRANSFERRED
+- id: LRN-06
+  title: Education passport
+  module: Learners
+  pattern: Portal (parents, learners, employers)
+  route: /passport
+  classification: Confidential
+  phase: P7
+  roles:
+  - LRN (Learner)
+  - PAR (Parent / Guardian)
+  - REG (Registrar / Admissions Officer)
+  source: §66, Gov §41, Gov §42
+  purpose: 'Learner-facing Digital Education Passport: portable, authorised, longitudinal record of qualifications, certificates,
+    skills, competencies, credits, transcripts, badges and achievements, with consented sharing.'
+  objects:
+  - Education Passport 360
+  - Certificate 360
+  api_calls:
+  - GET /api/v1/me/passport
+  - POST /api/v1/me/passport/shares
+  events: []
+- id: LRN-07
+  title: Enrolment & placement
+  module: Learners
+  pattern: List / register
+  route: /enrolments
+  classification: Internal
+  phase: P1
+  roles:
+  - REG (Registrar / Admissions Officer)
+  - IADM (Institution Administrator)
+  - SLT (Senior Leadership)
+  source: §55
+  purpose: Places learners into year groups, classes, programmes, courses and cohorts for a session; handles promotion and
+    progression in bulk.
+  objects:
+  - Enrolment
+  - Learner 360
+  - Programme 360
+  api_calls:
+  - GET/POST /api/v1/enrolments
+  - POST /api/v1/promotions/preview
+  events: []
+- id: LRN-08
+  title: Merge records
+  module: Learners
+  pattern: Workspace
+  route: /mdm/merge/{id}
+  classification: Restricted
+  phase: P1
+  roles:
+  - DQ (Data Steward)
+  source: §25, §53
+  purpose: Merges two existing master records confirmed to be the same person (learner, parent, staff). Chooses the surviving
+    value per field and re-points all references.
+  objects:
+  - Learner 360
+  - MergeHistory
+  api_calls:
+  - POST /api/v1/mdm/merges
+  events:
+  - MDM.MERGED
+  - MDM.UNMERGED
+- id: LRN-09
+  title: Withdraw / leaver
+  module: Learners
+  pattern: Form
+  route: /learners/{id}/leave
+  classification: Internal
+  phase: P1
+  roles:
+  - REG (Registrar / Admissions Officer)
+  - IADM (Institution Administrator)
+  source: §67
+  purpose: 'Records a learner leaving: destination, reason, date; closes enrolment and triggers outcome tracking.'
+  objects:
+  - Enrolment
+  - OutcomeRecord
+  api_calls:
+  - POST /api/v1/learners/{id}/leavings
+  events:
+  - LRN.LEFT
+  fields:
+  - label: Leaving date
+    type: date
+    required: true
+    rule: Not before enrolment start; not > 30 days in future
+  - label: Reason
+    type: select
+    required: true
+    rule: null
+  - label: Destination institution
+    type: search
+    required: false
+    rule: null
+  - label: Destination type
+    type: select
+    required: false
+    rule: null
+  - label: Notes
+    type: textarea
+    required: false
+    rule: null
+- id: MED-01
+  title: Clinical placements & rotations
+  module: Medical education
+  pattern: Grid
+  route: /clinical/rotations
+  classification: Internal
+  phase: P5
+  roles:
+  - CLIN (Clinical Placement Coordinator)
+  - SLT (Senior Leadership)
+  source: §11
+  purpose: Rotation planner across hospitals and departments with capacity, supervisor allocation and prerequisites.
+  objects:
+  - Placement
+  - ClinicalSite
+  api_calls:
+  - GET /api/v1/clinical/rotations
+  events: []
+- id: MED-02
+  title: Clinical logbook & sign-off
+  module: Medical education
+  pattern: Workspace
+  route: /clinical/logbook
+  classification: Internal
+  phase: P5
+  roles:
+  - LRN (Learner)
+  - CLIN (Clinical Placement Coordinator)
+  - EMP (Employer / Placement Partner)
+  source: §11
+  purpose: Student logbook of procedures and cases (anonymised), supervisor verification and competency sign-off.
+  objects:
+  - LogbookEntry
+  - Competency
+  api_calls:
+  - POST /api/v1/clinical/logbook
+  events: []
+  fields:
+  - label: Date
+    type: date
+    required: true
+    rule: null
+  - label: Site / department
+    type: select
+    required: true
+    rule: null
+  - label: Procedure / skill
+    type: select
+    required: true
+    rule: null
+  - label: Level of involvement
+    type: select
+    required: true
+    rule: null
+  - label: Reflection
+    type: textarea
+    required: false
+    rule: null
+  - label: Supervisor
+    type: search
+    required: true
+    rule: null
+- id: MED-03
+  title: Clinical hours & registration readiness
+  module: Medical education
+  pattern: Report / analysis
+  route: /clinical/readiness
+  classification: Internal
+  phase: P5
+  roles:
+  - CLIN (Clinical Placement Coordinator)
+  - REG (Registrar / Admissions Officer)
+  - SLT (Senior Leadership)
+  source: §11
+  purpose: Clinical hours, placement attendance and competency completion against professional-registration requirements (e.g.
+    MDCN, NMCN).
+  objects:
+  - Learner 360
+  - Qualification 360
+  api_calls:
+  - GET /api/v1/clinical/readiness
+  events: []
+- id: OPS-01
+  title: Estate & rooms
+  module: Operations
+  pattern: List / register
+  route: /estate
+  classification: Internal
+  phase: P3
+  roles:
+  - OPSM (Operations & Facilities Manager)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - LGA (Local Authority Education Officer)
+  - STA (State Ministry Administrator)
+  source: §19
+  purpose: Buildings, rooms, capacity, type, accessibility features, ICT and condition; feeds infrastructure indicators.
+  objects:
+  - Infrastructure 360
+  - Room
+  api_calls:
+  - GET /api/v1/rooms
+  events: []
+- id: OPS-02
+  title: Asset register
+  module: Operations
+  pattern: List / register
+  route: /assets
+  classification: Internal
+  phase: P3
+  roles:
+  - OPSM (Operations & Facilities Manager)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - FINO (Finance Officer / Bursar)
+  source: §53
+  purpose: Fixed and portable assets (ICT, lab equipment, furniture, vehicles) with location, custodian, value and lifecycle.
+  objects:
+  - Asset
+  api_calls:
+  - GET /api/v1/assets
+  events: []
+- id: OPS-03
+  title: Maintenance
+  module: Operations
+  pattern: Workspace
+  route: /maintenance
+  classification: Internal
+  phase: P3
+  roles:
+  - OPSM (Operations & Facilities Manager)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - TCH (Teacher / Lecturer)
+  - LGA (Local Authority Education Officer)
+  source: §44
+  purpose: Maintenance requests and planned maintenance with risk ratings; critical infrastructure failures raise alerts.
+  objects:
+  - MaintenanceRequest
+  api_calls:
+  - POST /api/v1/maintenance-requests
+  events: []
+  fields:
+  - label: Location
+    type: select
+    required: true
+    rule: null
+  - label: Problem
+    type: textarea
+    required: true
+    rule: null
+  - label: Photo
+    type: file
+    required: false
+    rule: null
+  - label: Safety risk
+    type: select
+    required: true
+    rule: null
+- id: OPS-04
+  title: Transport
+  module: Operations
+  pattern: Workspace
+  route: /transport
+  classification: Internal
+  phase: P3
+  roles:
+  - OPSM (Operations & Facilities Manager)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  source: §5
+  purpose: Routes, stops, vehicles, drivers (with checks), learner allocations and boarding records.
+  objects:
+  - Route
+  - Vehicle
+  api_calls:
+  - GET /api/v1/transport/routes
+  events: []
+- id: OPS-05
+  title: Clubs & activities
+  module: Operations
+  pattern: List / register
+  route: /activities
+  classification: Internal
+  phase: P3
+  roles:
+  - OPSM (Operations & Facilities Manager)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - TCH (Teacher / Lecturer)
+  - LRN (Learner)
+  - PAR (Parent / Guardian)
+  source: §5
+  purpose: Clubs, sports and extra-curricular activities with enrolment, attendance and achievements (feeds passport badges).
+  objects:
+  - Activity
+  api_calls:
+  - GET /api/v1/activities
+  events: []
+- id: OPS-06
+  title: Trips & visits
+  module: Operations
+  pattern: Workflow / approval
+  route: /trips
+  classification: Internal
+  phase: P3
+  roles:
+  - OPSM (Operations & Facilities Manager)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - TCH (Teacher / Lecturer)
+  - PAR (Parent / Guardian)
+  source: §5
+  purpose: Trip planning, risk assessment, approval, consent collection, payments and on-the-day register.
+  objects:
+  - Trip
+  - Consent
+  api_calls:
+  - GET /api/v1/trips/{id}
+  events: []
+- id: OPS-07
+  title: Meals & nutrition
+  module: Operations
+  pattern: Workspace
+  route: /meals
+  classification: Internal
+  phase: P3
+  roles:
+  - OPSM (Operations & Facilities Manager)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - LGA (Local Authority Education Officer)
+  - STA (State Ministry Administrator)
+  source: §4.1, §5
+  purpose: 'School meals and feeding programmes (e.g. National Home-Grown School Feeding): menus, dietary requirements, numbers
+    served and programme reporting.'
+  objects:
+  - MealService
+  api_calls:
+  - GET /api/v1/meals/today
+  events: []
+- id: OPS-08
+  title: Library
+  module: Operations
+  pattern: List / register
+  route: /library
+  classification: Internal
+  phase: P3
+  roles:
+  - OPSM (Operations & Facilities Manager)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - TCH (Teacher / Lecturer)
+  - LRN (Learner)
+  source: §10
+  purpose: Catalogue, loans, returns, digital resources and reading records (or integration with an external LMS/library system).
+  objects:
+  - LibraryItem
+  - Loan
+  api_calls:
+  - GET /api/v1/library/loans
+  events: []
+- id: P16-01
+  title: Subject options
+  module: Post-16 & careers
+  pattern: Workspace
+  route: /options
+  classification: Internal
+  phase: P1
+  roles:
+  - REG (Registrar / Admissions Officer)
+  - SLT (Senior Leadership)
+  - LRN (Learner)
+  - PAR (Parent / Guardian)
+  source: §6, §7
+  purpose: Subject/option selection for SS1 or sixth form with combination rules, capacity and guidance.
+  objects:
+  - OptionChoice
+  api_calls:
+  - POST /api/v1/options/choices
+  events: []
+  fields:
+  - label: Compulsory
+    type: multiselect
+    required: true
+    rule: null
+  - label: Core science (choose 3)
+    type: multiselect
+    required: true
+    rule: Exactly 3 of Physics, Chemistry, Biology, Agric. Science
+  - label: Elective (choose 2)
+    type: multiselect
+    required: true
+    rule: null
+  - label: Career interest
+    type: select
+    required: false
+    rule: null
+- id: P16-02
+  title: Applications & careers
+  module: Post-16 & careers
+  pattern: Workspace
+  route: /careers
+  classification: Internal
+  phase: P5
+  roles:
+  - REG (Registrar / Admissions Officer)
+  - SLT (Senior Leadership)
+  - TCH (Teacher / Lecturer)
+  - LRN (Learner)
+  source: §7
+  purpose: University/college applications (JAMB/UTME-, UCAS-equivalent workflows), references, work experience and career
+    planning.
+  objects:
+  - Application
+  api_calls:
+  - GET /api/v1/careers/applications
+  events: []
+- id: PAY-01
+  title: Payroll runs
+  module: People
+  pattern: List / register
+  route: /payroll
+  classification: Restricted
+  phase: P4
+  roles:
+  - PAYR (Payroll Officer)
+  - FINO (Finance Officer / Bursar)
+  source: §75 E
+  purpose: Monthly payroll for institution- or network-employed staff (government payroll systems integrate via adapter).
+  objects:
+  - PayRun
+  api_calls:
+  - GET /api/v1/payroll/runs
+  events: []
+- id: PAY-02
+  title: Pay run detail
+  module: People
+  pattern: Record 360
+  route: /payroll/{id}
+  classification: Restricted
+  phase: P4
+  roles:
+  - PAYR (Payroll Officer)
+  - FINO (Finance Officer / Bursar)
+  source: §75 E
+  purpose: Calculated pay lines with exceptions (new starters, leavers, large variances) requiring review before approval.
+  objects:
+  - PayRun
+  api_calls:
+  - GET /api/v1/payroll/runs/{id}
+  events: []
+- id: PMT-01
+  title: Payments & receipts
+  module: Payments
+  pattern: List / register
+  route: /payments
+  classification: Restricted
+  phase: P1
+  roles:
+  - FINO (Finance Officer / Bursar)
+  source: §34
+  purpose: All incoming payments by channel (bank transfer/virtual account, card, direct debit, mobile money, USSD, gateway,
+    cash, cheque, government, employer, scholarship) with automatic allocation to ledgers.
+  objects:
+  - Payment
+  - Ledger
+  api_calls:
+  - GET /api/v1/payments
+  - POST /api/v1/payments/{id}/allocations
+  events:
+  - PMT.RECEIVED
+  - PMT.ALLOCATED
+- id: PMT-02
+  title: Bank reconciliation
+  module: Payments
+  pattern: Workspace
+  route: /reconciliation
+  classification: Internal
+  phase: P4
+  roles:
+  - FINO (Finance Officer / Bursar)
+  source: §34
+  purpose: Imports bank statements (MT940/CSV/API) and reconciles to recorded payments and disbursements.
+  objects:
+  - BankStatement
+  api_calls:
+  - POST /api/v1/reconciliation/statements
+  events: []
+- id: PMT-03
+  title: Pay online
+  module: Payments
+  pattern: Portal (parents, learners, employers)
+  route: /pay/{invoice}
+  classification: Internal
+  phase: P1
+  roles:
+  - PAR (Parent / Guardian)
+  - LRN (Learner)
+  source: §34
+  purpose: Parent/learner checkout supporting card, bank transfer, USSD and mobile money via configured gateways (e.g. Paystack,
+    Flutterwave, Remita for government revenue).
+  objects:
+  - Payment
+  api_calls:
+  - POST /api/v1/payments/intents
+  - POST /api/v1/webhooks/payments/{gateway}
+  events: []
+  fields:
+  - label: Method
+    type: radio
+    required: true
+    rule: null
+  - label: Amount
+    type: money
+    required: true
+    rule: ≤ balance unless overpayment allowed; ≥ minimum instalment
+- id: PTM-101
+  title: Parents' meetings
+  module: Parents' meetings
+  pattern: Workspace
+  roles:
+  - SLT
+  - TCH
+  - PAR
+  phase: P2
+  route: /parents-meetings
+  purpose: Organise and run in-person, video and hybrid parents' meetings.
+- id: PUB-01
+  title: Verify a certificate
+  module: Public verification
+  pattern: Public service
+  route: /verify
+  classification: Public
+  phase: P2
+  roles:
+  - PUB (Public Verifier)
+  source: Gov §28
+  purpose: Public, unauthenticated Certificate Verification Service. Employers, embassies, universities and the public verify
+    a certificate by number + holder surname, by scanning the QR code, or by verification code.
+  objects:
+  - Certificate 360
+  api_calls:
+  - POST /api/v1/public/verifications
+  events:
+  - CERT.VERIFIED
+  - CERT.VERIFY_FAILED
+  fields:
+  - label: Certificate number
+    type: text
+    required: true
+    rule: Pattern per issuing authority, e.g. NG-AB-2026-000123; checksum validated
+  - label: Holder's surname
+    type: text
+    required: true
+    rule: Case- and accent-insensitive match
+  - label: Verification code (optional)
+    type: text
+    required: false
+    rule: null
+  - label: I am verifying for
+    type: select
+    required: false
+    rule: null
+- id: PUB-02
+  title: Verification result
+  module: Public verification
+  pattern: Public service
+  route: /verify/result/{token}
+  classification: Public
+  phase: P2
+  roles:
+  - PUB (Public Verifier)
+  source: Gov §28, Gov §29
+  purpose: Shows the outcome of a public certificate check with the minimum necessary information.
+  objects:
+  - Certificate 360
+  api_calls:
+  - GET /api/v1/public/verifications/{token}
+  events: []
+- id: PUB-03
+  title: Online application
+  module: Admissions
+  pattern: Public service
+  route: /apply/{institution}
+  classification: Confidential
+  phase: P1
+  roles:
+  - APP (Applicant)
+  - PAR (Parent / Guardian)
+  source: §10, §55
+  purpose: Public admissions portal for applicants and guardians. Applications create an Applicant record and, on enrolment,
+    reuse the matched Learner 360 rather than creating a new person.
+  objects:
+  - Applicant
+  - Learner 360
+  - Programme 360
+  api_calls:
+  - POST /api/v1/public/applications
+  - PATCH /api/v1/public/applications/{id}
+  events:
+  - ADM.APPLICATION_SUBMITTED
+  fields:
+  - label: Legal first name
+    type: text
+    required: true
+    rule: Letters, hyphen, apostrophe; 1–80 chars
+  - label: Middle name(s)
+    type: text
+    required: false
+    rule: null
+  - label: Legal surname
+    type: text
+    required: true
+    rule: null
+  - label: Date of birth
+    type: date
+    required: true
+    rule: Age must fit the programme's entry age band (hard) and be ≤ 100 years
+  - label: Sex
+    type: select
+    required: true
+    rule: null
+  - label: National Identification Number (NIN)
+    type: nin
+    required: false
+    rule: 11 digits; verified against NIMC when the jurisdiction enables it
+  - label: State of origin
+    type: select
+    required: false
+    rule: null
+  - label: Email
+    type: email
+    required: false
+    rule: null
+  - label: Phone
+    type: tel
+    required: true
+    rule: E.164; +234 default
+- id: PUB-101
+  title: Request a certificate reissue
+  module: Public verification
+  pattern: Public service
+  roles:
+  - PUB (holder)
+  phase: P2
+  route: /certificates/reissue
+  purpose: Let a holder request a reissue online with identity verification and payment.
+- id: PVT-101
+  title: Provider application
+  module: Private providers
+  pattern: Wizard
+  roles:
+  - PROP
+  - APP
+  phase: P1
+  route: /apply/provider
+  purpose: Apply online for approval of a private institution.
+- id: PVT-102
+  title: Application review
+  module: Private providers
+  pattern: Workflow / approval
+  roles:
+  - PRA
+  - INSP
+  phase: P1
+  route: /provider-applications/{id}
+  purpose: Review, query, inspect and decide private-provider applications.
+- id: PVT-103
+  title: Provider 360
+  module: Private providers
+  pattern: Record 360
+  roles:
+  - PROP
+  - PRA
+  - STA
+  phase: P1
+  route: /providers/{id}
+  purpose: One record for a provider and its institutions, approvals, conditions, payments and compliance.
+- id: PVT-104
+  title: Private institutions register
+  module: Private providers
+  pattern: List / register
+  roles:
+  - PRA
+  - STA
+  - LGA
+  phase: P1
+  route: /private-institutions
+  purpose: List every private institution with approval status, expiry and risk.
+- id: PVT-105
+  title: Approval conditions and renewals
+  module: Private providers
+  pattern: List / register
+  roles:
+  - PRA
+  - PROP
+  phase: P2
+  route: /private-institutions/conditions
+  purpose: Track approval conditions and renewals to completion.
+- id: RPT-01
+  title: Report library
+  module: Reporting
+  pattern: List / register
+  route: /reports
+  classification: Internal
+  phase: P1
+  roles:
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - FINO (Finance Officer / Bursar)
+  - LGA (Local Authority Education Officer)
+  - STA (State Ministry Administrator)
+  - FED (Federal Ministry Administrator)
+  - NET (Network / Trust Executive)
+  source: §57
+  purpose: Standard, statutory and saved custom reports available in the user's scope.
+  objects:
+  - ReportDefinition
+  api_calls:
+  - GET /api/v1/reports
+  events: []
+- id: RPT-02
+  title: Report builder
+  module: Reporting
+  pattern: Workspace
+  route: /reports/builder
+  classification: Internal
+  phase: P6
+  roles:
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - FINO (Finance Officer / Bursar)
+  - LGA (Local Authority Education Officer)
+  - STA (State Ministry Administrator)
+  - FED (Federal Ministry Administrator)
+  source: §41, Gov §57
+  purpose: Self-service report builder over the semantic layer (governed metrics and dimensions), permission-trimmed, with
+    small-number suppression.
+  objects:
+  - ReportDefinition
+  - Metric
+  api_calls:
+  - POST /api/v1/reports/queries
+  events: []
+- id: RPT-03
+  title: Government return
+  module: Reporting
+  pattern: Workflow / approval
+  route: /returns/{id}
+  classification: Internal
+  phase: P6
+  roles:
+  - HEAD (Head of Institution)
+  - IADM (Institution Administrator)
+  - LGA (Local Authority Education Officer)
+  - STA (State Ministry Administrator)
+  - FED (Federal Ministry Administrator)
+  source: Gov §56, Gov §57
+  purpose: Automated statutory/government return (e.g. Annual School Census) generated from live master records; institution
+    reviews, explains anomalies and certifies — no re-keying.
+  objects:
+  - Return
+  api_calls:
+  - GET /api/v1/returns/{id}
+  - POST /api/v1/returns/{id}/submit
+  events: []
+- id: RPT-04
+  title: Data lineage
+  module: Reporting
+  pattern: Workspace
+  route: /lineage?metric=
+  classification: Internal
+  phase: P6
+  roles:
+  - FED (Federal Ministry Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - DQ (Data Steward)
+  - SLT (Senior Leadership)
+  source: Gov §58
+  purpose: 'Explains any reported number: definition, formula, sources, filters, refresh time and drill-through to records
+    (e.g. National Enrolment = 4,827,201 → State → Institution → Learner).'
+  objects:
+  - Metric
+  api_calls:
+  - GET /api/v1/lineage
+  events: []
+- id: RPT-05
+  title: Scheduled reports
+  module: Reporting
+  pattern: List / register
+  route: /reports/schedules
+  classification: Internal
+  phase: P1
+  roles:
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - FINO (Finance Officer / Bursar)
+  - STA (State Ministry Administrator)
+  source: §46
+  purpose: Scheduled report deliveries with recipients, format and last status.
+  objects:
+  - ReportSchedule
+  api_calls:
+  - GET /api/v1/reports/schedules
+  events: []
+- id: SAF-01
+  title: Record a concern
+  module: Safeguarding
+  pattern: Form
+  route: /safeguarding/concerns/new
+  classification: Special
+  phase: P2
+  roles:
+  - TCH (Teacher / Lecturer)
+  - PAST (Pastoral & Attendance Lead)
+  - SLT (Senior Leadership)
+  - HEAD (Head of Institution)
+  - IADM (Institution Administrator)
+  - REG (Registrar / Admissions Officer)
+  - SENCO (SEND / Inclusion Coordinator)
+  - OPSM (Operations & Facilities Manager)
+  - HR (HR Officer)
+  - FINO (Finance Officer / Bursar)
+  - EXO (Exams Officer)
+  source: §24, §55
+  purpose: Any member of staff can record a welfare or safeguarding concern. Once submitted the reporter can no longer see
+    the case; it routes immediately to the DSL.
+  objects:
+  - Safeguarding 360
+  - Learner 360
+  api_calls:
+  - POST /api/v1/safeguarding/concerns
+  events:
+  - SAF.CONCERN_RAISED
+  fields:
+  - label: Learner
+    type: search
+    required: true
+    rule: null
+  - label: Date & time observed
+    type: date
+    required: true
+    rule: null
+  - label: Category (initial)
+    type: select
+    required: true
+    rule: null
+  - label: What did you see or hear?
+    type: textarea
+    required: true
+    rule: Record facts and the child's own words; do not investigate
+  - label: Action you have taken
+    type: textarea
+    required: false
+    rule: null
+  - label: Body map
+    type: file
+    required: false
+    rule: null
+  - label: Urgent — DSL to contact me now
+    type: switch
+    required: false
+    rule: null
+- id: SAF-02
+  title: Safeguarding caseload
+  module: Safeguarding
+  pattern: Dashboard / command centre
+  route: /safeguarding
+  classification: Special
+  phase: P2
+  roles:
+  - DSL (Designated Safeguarding Lead)
+  source: §24
+  purpose: 'DSL workspace: new concerns, open cases by risk, overdue actions, referrals and reviews.'
+  objects:
+  - Safeguarding 360
+  api_calls:
+  - GET /api/v1/safeguarding/cases
+  events: []
+- id: SAF-03
+  title: Safeguarding case
+  module: Safeguarding
+  pattern: Record 360
+  route: /safeguarding/cases/{id}
+  classification: Special
+  phase: P2
+  roles:
+  - DSL (Designated Safeguarding Lead)
+  source: §24, §81
+  purpose: Case record with automatically assembled chronology from linked concerns, attendance, behaviour, health and agency
+    contacts the DSL is authorised to see.
+  objects:
+  - Safeguarding 360
+  api_calls:
+  - GET /api/v1/safeguarding/cases/{id}
+  events:
+  - SAF.CASE_VIEWED
+  - SAF.CASE_UPDATED
+- id: SAF-04
+  title: External referral
+  module: Safeguarding
+  pattern: Form
+  route: /safeguarding/cases/{id}/referrals/new
+  classification: Special
+  phase: P2
+  roles:
+  - DSL (Designated Safeguarding Lead)
+  source: §55
+  purpose: Referral to an external agency with the minimum necessary information and a secure transmission record.
+  objects:
+  - Safeguarding 360
+  - Referral
+  api_calls:
+  - POST /api/v1/safeguarding/cases/{id}/referrals
+  events: []
+  fields:
+  - label: Agency
+    type: select
+    required: true
+    rule: null
+  - label: Contact
+    type: text
+    required: true
+    rule: null
+  - label: Reason for referral
+    type: textarea
+    required: true
+    rule: null
+  - label: Information shared
+    type: multiselect
+    required: true
+    rule: null
+  - label: Lawful basis for sharing
+    type: select
+    required: true
+    rule: null
+  - label: Guardian informed
+    type: select
+    required: true
+    rule: null
+  - label: Expected response by
+    type: date
+    required: false
+    rule: null
+- id: SAF-101
+  title: Staff allegations and low-level concerns
+  module: Safeguarding
+  pattern: Workspace
+  roles:
+  - HEAD
+  - LGA
+  - HR
+  phase: P2
+  route: /safeguarding/staff
+  purpose: Record and manage allegations about adults, low-level concerns and self-referrals in a restricted area separate
+    from learner safeguarding.
+- id: SAF-102
+  title: Community reporting forms
+  module: Safeguarding
+  pattern: Settings / configuration
+  roles:
+  - DSL
+  - HEAD
+  - LGA
+  phase: P2
+  route: /safeguarding/forms
+  purpose: Build branded reporting forms for learners, parents and the community; publish them by link, QR code, poster, website
+    embed and WhatsApp; receive reports anonymously into the DSL queue.
+- id: SAF-103
+  title: Safeguarding insights
+  module: Safeguarding
+  pattern: Report / analysis
+  roles:
+  - DSL
+  - HEAD
+  - LGA
+  - STA
+  phase: P2
+  route: /safeguarding/insights
+  purpose: Show concern types, trends, response times and open actions for an institution or area, with saved reports and
+    an inspection pack.
+- id: SEN-01
+  title: SEND register
+  module: SEND & inclusion
+  pattern: Dashboard / command centre
+  route: /send
+  classification: Special
+  phase: P2
+  roles:
+  - SENCO (SEND / Inclusion Coordinator)
+  - SLT (Senior Leadership)
+  - HEAD (Head of Institution)
+  - LGA (Local Authority Education Officer)
+  - STA (State Ministry Administrator)
+  source: §12
+  purpose: 'Learners with special educational needs, disabilities or additional support: need areas, support level, plan status,
+    provision and reviews.'
+  objects:
+  - SEND 360
+  api_calls:
+  - GET /api/v1/send/register
+  events: []
+- id: SEN-02
+  title: Learner support profile
+  module: SEND & inclusion
+  pattern: Record 360
+  route: /send/learners/{id}
+  classification: Special
+  phase: P2
+  roles:
+  - SENCO (SEND / Inclusion Coordinator)
+  - SLT (Senior Leadership)
+  source: §12, §23
+  purpose: 'Individual Learner Support Profile: strengths, needs, preferences, communication, adjustments, strategies, accessibility,
+    assistive technology, interventions, progress, student voice and parent/carer input.'
+  objects:
+  - SEND 360
+  - Learner 360
+  api_calls:
+  - GET /api/v1/send/learners/{id}
+  events: []
+- id: SEN-03
+  title: Support plan & review
+  module: SEND & inclusion
+  pattern: Workflow / approval
+  route: /send/plans/{id}
+  classification: Special
+  phase: P2
+  roles:
+  - SENCO (SEND / Inclusion Coordinator)
+  source: §12
+  purpose: Individual education/support plans and EHCP-equivalent statutory plans with outcomes, provision, review cycle and
+    parent/learner participation.
+  objects:
+  - SEND 360
+  - SupportPlan
+  api_calls:
+  - GET/PUT /api/v1/send/plans/{id}
+  events: []
+  fields:
+  - label: Review date
+    type: date
+    required: true
+    rule: null
+  - label: Attendees
+    type: multiselect
+    required: false
+    rule: null
+  - label: Progress summary
+    type: textarea
+    required: true
+    rule: null
+  - label: Changes agreed
+    type: textarea
+    required: false
+    rule: null
+- id: SEN-04
+  title: Provision map
+  module: SEND & inclusion
+  pattern: Report / analysis
+  route: /send/provision
+  classification: Special
+  phase: P2
+  roles:
+  - SENCO (SEND / Inclusion Coordinator)
+  - SLT (Senior Leadership)
+  - HEAD (Head of Institution)
+  - STA (State Ministry Administrator)
+  source: §12, §42
+  purpose: What support is provided, to whom, by whom, at what cost, and with what impact; feeds 'high SEND demand but insufficient
+    provision' intelligence.
+  objects:
+  - SEND 360
+  - Provision
+  api_calls:
+  - GET /api/v1/send/provision
+  events: []
+- id: STF-01
+  title: Staff directory
+  module: People
+  pattern: List / register
+  route: /staff
+  classification: Internal
+  phase: P1
+  roles:
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  - HR (HR Officer)
+  - IADM (Institution Administrator)
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - NET (Network / Trust Executive)
+  source: §75 E
+  purpose: All staff in scope (teaching, lecturing, support, contractors, volunteers) from the Staff 360 master.
+  objects:
+  - Staff 360
+  api_calls:
+  - GET /api/v1/staff
+  events: []
+- id: STF-02
+  title: Staff 360
+  module: People
+  pattern: Record 360
+  route: /staff/{id}
+  classification: Restricted
+  phase: P1
+  roles:
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  - HR (HR Officer)
+  - IADM (Institution Administrator)
+  - PAYR (Payroll Officer)
+  - STA (State Ministry Administrator)
+  source: Gov §20
+  purpose: 'Single staff record: employment, posts across institutions, qualifications, teaching authorisations, timetable,
+    absence, CPD, performance, safer-recruitment checks, payroll link (cleared users).'
+  objects:
+  - Staff 360
+  - Teacher 360
+  api_calls:
+  - GET /api/v1/staff/{id}
+  events: []
+- id: STF-03
+  title: Onboard staff
+  module: People
+  pattern: Wizard
+  route: /staff/new
+  classification: Restricted
+  phase: P4
+  roles:
+  - HR (HR Officer)
+  - IADM (Institution Administrator)
+  source: §55
+  purpose: Creates a Staff 360 (with duplicate check) and a post; collects safer-recruitment evidence before the person can
+    be given access to learners.
+  objects:
+  - Staff 360
+  api_calls:
+  - POST /api/v1/match/staff
+  - POST /api/v1/staff
+  events: []
+- id: STF-04
+  title: Recruitment
+  module: People
+  pattern: Workspace
+  route: /recruitment
+  classification: Internal
+  phase: P4
+  roles:
+  - HR (HR Officer)
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  source: §55, §81
+  purpose: Vacancy → Application → Shortlist → Interview → References → Safeguarding checks → Offer → Appointment.
+  objects:
+  - Vacancy
+  - Application
+  - Staff 360
+  api_calls:
+  - GET /api/v1/vacancies
+  events: []
+- id: STF-05
+  title: Applicant review
+  module: People
+  pattern: Record 360
+  route: /recruitment/applications/{id}
+  classification: Restricted
+  phase: P4
+  roles:
+  - HR (HR Officer)
+  - HEAD (Head of Institution)
+  - SLT (Senior Leadership)
+  source: §55
+  purpose: Single candidate application with scoring rubric, panel notes and checks.
+  objects:
+  - Application
+  api_calls:
+  - GET /api/v1/applications/{id}
+  events: []
+- id: STF-06
+  title: Staff absence & cover
+  module: People
+  pattern: Workspace
+  route: /absence
+  classification: Internal
+  phase: P3
+  roles:
+  - HR (HR Officer)
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  - HEAD (Head of Institution)
+  source: §22
+  purpose: Records staff absence; the Timetable engine identifies affected lessons, the Cover engine proposes qualified available
+    staff, the Workload engine checks fairness.
+  objects:
+  - Staff 360
+  - Timetable
+  - CoverAssignment
+  api_calls:
+  - POST /api/v1/absences
+  - GET /api/v1/cover/proposals
+  events:
+  - STF.ABSENCE_RECORDED
+  - TT.COVER_ASSIGNED
+  fields:
+  - label: Staff member
+    type: search
+    required: true
+    rule: null
+  - label: Type
+    type: select
+    required: true
+    rule: null
+  - label: From
+    type: date
+    required: true
+    rule: null
+  - label: To
+    type: date
+    required: true
+    rule: ≥ From
+  - label: Periods
+    type: multiselect
+    required: false
+    rule: null
+  - label: Cover notes
+    type: textarea
+    required: false
+    rule: null
+- id: STF-07
+  title: CPD & training
+  module: People
+  pattern: List / register
+  route: /cpd
+  classification: Internal
+  phase: P4
+  roles:
+  - HR (HR Officer)
+  - SLT (Senior Leadership)
+  - HEAD (Head of Institution)
+  - STA (State Ministry Administrator)
+  source: Gov §20
+  purpose: 'Continuing professional development: required training (e.g. safeguarding, curriculum updates), records, hours
+    and compliance by staff member.'
+  objects:
+  - CPDRecord
+  - Teacher 360
+  api_calls:
+  - GET /api/v1/cpd/records
+  events: []
+- id: STF-08
+  title: Teacher qualifications register
+  module: People
+  pattern: List / register
+  route: /teacher-register
+  classification: Internal
+  phase: P6
+  roles:
+  - STA (State Ministry Administrator)
+  - FED (Federal Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - HR (HR Officer)
+  - HEAD (Head of Institution)
+  source: Gov §20
+  purpose: Government/institution register of teacher qualifications and subject authorisations; detects qualification mismatches
+    against timetabled curriculum.
+  objects:
+  - Teacher 360
+  - Curriculum 360
+  api_calls:
+  - GET /api/v1/teachers/qualification-mismatches
+  events: []
+- id: STF-09
+  title: Performance review
+  module: People
+  pattern: Form
+  route: /appraisals/{id}
+  classification: Restricted
+  phase: P4
+  roles:
+  - SLT (Senior Leadership)
+  - HEAD (Head of Institution)
+  - HR (HR Officer)
+  - TCH (Teacher / Lecturer)
+  source: §75 E
+  purpose: Annual appraisal with objectives, evidence, observations and development plan.
+  objects:
+  - Appraisal
+  - Staff 360
+  api_calls:
+  - GET/PUT /api/v1/appraisals/{id}
+  events: []
+  fields:
+  - label: Overall judgement
+    type: select
+    required: true
+    rule: null
+  - label: Development priorities
+    type: textarea
+    required: true
+    rule: null
+  - label: Agreed by appraisee
+    type: checkbox
+    required: false
+    rule: null
+- id: STF-10
+  title: Teacher deployment
+  module: People
+  pattern: Report / analysis
+  route: /deployment
+  classification: Internal
+  phase: P6
+  roles:
+  - STA (State Ministry Administrator)
+  - LGA (Local Authority Education Officer)
+  - FED (Federal Ministry Administrator)
+  source: Gov §4
+  purpose: State/LGA view of teacher supply vs curriculum demand by subject and school; supports posting decisions.
+  objects:
+  - Teacher 360
+  - Curriculum 360
+  api_calls:
+  - GET /api/v1/analytics/teacher-deployment
+  events: []
+- id: STF-101
+  title: Safeguarding training and compliance
+  module: Staff, HR and payroll
+  pattern: Dashboard / command centre
+  roles:
+  - HR
+  - HEAD
+  - DSL
+  - LGA
+  - STA
+  phase: P2
+  route: /staff/training-compliance
+  purpose: Assign, deliver and evidence safeguarding and statutory training for every adult, with assessments, certificates,
+    renewals and compliance by institution, LGA and state.
+- id: SUB-101
+  title: SDAF rate card
+  module: Billing
+  pattern: Settings / configuration
+  roles:
+  - STA
+  - REV
+  - FIN
+  phase: P1
+  route: /financing/sdaf/rates
+  purpose: Propose, approve and publish the Student Digital Access Fee rates in naira by institution type and level, per term
+    or per semester.
+- id: SUB-102
+  title: Term census and billable learners
+  module: Billing
+  pattern: Workspace
+  roles:
+  - HEAD
+  - IADM
+  - STA
+  - REV
+  phase: P1
+  route: /financing/census/{period}
+  purpose: Count, check and confirm the billable learners of a public institution on the census date of each term or semester.
+- id: SUB-103
+  title: SDAF demand and collections
+  module: Billing
+  pattern: List / register
+  roles:
+  - REV
+  - STA
+  - HEAD
+  phase: P1
+  route: /financing/sdaf/collections
+  purpose: Issue demand notices and follow collections into the state's revenue account, with state e-receipts and daily reconciliation.
+- id: SUB-104
+  title: Remittance and reconciliation
+  module: Billing
+  pattern: Workspace
+  roles:
+  - REV
+  - ACG
+  - OPF
+  phase: P1
+  route: /financing/sdaf/remittance
+  purpose: Record the full remittance of collected SDAF from the State Government to Syntegra Digital Infrastructure Nigeria
+    Ltd, follow variances and sign off the period statement under dual control.
+- id: SUB-105
+  title: Programme financing dashboard
+  module: Billing
+  pattern: Dashboard / command centre
+  roles:
+  - STA
+  - REV
+  - ACG
+  - OPF
+  phase: P1
+  route: /financing/dashboard
+  purpose: 'Show the state and the operator the full financing picture: billable learners, SDAF billed, collected, remitted
+    and outstanding, exemptions, and private subscription revenue.'
+- id: SUB-106
+  title: SDAF exemptions and payers
+  module: Billing
+  pattern: Settings / configuration
+  roles:
+  - STA
+  - REV
+  - HEAD
+  phase: P1
+  route: /financing/sdaf/payers
+  purpose: Set who pays the SDAF for each institution type and level, and manage exemption categories, evidence and approvals.
+- id: SUB-107
+  title: Subscription and billing
+  module: Billing
+  pattern: Workspace
+  roles:
+  - PROP
+  - PRA
+  - FIN
+  phase: P1
+  route: /account/subscription
+  purpose: 'Let a private provider see and manage its subscription with Syntegra Digital Infrastructure Nigeria Ltd: plan,
+    usage, invoices, receipts, statement and payment methods.'
+- id: SUB-108
+  title: Operator subscription management
+  module: Billing
+  pattern: List / register
+  roles:
+  - OPF
+  - PLAT
+  phase: P1
+  route: /operator/subscriptions
+  purpose: 'Run private subscriptions for Syntegra Digital Infrastructure Nigeria Ltd: plan catalogue, quotes, contracts,
+    invoicing, payments, reminders, credit notes and receivables.'
+- id: SUB-109
+  title: Pay the Student Digital Access Fee
+  module: Billing
+  pattern: Public service
+  roles:
+  - PAR
+  - LRN
+  phase: Pages
+  route: /pay/sdaf
+  purpose: Let a parent or student who is the designated payer view the SDAF assessment and pay it into the State Government's
+    revenue account.
+- id: TIM-01
+  title: Timetable builder
+  module: Timetable
+  pattern: Grid
+  route: /timetable/builder
+  classification: Internal
+  phase: P3
+  roles:
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  source: Gov §21, §23
+  purpose: 'Constraint-based timetable construction: curriculum hours, teacher qualification and availability, room type and
+    accessibility, class clashes, workload limits.'
+  objects:
+  - Timetable
+  - Curriculum 360
+  - Teacher 360
+  - Room
+  api_calls:
+  - POST /api/v1/timetables/{id}/solve
+  - POST /api/v1/timetables/{id}/publish
+  events: []
+- id: TIM-02
+  title: Timetable
+  module: Timetable
+  pattern: Grid
+  route: /timetable
+  classification: Internal
+  phase: P3
+  roles:
+  - TCH (Teacher / Lecturer)
+  - LRN (Learner)
+  - PAR (Parent / Guardian)
+  - SLT (Senior Leadership)
+  - OPSM (Operations & Facilities Manager)
+  source: §22
+  purpose: Personal and resource timetables (learner, teacher, class, room) with today's changes (cover, room swaps).
+  objects:
+  - Timetable
+  api_calls:
+  - GET /api/v1/timetables/me
+  events: []
+- id: TIM-03
+  title: Cover board
+  module: Timetable
+  pattern: Workspace
+  route: /cover
+  classification: Internal
+  phase: P3
+  roles:
+  - SLT (Senior Leadership)
+  - IADM (Institution Administrator)
+  source: §22
+  purpose: Today's absences, affected lessons, cover assignments and gaps with fairness metrics.
+  objects:
+  - CoverAssignment
+  api_calls:
+  - GET /api/v1/cover/today
+  events: []
+- id: TIM-04
+  title: Rooms & bookings
+  module: Timetable
+  pattern: Grid
+  route: /rooms/bookings
+  classification: Internal
+  phase: P3
+  roles:
+  - TCH (Teacher / Lecturer)
+  - SLT (Senior Leadership)
+  - OPSM (Operations & Facilities Manager)
+  source: §75 D
+  purpose: Room and resource booking (labs, workshops, halls, ICT suites) with accessibility attributes.
+  objects:
+  - Room
+  - Booking
+  api_calls:
+  - GET/POST /api/v1/bookings
+  events: []
+  fields:
+  - label: Room / resource
+    type: select
+    required: true
+    rule: null
+  - label: Date
+    type: date
+    required: true
+    rule: null
+  - label: Periods
+    type: multiselect
+    required: true
+    rule: null
+  - label: Purpose
+    type: text
+    required: false
+    rule: null
+- id: TVT-01
+  title: Competency tracking
+  module: TVET
+  pattern: Grid
+  route: /tvet/competencies
+  classification: Internal
+  phase: P5
+  roles:
+  - TVC (TVET Coordinator / Workplace Assessor)
+  - TCH (Teacher / Lecturer)
+  - SLT (Senior Leadership)
+  source: §8
+  purpose: Competency-based progress per trainee against a qualification framework (e.g. NSQ levels, NABTEB trade syllabus,
+    industry certifications), with evidence and assessor sign-off.
+  objects:
+  - Competency
+  - Qualification 360
+  - Learner 360
+  api_calls:
+  - GET /api/v1/tvet/cohorts/{id}/competencies
+  events: []
+- id: TVT-02
+  title: Workshops & practicals
+  module: TVET
+  pattern: Grid
+  route: /tvet/workshops
+  classification: Internal
+  phase: P5
+  roles:
+  - TVC (TVET Coordinator / Workplace Assessor)
+  - OPSM (Operations & Facilities Manager)
+  source: §8
+  purpose: Workshop allocation, equipment allocation and safety, practical assessment scheduling and consumables.
+  objects:
+  - Room
+  - Asset
+  api_calls:
+  - GET /api/v1/tvet/workshops
+  events: []
+- id: TVT-03
+  title: Apprenticeships & placements
+  module: TVET
+  pattern: Workspace
+  route: /tvet/placements
+  classification: Internal
+  phase: P5
+  roles:
+  - TVC (TVET Coordinator / Workplace Assessor)
+  - EMP (Employer / Placement Partner)
+  source: §8
+  purpose: 'Industry placements and apprenticeships: matching, agreements, attendance, workplace assessment, employer funding.'
+  objects:
+  - Placement
+  - Employer 360
+  api_calls:
+  - GET /api/v1/tvet/placements
+  events: []
+- id: TVT-04
+  title: Employer partner 360
+  module: TVET
+  pattern: Record 360
+  route: /employers/{id}
+  classification: Internal
+  phase: P5
+  roles:
+  - TVC (TVET Coordinator / Workplace Assessor)
+  - FINO (Finance Officer / Bursar)
+  - SLT (Senior Leadership)
+  source: §8, §67
+  purpose: 'Employer/industry partner record: placements, sponsorships, apprenticeship funding, assessors, outcomes.'
+  objects:
+  - Employer 360
+  api_calls:
+  - GET /api/v1/employers/{id}
+  events: []
+- id: TVT-05
+  title: Skills passport
+  module: TVET
+  pattern: Portal (parents, learners, employers)
+  route: /tvet/passport/{learner}
+  classification: Internal
+  phase: P5
+  roles:
+  - LRN (Learner)
+  - TVC (TVET Coordinator / Workplace Assessor)
+  - EMP (Employer / Placement Partner)
+  source: §8, §66
+  purpose: Trainee-facing portable record of competencies, certifications and work experience (part of the Education Passport).
+  objects:
+  - Education Passport 360
+  api_calls:
+  - GET /api/v1/tvet/passports/{learner}
+  events: []
+- id: WEL-01
+  title: Wellbeing
+  module: Wellbeing
+  pattern: Dashboard / command centre
+  route: /wellbeing
+  classification: Special
+  phase: P2
+  roles:
+  - PAST (Pastoral & Attendance Lead)
+  - SLT (Senior Leadership)
+  - DSL (Designated Safeguarding Lead)
+  source: §75 B
+  purpose: Learner (and optional staff) wellbeing check-ins, trends and follow-up, with opt-in and age-appropriate design.
+  objects:
+  - Wellbeing
+  - Learner 360
+  api_calls:
+  - GET /api/v1/wellbeing/summary
+  events: []
+- id: WEL-101
+  title: Wellbeing concerns and insights
+  module: Wellbeing
+  pattern: Dashboard / command centre
+  roles:
+  - PAST
+  - SEND
+  - DSL
+  - SLT
+  phase: P2
+  route: /wellbeing/insights
+  purpose: Bring together wellbeing check-ins, staff observations and concerns reported by learners and parents, route them
+    to pastoral staff and track the impact of support.

@@ -1,0 +1,29 @@
+# CEDA change request register entry (see CR-001.yaml for the format).
+
+id: CR-002
+title: Nationwide cross-state fee-clearance exchange covering every state and the FCT
+received: 2026-10-14
+status: adopted
+ceda_version: 1.3.0
+summary: >
+  Extends the fee-clearance check of CR-001 from one state to the whole country: when a learner arrives from
+  any of the 36 states or the Federal Capital Territory, the admitting state's registry queries every other state
+  registry on the national clearance network for open obligations, through a signed, logged, purpose-bound
+  exchange. A national directory of all 37 state registries records each one's hosting, endpoint, verification key
+  and onboarding status, and every check reports national coverage explicitly.
+constraints:
+  - "Every guardrail of CR-001 applies unchanged: the check informs a human decision, never refuses, never delays records or attendance (P9), never includes SDAF, and public basic education is always admitted."
+  - "States do not exchange NINs or ledgers: matching uses the national Global Learner ID, a national NIN lookup token (federation key) or a confident demographic match; a near match returns no data."
+  - "A state that is not on the network, or does not answer in time, never blocks or delays an admission; the gap is recorded on the check and shown to the decision-maker."
+  - "Both states log every query (NDPA 2023 accountability); the creditor institution in the answering state is notified; the family sees cross-state checks."
+
+requirements:
+  - {id: FR-FCL-09, module: FCL, priority: SHALL, phase: P3, text: "Query every other state registry on the national clearance network for open obligations of an incoming learner, matching by Global Learner ID, national NIN token or a demographic match of at least 0.98; a lower match returns no obligation data."}
+  - {id: FR-FCL-10, module: FCL, priority: SHALL, phase: P3, text: "Maintain a national directory of the 36 state registries and the FCT with hosting (co-hosted or remote), endpoint, verification key and onboarding status, and report on every check which states answered, which are not yet on the network and which were unavailable."}
+  - {id: FR-FCL-11, module: FCL, priority: SHALL, phase: P3, text: "Sign every exchange query and answer (ES256 compact JWS) with the state's exchange key; verify against the directory; refuse unknown, suspended, expired or replayed messages."}
+  - {id: FR-FCL-12, module: FCL, priority: SHALL, phase: P3, text: "Log every outbound and inbound exchange query in both states with purpose, identifiers used, outcome and latency; notify creditor institutions in the answering state that their debtor is seeking admission elsewhere."}
+  - {id: FR-FCL-13, module: FCL, priority: SHALL, phase: P3, text: "Never let an unavailable or not-onboarded state block or delay an admission; record the coverage gap on the clearance check."}
+  - {id: FR-FCL-14, module: FCL, priority: SHALL, phase: P3, text: "Hold a national lookup token for the NIN (federation key shared by all state registries) so states match without exchanging NINs; backfill tokens for existing identifiers."}
+
+pages:
+  - {id: FCL-04, title: National clearance network, module: Fee clearance, pattern: Dashboard / command centre, route: "/clearance/network", classification: Internal, phase: P3, roles: [PLAT (Platform Administrator), FED (Federal Ministry Administrator), STA (State Ministry Administrator)], purpose: "Directory of the 36 state registries and the FCT: onboarding status, hosting, last contact, queries sent and answered, and national coverage of recent checks."}

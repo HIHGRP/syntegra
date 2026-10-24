@@ -1,0 +1,1078 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/08_families.schema.json",
+  "title": "CEDA FAM — Family 360, guardians, contacts, contact restrictions and consent",
+  "$defs": {
+    "Guardian": {
+      "title": "Guardian",
+      "description": "Parent/Guardian 360 master",
+      "type": "object",
+      "x-ceda": {
+        "entity": "guardian",
+        "zone": "registry",
+        "domain": "FAM",
+        "kind": "master",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "families"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "given_name": {
+          "type": "string",
+          "maxLength": 200,
+          "x-personal-data": true
+        },
+        "family_name": {
+          "type": "string",
+          "maxLength": 200,
+          "x-personal-data": true
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 30
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name_phonetic": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "phone": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\+[1-9][0-9]{6,14}$",
+              "description": "E.164; inbound WhatsApp matching uses phone_hmac in channel contacts",
+              "x-personal-data": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "email": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "email",
+              "maxLength": 254,
+              "x-personal-data": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferred_language": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 35
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferred_channel": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "in_app",
+                "push",
+                "sms",
+                "whatsapp",
+                "email",
+                "voice",
+                "ussd",
+                "workspace",
+                "web",
+                "post"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "address": {
+          "anyOf": [
+            {
+              "type": "object",
+              "x-personal-data": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user",
+              "description": "Parent portal account"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "merged",
+            "deceased"
+          ]
+        },
+        "merged_into": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "guardian"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "given_name",
+        "family_name",
+        "name_phonetic",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "LearnerGuardian": {
+      "title": "LearnerGuardian",
+      "description": "Relationship between a learner and a guardian (parental responsibility, priority, lives-with, restriction flag)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "learner_guardian",
+        "zone": "registry",
+        "domain": "FAM",
+        "kind": "link",
+        "classification": "confidential",
+        "history": "effective",
+        "module": "families"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "guardian_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "guardian"
+        },
+        "relationship": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "relationship"
+        },
+        "has_parental_responsibility": {
+          "type": "boolean"
+        },
+        "contact_priority": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lives_with": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_contact_restricted": {
+          "type": "boolean",
+          "description": "Detail held in the vault (contact_restriction)"
+        },
+        "is_authorised_collector": {
+          "type": "boolean"
+        },
+        "is_payer": {
+          "type": "boolean"
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective from (inclusive) — history: effective",
+          "readOnly": true
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective to (inclusive); NULL = open-ended — history: effective",
+          "readOnly": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "learner_id",
+        "guardian_id",
+        "relationship",
+        "has_parental_responsibility",
+        "is_contact_restricted",
+        "is_authorised_collector",
+        "is_payer",
+        "valid_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Family": {
+      "title": "Family",
+      "description": "Family 360 household and billing group (per operating tenant)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "family",
+        "zone": "ops",
+        "domain": "FAM",
+        "kind": "master",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "families"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "primary_payer_guardian_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "guardian",
+              "description": "Registry guardian (soft)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "billing_account_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "account"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "name",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "FamilyMember": {
+      "title": "FamilyMember",
+      "description": "Membership of a learner or guardian in a household",
+      "type": "object",
+      "x-ceda": {
+        "entity": "family_member",
+        "zone": "ops",
+        "domain": "FAM",
+        "kind": "link",
+        "classification": "confidential",
+        "history": "effective",
+        "module": "families"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "family_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "family"
+        },
+        "member_kind": {
+          "type": "string",
+          "enum": [
+            "learner",
+            "guardian"
+          ]
+        },
+        "member_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "learner or guardian id (registry)"
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective from (inclusive) — history: effective",
+          "readOnly": true
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective to (inclusive); NULL = open-ended — history: effective",
+          "readOnly": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "family_id",
+        "member_kind",
+        "member_id",
+        "valid_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "OrganisationContact": {
+      "title": "OrganisationContact",
+      "description": "Organisation contact (other schools, doctors, suppliers, agencies) and additional learner contacts",
+      "type": "object",
+      "x-ceda": {
+        "entity": "organisation_contact",
+        "zone": "ops",
+        "domain": "FAM",
+        "kind": "master",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "families"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "school",
+            "doctor",
+            "supplier",
+            "agency",
+            "employer",
+            "other"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "contact_person": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200,
+              "x-personal-data": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "phone": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\+[1-9][0-9]{6,14}$",
+              "x-personal-data": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "email": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "email",
+              "maxLength": 254,
+              "x-personal-data": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "address": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "learner_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "learner",
+              "description": "When the contact is linked to one learner (with relationship and priority)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "relationship": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 80
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "priority": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferred_channel": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "in_app",
+                "push",
+                "sms",
+                "whatsapp",
+                "email",
+                "voice",
+                "ussd",
+                "workspace",
+                "web",
+                "post"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "kind",
+        "name",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ContactRestriction": {
+      "title": "ContactRestriction",
+      "description": "Court order or contact restriction detail (no communications, collection or portal access to the restricted child)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "contact_restriction",
+        "zone": "vault",
+        "domain": "FAM",
+        "kind": "master",
+        "classification": "special",
+        "history": "effective",
+        "module": "families"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "guardian_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "guardian"
+        },
+        "restriction": {
+          "type": "string",
+          "enum": [
+            "no_contact",
+            "no_collection",
+            "no_information",
+            "supervised_only"
+          ]
+        },
+        "order_reference": {
+          "anyOf": [
+            {
+              "type": "string",
+              "x-classification": "special",
+              "writeOnly": true,
+              "description": "Court order reference and terms"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Order copy (records zone, special category)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recorded_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective from (inclusive) — history: effective",
+          "readOnly": true
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective to (inclusive); NULL = open-ended — history: effective",
+          "readOnly": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "learner_id",
+        "guardian_id",
+        "restriction",
+        "recorded_by",
+        "valid_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ConsentRecord": {
+      "title": "ConsentRecord",
+      "description": "Consent given or refused by a guardian (or learner of age) for a learner — the consent record",
+      "type": "object",
+      "x-ceda": {
+        "entity": "consent_record",
+        "zone": "ops",
+        "domain": "FAM",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "effective",
+        "module": "families"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "guardian_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "guardian",
+              "description": "NULL when the learner gives consent themselves"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "consent_type": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "consent_type",
+          "description": "photography, trips, data_sharing, medical, biometrics, digital_services, video_recording …"
+        },
+        "consent_request_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "consent_request"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "request_version": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Version of the request answered"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "given",
+            "refused",
+            "withdrawn"
+          ]
+        },
+        "legal_basis": {
+          "type": "string",
+          "enum": [
+            "consent",
+            "contract",
+            "legal_obligation",
+            "vital_interests",
+            "public_task",
+            "legitimate_interests"
+          ]
+        },
+        "channel": {
+          "type": "string",
+          "enum": [
+            "in_app",
+            "push",
+            "sms",
+            "whatsapp",
+            "email",
+            "voice",
+            "ussd",
+            "workspace",
+            "web",
+            "post"
+          ]
+        },
+        "comment": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Wording shown, device, time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expires_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "withdrawn_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective from (inclusive) — history: effective",
+          "readOnly": true
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective to (inclusive); NULL = open-ended — history: effective",
+          "readOnly": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "learner_id",
+        "consent_type",
+        "decision",
+        "legal_basis",
+        "channel",
+        "valid_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

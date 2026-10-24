@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Register a learner{% endblock %}
+{% macro err(name) %}{% if errors.get(name) %}<span class="err" id="{{ name }}-err">{{ errors[name] }}</span>{% endif %}{% endmacro %}
+{% macro val(name, default="") %}{{ f.get(name, default) or default }}{% endmacro %}
+{% block content %}
+{% from "_state_heading.html" import state_heading %}{{ state_heading(tenant) }}
+<h1>Register a learner</h1>
+{% if registration %}
+  {% set r = registration %}
+  <div class="verdict ok" role="status">
+    <strong>{{ "Registered" if new_here else "Re-admitted — linked to the existing record" }}</strong> —
+    {{ r.learner.legal_given_name }} {{ r.learner.legal_family_name }} is enrolled{% if r.enrolment %}{% set lv = r.enrolment.education_level %} in {{ lv[2:] ~ " level" if lv.startswith("UG") else lv.replace("_", " ").upper() }}{% if programme %} of {{ programme.name }}{% endif %}{% endif %}.
+    <dl>
+      <dt>Global Learner ID</dt><dd><code>{{ r.learner.global_learner_id }}</code></dd>
+      {% if programme %}<dt>Programme</dt><dd>{{ programme.name }} ({{ programme.code }}){% if r.enrolment.cohort_label %} · {{ r.enrolment.cohort_label }}{% endif %}</dd>{% endif %}
+      <dt>Record</dt><dd>{{ "new to this state — no earlier record found" if new_here else "existing learner (match score " ~ "{:.3f}".format(r.match.score) ~ ") — no duplicate created" }}</dd>
+      {% if check %}<dt>Fee clearance</dt><dd>{{ check.result.replace("_", " ") }}{% if check.total_outstanding_minor %} (₦{{ "{:,.2f}".format(check.total_outstanding_minor / 100) }}){% endif %}{% if check.federation %} · {{ check.federation.covered }} of {{ check.federation.states_total }} states answered{% endif %}</dd>{% endif %}
+      {% if r.guardians %}<dt>Guardians</dt><dd>{% for lg in r.guardians %}{{ lg.guardian.given_name }} {{ lg.guardian.family_name }} ({{ lg.link.relationship.replace("_", " ") }}{% if lg.link.has_parental_responsibility %}, parental responsibility{% endif %}) — {{ "new record" if lg.created else "existing guardian, matched" }}{% if not loop.last %}; {% endif %}{% endfor %}</dd>{% endif %}
+      {% if decision %}<dt>Decision</dt><dd>{{ decision.decision.replace("_", " ") }}{% if decision.payment_plan_ref %} — plan {{ decision.payment_plan_ref }}{% endif %} · {{ decision.reason }}</dd>{% endif %}
+    </dl>
+  </div>
+  <p class="actions"><a href="/learners/{{ r.learner.id }}">Open learner 360</a> <a href="/learners/new">Register another learner</a></p>
+{% elif deferred %}
+  <div class="alert" role="status">Admission deferred pending settlement. The decision is recorded on the clearance check; no enrolment was created and the learner's records are not affected.</div>
+  <p><a href="/learners/new">Register another learner</a></p>
+{% else %}
+<p class="muted">One registration path for every learner. Before anything is saved, Syntegra searches the state register so a child is never
+registered twice, and — for a learner who was at school elsewhere — checks for unpaid fees in this state and in every other state on the
+national clearance network. The check informs your decision; it never refuses a child (principle P9).</p>
+
+{% if errors.get("form") %}<div class="alert alert-error" role="alert">{{ errors["form"] }}</div>{% endif %}
+
+{% if probable %}
+<section class="card" aria-labelledby="probable-h">
+  <h2 id="probable-h">This learner may already be registered</h2>
+  <p class="muted">Check the candidates with the family. Continue only if this is a different child — give the reason below; a data steward will review it.</p>
+  <table class="compact"><thead><tr><th scope="col">Global Learner ID</th><th scope="col" class="num">Score</th><th scope="col">Evidence</th></tr></thead>
+  <tbody>{% for cnd in probable.candidates %}<tr><td><a href="/learners/{{ cnd.learner_id }}"><code>{{ cnd.global_learner_id }}</code></a></td><td class="num">{{ "{:.3f}".format(cnd.score) }}</td>
+    <td>{% for e in cnd.evidence %}{{ e.field.replace("_", " ") }}: {{ e.result or ("{:.0%}".format(e.similarity) if e.similarity is defined else "") }}{% if not loop.last %} · {% endif %}{% endfor %}</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endif %}
+
+{% if clearance %}
+{% set fed = clearance.federation %}
+<section class="card" aria-labelledby="fcl-h">
+  <h2 id="fcl-h">Fee clearance: outstanding fees or dues</h2>
+  <div class="verdict warn"><strong>Outstanding: ₦{{ "{:,.2f}".format(clearance.total_outstanding_minor / 100) }}</strong> — record your admission decision below. Nothing has been enrolled yet; the learner's records are not affected.</div>
+  <table class="compact"><thead><tr><th scope="col">Creditor</th><th scope="col">State</th><th scope="col">Kind</th><th scope="col" class="num">Amount</th><th scope="col">Oldest due</th><th scope="col">Status</th></tr></thead>
+  <tbody>{% for o in clearance.obligations %}<tr><td>{{ o.creditor }}</td><td>{{ o.state or "—" }}</td><td>{{ o.kind.replace("_", " ") }}</td><td class="num">₦{{ "{:,.2f}".format(o.amount_minor / 100) }}</td><td>{{ o.oldest_due_on }}</td><td>{{ o.status }}</td></tr>{% endfor %}</tbody></table>
+  {% if fed %}<p class="muted">Coverage: {{ fed.covered }} of {{ fed.states_total }} states answered{% if not fed.complete %}{% if fed.not_on_network %} · {{ fed.not_on_network|length }} not yet on the network{% endif %}{% if fed.unavailable %} · did not answer: {{ fed.unavailable|join(", ") }}{% endif %}{% endif %}. Gaps never hold up the admission.</p>{% endif %}
+  {% for flag in clearance.pattern_flags %}<div class="alert">Pattern: {{ flag.flag.replace("_", " ") }} — referred for state review.</div>{% endfor %}
+  <p class="muted">Admitting does not cancel the debt: the creditor keeps its claim and recovers it through its own process.</p>
+  {% if not ctx.has("admission:decide") %}<div class="alert">Ask the head of institution to record the admission decision.</div>{% endif %}
+</section>
+{% endif %}
+
+<form method="post" class="card" novalidate>
+  <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+  <fieldset>
+    <legend>Admission</legend>
+    <div class="grid2">
+      <label>Admitting institution
+        <select name="institution_id" required {% if errors.get("institution_id") %}aria-invalid="true" aria-describedby="institution_id-err"{% endif %}>
+          <option value="">Choose…</option>
+          {% for i in institutions %}<option value="{{ i.id }}" {% if f.get("institution_id") == i.id|string %}selected{% endif %}>{{ i.name }}</option>{% endfor %}
+        </select>{{ err("institution_id") }}</label>
+      <label>Level of entry
+        <input name="education_level" list="levels" value="{{ val('education_level') }}" required placeholder="e.g. JSS1, SSS1, UG100, ND">
+        <datalist id="levels">{% for lv in levels %}<option value="{{ lv }}">{% endfor %}</datalist>{{ err("education_level") }}</label>
+      <label>Start date<input type="date" name="start_on" value="{{ val('start_on', today) }}">{{ err("start_on") }}</label>
+    </div>
+  </fieldset>
+  <fieldset id="post-secondary" data-institutions="{{ post_secondary|join(' ') }}">
+    <legend>Programme <span class="hint">colleges, polytechnics and universities</span></legend>
+    <div class="grid2">
+      <label>Programme
+        <select name="programme_id" {% if errors.get("programme_id") %}aria-invalid="true"{% endif %}><option value="">—</option>
+          {% for p in programmes %}<option value="{{ p.id }}" data-institution="{{ p.institution_id }}" {% if f.get("programme_id") == p.id %}selected{% endif %}>{{ p.label }}</option>{% endfor %}
+        </select>{{ err("programme_id") }}</label>
+      <label>Intake cohort <span class="hint">e.g. 2026/2027 entry</span><input name="cohort_label" value="{{ val('cohort_label') }}" maxlength="60"></label>
+      <label>JAMB registration number <span class="hint">UTME or Direct Entry — stored encrypted</span>
+        <input name="jamb_reg" value="{{ val('jamb_reg') }}" autocomplete="off" spellcheck="false" maxlength="24">{{ err("identifiers[JAMB-REG]") }}</label>
+      <label>Matriculation number <span class="hint">the institution's student number</span>
+        <input name="matric_no" value="{{ val('matric_no') }}" autocomplete="off" spellcheck="false" maxlength="24">{{ err("identifiers[INST-ID]") }}</label>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Identity</legend>
+    <div class="grid2">
+      <label>Given name<input name="given" value="{{ val('given') }}" required autocomplete="off">{{ err("name") }}</label>
+      <label>Middle names <span class="hint">optional</span><input name="middle" value="{{ val('middle') }}" autocomplete="off"></label>
+      <label>Family name<input name="family" value="{{ val('family') }}" required autocomplete="off"></label>
+      <label>Preferred name <span class="hint">optional — what the child is called at school</span><input name="preferred_name" value="{{ val('preferred_name') }}" autocomplete="off"></label>
+      <label>Date of birth<input type="date" name="date_of_birth" value="{{ val('date_of_birth') }}" required max="{{ today }}" {% if errors.get("date_of_birth") %}aria-invalid="true"{% endif %}>{{ err("date_of_birth") }}</label>
+      <label>Date of birth is
+        <select name="dob_precision">{% for v, t in [("day", "exact"), ("month", "known to the month"), ("year", "known to the year"), ("estimated", "estimated")] %}<option value="{{ v }}" {% if val('dob_precision', 'day') == v %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></label>
+      <label>Sex
+        <select name="sex" required><option value="">Choose…</option>{% for v in ["female", "male"] %}<option value="{{ v }}" {% if f.get("sex") == v %}selected{% endif %}>{{ v.capitalize() }}</option>{% endfor %}</select>{{ err("sex") }}</label>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Identifiers and origin</legend>
+    <div class="grid2">
+      <label>NIN <span class="hint">11 digits, where legally applicable — stored encrypted, shown masked; never sent to other states</span>
+        <input name="nin" value="{{ val('nin') }}" inputmode="numeric" maxlength="13" autocomplete="off" spellcheck="false">{{ err("nin") }}</label>
+      <label>Nationality<input name="nationality" value="{{ val('nationality', 'NG') }}" maxlength="2"></label>
+      <label>State of origin
+        <select name="state_of_origin"><option value="">—</option>{% for code, name, _cap in states %}<option value="{{ code }}" {% if f.get("state_of_origin") == code %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></label>
+      <label class="check"><input type="checkbox" name="is_minimal_documentation" value="1" {% if f.get("is_minimal_documentation") %}checked{% endif %}>Registered with minimal documents (displaced, no birth certificate)</label>
+    </div>
+  </fieldset>
+  <fieldset aria-describedby="guardians-hint">
+    <legend>Parents and guardians</legend>
+    <p class="muted" id="guardians-hint">Learners under {{ majority }} need at least one guardian with parental responsibility — for a child in care, the
+    social worker or foster carer. Each guardian is looked up in the state register by NIN, phone and e-mail first, so a parent with
+    several children is recorded once.</p>
+    {{ err("guardians") }}
+    {% for n in [1, 2] %}{% set p = "g" ~ n ~ "_" %}{% set ix = "guardians[" ~ (n - 1) ~ "]." %}
+    <h3 class="sub">Guardian {{ n }} <span class="hint">{% if n == 1 %}required under {{ majority }}; for adult students optional — e.g. next of kin or sponsor{% else %}optional{% endif %}</span></h3>
+    <div class="grid2">
+      <label>Relationship to the learner
+        <select name="{{ p }}relationship"><option value="">Choose…</option>{% for r in relationships %}<option value="{{ r }}" {% if f.get(p ~ "relationship") == r %}selected{% endif %}>{{ r.replace("_", " / " if r == "aunt_uncle" else " ").capitalize() }}</option>{% endfor %}</select>{{ err(ix ~ "relationship") }}</label>
+      <label>Title <span class="hint">optional — Mr, Mrs, Dr, Chief…</span><input name="{{ p }}title" value="{{ val(p ~ 'title') }}" maxlength="30"></label>
+      <label>Given name<input name="{{ p }}given" value="{{ val(p ~ 'given') }}" autocomplete="off">{{ err(ix ~ "name") }}</label>
+      <label>Family name<input name="{{ p }}family" value="{{ val(p ~ 'family') }}" autocomplete="off"></label>
+      <label>Phone <span class="hint">e.g. 0803 123 4567</span><input name="{{ p }}phone" value="{{ val(p ~ 'phone') }}" inputmode="tel" autocomplete="off">{{ err(ix ~ "phone") }}</label>
+      <label>E-mail <span class="hint">optional</span><input name="{{ p }}email" type="email" value="{{ val(p ~ 'email') }}" autocomplete="off">{{ err(ix ~ "email") }}</label>
+      <label>NIN <span class="hint">optional — stored encrypted</span><input name="{{ p }}nin" value="{{ val(p ~ 'nin') }}" inputmode="numeric" maxlength="13" autocomplete="off" spellcheck="false">{{ err(ix ~ "nin") }}</label>
+      <div>
+        <label class="check"><input type="checkbox" name="{{ p }}responsibility" value="1" {% if not f or f.get(p ~ "responsibility") %}checked{% endif %}>Has parental responsibility</label>
+        <label class="check"><input type="checkbox" name="{{ p }}lives_with" value="1" {% if not f or f.get(p ~ "lives_with") %}checked{% endif %}>Learner lives with them</label>
+        <label class="check"><input type="checkbox" name="{{ p }}collector" value="1" {% if not f or f.get(p ~ "collector") %}checked{% endif %}>May collect the learner</label>
+        <label class="check"><input type="checkbox" name="{{ p }}payer" value="1" {% if (not f and n == 1) or f.get(p ~ "payer") %}checked{% endif %}>Pays fees and levies</label>
+      </div>
+    </div>
+    {% endfor %}
+  </fieldset>
+
+  {% if probable %}
+  <fieldset>
+    <legend>Different child — reason</legend>
+    <label>Why is this a different child? <span class="hint">at least 10 characters; audited and reviewed by a data steward</span>
+      <input name="override_reason" value="{{ val('override_reason') }}" minlength="10" required></label>
+  </fieldset>
+  {% endif %}
+
+  {% if clearance and ctx.has("admission:decide") %}
+  <fieldset>
+    <legend>Admission decision</legend>
+    <input type="hidden" name="check_id" value="{{ clearance.clearance_check_id }}">
+    {% if f.get("override_reason") %}<input type="hidden" name="override_reason" value="{{ f.get('override_reason') }}">{% endif %}
+    <div class="grid2">
+      <label>Decision<select name="decision">
+        <option value="admit">Admit</option>
+        <option value="admit_with_payment_plan">Admit with a payment plan</option>
+        <option value="defer_pending_settlement">Defer pending settlement</option>
+        <option value="admit_protected">Admit — protected learner</option></select></label>
+      <label>Protected because <span class="hint">if applicable</span><select name="protected_reason"><option value="">—</option><option value="send">SEND</option><option value="safeguarding">Safeguarding</option><option value="child_in_care">Child in care</option><option value="displaced">Displaced</option><option value="other_vulnerability">Other vulnerability</option></select></label>
+      <label>Payment plan reference <span class="hint">if admitting with a plan</span><input name="payment_plan_ref"></label>
+      <label>Reason<input name="decision_reason" required minlength="10"></label>
+    </div>
+  </fieldset>
+  {% endif %}
+
+  <div class="actions">
+    <button class="primary">{% if clearance %}Record decision and continue{% elif probable %}Register as a different child{% else %}Check and register{% endif %}</button>
+    <span class="muted">Checks: identity matching in this state · fee clearance across the national network</span>
+  </div>
+</form>
+<script>
+/* Show the programme section only for post-secondary institutions, and only their programmes (works without JS too). */
+(function () {
+  var inst = document.querySelector("select[name=institution_id]"), box = document.getElementById("post-secondary");
+  if (!inst || !box) return;
+  var post = (box.dataset.institutions || "").split(" "), prog = box.querySelector("select[name=programme_id]");
+  function sync() {
+    var on = post.indexOf(inst.value) >= 0;
+    box.hidden = !on;
+    Array.prototype.forEach.call(prog.options, function (o) { if (o.value) o.hidden = o.dataset.institution !== inst.value; });
+    if (prog.selectedOptions[0] && prog.selectedOptions[0].hidden) prog.value = "";
+  }
+  inst.addEventListener("change", sync); sync();
+})();
+</script>
+{% endif %}
+{% endblock %}

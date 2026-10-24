@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Funding and loan programmes{% endblock %}
+{% block content %}
+<h1>Funding and loan programmes</h1>
+<p class="muted">Capital for institutions, welfare loans for staff and support for learners. Every application is reviewed and decided by two different people; staff loans repaid from pay never take net pay below the policy floor.</p>
+<p class="actions">{% if ctx.has("funding:apply") or ctx.has("funding:apply_own") %}<a href="/forms/funding-apply">Apply</a>{% endif %}{% if ctx.has("funding:review") %}<a href="/forms/funding-recommend">Review an application</a>{% endif %}{% if ctx.has("funding:decide") %}<a href="/forms/funding-decide">Decide an application</a><a href="/forms/funding-sign">Sign an agreement</a>{% endif %}{% if ctx.has("funding:disburse") %}<a href="/forms/funding-disburse">Disburse</a>{% endif %}{% if ctx.has("funding:collect") %}<a href="/forms/funding-repay">Record a repayment</a>{% endif %}</p>
+<section class="kpis" aria-label="Totals">
+  <div class="kpi"><span class="k">Approved</span><span class="v">{{ d.totals.approved|naira_short }}</span></div>
+  <div class="kpi"><span class="k">Disbursed</span><span class="v">{{ d.totals.disbursed|naira_short }}</span></div>
+  <div class="kpi"><span class="k">Outstanding</span><span class="v">{{ d.totals.outstanding|naira_short }}</span></div>
+  <div class="kpi"><span class="k">In arrears</span><span class="v">{{ d.totals.arrears|naira_short }}</span><span class="muted">{{ d.totals.in_arrears }} agreement{{ "" if d.totals.in_arrears == 1 else "s" }}</span></div>
+</section>
+<nav class="tabs" aria-label="Who the programme supports">{% for k, label in (("", "All"), ("institution", "Institutions"), ("staff", "Staff welfare"), ("learner", "Learner support")) %}<a href="/funding{{ '?for=' ~ k if k else '' }}" {% if k == kind %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}</nav>
+<table class="compact"><thead><tr><th scope="col">Programme</th><th scope="col">Provider</th><th scope="col">For</th><th scope="col">Instrument</th><th scope="col" class="num">Rate</th><th scope="col" class="num">Tenor</th><th scope="col" class="num">Up to</th></tr></thead>
+<tbody>{% for p in programmes %}<tr><td><strong>{{ p.name }}</strong> <code>{{ p.code }}</code><span class="line muted">{{ p.purpose|human }}{% if p.data_status != "verified" %} · terms to confirm{% endif %}</span></td><td>{{ p.provider }}</td><td>{{ p.beneficiary_kind|human }}</td><td>{{ p.instrument|human }}</td>
+  <td class="num">{{ "—" if not p.interest_rate else "{:g}%".format(p.interest_rate) }}</td><td class="num">{{ "—" if not p.tenor_months else p.tenor_months ~ " mo" }}</td><td class="num">{{ p.max_amount_minor|naira }}</td></tr>{% endfor %}</tbody></table>
+<section class="grid2c">
+  <article class="card"><h2>Applications</h2>
+  {% if d.applications %}<table class="compact"><thead><tr><th scope="col">Number</th><th scope="col">Applicant</th><th scope="col">Programme</th><th scope="col" class="num">Amount</th><th scope="col">Status</th></tr></thead>
+  <tbody>{% for a in d.applications[:50] %}<tr><td><code>{{ a.number }}</code></td><td>{{ a.applicant }}<span class="line muted">{{ a.applicant_kind|human }}{% if not a.eligible %} · eligibility check failed{% endif %}</span></td><td>{{ a.programme }}</td><td class="num">{{ a.amount|naira }}</td><td>{{ a.status|human }}</td></tr>{% endfor %}</tbody></table>
+  {% else %}<p class="muted">No applications yet.</p>{% endif %}</article>
+  <article class="card"><h2>Agreements</h2>
+  {% if d.agreements %}<table class="compact"><thead><tr><th scope="col">Agreement</th><th scope="col">Beneficiary</th><th scope="col" class="num">Outstanding</th><th scope="col" class="num">Arrears</th><th scope="col">Status</th></tr></thead>
+  <tbody>{% for a in d.agreements[:50] %}<tr><td><a href="/funding/agreements/{{ a.id }}"><code>{{ a.number }}</code></a></td><td>{{ a.beneficiary }}<span class="line muted">{{ a.instrument|human }} · {{ a.principal|naira }}</span></td><td class="num">{{ a.outstanding|naira }}</td><td class="num">{{ a.arrears|naira }}</td><td><span class="sev {{ 'sev-high' if a.status == 'in_arrears' else '' }}">{{ a.status|human }}</span></td></tr>{% endfor %}</tbody></table>
+  {% else %}<p class="muted">No agreements yet.</p>{% endif %}</article>
+</section>
+{% endblock %}

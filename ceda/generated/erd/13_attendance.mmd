@@ -1,0 +1,155 @@
+erDiagram
+    attendance_register {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ class_group_id FK
+        VARCHAR_32_ register_kind
+        DATE session_date
+        BINARY_16_ lesson_occurrence_id FK
+        DATETIME_6_ due_at
+        BINARY_16_ taken_by_staff_id FK
+        DATETIME_6_ submitted_at
+        DATETIME_6_ device_captured_at
+        SMALLINT marks_count
+        DATETIME_6_ release_to_parents_at
+        VARCHAR_32_ status
+        BINARY_16_ lesson_key
+    }
+    attendance_mark {
+        BINARY_16_ id PK
+        BINARY_16_ register_id FK
+        BINARY_16_ learner_id FK
+        BINARY_16_ enrolment_id FK
+        DATE session_date PK
+        VARCHAR_32_ code
+        SMALLINT minutes_late
+        VARCHAR_32_ reason_source
+        BINARY_16_ absence_report_id FK
+        BINARY_16_ recorded_by
+        VARCHAR_32_ source
+        BINARY_16_ client_op_id
+        DATETIME_6_ device_captured_at
+    }
+    absence_report {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        BINARY_16_ institution_id FK
+        BINARY_16_ reported_by_guardian_id FK
+        VARCHAR_32_ channel
+        DATE from_date
+        DATE to_date
+        VARCHAR_32_ reason
+        VARCHAR_2000_ message_text
+        BINARY_16_ attachment_document_id
+        VARCHAR_32_ proposed_code
+        BINARY_16_ conversation_id FK
+        BINARY_16_ handled_by
+        VARCHAR_32_ status
+    }
+    absence_contact {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        DATE session_date
+        BINARY_16_ contacted_guardian_id FK
+        VARCHAR_32_ channel
+        BINARY_16_ message_id FK
+        VARCHAR_32_ outcome
+        VARCHAR_500_ reason_given
+        VARCHAR_32_ escalated_to
+        DATETIME_6_ attempted_at
+    }
+    staff_attendance {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ staff_id FK
+        DATE signed_on PK
+        VARCHAR_32_ direction
+        DATETIME_6_ at
+        VARCHAR_32_ source
+        VARCHAR_64_ device_ref
+    }
+    visitor_visit {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_200_ visitor_name
+        VARCHAR_300_ organisation
+        VARCHAR_16_ phone
+        BINARY_16_ host_staff_id FK
+        VARCHAR_300_ purpose
+        VARCHAR_20_ badge_no
+        DATETIME_6_ arrived_at
+        DATETIME_6_ departed_at
+    }
+    evacuation_event {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ campus_id FK
+        VARCHAR_32_ kind
+        DATETIME_6_ started_at
+        DATETIME_6_ all_clear_at
+        BINARY_16_ incident_lead_staff_id FK
+        INT expected_count
+        INT accounted_count
+        VARCHAR_32_ status
+    }
+    evacuation_mark {
+        BINARY_16_ id PK
+        BINARY_16_ evacuation_event_id FK
+        VARCHAR_32_ person_kind
+        BINARY_16_ person_id
+        VARCHAR_60_ assembly_point
+        BINARY_16_ marshal_staff_id FK
+        VARCHAR_32_ state
+        DATETIME_6_ marked_at
+        BINARY_16_ client_op_id
+    }
+    campus {
+        BINARY_16 id PK
+    }
+    class_group {
+        BINARY_16 id PK
+    }
+    conversation {
+        BINARY_16 id PK
+    }
+    enrolment {
+        BINARY_16 id PK
+    }
+    guardian {
+        BINARY_16 id PK
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    learner {
+        BINARY_16 id PK
+    }
+    lesson_occurrence {
+        BINARY_16 id PK
+    }
+    message {
+        BINARY_16 id PK
+    }
+    staff {
+        BINARY_16 id PK
+    }
+    absence_report ||--o{ attendance_mark : "absence_report_id"
+    attendance_register ||--o{ attendance_mark : "register_id"
+    campus ||--o{ evacuation_event : "campus_id"
+    class_group ||--o{ attendance_register : "class_group_id"
+    conversation ||--o{ absence_report : "conversation_id"
+    enrolment ||--o{ attendance_mark : "enrolment_id"
+    evacuation_event ||--o{ evacuation_mark : "evacuation_event_id"
+    guardian ||--o{ absence_contact : "contacted_guardian_id"
+    guardian ||--o{ absence_report : "reported_by_guardian_id"
+    institution ||--o{ absence_report : "institution_id"
+    learner ||--o{ absence_contact : "learner_id"
+    learner ||--o{ absence_report : "learner_id"
+    learner ||--o{ attendance_mark : "learner_id"
+    lesson_occurrence ||--o{ attendance_register : "lesson_occurrence_id"
+    message ||--o{ absence_contact : "message_id"
+    staff ||--o{ attendance_register : "taken_by_staff_id"
+    staff ||--o{ evacuation_event : "incident_lead_staff_id"
+    staff ||--o{ evacuation_mark : "marshal_staff_id"
+    staff ||--o{ staff_attendance : "staff_id"
+    staff ||--o{ visitor_visit : "host_staff_id"

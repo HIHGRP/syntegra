@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ a.name }}{% endblock %}
+{% macro units(nodes) %}<ul class="tree">{% for u in nodes %}<li><strong>{{ u.name }}</strong> <span class="muted">· {{ u.unit_type.replace("_", " ") }}{% if u.headquarters_town %} · {{ u.headquarters_town }}{% endif %}</span>{% if u.children %}{{ units(u.children) }}{% endif %}</li>{% endfor %}</ul>{% endmacro %}
+{% block content %}
+<p><a href="/security-training">← All agencies</a></p>
+<h1>{{ a.name }} <code>{{ a.code }}</code></h1>
+<p class="muted">{{ a.category.replace("_", " ").capitalize() }} · {{ a.supervising_ministry or "" }} · {{ a.establishing_law or "" }}</p>
+<section class="grid2">
+  <article class="card"><h2>Structure</h2>{{ units(a.structure) }}</article>
+  <article class="card"><h2>Training institutions</h2>
+    {% if a.institutions %}<ul class="people">{% for i in a.institutions %}<li><a href="/security-training/institutions/{{ i.institution_id }}"><strong>{{ i.name }}</strong></a><span class="line muted">{{ i.institution_type.replace("_", " ") }} · {{ i.unit }} · {{ i.town }}, {{ i.state }} · {{ i.courses }} course{{ "" if i.courses == 1 else "s" }}</span></li>{% endfor %}</ul>
+    {% else %}<p class="muted">None recorded.</p>{% endif %}
+    <h2>Ranks</h2>
+    <p><a href="/security-training/agencies/{{ a.id }}/careers">Careers and course requirements by rank</a></p>
+    {% if a.ranks %}<table class="compact"><thead><tr><th scope="col">Rank</th><th scope="col">Abbr.</th><th scope="col">Category</th></tr></thead>
+    <tbody>{% for r in a.ranks %}<tr><td>{{ r.title }}</td><td>{{ r.abbreviation or "" }}</td><td>{{ r.rank_category.replace("_", " ") }}</td></tr>{% endfor %}</tbody></table>
+    {% else %}<p class="muted">Rank structure to be supplied by the agency.</p>{% endif %}
+  </article>
+</section>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "_timetable_tabs.html" import timetable_tabs with context %}
+{% block title %}Room bookings{% endblock %}
+{% block content %}
+<h1>Room bookings</h1>
+<p class="muted">{{ d.institution.name }} · week of {{ d.week.monday|date }}</p>
+{{ timetable_tabs("rooms", school, schools) }}
+{% if message %}<div class="alert {{ 'alert-ok' if decided != 'requested' else '' }}" role="status">{% if decided == "requested" %}<strong>Request sent.</strong> {% elif decided == "confirmed" %}<strong>Booked.</strong> {% endif %}{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+{% if d.can_approve and d.waiting %}
+<section class="card scroll-x" id="waiting"><h2>Waiting for your approval</h2>
+  <table class="compact"><thead><tr><th scope="col">Room</th><th scope="col">When</th><th scope="col">Purpose</th><th scope="col">Asked by</th><th scope="col"><span class="sr">Decide</span></th></tr></thead>
+  <tbody>{% for b in d.waiting %}<tr><td>{{ b.room }} <span class="hint opt">{{ b.kind }}</span></td><td>{{ b.on|date }}, {{ b.starts.strftime("%H:%M") }}–{{ b.ends.strftime("%H:%M") }}</td><td>{{ b.purpose }}</td><td>{{ b.by }}</td>
+    <td>{% for act, label in (("approve", "Approve"), ("decline", "Decline")) %}<form method="post" class="inline-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="school" value="{{ school.id }}"><input type="hidden" name="action" value="{{ act }}"><input type="hidden" name="booking_id" value="{{ b.id }}"><button{% if act == "approve" %} class="primary"{% endif %}>{{ label }}</button></form> {% endfor %}</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endif %}
+<div class="grid2">
+<section class="card">
+  <h2>Book a room</h2>
+  <form method="post" class="grid-form" id="book">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="book"><input type="hidden" name="school" value="{{ school.id }}">
+    <label>Room<select name="room_id" required>{% for r in d.rooms if not r.unsafe %}<option value="{{ r.id }}"{% if posted.get('room_id') == r.id|string %} selected{% endif %}>{{ r.code }}{% if r.name %} {{ r.name }}{% endif %} — {{ r.kind }}, {{ r.capacity }} places</option>{% endfor %}</select></label>
+    <label>Date<input type="date" name="on" required min="{{ today }}" value="{{ posted.get('on', today) }}"></label>
+    <label>From<input type="time" name="starts" required value="{{ posted.get('starts', '14:30') }}"></label>
+    <label>To<input type="time" name="ends" required value="{{ posted.get('ends', '15:30') }}"></label>
+    <label>Purpose<input name="purpose" required minlength="5" maxlength="250" placeholder="e.g. SS 2 Chemistry titration practical" value="{{ posted.get('purpose', '') }}"></label>
+    <label>People<input type="number" name="people" min="1" max="2000" required value="{{ posted.get('people', 30) }}"></label>
+    <p><button class="primary">Book</button></p>
+  </form>
+</section>
+<section class="card">
+  <h2>Booking rules</h2>
+  <ul class="rules">
+    <li>Monday to Saturday, 07:00–18:00, 15 minutes to 4 hours, up to 60 days ahead; never over a timetabled lesson or another booking; never a room assessed unsafe; no more people than places.</li>
+    <li><strong>Confirmed at once:</strong> classrooms, the ICT suite and the library; a laboratory, workshop or skills lab for a teacher of a subject that uses it.</li>
+    <li><strong>Head's approval:</strong> the hall and sports areas; a specialist room for other teachers; anything longer than 2 hours or more than 14 days ahead.</li>
+  </ul>
+</section>
+</div>
+<section class="card scroll-x"><h2>Rooms</h2>
+  <table class="compact"><thead><tr><th scope="col">Room</th><th scope="col">Kind</th><th scope="col" class="num">Places</th><th scope="col">Booking</th></tr></thead>
+  <tbody>{% for r in d.rooms %}<tr><td>{{ r.code }}{% if r.name %} {{ r.name }}{% endif %}</td><td>{{ r.kind }}</td><td class="num">{{ r.capacity }}</td>
+    <td>{% if r.unsafe %}<span class="pill pill-bad">Assessed unsafe — not bookable</span>{% elif r.rule == "approval" %}Head's approval{% elif r.rule == "subject" %}Direct for teachers of {{ r.uses }}; others ask{% else %}Direct when free{% endif %} · <a href="/timetable?school={{ school.id }}&amp;room={{ r.id }}">week</a></td></tr>{% endfor %}</tbody></table>
+</section>
+<section class="card scroll-x"><h2>Bookings this week</h2>
+  <table class="compact"><thead><tr><th scope="col">When</th><th scope="col">Room</th><th scope="col">Purpose</th><th scope="col">Booked by</th><th scope="col">Status</th><th scope="col"><span class="sr">Cancel</span></th></tr></thead>
+  <tbody>{% for b in d.bookings %}<tr><td>{{ b.on.strftime("%a") }} {{ b.on|date }}, {{ b.starts.strftime("%H:%M") }}–{{ b.ends.strftime("%H:%M") }}</td><td>{{ b.room }}</td><td>{{ b.purpose }}</td><td>{{ b.by }}{% if b.mine %} (you){% endif %}</td>
+    <td><span class="pill{% if b.status == 'confirmed' %} pill-ok{% elif b.status == 'declined' %} pill-bad{% endif %}">{{ "waiting for approval" if b.status == "requested" else b.status }}</span></td>
+    <td>{% if b.can_cancel %}<form method="post" class="inline-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="school" value="{{ school.id }}"><input type="hidden" name="action" value="cancel"><input type="hidden" name="booking_id" value="{{ b.id }}"><button>Cancel</button></form>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="6" class="muted">No bookings this week.</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endblock %}

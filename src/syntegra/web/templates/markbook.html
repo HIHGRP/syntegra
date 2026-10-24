@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Marksheet — {{ d.class.name }}, {{ d.subject.name }}{% endblock %}
+{% block content %}
+<div class="head-row">
+  <h1>Marksheet — {{ d.class.name }}, {{ d.subject.name }}</h1>
+  <p class="muted">{% if d.term %}{{ d.term.name }} · {{ d.term.starts_on|date }} – {{ d.term.ends_on|date }}{% endif %}</p>
+  <p class="no-print"><a href="/reports/class/{{ d.class.id }}">Report cards for {{ d.class.name }}</a></p>
+</div>
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}{% for e in problem.get("errors", []) %}<br>{{ names.get(e.field, e.field) }}: {{ e.message }}{% endfor %}</div>{% endif %}
+<nav class="tabs no-print" aria-label="Subjects">{% for s in d.subjects %}<a href="/markbook/{{ d.class.id }}/{{ s.id }}"{% if s.id == d.subject.id %} aria-current="page"{% endif %}>{{ s.name }}</a>{% endfor %}</nav>
+{% if d.terms|length > 1 %}<nav class="tabs no-print" aria-label="Terms">{% for t in d.terms %}<a href="?term={{ t.id }}"{% if d.term and t.id == d.term.id %} aria-current="page"{% endif %}>{{ t.name }}</a>{% endfor %}</nav>{% endif %}
+<section class="kpis" aria-label="Summary">
+  <div class="kpi"><span class="v">{{ d.rows|length }}</span><span class="k">learners</span></div>
+  <div class="kpi"><span class="v">{{ d.columns|length }}</span><span class="k">assessments · weights {{ d.weight|round(0)|int }} of 100</span></div>
+  <div class="kpi"><span class="v">{{ d.totals.average if d.totals.average is not none else "—" }}</span><span class="k">class average (weighted total)</span></div>
+  <div class="kpi"><span class="v">{{ d.columns|selectattr("locked")|list|length }} / {{ d.columns|length }}</span><span class="k">assessments locked</span></div>
+</section>
+<form method="post" class="card scroll-x" id="sheet">
+  <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+  {% if d.term %}<input type="hidden" name="term" value="{{ d.term.id }}">{% endif %}
+  {% if editing %}<input type="hidden" name="action" value="save"><input type="hidden" name="assessment_id" value="{{ editing }}">{% endif %}
+  <h2>Marks</h2>
+  <table class="compact marksheet">
+    <thead>
+      <tr><th scope="col">Learner</th>
+        {% for c in d.columns %}<th scope="col" class="num">{{ c.title }}<br><span class="hint">{{ c.kind }} · out of {{ c.max_mark|round(0)|int }} · weight {{ c.weight|round(0)|int }}</span>
+          {% if c.locked %}<span class="pill pill-ok">Locked</span>{% elif d.can_enter and editing != c.id|string %}<a class="no-print" href="?enter={{ c.id }}{% if d.term %}&amp;term={{ d.term.id }}{% endif %}#sheet">Enter marks</a>{% elif editing == c.id|string %}<span class="pill">Entering</span>{% endif %}</th>{% endfor %}
+        <th scope="col" class="num">Total<br><span class="hint">out of {{ d.weight|round(0)|int }}</span></th><th scope="col" class="num">%</th><th scope="col">Grade</th><th scope="col">Position</th><th scope="col">Remark</th></tr>
+    </thead>
+    <tbody>
+    {% for r in d.rows %}
+      <tr><th scope="row">{{ r.name }}</th>
+        {% for cell in r.cells %}<td class="num">{% if editing == cell.assessment_id|string %}<input class="mark" name="mark_{{ r.learner_id }}" inputmode="decimal" size="4" aria-label="{{ r.name }} — {{ d.columns[loop.index0].title }}" value="{{ posted.get('mark_' ~ r.learner_id|string, cell.score|round(1) if cell.score is not none else '') }}">{% elif cell.score is not none %}{{ cell.score|round(1) }}{% elif cell.missing %}<span class="muted" title="Work not done">—</span>{% else %}<span class="muted">·</span>{% endif %}</td>{% endfor %}
+        <td class="num"><strong>{{ r.total if r.total is not none else "—" }}</strong></td><td class="num">{{ r.percent if r.percent is not none else "—" }}</td><td>{{ r.grade or "—" }}</td><td>{{ r.position or "—" }}</td><td>{{ r.remark or "—" }}</td></tr>
+    {% else %}
+      <tr><td colspan="{{ d.columns|length + 6 }}" class="muted">No learners in this class.</td></tr>
+    {% endfor %}
+    </tbody>
+    {% if d.columns %}<tfoot>
+      <tr><th scope="row">Class average</th>{% for c in d.columns %}<td class="num">{{ c.average if c.average is not none else "—" }}</td>{% endfor %}<td class="num">{{ d.totals.average if d.totals.average is not none else "—" }}</td><td colspan="4"></td></tr>
+      <tr><th scope="row">Highest · lowest</th>{% for c in d.columns %}<td class="num">{{ c.highest if c.highest is not none else "—" }} · {{ c.lowest if c.lowest is not none else "—" }}</td>{% endfor %}<td class="num">{{ d.totals.highest if d.totals.highest is not none else "—" }} · {{ d.totals.lowest if d.totals.lowest is not none else "—" }}</td><td colspan="4"></td></tr>
+      <tr><th scope="row">Marks entered</th>{% for c in d.columns %}<td class="num">{{ c.entered }} of {{ d.rows|length }}</td>{% endfor %}<td colspan="5"></td></tr>
+    </tfoot>{% endif %}
+  </table>
+  {% if editing %}<p class="no-print"><button class="primary">Save marks</button>{% if d.can_lock %} <label class="inline"><input type="checkbox" name="lock" value="1"> Lock these marks after saving (they cannot be changed afterwards)</label>{% endif %} <a href="?{% if d.term %}term={{ d.term.id }}{% endif %}">Cancel</a></p>
+  <p class="hint">Enter 0 up to the maximum mark. Leave the box empty for work not done — it counts as no mark and is shown as —.</p>{% endif %}
+  <p class="muted">Totals are weighted: each mark counts its share of the assessment's weight. Grades follow the WAEC/NECO bands (A1 75 and over … F9 below 40). Equal totals share a position.</p>
+</form>
+{% if d.can_lock %}{% set open_cols = d.columns|rejectattr("locked")|list %}{% if open_cols %}
+<section class="card no-print"><h2>Approve and lock</h2><p class="muted">Lock an assessment once its marks are checked. Report cards can only be issued when every assessment of the term is locked.</p>
+  {% for c in open_cols %}<form method="post" class="inline-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="lock"><input type="hidden" name="assessment_id" value="{{ c.id }}">{% if d.term %}<input type="hidden" name="term" value="{{ d.term.id }}">{% endif %}<button>Lock {{ c.title }} ({{ c.entered }} of {{ d.rows|length }} entered)</button></form> {% endfor %}
+</section>{% endif %}{% endif %}
+{% if d.can_enter %}
+<section class="card no-print"><h2>Add an assessment</h2>
+  {% if d.weight_left > 0 %}
+  <form method="post" class="grid-form">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="add">
+    <label>Title<input name="title" required minlength="3" maxlength="200" placeholder="e.g. Second continuous assessment test" value="{{ posted.get('title', '') }}"></label>
+    <label>Kind<select name="kind">{% for k, v in d.kinds.items() %}<option value="{{ k }}"{% if posted.get('kind') == k %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+    <label>Maximum mark<input name="max_mark" inputmode="decimal" required value="{{ posted.get('max_mark', '20') }}"></label>
+    <label>Weight <span class="hint opt">— {{ d.weight_left|round(0)|int }} of 100 left</span><input name="weight" inputmode="decimal" required value="{{ posted.get('weight', [d.weight_left, 20]|min|round(0)|int) }}"></label>
+    <label>Date <span class="hint opt">— the term is taken from the date</span><input type="date" name="assessed_on" value="{{ posted.get('assessed_on', today) }}"></label>
+    <p><button class="primary">Add assessment</button></p>
+  </form>
+  {% else %}<p class="muted">The weights of this class-subject's assessments already add up to 100.</p>{% endif %}
+</section>
+{% endif %}
+{% endblock %}

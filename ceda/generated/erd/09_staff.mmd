@@ -1,0 +1,271 @@
+erDiagram
+    staff {
+        BINARY_16_ id PK
+        VARCHAR_20_ staff_number
+        VARCHAR_200_ given_name
+        VARCHAR_200_ middle_names
+        VARCHAR_200_ family_name
+        VARCHAR_120_ name_phonetic
+        DATE date_of_birth
+        VARCHAR_32_ sex
+        VARCHAR_16_ phone
+        VARCHAR_254_ email
+        BINARY_16_ user_id FK
+        BOOLEAN is_historic
+        VARCHAR_32_ status
+        BINARY_16_ merged_into FK
+    }
+    staff_post {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ staff_id FK
+        BINARY_16_ institution_id FK
+        BINARY_16_ org_unit_id FK
+        VARCHAR_300_ job_title
+        VARCHAR_32_ staff_category
+        VARCHAR_32_ academic_rank
+        VARCHAR_20_ grade_step
+        VARCHAR_32_ contract
+        DECIMAL_4_2_ fte
+        BINARY_16_ employer_scope_id FK
+        BINARY_16_ line_manager_staff_id FK
+        BOOLEAN is_temporary
+        VARCHAR_32_ leaving_reason
+        DATE valid_from
+        DATE valid_to
+    }
+    staff_qualification {
+        BINARY_16_ id PK
+        BINARY_16_ staff_id FK
+        VARCHAR_32_ kind
+        VARCHAR_300_ title
+        BINARY_16_ subject_id FK
+        VARCHAR_40_ subject_area_code
+        JSON levels
+        VARCHAR_32_ issuer
+        VARCHAR_64_ reference
+        DATE issued_on
+        DATE expires_on
+        VARCHAR_32_ verification
+        BINARY_16_ verified_by FK
+        BINARY_16_ document_id
+    }
+    professional_registration_check {
+        BINARY_16_ id PK
+        BINARY_16_ qualification_id FK
+        VARCHAR_32_ register
+        VARCHAR_32_ outcome
+        DATETIME_6_ checked_at
+        VARCHAR_128_ provider_ref
+    }
+    staff_absence {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ staff_id FK
+        BINARY_16_ staff_post_id FK
+        VARCHAR_32_ absence_type
+        DATETIME_6_ starts_at
+        DATETIME_6_ ends_at
+        BOOLEAN is_planned
+        MEDIUMBLOB reason_note
+        BINARY_16_ approved_by
+        VARCHAR_32_ status
+    }
+    cover_assignment {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ absence_id FK
+        BINARY_16_ lesson_occurrence_id FK
+        BINARY_16_ cover_staff_id FK
+        BOOLEAN is_qualified
+        JSON rank_evidence
+        VARCHAR_32_ alternative
+        BINARY_16_ proposed_by
+        BINARY_16_ confirmed_by
+        VARCHAR_32_ status
+    }
+    vacancy {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ institution_id FK
+        BINARY_16_ org_unit_id FK
+        VARCHAR_300_ title
+        JSON subjects
+        BINARY_16_ coverage_gap_id FK
+        DATE closing_on
+        BINARY_16_ workflow_instance_id FK
+        VARCHAR_32_ status
+    }
+    job_application {
+        BINARY_16_ id PK
+        BINARY_16_ vacancy_id FK
+        VARCHAR_200_ applicant_name
+        VARCHAR_254_ applicant_email
+        VARCHAR_16_ applicant_phone
+        BINARY_16_ cv_document_id
+        DECIMAL_6_2_ blind_score
+        JSON scores
+        VARCHAR_32_ stage
+        BINARY_16_ staff_id FK
+    }
+    appraisal {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ staff_id FK
+        BINARY_16_ reviewer_staff_id FK
+        VARCHAR_20_ cycle_label
+        JSON objectives
+        JSON evidence
+        VARCHAR_32_ rating
+        TEXT development_plan
+        VARCHAR_32_ status
+    }
+    cpd_record {
+        BINARY_16_ id PK
+        BINARY_16_ staff_id FK
+        VARCHAR_300_ title
+        VARCHAR_300_ provider_name
+        VARCHAR_32_ cpd_kind
+        DECIMAL_6_2_ hours
+        BINARY_16_ subject_id FK
+        DATE completed_on
+        BINARY_16_ evidence_document_id
+        VARCHAR_40_ source_kind
+        BINARY_16_ source_id
+        DATE expires_on
+    }
+    training_course {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ code
+        VARCHAR_300_ title
+        VARCHAR_32_ topic
+        BINARY_16_ course_space_id FK
+        VARCHAR_32_ package_format
+        DECIMAL_6_3_ pass_mark
+        SMALLINT renewal_months
+        JSON required_for_roles
+        INT version
+        VARCHAR_32_ status
+    }
+    training_completion {
+        BINARY_16_ id PK
+        BINARY_16_ course_id FK
+        BINARY_16_ staff_id FK
+        DATE assigned_on
+        DATE completed_on
+        DECIMAL_6_3_ score
+        BOOLEAN passed
+        BINARY_16_ certificate_document_id
+        DATE expires_on
+        VARCHAR_32_ status
+    }
+    staff_pulse_response {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ survey_code
+        BINARY_16_ org_unit_id FK
+        JSON answers
+        DATE submitted_on
+    }
+    payroll_tax_table {
+        BINARY_16_ id PK
+        VARCHAR_32_ table_kind
+        INT version
+        JSON bands
+        DATE effective_from
+        VARCHAR_32_ status
+    }
+    payroll_run {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ employer_scope_id FK
+        VARCHAR_7_ period_label
+        DATE pay_date
+        BIGINT gross_total_minor
+        BIGINT net_total_minor
+        CHAR_3_ currency
+        BINARY_16_ prepared_by
+        BINARY_16_ approved_by
+        BINARY_16_ second_approver_id
+        BINARY_16_ bank_file_document_id
+        BINARY_16_ journal_id FK
+        VARCHAR_32_ status
+    }
+    payslip {
+        BINARY_16_ id PK
+        BINARY_16_ payroll_run_id FK
+        BINARY_16_ staff_post_id FK
+        BIGINT gross_minor
+        BIGINT deductions_minor
+        BIGINT net_minor
+        CHAR_3_ currency
+        JSON line_items
+        VARBINARY_1024_ bank_account_enc
+        CHAR_4_ bank_account_last4
+        JSON exception_flags
+    }
+    app_user {
+        BINARY_16 id PK
+    }
+    course_space {
+        BINARY_16 id PK
+    }
+    coverage_gap {
+        BINARY_16 id PK
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    journal {
+        BINARY_16 id PK
+    }
+    lesson_occurrence {
+        BINARY_16 id PK
+    }
+    org_unit {
+        BINARY_16 id PK
+    }
+    scope_node {
+        BINARY_16 id PK
+    }
+    subject {
+        BINARY_16 id PK
+    }
+    workflow_instance {
+        BINARY_16 id PK
+    }
+    app_user ||--o{ staff : "user_id"
+    app_user ||--o{ staff_qualification : "verified_by"
+    course_space ||--o{ training_course : "course_space_id"
+    coverage_gap ||--o{ vacancy : "coverage_gap_id"
+    institution ||--o{ staff_post : "institution_id"
+    institution ||--o{ vacancy : "institution_id"
+    journal ||--o{ payroll_run : "journal_id"
+    lesson_occurrence ||--o{ cover_assignment : "lesson_occurrence_id"
+    org_unit ||--o{ staff_post : "org_unit_id"
+    org_unit ||--o{ staff_pulse_response : "org_unit_id"
+    org_unit ||--o{ vacancy : "org_unit_id"
+    payroll_run ||--o{ payslip : "payroll_run_id"
+    scope_node ||--o{ payroll_run : "employer_scope_id"
+    scope_node ||--o{ staff_post : "employer_scope_id"
+    staff ||--o{ appraisal : "reviewer_staff_id"
+    staff ||--o{ appraisal : "staff_id"
+    staff ||--o{ cover_assignment : "cover_staff_id"
+    staff ||--o{ cpd_record : "staff_id"
+    staff ||--o{ job_application : "staff_id"
+    staff ||--o{ staff : "merged_into"
+    staff ||--o{ staff_absence : "staff_id"
+    staff ||--o{ staff_post : "line_manager_staff_id"
+    staff ||--o{ staff_post : "staff_id"
+    staff ||--o{ staff_qualification : "staff_id"
+    staff ||--o{ training_completion : "staff_id"
+    staff_absence ||--o{ cover_assignment : "absence_id"
+    staff_post ||--o{ payslip : "staff_post_id"
+    staff_post ||--o{ staff_absence : "staff_post_id"
+    staff_qualification ||--o{ professional_registration_check : "qualification_id"
+    subject ||--o{ cpd_record : "subject_id"
+    subject ||--o{ staff_qualification : "subject_id"
+    training_course ||--o{ training_completion : "course_id"
+    vacancy ||--o{ job_application : "vacancy_id"
+    workflow_instance ||--o{ vacancy : "workflow_instance_id"

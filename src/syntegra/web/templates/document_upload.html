@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Upload documents{% endblock %}
+{% block content %}
+<h1>Upload documents</h1>
+<p class="muted">Scan the paper document (PDF, JPEG, PNG or TIFF, up to {{ max_mb }} MB per file; 200–300 dpi greyscale), choose the school it belongs to and describe it. Each file gets its own reference number. The scan is kept as the original record; its text is read for searching{% if not ocr %} — text recognition (OCR) is not installed here, so type the key words or names below{% endif %}.</p>
+{% if error %}<div class="alert alert-error" role="alert" id="upload-error">{{ error }}{% if errors|length > 1 %}<ul>{% for e in errors %}<li>{{ e.file }} — {{ e.detail }}</li>{% endfor %}</ul>{% endif %}</div>{% endif %}
+<form method="post" enctype="multipart/form-data" class="card" id="upload">
+  <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+  <div class="grid2">
+    <label>School or institution<select name="institution" required>
+      {% if schools|length > 1 %}<option value="">Choose…</option>{% endif %}
+      {% for s in schools %}<option value="{{ s.id }}"{% if form.get("institution") == s.id|string %} selected{% endif %}>{{ s.name }} ({{ s.institution_code }})</option>{% endfor %}
+    </select></label>
+    <label>Category<select name="category" required><option value="">Choose…</option>
+      {% for c in categories %}<option value="{{ c.code }}"{% if form.get("category") == c.code %} selected{% endif %}>{{ c.title }}</option>{% endfor %}
+    </select></label>
+  </div>
+  <label>Title<input name="title" required minlength="3" maxlength="300" value="{{ form.get('title', '') }}" placeholder="e.g. Admission register 1998–2003"></label>
+  <div class="grid2">
+    <label>Date or start of period<input type="date" name="date_from" value="{{ form.get('date_from', '') }}"></label>
+    <label>End of period <span class="hint opt">(optional)</span><input type="date" name="date_to" value="{{ form.get('date_to', '') }}"></label>
+    <label>Session <span class="hint opt">(optional)</span><input name="session_label" maxlength="20" value="{{ form.get('session_label', '') }}" placeholder="e.g. 1998/1999"></label>
+    <label>Class or level <span class="hint opt">(optional)</span><input name="level_or_class" maxlength="80" value="{{ form.get('level_or_class', '') }}" placeholder="e.g. JSS 1"></label>
+    <label>Subject <span class="hint opt">(optional)</span><input name="subject_label" maxlength="120" value="{{ form.get('subject_label', '') }}"></label>
+    <label>Reference on the paper <span class="hint opt">(optional)</span><input name="source_reference" maxlength="200" value="{{ form.get('source_reference', '') }}" placeholder="file, box or volume number written on it"></label>
+  </div>
+  <label>Description <span class="hint opt">(optional)</span><textarea name="description" maxlength="2000" rows="2">{{ form.get('description', '') }}</textarea></label>
+  <label>Key words, names or text from the document <span class="hint opt">(optional — makes handwritten pages searchable)</span><textarea name="transcription" rows="4" maxlength="200000">{{ form.get('transcription', '') }}</textarea></label>
+  <label>Access level <span class="hint">The category sets the lowest level; raise it for sensitive documents.</span><select name="classification">
+    <option value="">The category's level</option>
+    {% for lv in levels %}<option value="{{ lv.classification }}"{% if form.get("classification") == lv.classification %} selected{% endif %}>{{ lv.label }}</option>{% endfor %}
+  </select></label>
+  <label>Scanned files<input type="file" name="files" multiple required accept="application/pdf,image/jpeg,image/png,image/tiff,text/plain"></label>
+  <button class="primary">Upload and index</button>
+</form>
+{% endblock %}

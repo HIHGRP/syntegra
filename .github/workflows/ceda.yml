@@ -1,0 +1,42 @@
+name: CEDA
+
+on:
+  push:
+    paths: ["ceda/**", "pyproject.toml", "deploy/**", ".github/workflows/**"]
+  pull_request:
+    paths: ["ceda/**", "pyproject.toml", "deploy/**", ".github/workflows/**"]
+
+jobs:
+  model:
+    name: Validate model, check generated artefacts, load into MySQL 9.7
+    runs-on: ubuntu-24.04
+    services:
+      mysql:
+        image: mysql:9.7
+        env:
+          MYSQL_ROOT_PASSWORD: ceda
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pceda"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install tooling
+        run: python -m pip install pyyaml==6.0.2 pytest==8.3.3
+      - name: Validate the CEDA model
+        run: python ceda/tools/cedagen.py validate --warnings
+      - name: Generated artefacts are up to date
+        run: python ceda/tools/cedagen.py check
+      - name: Releases replay to the current DDL (static)
+        run: python ceda/tools/release.py check
+      - name: Conformance tests (incl. DDL load and database guarantees on MySQL 9.7)
+        env:
+          MYSQL_CMD: mysql -h127.0.0.1 -P3306 -uroot -pceda
+        run: python -m pytest ceda/tests -q -o addopts=""  # the project addopts are for pytest-django, not installed here
+      - name: Releases replay to the current DDL (structural, in MySQL 9.7)
+        env:
+          MYSQL_CMD: mysql -h127.0.0.1 -P3306 -uroot -pceda
+        run: python ceda/tools/release.py check --mysql

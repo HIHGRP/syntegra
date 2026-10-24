@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Book parents' meeting{% endblock %}
+{% block content %}
+<p class="crumb no-print"><a href="/parents-meetings">← Parents' meetings</a></p>
+<h1>{{ d.event.title }}</h1>
+<p class="muted">{% for day, a, b in d.event.days %}{{ day.strftime("%A %d %B") }} {{ a.strftime("%H:%M") }}–{{ b.strftime("%H:%M") }}{% if not loop.last %} · {% endif %}{% endfor %} · {{ d.event.slot_minutes }} minutes with each teacher.{% if d.event.open %} Booking closes {{ d.event.closes|localtime("%A %d %B") }}.{% else %} Booking is closed — ask the school office.{% endif %}</p>
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<section class="card" id="my-bookings"><h2>Your meetings</h2>
+  <ul class="plain">{% for b in d.mine %}<li><strong>{{ b.at|localtime("%a %H:%M") }}</strong> — {{ b.teacher }} about {{ b.child }} ({{ b.mode }}{% if b.interpreter %}, interpreter: {{ b.interpreter }}{% endif %})
+    <form method="post" class="row-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="cancel"><input type="hidden" name="booking_id" value="{{ b.id }}"><button>Cancel</button></form></li>
+  {% else %}<li class="muted">None booked yet.</li>{% endfor %}</ul>
+  {% if d.mine and ("video", "Video call") in d.event.modes %}<p class="hint">For a video meeting the school sends you the link before the evening.</p>{% endif %}
+</section>
+{% for c in d.children %}
+<section class="card scroll-x" id="child-{{ loop.index }}"><h2>{{ c.name }} — {{ c.class_name }}</h2>
+  <table class="compact"><thead><tr><th scope="col">Teacher</th><th scope="col">Teaches</th><th scope="col">Book a time</th></tr></thead>
+  <tbody>{% for t in c.teachers %}<tr><td>{{ t.name }}</td><td>{{ t.roles|join(", ") }}</td>
+    <td>{% if t.booking %}<span class="pill pill-ok">booked {{ t.booking.starts_at|localtime("%a %H:%M") }}</span>
+    {% elif d.event.open and t.free %}<form method="post" class="row-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="book"><input type="hidden" name="learner_id" value="{{ c.id }}"><input type="hidden" name="staff_id" value="{{ t.staff_id }}">
+      <select name="slot" aria-label="Time with {{ t.name }}">{% for s in t.free %}<option value="{{ s.isoformat() }}">{{ s|localtime("%a %H:%M") }}</option>{% endfor %}</select>
+      {% if d.event.modes|length > 1 %}<select name="mode" aria-label="How">{% for k, v in d.event.modes %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>{% else %}<input type="hidden" name="mode" value="{{ d.event.modes[0][0] }}">{% endif %}
+      <input name="interpreter" maxlength="35" placeholder="Interpreter? (language)" aria-label="Interpreter language, if you need one" class="num4"><button class="primary">Book</button></form>
+    {% elif d.event.open %}<span class="muted">no free time left that fits your other meetings</span>{% else %}<span class="muted">—</span>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="3" class="muted">No teachers listed for this class.</td></tr>{% endfor %}</tbody></table>
+</section>
+{% else %}<div class="card"><p class="muted">This meeting is not for your children's classes.</p></div>
+{% endfor %}
+{% endblock %}

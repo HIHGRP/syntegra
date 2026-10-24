@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ a.title }}{% endblock %}
+{% block content %}
+<p class="crumb no-print"><a href="/work">← Work</a> · <a href="/courses/{{ a.space.id }}">{{ a.space.title }}</a></p>
+<h1>{{ a.title }}</h1>
+<p class="muted">{{ a.kind }} · due {{ a.due|localtime("%A %d %B at %H:%M") }}{% if a.max_mark %} · out of {{ "%g"|format(a.max_mark) }}{% endif %} · {{ a.late_policy }}</p>
+{% if message %}<div class="alert alert-ok" role="status" id="receipt">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<section class="card"><h2>Instructions</h2><div class="doc-text">{{ a.instructions }}</div></section>
+{% for v in a.versions|reverse %}
+<section class="card" id="v{{ v.no }}"><h2>{{ "Your" if a.viewer == "learner" else "The" }} answer{% if a.versions|length > 1 %}, version {{ v.no }}{% endif %}</h2>
+  <p class="hint">Handed in {{ v.at|localtime("%d %b %H:%M") }}{% if v.late %} — <strong>late</strong>{% endif %} · receipt <code>{{ v.receipt }}</code> · {{ v.ai }}</p>
+  <div class="doc-text">{{ v.text }}</div>
+  {% if v.mark %}<div class="verdict ok"><strong>Mark: {{ "%g"|format(v.mark.score) }}{% if a.max_mark %} / {{ "%g"|format(a.max_mark) }}{% endif %}</strong>{% if v.mark.feedback %}<p>{{ v.mark.feedback }}</p>{% endif %}</div>{% endif %}
+</section>
+{% endfor %}
+{% if a.can_submit %}
+<form method="post" class="card" id="hand-in"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+  <h2>{{ "Hand in a new version" if a.versions else "Hand in your work" }}</h2>
+  <label>Your answer<textarea name="text" rows="10" required>{{ posted.get('text', '') }}</textarea></label>
+  <fieldset><legend>AI tools</legend>{% for k, v in a.ai_choices.items() %}<label class="check"><input type="radio" name="ai" value="{{ k }}"{% if posted.get('ai', 'none_used') == k %} checked{% endif %}> {{ v }}</label><br>{% endfor %}
+    <label>How you used them <span class="hint opt">— only if you did</span><input name="ai_note" maxlength="500" value="{{ posted.get('ai_note', '') }}"></label></fieldset>
+  <p><button class="primary">Hand in</button></p>
+</form>
+{% elif a.viewer == "learner" and a.closed %}<p class="muted">This work closed at the due time.</p>{% endif %}
+{% endblock %}

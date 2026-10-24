@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "_school_picker.html" import school_picker %}
+{% block title %}Clubs and activities{% endblock %}
+{% block content %}
+<h1>Clubs and activities</h1>
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+{% if parent_view %}
+{% for k in kids %}
+<section class="card scroll-x" id="child-{{ loop.index }}"><h2>{{ k.name }} — {{ k.class_name }}</h2>
+  <table class="compact"><thead><tr><th scope="col">Activity</th><th scope="col">When</th><th scope="col">Led by</th><th scope="col">Places</th><th scope="col"></th></tr></thead>
+  <tbody>{% for a in k.activities %}<tr><td><strong>{{ a.name }}</strong> <span class="hint opt">{{ a.kind }}</span>{% if a.description %}<br><span class="hint opt">{{ a.description }}</span>{% endif %}</td><td>{{ a.when }}</td><td>{{ a.lead }}</td><td>{% if a.left %}{{ a.left }} left{% else %}full{% if a.waiting %} · {{ a.waiting }} waiting{% endif %}{% endif %}</td>
+    <td>{% if a.enrolment %}{% if a.enrolment.allocation == "allocated" %}<span class="pill pill-ok">has a place</span> {% if a.sessions %}<span class="hint opt">came {{ a.enrolment.attended }} of {{ a.sessions }}</span>{% endif %}{% else %}<span class="pill">waiting list, number {{ a.enrolment.position }}</span>{% endif %}
+      <form method="post" class="row-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="leave"><input type="hidden" name="enrolment_id" value="{{ a.enrolment.id }}"><button>{{ "Give up the place" if a.enrolment.allocation == "allocated" else "Leave the list" }}</button></form>
+    {% else %}<form method="post" class="row-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="join"><input type="hidden" name="activity_id" value="{{ a.id }}"><input type="hidden" name="learner_id" value="{{ k.id }}"><button class="primary">{{ "Ask for a place" if a.left else "Join the waiting list" }}</button></form>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">Nothing open to {{ k.class_name }} yet.</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endfor %}
+{% else %}
+<p class="muted">{{ d.institution.name }}</p>{{ school_picker(school, schools) }}
+<section class="card scroll-x" id="catalogue">
+  <table class="compact"><thead><tr><th scope="col">Activity</th><th scope="col">When</th><th scope="col">Open to</th><th scope="col">Led by</th><th scope="col" class="num">Places</th><th scope="col" class="num">Waiting</th><th scope="col" class="num">Meetings</th></tr></thead>
+  <tbody>{% for a in d.activities %}<tr><td><a href="/activities/{{ a.id }}">{{ a.name }}</a> <span class="hint opt">{{ a.kind }}</span>{% if a.mine %} <span class="pill">you lead</span>{% endif %}</td><td>{{ a.when }}</td><td>{{ a.levels|join(", ") }}</td><td>{{ a.lead }}</td><td class="num">{{ a.allocated }} / {{ a.capacity }}</td><td class="num">{{ a.waiting or "" }}</td><td class="num">{{ a.sessions or "" }}</td></tr>
+  {% else %}<tr><td colspan="7" class="muted">No activities yet.</td></tr>{% endfor %}</tbody></table>
+</section>
+{% if d.can_manage %}
+<form method="post" class="card" id="new-activity"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="create"><input type="hidden" name="school" value="{{ d.institution.id }}">
+  <h2>Add an activity</h2>
+  <div class="grid-form">
+    <label>Name<input name="name" maxlength="300" required value="{{ posted.get('name', '') }}" placeholder="Chess club"></label>
+    <label>Kind<select name="kind">{% for k, v in d.kinds.items() %}<option value="{{ k }}"{% if posted.get('kind') == k %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+    <label>Places<input class="num4" type="number" name="capacity" min="2" max="200" value="{{ posted.get('capacity', '20') }}"></label>
+    <label>Led by<select name="lead" required><option value="">—</option>{% for s in d.staff %}<option value="{{ s.id }}"{% if posted.get('lead') == s.id|string %} selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></label>
+    <label>Day<select name="day">{% for i, w in d.weekdays %}<option value="{{ i }}"{% if posted.get('day') == i|string %} selected{% endif %}>{{ w }}</option>{% endfor %}</select></label>
+    <label>From<input type="time" name="starts" value="{{ posted.get('starts', '14:30') }}"></label>
+    <label>To<input type="time" name="ends" value="{{ posted.get('ends', '15:30') }}"></label>
+  </div>
+  <fieldset><legend>Open to</legend><div class="pick-grid">{% for k, v in d.levels.items() %}<label class="chip"><input type="checkbox" name="levels" value="{{ k }}"{% if k in (posted.getlist('levels') if posted else []) %} checked{% endif %}> {{ v }}</label>{% endfor %}</div></fieldset>
+  <label>What it is <span class="hint opt">— shown to parents</span><input name="description" maxlength="500" value="{{ posted.get('description', '') }}"></label>
+  <p><button class="primary">Add</button></p>
+</form>
+{% endif %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Sign-in providers{% endblock %}
+{% block content %}
+<h1>Sign-in providers</h1>
+<p class="muted">Single sign-on with the state's government ID, Microsoft Entra ID or Google Workspace (OpenID Connect, authorization code with PKCE). It links only to accounts the state has already created, by an e-mail address the provider has verified in a domain listed here; roles always come from Syntegra. A provider's own MFA replaces the authenticator code only when you trust it below.</p>
+{% if error %}<div class="alert alert-error" role="alert" id="providers-error">{{ error }}</div>{% endif %}
+{% if done %}<div class="alert alert-ok" role="status" id="providers-done">{{ done }}</div>{% endif %}
+{% if checked %}<section class="card" id="checked"><h2>Provider check</h2><dl>
+  <dt>Issuer</dt><dd><code>{{ checked.issuer }}</code></dd>
+  <dt>Sign-in page</dt><dd><code>{{ checked.authorization_endpoint }}</code></dd>
+  <dt>Token endpoint</dt><dd><code>{{ checked.token_endpoint }}</code></dd>
+  <dt>Signing keys</dt><dd>{{ checked.key_count }} published · PKCE {{ "supported" if checked.pkce else "not advertised" }}</dd></dl></section>{% endif %}
+
+<section class="card" id="providers">
+  <h2>Configured</h2>
+  {% if rows %}
+  <div class="scroll-x"><table>
+    <thead><tr><th>Provider</th><th>Button</th><th>Issuer</th><th>Allowed domains</th><th>Provider MFA</th><th>Status</th><th></th></tr></thead>
+    <tbody>{% for r in rows %}
+      <tr><td>{{ r.provider_name }}</td><td>{{ r.label }}</td><td><code>{{ r.issuer }}</code><br><span class="muted">client {{ r.client_id }}{% if r.has_secret %} · secret stored encrypted{% endif %}</span></td>
+        <td>{{ r.allowed_domains|join(", ") }}</td><td>{{ "Trusted" if r.trust_idp_mfa else "Not trusted — local code asked" }}</td><td>{{ r.status|title }}</td>
+        <td><form method="post"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="check"><input type="hidden" name="id" value="{{ r.id }}"><button class="link">Check</button></form></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="muted">No provider yet: everyone signs in with a password.</p>{% endif %}
+</section>
+
+<form method="post" class="card" id="provider-form">
+  <h2>Add or change a provider</h2>
+  <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+  <label>Provider<select name="provider">{% for k, name in kinds.items() %}<option value="{{ k }}"{% if form.get("provider") == k %} selected{% endif %}>{{ name }}</option>{% endfor %}</select></label>
+  <label>Button text<input name="label" value="{{ form.get('label', '') }}" placeholder="Sign in with Abia Government ID" required></label>
+  <label>Issuer<input name="issuer" value="{{ form.get('issuer', '') }}" placeholder="https://login.microsoftonline.com/&lt;tenant&gt;/v2.0" required></label>
+  <label>Client (application) id<input name="client_id" value="{{ form.get('client_id', '') }}" required></label>
+  <label>Client secret <span class="muted">(leave blank to keep the stored one)</span><input name="client_secret" type="password" autocomplete="off"></label>
+  <label>Scopes<input name="scopes" value="{{ form.get('scopes') or 'openid email profile' }}"></label>
+  <label>Allowed e-mail domains<input name="allowed_domains" value="{{ form.get('allowed_domains', '') }}" placeholder="abiastate.gov.ng, absu.edu.ng" required></label>
+  <label class="check"><input type="checkbox" name="trust_idp_mfa"> Trust the provider's MFA as the second factor</label>
+  <label>Order on the sign-in page<input name="sort_order" type="number" min="0" max="99" value="10"></label>
+  <label>Status<select name="status"><option value="active">Active — shown on the sign-in page</option><option value="inactive">Inactive</option></select></label>
+  <p class="hint">Register this redirect address with the provider: <code>{{ redirect_base }}&lt;provider&gt;/callback</code>, e.g. <code>{{ redirect_base }}entra/callback</code>.</p>
+  <button class="primary">Save</button>
+</form>
+{% endblock %}

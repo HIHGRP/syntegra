@@ -1,0 +1,49 @@
+# Syntegra application image — RHEL 10 UBI, Python 3.12 (MFS §16 binding stack).
+# Build:  podman build -f deploy/Containerfile -t syntegra:$(git rev-parse --short HEAD) .
+FROM registry.access.redhat.com/ubi10/python-312-minimal AS build
+USER 0
+RUN microdnf install -y gcc python3-devel mariadb-connector-c-devel pkgconf-pkg-config && microdnf clean all
+WORKDIR /opt/app-root/src
+COPY pyproject.toml README.md ./
+COPY src ./src
+RUN python -m venv /opt/venv && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
+ && /opt/venv/bin/pip install --no-cache-dir . && /opt/venv/bin/pip uninstall -y syntegra  # dependencies only
+# English language data for OCR (Tesseract's tessdata_fast 4.1.0, Apache-2.0), checked against its SHA-256. The OCR
+# engine itself comes from the tesserocr wheel; the UBI and EPEL 10 repositories have no Tesseract package.
+ARG TESSDATA_URL=https://github.com/tesseract-ocr/tessdata_fast/raw/4.1.0/eng.traineddata
+ARG TESSDATA_SHA256=7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2
+RUN mkdir -p /opt/tessdata && python -c "import hashlib, sys, urllib.request; \
+data = urllib.request.urlopen(sys.argv[1], timeout=120).read(); got = hashlib.sha256(data).hexdigest(); \
+sys.exit(f'eng.traineddata: sha256 {got}, expected {sys.argv[2]}') if got != sys.argv[2] else \
+open('/opt/tessdata/eng.traineddata', 'wb').write(data)" "$TESSDATA_URL" "$TESSDATA_SHA256"
+
+FROM registry.access.redhat.com/ubi10/python-312-minimal
+USER 0
+RUN microdnf install -y mariadb-connector-c && microdnf clean all
+COPY --from=build /opt/venv /opt/venv
+COPY --from=build /opt/tessdata /usr/share/syntegra/tessdata
+WORKDIR /opt/app-root/src
+# The CEDA DDL is the physical schema authority applied by `manage.py migrate --database=<zone>`.
+COPY ceda/generated/mysql ./ceda/generated/mysql
+COPY ceda/releases ./ceda/releases
+COPY manage.py ./
+COPY src ./src
+ENV PATH=/opt/venv/bin:$PATH PYTHONPATH=/opt/app-root/src/src \
+    PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
+    DJANGO_SETTINGS_MODULE=syntegra.settings.prod \
+    SYNTEGRA_CEDA_DDL_DIR=/opt/app-root/src/ceda/generated/mysql \
+    SYNTEGRA_CEDA_RELEASES_DIR=/opt/app-root/src/ceda/releases \
+    SYNTEGRA_TESSDATA_DIR=/usr/share/syntegra/tessdata
+RUN python manage.py collectstatic --noinput --settings=syntegra.settings.dev >/dev/null
+# the image must be able to read scanned documents (CR-007, FR-DOC-203)
+RUN python -c "import tesserocr; from syntegra.records import text; assert text.ocr_available(), 'no OCR'; \
+tesserocr.PyTessBaseAPI(path=text.tessdata_dir(), lang='eng').End(); print(tesserocr.tesseract_version())"
+# Document scans (CR-007) are the only copy of each master: they live on a mounted volume, not in the image.
+RUN mkdir -p /var/lib/syntegra/objects && chown 1001:0 /var/lib/syntegra/objects && chmod 0770 /var/lib/syntegra/objects
+ENV SYNTEGRA_OBJECT_STORE_DIR=/var/lib/syntegra/objects
+VOLUME ["/var/lib/syntegra/objects"]
+USER 1001
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=3s CMD python -c "import urllib.request,sys; urllib.request.urlopen('http://127.0.0.1:8000/healthz'); sys.exit(0)"
+CMD ["gunicorn", "syntegra.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4", "--threads", "4", \
+     "--worker-class", "gthread", "--access-logfile", "-", "--max-requests", "5000", "--max-requests-jitter", "500"]

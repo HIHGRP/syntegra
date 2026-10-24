@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<h1>Good day, {{ user.display_name }}</h1>
+{% if not ctx.grant_id %}<div class="alert">Your account has no active role yet. Ask your administrator for access.</div>{% endif %}
+{% if tiles %}
+<section class="tiles">
+  {% for t in tiles %}
+  <article class="tile">
+    <h2>{{ t.name }}</h2>
+    <p class="big">{{ "{:,}".format(t.value) }}</p>
+    <table class="compact">
+      <thead><tr><th scope="col">Scope</th><th scope="col" class="num">Value</th></tr></thead>
+      <tbody>{% for c in t.cells %}<tr><td>{{ c.scope_name }}</td><td class="num">{{ "suppressed" if c.suppressed else c.value }}</td></tr>{% endfor %}</tbody>
+    </table>
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+{% if classes %}
+<section class="card">
+  <h2>Today's registers</h2>
+  <ul class="list">{% for c in classes %}<li><a href="/registers/class/{{ c.id }}">{{ c.name }}</a> <span class="muted">{{ c.education_level }}</span>{% if ctx.has("class:manage") %} · <a href="/classes/{{ c.id }}/plan">subjects &amp; teachers</a>{% endif %}{% if ctx.has("seating:view") %} · <a href="/classes/{{ c.id }}/seating">seating plan</a>{% endif %}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+<section class="card">
+  <h2>Your pages</h2>
+  <ul class="list">
+    {% for p in nav[:40] %}<li><code>{{ p.id }}</code> {{ p.title }} <span class="pill pill-{{ page_status(p.id) }}">{{ page_status(p.id) }}</span></li>{% endfor %}
+  </ul>
+</section>
+{% endblock %}

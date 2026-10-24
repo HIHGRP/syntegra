@@ -1,0 +1,223 @@
+domain: learners
+code: LRN
+title: Learner 360, state enrolment register, transfer and Education Passport
+module: learners
+zone: registry
+retention: RS-LRN-PERM
+summary: >
+  One lifelong record per learner from early years to continuing education (FR-LRN-01–16), held in the
+  state registry so that public and private institutions, the state, the SDAF census and the certificate
+  registry all see the same person (decision CD-01). The state enrolment register records which
+  institution holds each learner and when; it is the basis for transfers, child-missing-education
+  referrals, the census date rule ("billed once, by the institution holding the enrolment") and state
+  learner search. Class membership and everything operational live in the ops zone of the institution's
+  tenant and refer back to learner_id and enrolment_id.
+
+entities:
+  learner:
+    title: Learner 360 master — one row per person, lifelong
+    kind: master
+    class: confidential
+    history: lifecycle
+    scope: "derived: visible through an enrolment at an institution inside the grant's subtree, or a purpose-bound state grant"
+    origin: appj
+    reqs: [FR-LRN-01, FR-LRN-03, FR-LRN-05, FR-LRN-06, FR-LRN-07, FR-LRN-12, FR-CMD-107, FR-DOC-108, FR-LRN-102]
+    pages: [LRN-01, LRN-02, LRN-04, CMD-101, PUB-03, HOM-05]
+    events: [LRN.CREATED, LRN.UPDATED, LRN.MERGED, LRN.VIEWED_SPECIAL]
+    notes: >
+      Identity attributes only. National identifiers are in external_identifier; special-category detail is in
+      the vault. A merged record keeps its row as an alias (status merged, merged_into set) so old references resolve.
+      Historic learners created from digitised archives carry is_historic = true.
+    attrs:
+      - "global_learner_id: glid! uq | LRN-NNNN-NNNN-CC, assigned at creation from the state's leased block, never reused"
+      - "legal_given_name: name! pii"
+      - "legal_middle_names: name pii"
+      - "legal_family_name: name! pii"
+      - "preferred_name: name pii"
+      - "name_phonetic: str(120)! | Double Metaphone keys + Nigerian name-variant keys for blocking"
+      - "date_of_birth: date! pii"
+      - "dob_precision: enum(date_precision)! default=day | Displaced and historic learners may have month or year only"
+      - "sex: cl(sex)!"
+      - "nationality: country"
+      - "state_of_origin: subdivision"
+      - "home_languages: cls(language)"
+      - "photo_document_id: uuid restricted | Records zone; restricted"
+      - "is_historic: bool! default=false | Created from a digitised archive (FR-DOC-108)"
+      - "is_minimal_documentation: bool! default=false | Temporary enrolment (IDP camps); identity matching reconciles later"
+      - "identity_verified_level: enum(identity_level)! default=unverified"
+      - "status: enum(learner_status)!"
+      - "merged_into: ref(learner)"
+      - "deceased_on: date"
+    ix: [[legal_family_name, date_of_birth], [name_phonetic], [date_of_birth]]
+
+  enrolment:
+    title: State enrolment register — learner enrolled at an institution (and level, programme) for a period
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-LRN-08, FR-LRN-09, FR-LRN-11, FR-SUB-104, FR-PVT-114, FR-ACA-107]
+    pages: [LRN-07, LRN-09, LRN-05, ATT-01, SUB-102]
+    events: [ENR.STARTED, ENR.ENDED, LRN.LEFT]
+    notes: >
+      scope_node_id = the institution's node. A learner has at most one active primary enrolment per period
+      (dual registration is a second, non-primary enrolment). class_group_id refers to the ops zone (soft).
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "institution_id: ref(institution)!"
+      - "operating_tenant_id: uuid! | Tenant whose ops zone holds the operational record"
+      - "education_level: cl(education_level)!"
+      - "programme_id: ref(programme)"
+      - "class_group_id: ref(class_group) | Ops-zone class (arm) for the session"
+      - "cohort_label: str(60) | Intake cohort, e.g. 2026/2027 ND1"
+      - "is_primary: bool! default=true"
+      - "basis: enum(enrolment_basis)!"
+      - "start_on: date!"
+      - "end_on: date"
+      - "leaving_reason: cl(leaving_reason)"
+      - "destination: json | Destination institution, employment, unknown …"
+      - "is_over_capacity_approved: bool! default=false | Head approval recorded when capacity is exceeded"
+      - "status: enum(enrolment_status)!"
+      - "active_primary_key: uuid derived | = learner_id when status active and is_primary, else NULL (one active primary enrolment)"
+    generated:
+      active_primary_key: "IF(`status` = 'active' AND `is_primary`, `learner_id`, NULL)"
+    uq: [[active_primary_key]]
+    ix: [[learner_id, start_on], [institution_id, status]]
+    checks:
+      dates: "end_on IS NULL OR end_on >= start_on"
+
+  learner_transfer:
+    title: Transfer of a learner between institutions (within or across tenants and states), with DSL/SENCO handover acknowledgement
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-LRN-10, FR-SAF-08, FR-LRN-16]
+    pages: [LRN-05]
+    events: [LRN.TRANSFERRED]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "from_enrolment_id: ref(enrolment)!"
+      - "to_institution_id: ref(institution) | NULL when leaving the state (exchange)"
+      - "to_enrolment_id: ref(enrolment)"
+      - "exchange_transfer_id: ref(exchange_transfer) | Cross-state or international records exchange"
+      - "requested_by: ref(app_user)!"
+      - "effective_on: date!"
+      - "records_package: json | Datasets transferred per policy"
+      - "dsl_handover_due_on: date"
+      - "dsl_acknowledged_at: ts | Safeguarding file acknowledged by receiving DSL"
+      - "senco_acknowledged_at: ts | SEND file acknowledged by receiving SENCO"
+      - "status: enum(transfer_status)!"
+
+  cme_referral:
+    title: Child-missing-education referral to the LGA attendance desk (compulsory-age leaver with unknown destination)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-LRN-11, FR-PVT-115]
+    pages: [LRN-09]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "enrolment_id: ref(enrolment)!"
+      - "lga_scope_id: ref(scope_node)!"
+      - "reason: str(500)!"
+      - "assigned_to: ref(app_user)"
+      - "outcome: enum(cme_outcome)"
+      - "closed_at: ts"
+      - "status: enum(case_status)!"
+
+  passport_entry:
+    title: Education Passport entry — qualification, certificate, badge, competency, credit, CPD or digital-skills milestone
+    kind: projection
+    class: confidential
+    history: lifecycle
+    scope: "derived: the holder (learner) and their authorised viewers"
+    origin: ceda
+    reqs: [FR-LRN-15, FR-TVT-05, FR-LRN-101, FR-P16-103, FR-LMS-122]
+    pages: [LRN-06, TVT-05]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "entry_kind: enum(passport_entry_kind)!"
+      - "source_kind: code(40)!"
+      - "source_id: uuid! | Certificate, badge award, competency record, training completion … (soft)"
+      - "title: title!"
+      - "issuer_name: title"
+      - "awarded_on: date"
+      - "credential: json | Open Badges 3.0 / W3C VC 2.0 document when issued"
+      - "is_verified: bool! default=false"
+    uq: [[learner_id, source_kind, source_id]]
+
+  passport_share:
+    title: Consented, time-limited, revocable share of a learner's Education Passport
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: "derived: the holder"
+    origin: ceda
+    reqs: [FR-LRN-15]
+    pages: [LRN-06]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "recipient_name: title!"
+      - "recipient_email: email pii"
+      - "entries: json! | Passport entries included"
+      - "token_hash: hash! uq"
+      - "expires_at: ts!"
+      - "revoked_at: ts"
+      - "view_count: int_u! default=0"
+
+  passport_view:
+    title: Verification log of a passport share (holder sees who verified)
+    kind: event
+    class: confidential
+    history: append
+    origin: ceda
+    retention: RS-VERIFY
+    scope_note: Visible to the holder.
+    reqs: [FR-LRN-15]
+    pages: [LRN-06]
+    attrs:
+      - "share_id: ref(passport_share)!"
+      - "viewed_at: ts!"
+      - "ip_country: country"
+
+  external_exam_record:
+    title: Verified external examination result linked to Learner 360 (WAEC, NECO, NABTEB, JAMB) — linked, never re-issued
+    kind: master
+    class: confidential
+    history: lifecycle
+    scope: "derived: the learner"
+    origin: ceda
+    reqs: [FR-CER-114, FR-HED-01, FR-P16-101]
+    pages: [HED-02, CER-03, LRN-04]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "exam_body: cl(exam_body)!"
+      - "exam_year: smallint!"
+      - "candidate_number_hmac: hmac | Lookup token of the candidate number"
+      - "results: json! | Subject → grade, as verified"
+      - "verified_at: ts!"
+      - "verification_ref: code(128)!"
+      - "holder_consents_display: bool! default=false | Shown on verification results only with consent"
+
+  historical_record_import:
+    title: Authorised historical record received from a previous institution at enrolment (no re-supply by families)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-LRN-16]
+    pages: [LRN-07, LRN-05]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "enrolment_id: ref(enrolment)!"
+      - "source_institution_id: ref(institution)"
+      - "source_system: str(120)"
+      - "datasets: json! | Results, attendance summary, SEND/safeguarding handover flags"
+      - "received_at: ts!"
+      - "status: enum(import_status)!"

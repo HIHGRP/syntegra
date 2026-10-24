@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_school_picker.html" import school_picker %}
+{% block title %}Messages{% endblock %}
+{% block content %}
+{% if parent_view %}
+<h1>Messages</h1>
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+{% if child %}
+<form method="post" class="card" id="write">
+  <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+  <h2>Write to a teacher</h2>
+  <div class="grid-form">
+    <label>About<select name="learner_id" onchange="location.search='?learner='+this.value">{% for k in kids %}<option value="{{ k.id }}"{% if k.id == child.id %} selected{% endif %}>{{ k.name }} ({{ k.class_name }})</option>{% endfor %}</select></label>
+    <label>To<select name="staff_user_id" required><option value="">—</option>{% for t in teachers %}<option value="{{ t.user_id }}"{% if posted.get('staff_user_id') == t.user_id|string %} selected{% endif %}>{{ t.name }} — {{ t.roles|join(", ") }}</option>{% endfor %}</select></label>
+  </div>
+  {% if not teachers %}<p class="hint">None of {{ child.given }}'s teachers can receive messages in Syntegra yet. Please contact the school office.</p>{% endif %}
+  <label>Message<textarea name="body" rows="4" maxlength="1000" required>{{ posted.get('body', '') }}</textarea></label>
+  <p><button class="primary">Send</button></p>
+</form>
+{% endif %}
+{% else %}
+<div class="head-row"><h1>Conversations with parents</h1><p class="no-print">{% if ctx.has("message:send") %}<a class="button primary" href="/messages/new?school={{ d.institution.id }}">Message parents</a>{% endif %}</p></div>
+<p class="muted">{{ d.institution.name }}{% if d.unread %} · {{ d.unread }} unread{% endif %}</p>
+{{ school_picker(school, schools) }}
+{% if d.can_all %}<p class="tabs no-print"><a href="?school={{ d.institution.id }}"{% if not d.everyone %} aria-current="page"{% endif %}>Mine</a><a href="?school={{ d.institution.id }}&all=1"{% if d.everyone %} aria-current="page"{% endif %}>Everyone at the school</a></p>{% endif %}
+{% endif %}
+<section class="card scroll-x" id="inbox">
+  <table class="compact"><thead><tr>{% if parent_view %}<th scope="col">Teacher</th>{% else %}<th scope="col">Parent</th>{% if d.everyone %}<th scope="col">Staff</th>{% endif %}{% endif %}<th scope="col">About</th><th scope="col">Last message</th><th scope="col">When</th></tr></thead>
+  <tbody>{% for c in d.conversations %}<tr{% if c.unread %} class="unread"{% endif %}>
+    <td><a href="/conversations/{{ c.id }}">{{ c.staff if parent_view else c.parent }}</a>{% if c.unread %} <span class="pill pill-live">{{ c.unread }} new</span>{% endif %}</td>
+    {% if not parent_view and d.everyone %}<td>{{ c.staff }}</td>{% endif %}
+    <td>{{ c.learner }}</td><td>{% if c.last_from_parent != parent_view %}<span class="hint opt">↩</span> {% endif %}{{ c.last }}</td><td>{{ c.last_at|localtime("%d %b %H:%M") }}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">No conversations yet.</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endblock %}

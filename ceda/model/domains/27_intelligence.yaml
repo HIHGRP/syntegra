@@ -1,0 +1,430 @@
+domain: intelligence
+code: INT
+title: Intelligence and automation — alerts, investigations, improvement, recommendations, early warning, model register, agents, assistant and planning
+module: intelligence
+zone: ops
+retention: RS-INTEL
+summary: >
+  The intelligence engine's operational records (MFS §12, Book 3 §16, §28; FR-CMD-03–10, 101–119,
+  FR-INT-01–06, 101, FR-AGT-101–115, FR-INSP-05–06, FR-WEL-04). Alerts carry what changed, why it
+  matters, evidence, severity, recommended action, owner and due date; they deduplicate and escalate.
+  Follow-the-Problem investigations run Problem → Evidence → Root cause → Intervention → Responsible
+  person → Outcome. AI recommendations and early-warning flags always show finding, evidence, confidence
+  and the human decision, and their outcomes close the loop. Models are registered with purpose, data,
+  excluded features, fairness and oversight. Agents act under service identities with declared tools,
+  limits, kill switch and 24-hour undo; every action is append-only and explained. Features and training
+  sets live in the warehouse (zone dw), never in operational tables.
+
+entities:
+  alert_rule:
+    title: Alert rule (indicator, threshold, severity, owner role, due, escalation chain) — policy-engine backed
+    kind: config
+    zone: registry
+    class: internal
+    history: versioned
+    scope: owned
+    origin: ceda
+    retention: RS-CONFIG
+    reqs: [FR-CMD-04, FR-CUR-12, FR-INS-06]
+    pages: [CMD-09]
+    attrs:
+      - "rule_key: code(40)!"
+      - "policy_rule_id: ref(policy_rule)"
+      - "metric_id: code(40) | Semantic-layer metric"
+      - "severity: enum(severity)!"
+      - "owner_role: code(16)!"
+      - "due_days: smallint!"
+      - "escalation: json!"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, rule_key, version]]
+
+  alert:
+    title: Alert instance (what changed, why it matters, evidence, severity, recommended action, owner, due date) — deduplicated and escalated
+    kind: transaction
+    zone: [registry, ops]
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-CMD-04, FR-CMD-03, FR-CMD-115, FR-INS-06, FR-CUR-12, FR-CER-10, FR-CER-113, FR-OPS-03, FR-CMD-103]
+    pages: [CMD-09, CMD-10, HOM-01, CMD-15, CMD-101]
+    events: [ALERT.RAISED, ALERT.ESCALATED, ALERT.RESOLVED, ALERT.SNOOZED]
+    attrs:
+      - "rule_key: code(40)!"
+      - "severity: enum(severity)!"
+      - "priority: enum(briefing_priority)!"
+      - "title: title!"
+      - "what_changed: text!"
+      - "why_it_matters: text!"
+      - "evidence: json!"
+      - "recommended_action: text"
+      - "subject_kind: code(40)!"
+      - "subject_id: uuid!"
+      - "owner_role: code(16)!"
+      - "owner_user_id: uuid"
+      - "due_at: ts!"
+      - "dedupe_key: code(160)! | rule:subject while open"
+      - "escalation_level: smallint! default=0"
+      - "snoozed_until: ts"
+      - "investigation_id: ref(investigation)"
+      - "resolved_at: ts"
+      - "status: enum(alert_status)!"
+    ix: [[dedupe_key, status], [owner_user_id, status], [due_at]]
+
+  alert_event:
+    title: History of an alert (raised, acknowledged, escalated, snoozed, resolved) — append-only
+    kind: event
+    zone: [registry, ops]
+    class: internal
+    history: append
+    origin: ceda
+    scope_note: Inherits the alert's scope.
+    reqs: [FR-CMD-04]
+    pages: [CMD-10]
+    attrs:
+      - "alert_id: ref(alert)!"
+      - "event_kind: enum(alert_event_kind)!"
+      - "actor: uuid"
+      - "note: str(1000)"
+      - "occurred_at: ts!"
+
+  investigation:
+    title: Follow-the-Problem investigation (Problem → Evidence → Root cause → Intervention → Responsible person → Outcome)
+    kind: transaction
+    zone: [registry, ops]
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-CMD-05, FR-CMD-118, FR-CMD-119]
+    pages: [CMD-08, CMD-104]
+    events: [INV.OPENED, INV.ACTION_ADDED, INV.CLOSED]
+    attrs:
+      - "title: title!"
+      - "stage: enum(investigation_stage)!"
+      - "problem: text!"
+      - "evidence: json"
+      - "root_cause: text"
+      - "intervention_ref: uuid | Intervention or corrective action"
+      - "responsible_user_id: uuid | Required before advancing to outcome"
+      - "due_on: date"
+      - "outcome: text"
+      - "owner_user_id: uuid!"
+      - "status: enum(case_status)!"
+    checks:
+      responsible_before_outcome: "stage <> 'outcome' OR (responsible_user_id IS NOT NULL AND due_on IS NOT NULL)"
+
+  improvement_plan:
+    title: Improvement workspace (problem, evidence, contributing indicators, actions, owner, review and outcome vs target and counterfactual)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-INSP-05, FR-INSP-06]
+    pages: [INS-10]
+    attrs:
+      - "institution_id: uuid! | Registry institution"
+      - "problem: text!"
+      - "contributing_indicators: json"
+      - "actions: json!"
+      - "owner_user_id: uuid!"
+      - "review_on: date!"
+      - "target: json!"
+      - "outcome: json"
+      - "status: enum(plan_status)!"
+
+  recommendation:
+    title: AI recommendation awaiting a human decision (finding, evidence, confidence, recommendation, decision, outcome)
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-INT-02, FR-CMD-07, FR-CMD-117]
+    pages: [AIX-01, CMD-13]
+    events: [AI.RECOMMENDATION_DECIDED]
+    attrs:
+      - "model_version_id: uuid! | Platform model version (soft)"
+      - "kind: enum(recommendation_kind)!"
+      - "subject_kind: code(40)!"
+      - "subject_id: uuid!"
+      - "finding: text!"
+      - "evidence: json! | Top factors (SHAP) and source records"
+      - "confidence: ratio!"
+      - "recommendation: text!"
+      - "decision: enum(recommendation_decision)"
+      - "decision_reason: str(1000) | Required for dismissals"
+      - "decided_by: uuid"
+      - "decided_at: ts"
+      - "outcome: json | Closed-loop outcome"
+      - "status: enum(queue_status)!"
+
+  risk_flag:
+    title: Learner early-warning flag (dropout, attendance, behaviour, academic decline, wellbeing, SEND support gap) with explanation
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    scope: "derived: the learner's institution"
+    origin: ceda
+    reqs: [FR-WEL-04]
+    pages: [INT-02]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "flag_kind: enum(risk_kind)!"
+      - "probability: ratio! | Calibrated"
+      - "explanation: json! | Factors; protected characteristics excluded"
+      - "model_version_id: uuid!"
+      - "scored_on: date!"
+      - "recommendation_id: ref(recommendation)"
+      - "dismissed_reason: str(500)"
+      - "status: enum(flag_status)!"
+    ix: [[learner_id, flag_kind]]
+
+  ai_model:
+    title: Model register entry (purpose, owner, data, excluded features, oversight level) — AIX-03
+    kind: master
+    zone: platform
+    class: internal
+    history: lifecycle
+    origin: ceda
+    reqs: [FR-INT-04, FR-AGT-115, FR-INT-06]
+    pages: [AIX-03]
+    attrs:
+      - "code: code(40)! uq"
+      - "name: title!"
+      - "purpose: text!"
+      - "owner: str(200)!"
+      - "training_data: text!"
+      - "excluded_features: json! | Protected characteristics excluded from learner-risk features"
+      - "oversight_level: enum(oversight_level)!"
+      - "dpia_document_ref: str(200)"
+      - "status: enum(record_status)!"
+
+  ai_model_version:
+    title: Model version with metrics, fairness gaps, drift, approval and review date (MLflow-tracked)
+    kind: config
+    zone: platform
+    class: internal
+    history: versioned
+    origin: ceda
+    reqs: [FR-INT-04]
+    pages: [AIX-03]
+    attrs:
+      - "model_id: ref(ai_model)!"
+      - "version_label: semver!"
+      - "artifact_uri: str(500)!"
+      - "metrics: json!"
+      - "fairness: json!"
+      - "drift: json"
+      - "approved_by: ref(platform_user)"
+      - "review_on: date"
+      - "status: enum(version_status)!"
+    uq: [[model_id, version_label]]
+
+  model_deployment:
+    title: Approval of a model version for use in a state (state DPO and ministry sign-off)
+    kind: config
+    zone: registry
+    class: internal
+    history: effective
+    scope: owned
+    origin: ceda
+    retention: RS-CONFIG
+    reqs: [FR-INT-04, FR-INT-06]
+    pages: [AIX-03]
+    attrs:
+      - "model_version_id: uuid! | Platform model version (soft)"
+      - "approved_by: ref(app_user)!"
+      - "conditions: text"
+
+  agent_template:
+    title: Agent library template (16 shipped agents) — triggers, tools, maximum autonomy, limits
+    kind: config
+    zone: platform
+    class: internal
+    history: versioned
+    origin: ceda
+    reqs: [FR-AGT-105, FR-AGT-103]
+    pages: [AGT-101]
+    attrs:
+      - "code: code(40)! | register_agent, coverage_agent, fee_agent …"
+      - "name: title!"
+      - "watches: text!"
+      - "tools: json! | Declared typed commands"
+      - "max_level: enum(autonomy_level)!"
+      - "human_only_actions: json! | Hard-wired consequential decisions (cannot exceed A1)"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[code, version]]
+
+  agent:
+    title: Configured automation agent (owner, service identity, level, scope, limits, approval, status)
+    kind: config
+    zone: [registry, ops]
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-AGT-101, FR-AGT-102, FR-AGT-106, FR-AGT-107, FR-AGT-111, FR-AGT-112, FR-AGT-110]
+    pages: [AGT-102, AGT-103]
+    events: [AGT.PAUSED, AGT.LEVEL_LOWERED]
+    attrs:
+      - "template_code: code(40)!"
+      - "template_version: int_u!"
+      - "service_identity_id: uuid! | Registry service identity"
+      - "owner_user_id: uuid!"
+      - "level: enum(autonomy_level)!"
+      - "state_max_level: enum(autonomy_level)! | Institutions may only lower"
+      - "triggers: json!"
+      - "limits: json! | Messages, cost, records touched per day"
+      - "sandbox_result: json | Simulation against last month's data"
+      - "approved_by: uuid"
+      - "head_approved_by: uuid | Required for A2 and above"
+      - "next_reapproval_on: date | Quarterly"
+      - "error_rate: ratio"
+      - "paused_at: ts"
+      - "paused_by: uuid"
+      - "status: enum(agent_status)!"
+
+  agent_action:
+    title: Action taken or proposed by an agent — trigger, evidence, rule, tool call, outcome, owner ("Agent X for Owner Y"); append-only
+    kind: event
+    zone: [registry, ops]
+    class: internal
+    history: append
+    origin: appj
+    retention: RS-AUDIT
+    partition: {type: range_month, column: occurred_at}
+    scope_note: Inherits the agent's scope.
+    reqs: [FR-AGT-104, FR-AGT-108, FR-AGT-109, FR-AGT-113, FR-AGT-114]
+    pages: [AGT-104, AGT-103]
+    attrs:
+      - "agent_id: ref(agent)!"
+      - "owner_user_id: uuid!"
+      - "trigger_detail: json!"
+      - "evidence: json!"
+      - "rule_applied: str(200)"
+      - "tool: code(64)!"
+      - "parameters: json! | Typed, validated parameters (retrieved text is never executed)"
+      - "level: enum(autonomy_level)!"
+      - "outcome: enum(agent_outcome)!"
+      - "explanation: text!"
+      - "undo_until: ts | 24-hour undo for reversible A2 actions"
+      - "undone_action_id: uuid | Undo record for a previous action"
+      - "occurred_at: ts!"
+
+  assistant_conversation:
+    title: Education assistant conversation (answers executed as the user; every figure cited) — never used for training
+    kind: transaction
+    class: confidential
+    history: lifecycle
+    origin: ceda
+    retention: RS-AI-LOG
+    scope_note: Private to the user.
+    reqs: [FR-INT-01, FR-INT-06]
+    pages: [HOM-06]
+    events: [AI.QUERY]
+    attrs:
+      - "user_id: uuid!"
+      - "title: str(200)"
+      - "messages: json! | Turns with citations (records, time window, record count, DQI)"
+      - "expires_at: ts! | 30-day retention"
+
+  llm_call_log:
+    title: LLM gateway call log (prompt and output, PII-minimised; 30-day retention; residency-aware)
+    kind: event
+    class: confidential
+    history: append
+    origin: ceda
+    retention: RS-AI-LOG
+    partition: {type: range_day, column: called_at}
+    scope_note: Platform operations and DPO only.
+    reqs: [FR-INT-06, NFR-SEC-101]
+    pages: [AIX-03]
+    attrs:
+      - "caller_kind: enum(llm_caller)!"
+      - "caller_id: uuid!"
+      - "model: code(80)!"
+      - "region: code(32)!"
+      - "prompt_ref: object_key! | Encrypted object, deleted after 30 days"
+      - "output_ref: object_key"
+      - "tokens_in: int_u!"
+      - "tokens_out: int_u!"
+      - "called_at: ts!"
+
+  document_extraction:
+    title: Document-intelligence extraction (forms, PDFs, certificates, transcripts, invoices) with per-field confidence and human validation
+    kind: transaction
+    zone: records
+    class: confidential
+    history: lifecycle
+    origin: ceda
+    retention: RS-DOC
+    scope_note: Inherits the document's scope.
+    reqs: [FR-INT-03, FR-INT-101, FR-PVT-106]
+    pages: [AIX-02]
+    attrs:
+      - "document_id: ref(document)!"
+      - "schema_code: code(40)!"
+      - "fields: json! | Field → value, confidence"
+      - "findings: json | Missing, duplicate, contradictory, expired documents; key dates with reminders"
+      - "validated_by: uuid | Consequential fields validated by a person"
+      - "validated_at: ts"
+      - "status: enum(qa_status)!"
+
+  planning_scenario:
+    title: Planning scenario (assumptions, capacity, forecast, gap, cost, comparison; university places, skills demand, ICT)
+    kind: transaction
+    zone: registry
+    class: internal
+    history: versioned
+    scope: owned
+    origin: ceda
+    retention: RS-OPS-7
+    reqs: [FR-CMD-08, FR-CMD-116, FR-CUR-112, FR-STF-10]
+    pages: [CMD-14, STF-10]
+    attrs:
+      - "title: title!"
+      - "assumptions: json!"
+      - "outputs: json | Forecasts with Monte Carlo intervals"
+      - "compared_with_ids: json"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+
+  resource_proposal:
+    title: Resource-imbalance proposal for human decision (never reallocated automatically)
+    kind: transaction
+    zone: registry
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-CMD-07]
+    pages: [CMD-13]
+    attrs:
+      - "imbalance_kind: enum(imbalance_kind)!"
+      - "evidence: json!"
+      - "proposal: text!"
+      - "decided_by: uuid"
+      - "decision: enum(recommendation_decision)"
+      - "status: enum(queue_status)!"
+
+  practice_share:
+    title: What's working — successful practice, intervention or outstanding teacher recognition (teacher consent; never a public ranking)
+    kind: transaction
+    zone: registry
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-CMD-09, FR-CMD-117]
+    pages: [CMD-12]
+    attrs:
+      - "title: title!"
+      - "evidence: json!"
+      - "subject_kind: code(40)!"
+      - "subject_id: uuid!"
+      - "consent_given_at: ts | Teacher consent before sharing"
+      - "status: enum(version_status)!"

@@ -1,0 +1,253 @@
+domain: safeguarding
+code: SAF
+title: Safeguarding — concerns, cases, chronologies, referrals, secure sharing, allegations about adults and community reporting
+module: safeguarding
+zone: vault
+retention: RS-SAF
+summary: >
+  Special-category data in the vault zone: its own schema, database account and key; excluded from
+  search, CDC to the warehouse, AI training and every external messaging channel (MFS §2.2, §9.4, §18.9,
+  FR-SAF-01–09, 101–108). Any staff member can record a concern and then sees only a receipt; the DSL
+  and named users see cases; every view, export and print is audited. Allegations, low-level concerns
+  and self-referrals about adults are a separate restricted area that bypasses the head when the head
+  is the subject. Community reports are anonymous by default and store no IP or device data. Area
+  dashboards show counts only, with groups under 10 suppressed.
+
+entities:
+  safeguarding_concern:
+    title: Concern recorded by any adult (the reporter sees only a receipt afterwards)
+    kind: event
+    class: special
+    history: append
+    scope: owned
+    origin: ceda
+    reqs: [FR-SAF-01, FR-SAF-02, FR-SAF-04, FR-WEL-02, FR-WEL-101]
+    pages: [SAF-01, SAF-02]
+    events: [SAF.CONCERN_RAISED]
+    attrs:
+      - "learner_id: ref(learner)!"
+      - "case_id: ref(safeguarding_case) | Linked on triage"
+      - "category: cl(concern_category)! | From the jurisdiction pack (Nigerian default)"
+      - "reported_by: uuid!"
+      - "source: enum(concern_source)!"
+      - "body: sealed! special | What was seen or heard (encrypted, per-record key)"
+      - "body_map: json | Body-map annotations (no free text)"
+      - "occurred_at: ts"
+      - "receipt_code: code(16)! uq | Shown to the reporter"
+      - "community_report_id: ref(community_report)"
+      - "wellbeing_concern_id: ref(wellbeing_concern)"
+
+  safeguarding_case:
+    title: Safeguarding 360 case (risk assessment, actions, referrals, meetings, reviews, closure with sign-off)
+    kind: master
+    class: special
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-SAF-03, FR-SAF-05, FR-SAF-06, FR-SAF-08, FR-SAF-09]
+    pages: [SAF-02, SAF-03]
+    events: [SAF.CASE_UPDATED, SAF.CASE_VIEWED]
+    notes: The case reference (SG-<year>-<seq>) contains no learner data. AI may summarise for the DSL; it never sets risk or outcome.
+    attrs:
+      - "case_reference: code(20)! uq | SG-YYYY-NNNN"
+      - "learner_id: ref(learner)!"
+      - "dsl_user_id: uuid!"
+      - "risk_level: cl(risk_level) | Set by the DSL only"
+      - "opened_at: ts!"
+      - "review_due_on: date"
+      - "closure_reason: sealed special"
+      - "closed_at: ts"
+      - "closed_signed_by: uuid"
+      - "transferred_to_institution_id: uuid | DSL-to-DSL transfer"
+      - "transfer_acknowledged_at: ts"
+      - "status: enum(case_status)!"
+
+  safeguarding_entry:
+    title: Chronology entry — concern, action, decision, agency contact, meeting, review (encrypted text, append-only)
+    kind: event
+    class: special
+    history: append
+    origin: appj
+    scope_note: Inherits the case's scope.
+    reqs: [FR-SAF-03, FR-SAF-05]
+    pages: [SAF-03]
+    attrs:
+      - "case_id: ref(safeguarding_case)!"
+      - "entry_kind: enum(chronology_kind)!"
+      - "occurred_at: ts!"
+      - "author_user_id: uuid!"
+      - "body: sealed! special"
+      - "source_ref: json | Linked concern, attendance or behaviour record the DSL may see"
+      - "document_ids: json"
+
+  safeguarding_referral:
+    title: External referral (police, social welfare, health, NGO) with outcome
+    kind: transaction
+    class: special
+    history: lifecycle
+    origin: ceda
+    scope_note: Inherits the case's scope.
+    reqs: [FR-SAF-05]
+    pages: [SAF-04]
+    attrs:
+      - "case_id: ref(safeguarding_case)!"
+      - "agency: str(200)!"
+      - "agency_contact: sealed special"
+      - "referred_at: ts!"
+      - "legal_basis: enum(legal_basis)!"
+      - "outcome: sealed special"
+      - "status: enum(referral_status)!"
+
+  case_access_grant:
+    title: Named need-to-know access to a case (DSL deputies and explicitly granted users)
+    kind: link
+    class: special
+    history: effective
+    origin: ceda
+    scope_note: Inherits the case's scope.
+    reqs: [FR-SAF-06]
+    pages: [SAF-03]
+    attrs:
+      - "case_kind: enum(vault_case_kind)!"
+      - "case_id: uuid!"
+      - "user_id: uuid!"
+      - "granted_by: uuid!"
+      - "reason: str(500)!"
+    uq: [[case_kind, case_id, user_id, valid_from]]
+
+  case_access_log:
+    title: Every view, export and print of a vault record (shown as the access log on the case)
+    kind: event
+    class: special
+    history: append
+    origin: ceda
+    retention: RS-AUDIT
+    partition: {type: range_month, column: accessed_at}
+    scope_note: Inherits the case's scope.
+    reqs: [FR-SAF-06, FR-LRN-13]
+    pages: [SAF-03, SAF-101]
+    attrs:
+      - "case_kind: enum(vault_case_kind)!"
+      - "case_id: uuid!"
+      - "user_id: uuid!"
+      - "access: enum(access_kind)!"
+      - "purpose_code: code(40)!"
+      - "accessed_at: ts!"
+
+  case_share:
+    title: Time-limited, watermarked share of selected chronology entries or a case bundle with a named professional
+    kind: transaction
+    class: special
+    history: lifecycle
+    origin: ceda
+    scope_note: Inherits the case's scope.
+    reqs: [FR-SAF-107]
+    pages: [SAF-03, SAF-04]
+    attrs:
+      - "case_id: ref(safeguarding_case)!"
+      - "recipient_name: sealed! special"
+      - "recipient_email_hmac: hmac!"
+      - "purpose: str(300)!"
+      - "legal_basis: enum(legal_basis)!"
+      - "entry_ids: json!"
+      - "bundle_hash: hash!"
+      - "token_hash: hash! uq"
+      - "expires_at: ts!"
+      - "revoked_at: ts"
+
+  staff_case:
+    title: Allegation, low-level concern or self-referral about an adult (restricted area; head, LGA designated officer, named HR)
+    kind: master
+    class: special
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-SAF-102, FR-SAF-103, FR-SAF-07]
+    pages: [SAF-101]
+    events: [SAF.STAFF_CASE_OPENED]
+    notes: An allegation about the head is routed to the LGA or state and hidden from the head (scope_node_id = LGA node).
+    attrs:
+      - "case_reference: code(20)! uq | SC-YYYY-NNNN"
+      - "subject_staff_id: uuid! | Staff member concerned (registry)"
+      - "case_kind: enum(staff_case_kind)!"
+      - "is_about_head: bool! default=false"
+      - "designated_officer_user_id: uuid"
+      - "outcome: enum(allegation_outcome) | substantiated, unsubstantiated, unfounded, false, malicious"
+      - "trcn_referral_at: ts"
+      - "police_informed_at: ts"
+      - "status: enum(case_status)!"
+    ix: [[subject_staff_id]]
+
+  staff_case_entry:
+    title: Chronology entry, decision or document on a staff case (hashed, tamper-evident, append-only)
+    kind: event
+    class: special
+    history: append
+    origin: appj
+    scope_note: Inherits the staff case's scope.
+    reqs: [FR-SAF-102]
+    pages: [SAF-101]
+    attrs:
+      - "staff_case_id: ref(staff_case)!"
+      - "entry_kind: enum(chronology_kind)!"
+      - "author_user_id: uuid!"
+      - "body: sealed! special"
+      - "document_ids: json"
+      - "content_hash: hash!"
+      - "occurred_at: ts!"
+
+  reporting_form:
+    title: Community reporting form (branding, fields, languages; published by link, QR poster, website embed, WhatsApp keyword)
+    kind: config
+    zone: ops
+    class: internal
+    history: versioned
+    scope: owned
+    origin: appj
+    retention: RS-CONFIG
+    reqs: [FR-SAF-101, FR-SAF-104]
+    pages: [SAF-102]
+    attrs:
+      - "title: title!"
+      - "fields: json!"
+      - "languages: cls(language)!"
+      - "branding: json"
+      - "public_slug: code(64)! uq"
+      - "whatsapp_keyword: code(32)"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+
+  community_report:
+    title: Report received through a community form — anonymous by default; no IP or device data; reply by one-time code
+    kind: transaction
+    class: special
+    history: lifecycle
+    scope: owned
+    origin: appj
+    reqs: [FR-SAF-101, FR-SAF-104]
+    pages: [SAF-102, SAF-02]
+    attrs:
+      - "form_id: ref(reporting_form) soft"
+      - "form_version: int_u!"
+      - "answers: sealed! special | Field-level encrypted answers"
+      - "reporter_identity: sealed special | Only when the reporter volunteers it"
+      - "reply_code_hash: hash! | One-time code for anonymous two-way replies"
+      - "received_at: ts!"
+      - "triaged_by: uuid"
+      - "status: enum(queue_status)!"
+
+  community_report_reply:
+    title: Two-way message on an anonymous community report
+    kind: event
+    class: special
+    history: append
+    origin: ceda
+    scope_note: Inherits the report's scope.
+    reqs: [FR-SAF-104]
+    pages: [SAF-102]
+    attrs:
+      - "report_id: ref(community_report)!"
+      - "direction: enum(message_direction)!"
+      - "body: sealed! special"
+      - "author_user_id: uuid | Staff author (NULL for the reporter)"
+      - "sent_at: ts!"

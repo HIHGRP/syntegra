@@ -1,0 +1,2505 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/02_governance.schema.json",
+  "title": "CEDA GOV — Governance hierarchy, configuration, reference data, policy and workflow",
+  "$defs": {
+    "ScopeNode": {
+      "title": "ScopeNode",
+      "description": "Governance hierarchy node (country, state, LGA, network, institution, campus, unit, class/programme)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "scope_node",
+        "zone": "registry",
+        "domain": "GOV",
+        "kind": "master",
+        "classification": "internal",
+        "history": "effective",
+        "module": "governance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "scope_node"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "level": {
+          "type": "string",
+          "enum": [
+            "global",
+            "country",
+            "state",
+            "authority",
+            "lga",
+            "network",
+            "institution",
+            "campus",
+            "faculty",
+            "department",
+            "programme",
+            "class",
+            "agency",
+            "formation"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "Official code, e.g. NG, NG-AB, AB-ABS, AB/SS/0412"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "path": {
+          "type": "string",
+          "maxLength": 512,
+          "description": "Materialised path of codes, e.g. NG.AB.ABS.0412"
+        },
+        "depth": {
+          "type": "integer"
+        },
+        "ref_kind": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "tenant",
+                "institution",
+                "campus",
+                "org_unit",
+                "class_group",
+                "course_section",
+                "programme",
+                "network",
+                "security_agency",
+                "agency_unit"
+              ],
+              "description": "Entity the node represents"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ref_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Institution, campus, org unit, class group or course section id (soft)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ownership": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "x-code-list": "ownership",
+              "description": "Denormalised for oversight filters (public/private)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "address": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Office address of a ministry, board, agency or LGA office (street, town, LGA, state); institutions keep theirs on institution (CR-007)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective from (inclusive) — history: effective",
+          "readOnly": true
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective to (inclusive); NULL = open-ended — history: effective",
+          "readOnly": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "level",
+        "code",
+        "name",
+        "path",
+        "depth",
+        "valid_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ScopeClosure": {
+      "title": "ScopeClosure",
+      "description": "Ancestor/descendant pairs of the governance hierarchy for fast subtree tests",
+      "type": "object",
+      "x-ceda": {
+        "entity": "scope_closure",
+        "zone": "registry",
+        "domain": "GOV",
+        "kind": "projection",
+        "classification": "internal",
+        "history": "none",
+        "module": "governance"
+      },
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "ancestor_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "scope_node"
+        },
+        "descendant_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "scope_node"
+        },
+        "depth": {
+          "type": "integer",
+          "description": "0 = self"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "tenant_id",
+        "ancestor_id",
+        "descendant_id",
+        "depth",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "ConfigVersion": {
+      "title": "ConfigVersion",
+      "description": "Versioned configuration document for a layer (country, state, network, institution, department)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "config_version",
+        "zone": "registry",
+        "domain": "GOV",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "governance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "layer": {
+          "type": "string",
+          "enum": [
+            "global",
+            "country",
+            "state",
+            "network",
+            "institution",
+            "department"
+          ]
+        },
+        "section": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "e.g. levels, identifiers, calendar, branding, languages, messaging, health_index"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "document": {
+          "type": "object",
+          "description": "Validated against the section's JSON Schema"
+        },
+        "locked_keys": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Keys marked mandatory_below by a higher layer (shown locked with source)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "effective_from": {
+          "type": "string",
+          "format": "date"
+        },
+        "published_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "layer",
+        "section",
+        "version",
+        "document",
+        "status",
+        "effective_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "JurisdictionPack": {
+      "title": "JurisdictionPack",
+      "description": "Versioned jurisdiction pack (statutory references, categories, timescales — e.g. Nigerian safeguarding pack)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "jurisdiction_pack",
+        "zone": "registry",
+        "domain": "GOV",
+        "kind": "config",
+        "classification": "public",
+        "history": "versioned",
+        "module": "governance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "e.g. ng-core, ng-safeguarding, uk-kcsie, ib-dp"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "country": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z]{2}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content": {
+          "type": "object",
+          "description": "Statutory references, categories, timescales, forms"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "effective_from": {
+          "type": "string",
+          "format": "date"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "code",
+        "version",
+        "title",
+        "content",
+        "status",
+        "effective_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "CodeList": {
+      "title": "CodeList",
+      "description": "Jurisdiction code list (education levels, attendance codes, ownership, sex, concern categories …)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "code_list",
+        "zone": "registry",
+        "domain": "GOV",
+        "kind": "reference",
+        "classification": "public",
+        "history": "none",
+        "module": "governance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 48,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "pack": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "Jurisdiction pack that seeds the list"
+        },
+        "is_extensible": {
+          "type": "boolean",
+          "description": "Lower layers may add values (never remove)"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "code",
+        "title",
+        "pack",
+        "is_extensible",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "CodeValue": {
+      "title": "CodeValue",
+      "description": "Value of a jurisdiction code list (effective-dated; never deleted)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "code_value",
+        "zone": "registry",
+        "domain": "GOV",
+        "kind": "reference",
+        "classification": "public",
+        "history": "effective",
+        "module": "governance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "code_list_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "code_list"
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "labels_i18n": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Translations keyed by BCP 47 tag"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "parent_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Hierarchical lists (level → stage)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sort_order": {
+          "type": "integer"
+        },
+        "attributes": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "e.g. age band for a level, statutory flag for an attendance code"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "owner_scope_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "scope_node",
+              "description": "Layer that added the value (NULL = pack)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective from (inclusive) — history: effective",
+          "readOnly": true
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective to (inclusive); NULL = open-ended — history: effective",
+          "readOnly": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "code_list_id",
+        "code",
+        "label",
+        "sort_order",
+        "valid_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "Translation": {
+      "title": "Translation",
+      "description": "Platform or tenant translation and terminology override (UI strings, RTL languages)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "translation",
+        "zone": "registry",
+        "domain": "GOV",
+        "kind": "config",
+        "classification": "public",
+        "history": "none",
+        "module": "governance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "override_scope_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "scope_node",
+              "description": "NULL = platform-wide"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lang": {
+          "type": "string",
+          "maxLength": 35
+        },
+        "msg_key": {
+          "type": "string",
+          "maxLength": 200,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 65535
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "lang",
+        "msg_key",
+        "text",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "PolicyRule": {
+      "title": "PolicyRule",
+      "description": "Versioned rule at a governance level (Ministry policy engine)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "policy_rule",
+        "zone": "registry",
+        "domain": "GOV",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "governance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "rule_key": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "e.g. ATT-INST-02, ID-NG-01, G2"
+        },
+        "rule_domain": {
+          "type": "string",
+          "enum": [
+            "attendance",
+            "curriculum",
+            "coverage",
+            "teacher_qualification",
+            "examination",
+            "progression",
+            "certification",
+            "accreditation",
+            "registration",
+            "alerting",
+            "billing",
+            "behaviour",
+            "safeguarding",
+            "financing",
+            "identity",
+            "messaging",
+            "agents"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "is_mandatory_below": {
+          "type": "boolean",
+          "description": "Lower levels may tighten, never relax"
+        },
+        "expression": {
+          "type": "string",
+          "description": "Rule DSL source"
+        },
+        "parameters": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Thresholds and weights"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "effective_from": {
+          "type": "string",
+          "format": "date"
+        },
+        "effective_to": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "authored_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approved_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "rule_key",
+        "rule_domain",
+        "title",
+        "version",
+        "is_mandatory_below",
+        "expression",
+        "status",
+        "effective_from",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "PolicyRuleTest": {
+      "title": "PolicyRuleTest",
+      "description": "Unit test of a rule version (given context → expected outcome)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "policy_rule_test",
+        "zone": "registry",
+        "domain": "GOV",
+        "kind": "config",
+        "classification": "internal",
+        "history": "none",
+        "module": "governance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "rule_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "policy_rule"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "given_context": {
+          "type": "object"
+        },
+        "expected": {
+          "type": "object"
+        },
+        "last_result": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "pass",
+                "fail",
+                "error"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_run_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "rule_id",
+        "name",
+        "given_context",
+        "expected",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "PolicyException": {
+      "title": "PolicyException",
+      "description": "Approved, time-boxed exception to a rule (never modifies the rule; evaluated at run time)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "policy_exception",
+        "zone": "registry",
+        "domain": "GOV",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "governance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "rule_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "policy_rule"
+        },
+        "subject_kind": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Record the exception applies to (teaching_assignment, institution …)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "subject_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 65535
+        },
+        "evidence_document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "records zone (soft)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requested_by": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "approved_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "app_user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "start_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "end_on": {
+          "type": "string",
+          "format": "date",
+          "description": "≤ 12 months after start"
+        },
+        "review_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "requested",
+            "approved",
+            "rejected",
+            "active",
+            "expired",
+            "renewed",
+            "revoked"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "rule_id",
+        "reason",
+        "requested_by",
+        "start_on",
+        "end_on",
+        "review_on",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "PolicyConflict": {
+      "title": "PolicyConflict",
+      "description": "Detected conflict between a lower-level configuration and a higher mandatory rule",
+      "type": "object",
+      "x-ceda": {
+        "entity": "policy_conflict",
+        "zone": "registry",
+        "domain": "GOV",
+        "kind": "event",
+        "classification": "internal",
+        "history": "append",
+        "module": "governance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "rule_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "policy_rule"
+        },
+        "attempted_by": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "app_user"
+        },
+        "config_section": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "attempted_value": {
+          "type": "object"
+        },
+        "resolution": {
+          "type": "string",
+          "enum": [
+            "cancelled",
+            "exception_requested",
+            "revised"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "rule_id",
+        "attempted_by",
+        "attempted_value",
+        "resolution",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "WorkflowDefinition": {
+      "title": "WorkflowDefinition",
+      "description": "Versioned workflow definition (state machine, human steps, SLAs, escalations)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "workflow_definition",
+        "zone": "registry",
+        "domain": "GOV",
+        "kind": "config",
+        "classification": "internal",
+        "history": "versioned",
+        "module": "governance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "workflow_key": {
+          "type": "string",
+          "maxLength": 60,
+          "pattern": "^[A-Za-z0-9_.:/-]*$",
+          "description": "admission, recruitment, safeguarding, procurement, curriculum_version, certificate_issue …"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "definition": {
+          "type": "object",
+          "description": "States, transitions, guards, actions, human steps, timers"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "in_review",
+            "approved",
+            "published",
+            "superseded",
+            "retired",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "workflow_key",
+        "version",
+        "title",
+        "definition",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "WorkflowInstanceRegistry": {
+      "title": "WorkflowInstance",
+      "description": "Running workflow on a subject record",
+      "type": "object",
+      "x-ceda": {
+        "entity": "workflow_instance",
+        "zone": "registry",
+        "domain": "GOV",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "governance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "definition_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "workflow_definition",
+              "description": "Definition version the instance runs on (never changes)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "subject_kind": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "subject_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "state": {
+          "type": "string",
+          "maxLength": 60,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "running",
+            "waiting",
+            "completed",
+            "cancelled",
+            "failed"
+          ]
+        },
+        "started_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Actor (user or service identity)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "completed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "context": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Workflow variables (no special-category content)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "subject_kind",
+        "subject_id",
+        "state",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "WorkflowInstanceOps": {
+      "title": "WorkflowInstance",
+      "description": "Running workflow on a subject record",
+      "type": "object",
+      "x-ceda": {
+        "entity": "workflow_instance",
+        "zone": "ops",
+        "domain": "GOV",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "governance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "definition_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "workflow_definition",
+              "description": "Definition version the instance runs on (never changes)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "subject_kind": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "subject_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "state": {
+          "type": "string",
+          "maxLength": 60,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "running",
+            "waiting",
+            "completed",
+            "cancelled",
+            "failed"
+          ]
+        },
+        "started_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Actor (user or service identity)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "completed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "context": {
+          "anyOf": [
+            {
+              "type": "object",
+              "description": "Workflow variables (no special-category content)"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "subject_kind",
+        "subject_id",
+        "state",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "WorkflowTaskRegistry": {
+      "title": "WorkflowTask",
+      "description": "Human task in a workflow (assignee resolved from role-at-scope, SLA, escalation)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "workflow_task",
+        "zone": "registry",
+        "domain": "GOV",
+        "kind": "queue",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "governance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "instance_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "workflow_instance"
+        },
+        "step_key": {
+          "type": "string",
+          "maxLength": 60,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "assignee_role": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 16,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Role code when assigned by role-at-scope"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assignee_scope_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Scope of the role assignment"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assignee_user_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Resolved user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approval_type": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "single",
+                "any_of",
+                "all_of",
+                "sequential"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "due_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reminded_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "description": "75% of SLA reminder"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "escalated_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "claimed",
+            "completed",
+            "escalated",
+            "reassigned",
+            "cancelled"
+          ]
+        },
+        "decision": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "decided_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "decided_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "external_task_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Linked workspace-messaging task (Zenzap) for two-way sync"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "instance_id",
+        "step_key",
+        "title",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "WorkflowTaskOps": {
+      "title": "WorkflowTask",
+      "description": "Human task in a workflow (assignee resolved from role-at-scope, SLA, escalation)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "workflow_task",
+        "zone": "ops",
+        "domain": "GOV",
+        "kind": "queue",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "governance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "instance_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "workflow_instance"
+        },
+        "step_key": {
+          "type": "string",
+          "maxLength": 60,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "assignee_role": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 16,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Role code when assigned by role-at-scope"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assignee_scope_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Scope of the role assignment"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assignee_user_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Resolved user"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approval_type": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "single",
+                "any_of",
+                "all_of",
+                "sequential"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "due_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reminded_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "description": "75% of SLA reminder"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "escalated_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "claimed",
+            "completed",
+            "escalated",
+            "reassigned",
+            "cancelled"
+          ]
+        },
+        "decision": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "decided_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "decided_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "external_task_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_.:/-]*$",
+              "description": "Linked workspace-messaging task (Zenzap) for two-way sync"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "instance_id",
+        "step_key",
+        "title",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "WorkflowTransitionRegistry": {
+      "title": "WorkflowTransition",
+      "description": "Transition of a workflow instance (append-only; mirrored in the audit trail)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "workflow_transition",
+        "zone": "registry",
+        "domain": "GOV",
+        "kind": "event",
+        "classification": "internal",
+        "history": "append",
+        "module": "governance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "instance_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "workflow_instance"
+        },
+        "from_state": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 60,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "to_state": {
+          "type": "string",
+          "maxLength": 60,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "actor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 65535
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "instance_id",
+        "to_state",
+        "occurred_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "WorkflowTransitionOps": {
+      "title": "WorkflowTransition",
+      "description": "Transition of a workflow instance (append-only; mirrored in the audit trail)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "workflow_transition",
+        "zone": "ops",
+        "domain": "GOV",
+        "kind": "event",
+        "classification": "internal",
+        "history": "append",
+        "module": "governance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "instance_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "workflow_instance"
+        },
+        "from_state": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 60,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "to_state": {
+          "type": "string",
+          "maxLength": 60,
+          "pattern": "^[A-Za-z0-9_.:/-]*$"
+        },
+        "actor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 65535
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "instance_id",
+        "to_state",
+        "occurred_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

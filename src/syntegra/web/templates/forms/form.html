@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ form.title }}{% endblock %}
+{% set errors = outcome.errors %}
+{% macro err(name) %}{% if errors.get(name) %}<span class="err" id="{{ name }}-err">{{ errors[name] }}</span>{% endif %}{% endmacro %}
+{% macro described(f) %}{% if errors.get(f.name) %} aria-invalid="true" aria-describedby="{{ f.name }}-err"{% elif f.hint %} aria-describedby="{{ f.name }}-hint"{% endif %}{% endmacro %}
+{% block content %}
+<p class="crumb"><a href="/forms">Forms</a> · {{ form.module }}</p>
+{% from "_state_heading.html" import state_heading %}{% if form.key == "institution-register" %}{{ state_heading(tenant) }}{% endif %}
+<h1>{{ form.title }}</h1>
+<p class="muted">{{ form.intro }}</p>
+{% if outcome.message %}
+<div class="verdict ok" role="status"><strong>Done</strong> — {{ outcome.message }}
+  {% if outcome.link %}<p class="actions"><a href="{{ outcome.link }}">Open the record</a></p>{% endif %}</div>
+{% endif %}
+{% if errors.get("form") %}<div class="alert alert-error" role="alert">{{ errors["form"] }}</div>
+{% elif errors %}<div class="alert alert-error" role="alert">Please correct the fields marked below.</div>{% endif %}
+{% if nothing %}
+<div class="alert" role="status">There is nothing waiting for this action in your scope.</div>
+{% else %}
+<section class="card">
+  <form method="post"{% if multipart %} enctype="multipart/form-data"{% endif %} novalidate>
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+    <div class="grid2">
+    {% for f in form.fields %}{% set v = values.get(f.name) %}
+      {% if f.kind == "hidden" %}<input type="hidden" name="{{ f.name }}" value="{{ v or '' }}">
+      {% elif f.kind == "checkbox" %}
+      <label class="check"><input type="checkbox" name="{{ f.name }}"{% if v %} checked{% endif %}>{{ f.label }}</label>
+      {% else %}
+      <label>{{ f.label }}{% if not f.required %} <span class="hint opt">(optional)</span>{% endif %}
+        {% if f.kind in ("select", "multi") %}
+        <select name="{{ f.name }}"{% if f.kind == "multi" %} multiple size="8"{% endif %}{% if f.required %} required{% endif %}{{ described(f) }}>
+          {% if f.kind == "select" %}<option value="">{{ "Choose…" if f.required else "—" }}</option>{% endif %}
+          {% for value, label in opts.get(f.name, []) %}<option value="{{ value }}"{% if (f.kind == "multi" and value in (v or [])) or (f.kind == "select" and value == v) %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        {% elif f.kind == "textarea" or f.kind == "list" %}
+        <textarea name="{{ f.name }}" rows="{{ 4 if f.kind == 'list' else 3 }}"{% if f.required %} required{% endif %}{{ described(f) }}>{{ v or "" }}</textarea>
+        {% elif f.kind == "file" %}
+        <input type="file" name="{{ f.name }}" accept=".csv,text/csv"{% if f.required %} required{% endif %}{{ described(f) }}>
+        {% else %}
+        <input name="{{ f.name }}" value="{{ v or '' }}"
+          {%- if f.kind == "date" %} type="date"{% elif f.kind == "number" %} inputmode="decimal"{% elif f.kind == "money" %} inputmode="decimal" placeholder="₦"{% elif f.kind == "glid" %} placeholder="LRN-0000-0000-00" spellcheck="false" autocomplete="off"{% endif %}
+          {%- if f.required %} required{% endif %}{{ described(f) }}>
+        {% endif %}
+        {% if f.hint %}<span class="hint" id="{{ f.name }}-hint">{{ f.hint }}</span>{% endif %}
+        {{ err(f.name) }}
+      </label>
+      {% endif %}
+    {% endfor %}
+    </div>
+    <p class="actions"><button class="primary">{{ form.submit }}</button>{% if form.caution %}<span class="muted">{{ form.caution }}</span>{% endif %}<a href="/forms">Cancel</a></p>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

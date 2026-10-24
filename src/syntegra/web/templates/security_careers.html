@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ c.name }} — careers and courses{% endblock %}
+{% block content %}
+<p><a href="/security-training">← All agencies</a></p>
+<h1>{{ c.name }} <code>{{ c.code }}</code> — careers and course requirements</h1>
+<p class="muted">Each rank, most senior first, with the courses required before promotion or appointment to it, and where each course is run. {{ c.coverage.with_requirements }} of {{ c.coverage.ranks }} ranks above entry have requirements recorded.</p>
+<table class="compact"><thead><tr><th scope="col">Rank</th><th scope="col">Category</th><th scope="col">Requirements</th></tr></thead>
+<tbody>{% for r in c.ranks %}<tr><td><strong>{{ r.title }}</strong> <code>{{ r.code }}</code></td><td>{{ r.rank_category|human }}</td><td>{% if r.requirements %}<ul class="people">{% for q in r.requirements %}<li>{{ q.kind|human }}{% if not q.mandatory %} (recommended){% endif %}: <strong>{{ q.course_code or q.course_category|human }}</strong>{% if q.courses %}<span class="line muted">{% for x in q.courses %}{{ x.title }} — {{ x.institution }}{{ "; " if not loop.last }}{% endfor %}</span>{% endif %}</li>{% endfor %}</ul>{% else %}<span class="muted">—</span>{% endif %}</td></tr>{% endfor %}</tbody></table>
+<h2>Courses and the units involved</h2>
+{% if c.courses %}<table class="compact"><thead><tr><th scope="col">Course</th><th scope="col">Category</th><th scope="col">Institution</th><th scope="col">Units</th></tr></thead>
+<tbody>{% for x in c.courses %}<tr><td>{{ x.title }} <code>{{ x.code }}</code></td><td>{{ x.category|human }}</td><td>{{ x.institution }}</td><td>{% for u in x.units %}{{ u.role|human }}: {{ u.unit }}{{ "; " if not loop.last }}{% endfor %}</td></tr>{% endfor %}</tbody></table>
+{% else %}<p class="muted">No published courses.</p>{% endif %}
+{% endblock %}

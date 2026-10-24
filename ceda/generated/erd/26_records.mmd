@@ -1,0 +1,236 @@
+erDiagram
+    record_series {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_32_ code
+        VARCHAR_300_ title
+        VARCHAR_16_ owner_role
+        VARCHAR_32_ classification
+        VARCHAR_32_ retention_series
+        JSON retention_rule
+        INT version
+        VARCHAR_32_ status
+    }
+    document_category {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ code
+        VARCHAR_300_ title
+        BINARY_16_ record_series_id FK
+        VARCHAR_32_ classification
+        JSON permissions
+        BOOLEAN is_full_text_indexed
+    }
+    document {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ category_id FK
+        VARCHAR_64_ reference_no
+        VARCHAR_300_ title
+        VARCHAR_2000_ description
+        VARCHAR_200_ source_reference
+        VARCHAR_32_ classification
+        BINARY_16_ institution_id
+        BINARY_16_ lga_scope_id
+        DATE date_from
+        DATE date_to
+        VARCHAR_20_ session_label
+        VARCHAR_80_ level_or_class
+        VARCHAR_120_ subject_label
+        VARCHAR_32_ origin
+        VARCHAR_40_ origin_module
+        BINARY_16_ batch_id FK
+        VARCHAR_40_ page_range
+        VARCHAR_1024_ master_object_key
+        VARCHAR_20_ master_store
+        VARCHAR_32_ master_lock_mode
+        DATE master_retain_until
+        VARCHAR_1024_ access_object_key
+        VARCHAR_127_ mime_type
+        BIGINT size_bytes
+        BINARY_32_ sha256
+        DATETIME_6_ captured_at
+        VARCHAR_32_ qa_status
+        VARCHAR_1024_ ocr_text_ref
+        SMALLINT legal_hold_count
+        DATE disposal_due_on
+        VARCHAR_32_ status
+    }
+    document_index {
+        BINARY_16_ id PK
+        BINARY_16_ document_id FK
+        BINARY_16_ institution_id
+        VARCHAR_64_ reference_no
+        VARCHAR_300_ title
+        VARCHAR_2000_ keywords
+        MEDIUMTEXT body_text
+        VARCHAR_32_ text_source
+        INT char_count
+        DATETIME_6_ indexed_at
+    }
+    document_rendition {
+        BINARY_16_ id PK
+        BINARY_16_ document_id FK
+        VARCHAR_32_ kind
+        VARCHAR_1024_ object_key
+        VARCHAR_20_ store
+        VARCHAR_127_ mime_type
+        BIGINT size_bytes
+        BINARY_32_ sha256
+        BINARY_32_ source_sha256
+        INT pages
+        VARCHAR_120_ generator
+    }
+    document_release {
+        BINARY_16_ id PK
+        BINARY_16_ document_id FK
+        VARCHAR_16_ release_code
+        VARCHAR_32_ kind
+        BINARY_16_ released_to
+        VARCHAR_200_ released_to_name
+        VARCHAR_40_ purpose
+        VARCHAR_500_ reason
+        BINARY_32_ sha256
+        BIGINT size_bytes
+        DATETIME_6_ released_at
+    }
+    document_link {
+        BINARY_16_ id PK
+        BINARY_16_ document_id FK
+        VARCHAR_40_ record_kind
+        BINARY_16_ record_id
+        VARCHAR_32_ link_basis
+        DECIMAL_7_6_ confidence
+        BINARY_16_ confirmed_by
+    }
+    legal_hold {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ title
+        JSON subject_filter
+        TEXT reason
+        BINARY_16_ placed_by
+        DATETIME_6_ released_at
+        VARCHAR_32_ status
+    }
+    disposal {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ record_series_id FK
+        JSON proposal
+        BINARY_16_ approved_by
+        DATETIME_6_ executed_at
+        BINARY_16_ certificate_document_id
+        VARCHAR_32_ physical_disposition
+        VARCHAR_32_ status
+    }
+    redaction {
+        BINARY_16_ id PK
+        BINARY_16_ document_id FK
+        JSON regions
+        VARCHAR_1024_ redacted_object_key
+        BINARY_16_ reviewed_by
+        DATETIME_6_ released_at
+    }
+    record_request {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_200_ requester_name
+        VARCHAR_16_ requester_phone
+        VARCHAR_32_ person_kind
+        BINARY_16_ person_id
+        DATETIME_6_ identity_verified_at
+        VARCHAR_64_ fee_reference
+        DATETIME_6_ paid_at
+        JSON fulfilled_document_ids
+        VARCHAR_32_ status
+    }
+    digitisation_site_survey {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_300_ site_name
+        BINARY_16_ institution_id
+        INT boxes
+        INT volumes
+        BIGINT estimated_pages
+        SMALLINT priority
+        DATE surveyed_on
+    }
+    digitisation_batch {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        VARCHAR_40_ barcode
+        BINARY_16_ survey_id FK
+        BINARY_16_ record_series_id FK
+        VARCHAR_32_ classification
+        JSON assigned_operator_ids
+        INT pages_expected
+        INT pages_captured
+        VARCHAR_80_ hub
+        VARCHAR_32_ stage
+        VARCHAR_32_ status
+    }
+    custody_event {
+        BINARY_16_ id PK
+        BINARY_16_ batch_id FK
+        VARCHAR_32_ event_kind
+        VARCHAR_120_ from_location
+        VARCHAR_120_ to_location
+        BINARY_16_ handled_by
+        BINARY_16_ transfer_note_document_id
+        DATETIME_6_ occurred_at
+    }
+    scanned_page {
+        BINARY_16_ id PK
+        BINARY_16_ batch_id FK
+        BINARY_16_ document_id FK
+        INT sequence_no
+        VARCHAR_1024_ master_object_key
+        VARCHAR_1024_ access_object_key
+        SMALLINT dpi
+        BINARY_32_ sha256
+        DECIMAL_7_6_ ocr_confidence
+        VARCHAR_40_ document_type_guess
+        DATETIME_6_ captured_at
+        VARCHAR_32_ qa_status
+    }
+    extracted_field {
+        BINARY_16_ id PK
+        BINARY_16_ page_id FK
+        SMALLINT row_no
+        VARCHAR_40_ field_name
+        VARCHAR_500_ value
+        DECIMAL_7_6_ confidence
+        BOOLEAN is_key_field
+        VARCHAR_500_ verified_value
+        BINARY_16_ verified_by
+        BINARY_16_ second_key_by
+        VARCHAR_40_ matched_record_kind
+        BINARY_16_ matched_record_id
+        VARCHAR_32_ status
+    }
+    qa_sample {
+        BINARY_16_ id PK
+        BINARY_16_ batch_id FK
+        INT sampled
+        INT errors
+        DECIMAL_6_3_ accuracy
+        BOOLEAN passed
+        BINARY_16_ checked_by
+    }
+    digitisation_batch ||--o{ custody_event : "batch_id"
+    digitisation_batch ||--o{ document : "batch_id"
+    digitisation_batch ||--o{ qa_sample : "batch_id"
+    digitisation_batch ||--o{ scanned_page : "batch_id"
+    digitisation_site_survey ||--o{ digitisation_batch : "survey_id"
+    document ||--o{ document_link : "document_id"
+    document ||--o{ document_release : "document_id"
+    document ||--o{ document_rendition : "document_id"
+    document ||--o{ redaction : "document_id"
+    document ||--o{ scanned_page : "document_id"
+    document ||--o| document_index : "document_id"
+    document_category ||--o{ document : "category_id"
+    record_series ||--o{ digitisation_batch : "record_series_id"
+    record_series ||--o{ disposal : "record_series_id"
+    record_series ||--o{ document_category : "record_series_id"
+    scanned_page ||--o{ extracted_field : "page_id"

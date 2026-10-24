@@ -1,0 +1,1218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.syntegra.io/ceda/v1/13_attendance.schema.json",
+  "title": "CEDA ATT — Attendance registers, absence reporting and follow-up, staff sign-in, visitors and evacuation roll call",
+  "$defs": {
+    "AttendanceRegister": {
+      "title": "AttendanceRegister",
+      "description": "Register header — one daily (AM/PM) or lesson register for a class or section on a date",
+      "type": "object",
+      "x-ceda": {
+        "entity": "attendance_register",
+        "zone": "ops",
+        "domain": "ATT",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "attendance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "class_group_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "class_group"
+        },
+        "register_kind": {
+          "type": "string",
+          "enum": [
+            "am",
+            "pm",
+            "daily",
+            "lesson",
+            "activity",
+            "trip"
+          ]
+        },
+        "session_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "lesson_occurrence_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "lesson_occurrence",
+              "description": "Lesson registers"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "due_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Deadline (missing-register nudge at +10 min, escalation at +30 min)"
+        },
+        "taken_by_staff_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "staff"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "submitted_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "device_captured_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "description": "Offline capture time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "marks_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "release_to_parents_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "description": "Live or delayed sharing per institution setting"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "due",
+            "in_progress",
+            "submitted",
+            "late",
+            "missing",
+            "corrected"
+          ]
+        },
+        "lesson_key": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "lesson_occurrence_id, or all-zero for daily registers (uniqueness)",
+              "readOnly": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "class_group_id",
+        "register_kind",
+        "session_date",
+        "due_at",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "AttendanceMark": {
+      "title": "AttendanceMark",
+      "description": "Attendance mark per learner per register (partitioned by month; integrity checked nightly)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "attendance_mark",
+        "zone": "ops",
+        "domain": "ATT",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "none",
+        "module": "attendance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "register_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "attendance_register"
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "enrolment_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "enrolment"
+        },
+        "session_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "attendance_code",
+          "description": "Present, Late, Absent (unauthorised), Medical, Excused, Approved activity, Not required"
+        },
+        "minutes_late": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason_source": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "teacher",
+                "parent",
+                "office",
+                "system"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "absence_report_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "absence_report"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recorded_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "teacher",
+            "office",
+            "kiosk",
+            "biometric_device",
+            "lms_live_class",
+            "parent_prefill",
+            "import"
+          ],
+          "description": "teacher, office, kiosk, biometric_device, lms_live_class, parent_prefill"
+        },
+        "client_op_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Offline idempotency key"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "device_captured_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "register_id",
+        "learner_id",
+        "enrolment_id",
+        "session_date",
+        "code",
+        "recorded_by",
+        "source",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "AbsenceReport": {
+      "title": "AbsenceReport",
+      "description": "Absence reported by a parent (app, WhatsApp, web, office) — acknowledged, accepted (pre-fills code) or queried",
+      "type": "object",
+      "x-ceda": {
+        "entity": "absence_report",
+        "zone": "ops",
+        "domain": "ATT",
+        "kind": "transaction",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "attendance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "institution_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "institution"
+        },
+        "reported_by_guardian_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "guardian"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "channel": {
+          "type": "string",
+          "enum": [
+            "in_app",
+            "push",
+            "sms",
+            "whatsapp",
+            "email",
+            "voice",
+            "ussd",
+            "workspace",
+            "web",
+            "post"
+          ]
+        },
+        "from_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "to_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 32,
+          "x-code-list": "absence_reason"
+        },
+        "message_text": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "attachment_document_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "Medical note"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "proposed_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 32,
+              "x-code-list": "attendance_code"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "conversation_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "conversation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "handled_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "received",
+            "acknowledged",
+            "accepted",
+            "queried",
+            "rejected"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "learner_id",
+        "institution_id",
+        "channel",
+        "from_date",
+        "to_date",
+        "reason",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "AbsenceContact": {
+      "title": "AbsenceContact",
+      "description": "First-day absence contact attempt and outcome (escalation and DSL alert for vulnerable learners not reached)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "absence_contact",
+        "zone": "ops",
+        "domain": "ATT",
+        "kind": "event",
+        "classification": "confidential",
+        "history": "append",
+        "module": "attendance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "learner_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "learner"
+        },
+        "session_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "contacted_guardian_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "guardian"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "channel": {
+          "type": "string",
+          "enum": [
+            "in_app",
+            "push",
+            "sms",
+            "whatsapp",
+            "email",
+            "voice",
+            "ussd",
+            "workspace",
+            "web",
+            "post"
+          ]
+        },
+        "message_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "message"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "reached_reason_given",
+            "reached_no_reason",
+            "no_answer",
+            "message_sent",
+            "failed"
+          ]
+        },
+        "reason_given": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "escalated_to": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "pastoral_lead",
+                "dsl",
+                "head",
+                "lga"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "attempted_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "learner_id",
+        "session_date",
+        "channel",
+        "outcome",
+        "attempted_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "StaffAttendance": {
+      "title": "StaffAttendance",
+      "description": "Staff sign-in and sign-out (manual, kiosk or biometric device — templates never leave the device)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "staff_attendance",
+        "zone": "ops",
+        "domain": "ATT",
+        "kind": "event",
+        "classification": "confidential",
+        "history": "append",
+        "module": "attendance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "staff_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff"
+        },
+        "signed_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "in",
+            "out"
+          ]
+        },
+        "at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "teacher",
+            "office",
+            "kiosk",
+            "biometric_device",
+            "lms_live_class",
+            "parent_prefill",
+            "import"
+          ]
+        },
+        "device_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "staff_id",
+        "signed_on",
+        "direction",
+        "at",
+        "source",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "VisitorVisit": {
+      "title": "VisitorVisit",
+      "description": "Visitor log entry (included in evacuation roll calls)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "visitor_visit",
+        "zone": "ops",
+        "domain": "ATT",
+        "kind": "event",
+        "classification": "confidential",
+        "history": "lifecycle",
+        "module": "attendance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "visitor_name": {
+          "type": "string",
+          "maxLength": 200,
+          "x-personal-data": true
+        },
+        "organisation": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 300
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "phone": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\+[1-9][0-9]{6,14}$",
+              "x-personal-data": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "host_staff_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "staff"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "purpose": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 300
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "badge_no": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20,
+              "pattern": "^[A-Za-z0-9_.:/-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "arrived_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "departed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "visitor_name",
+        "arrived_at",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "EvacuationEvent": {
+      "title": "EvacuationEvent",
+      "description": "Evacuation or drill (start, all-clear, timings as safe-schools inspection evidence)",
+      "type": "object",
+      "x-ceda": {
+        "entity": "evacuation_event",
+        "zone": "ops",
+        "domain": "ATT",
+        "kind": "transaction",
+        "classification": "internal",
+        "history": "lifecycle",
+        "module": "attendance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "scope_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning governance scope node (entities with scope: owned); subtree visibility through scope_closure",
+          "readOnly": true
+        },
+        "campus_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "campus"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "fire",
+            "drill",
+            "lockdown",
+            "invacuation",
+            "other"
+          ]
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "all_clear_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "incident_lead_staff_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "x-ref": "staff"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expected_count": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "accounted_count": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "in_progress",
+            "all_clear",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor of last change (mutable entities only)",
+          "readOnly": true
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optimistic-lock counter; exposed as the API ETag (mutable entities only)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "scope_node_id",
+        "campus_id",
+        "kind",
+        "started_at",
+        "status",
+        "created_at",
+        "updated_at",
+        "row_version"
+      ],
+      "additionalProperties": false
+    },
+    "EvacuationMark": {
+      "title": "EvacuationMark",
+      "description": "Roll-call mark for a person at an assembly point (learner, staff or visitor), captured offline",
+      "type": "object",
+      "x-ceda": {
+        "entity": "evacuation_mark",
+        "zone": "ops",
+        "domain": "ATT",
+        "kind": "event",
+        "classification": "confidential",
+        "history": "append",
+        "module": "attendance"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key: UUID v7 (time-ordered) stored as BINARY(16) without byte swap",
+          "readOnly": true
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owning tenant (zones with tenant_column = true)",
+          "readOnly": true
+        },
+        "evacuation_event_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "evacuation_event"
+        },
+        "person_kind": {
+          "type": "string",
+          "enum": [
+            "learner",
+            "staff",
+            "visitor"
+          ]
+        },
+        "person_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "assembly_point": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "marshal_staff_id": {
+          "type": "string",
+          "format": "uuid",
+          "x-ref": "staff"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "safe",
+            "missing",
+            "absent_today",
+            "left_site"
+          ]
+        },
+        "marked_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "client_op_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC time the row was written",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Actor: app_user.id or service_identity.id (agents, integrations)",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "evacuation_event_id",
+        "person_kind",
+        "person_id",
+        "assembly_point",
+        "marshal_staff_id",
+        "state",
+        "marked_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

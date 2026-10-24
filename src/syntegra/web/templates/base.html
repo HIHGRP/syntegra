@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en-NG">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Syntegra{% endblock %} · {{ tenant.name if tenant else "Syntegra" }}</title>
+  <link rel="stylesheet" href="{{ static('css/syntegra.css') }}">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  {% set emblem = state_emblem(tenant) %}
+  <a class="brand" href="/">{% if emblem %}<img class="emblem" src="{{ emblem }}" alt="Coat of arms of {{ tenant.name }}" width="44" height="36">{% endif %}Syntegra <span>{{ tenant.name if tenant else "" }}</span></a>
+  {% if signed_in %}
+  <nav aria-label="Primary">
+    {% if ctx.role_code == "PAR" %}
+    <a href="/parent"{% if request.path == "/parent" %} aria-current="page"{% endif %}>Home</a>
+    <a href="/conversations"{% if request.path.startswith("/conversations") %} aria-current="page"{% endif %}>Messages</a>
+    <a href="/work"{% if request.path.startswith("/work") %} aria-current="page"{% endif %}>Schoolwork</a>
+    <a href="/parents-meetings"{% if request.path.startswith("/parents-meetings") %} aria-current="page"{% endif %}>Parents' meetings</a>
+    <a href="/activities"{% if request.path.startswith("/activities") %} aria-current="page"{% endif %}>Clubs</a>
+    <a href="/daybook"{% if request.path.startswith("/daybook") %} aria-current="page"{% endif %}>Forms</a>
+    {% elif ctx.role_code == "LRN" %}
+    <a href="/work"{% if request.path.startswith("/work") %} aria-current="page"{% endif %}>My work</a>
+    {% else %}
+    <a href="/">Home</a>
+    {% if ctx.has("metric:view") and can_open("CMD-101") %}<a href="/command/control-room">Control room</a>{% endif %}
+    {% if ctx.has("learner:register") and can_open("LRN-02") %}<a href="/learners/new">Register learner</a>{% endif %}
+    {% if ctx.has("coverage:view") and can_open("CUR-101") %}<a href="/coverage">Coverage</a>{% endif %}
+    {% if ctx.has("clearance:check") and can_open("FCL-01") %}<a href="/admissions/clearance">Fee clearance</a>{% endif %}
+    {% if ctx.has("security_training:view") and can_open("STI-01") %}<a href="/security-training">Security training</a>{% endif %}
+    {% if ctx.has("federal_institutions:view") and can_open("FED-01") %}<a href="/federal-institutions">Federal institutions</a>{% endif %}
+    <a href="/regulators">Regulators</a>
+    {% if ctx.has("hr:view") and can_open("HRM-01") %}<a href="/hr/establishment">HR</a>{% endif %}
+    {% if ctx.has("lesson:plan") and can_open("CUR-09") %}<a href="/teaching/plans"{% if request.path.startswith("/teaching") %} aria-current="page"{% endif %}>Lessons</a>{% endif %}
+    {% if ctx.has("timetable:view") and can_open("TIM-02") %}<a href="/timetable"{% if request.path.startswith("/timetable") or request.path.startswith("/cover") or request.path.startswith("/rooms") %} aria-current="page"{% endif %}>Timetable</a>{% endif %}
+    {% if ctx.has("behaviour:view") and can_open("BEH-02") %}<a href="/behaviour"{% if request.path.startswith("/behaviour") %} aria-current="page"{% endif %}>Behaviour</a>{% endif %}
+    {% if ctx.has("safeguarding:manage") and can_open("SAF-02") %}<a href="/safeguarding"{% if request.path.startswith("/safeguarding/cases") or request.path == "/safeguarding" %} aria-current="page"{% endif %}>Safeguarding</a>{% elif ctx.has("safeguarding:report") and can_open("SAF-01") %}<a href="/safeguarding/concerns/new"{% if request.path.startswith("/safeguarding") %} aria-current="page"{% endif %}>Report a concern</a>{% endif %}
+    {% if ctx.has("send:view") and can_open("SEN-01") %}<a href="/send"{% if request.path.startswith("/send") %} aria-current="page"{% endif %}>SEN register</a>{% endif %}
+    {% if ctx.has("message:send") and can_open("COM-101") %}<a href="/conversations"{% if request.path.startswith("/conversations") or request.path.startswith("/messages") %} aria-current="page"{% endif %}>Messages</a>{% endif %}
+    {% if (ctx.has("meeting:manage") or ctx.has("meeting:attend")) and can_open("PTM-101") %}<a href="/parents-meetings"{% if request.path.startswith("/parents-meetings") %} aria-current="page"{% endif %}>Parents' meetings</a>{% endif %}
+    {% if (ctx.has("activity:manage") or ctx.has("activity:lead")) and can_open("OPS-05") %}<a href="/activities"{% if request.path.startswith("/activities") %} aria-current="page"{% endif %}>Activities</a>{% endif %}
+    {% if ctx.has("course:teach") and can_open("LMS-101") %}<a href="/courses"{% if request.path.startswith("/courses") %} aria-current="page"{% endif %}>Online classes</a>{% endif %}
+    {% if ctx.has("form:manage") and can_open("FRM-101") %}<a href="/forms/builder"{% if request.path.startswith("/forms/builder") or request.path.startswith("/daybook") %} aria-current="page"{% endif %}>School forms</a>{% elif ctx.has("form:fill") and can_open("FRM-102") %}<a href="/daybook"{% if request.path.startswith("/daybook") %} aria-current="page"{% endif %}>School forms</a>{% endif %}
+    {% if ctx.has("exam:view") and can_open("EXM-01") %}<a href="/exams/series">Exams</a>{% endif %}
+    {% if (ctx.has("document:view") or ctx.has("document:search") or ctx.has("document:upload")) and can_open("DOC-104") %}<a href="/documents"{% if request.path.startswith("/documents") or request.path.endswith("/documents") %} aria-current="page"{% endif %}>Documents</a>{% endif %}
+    {% if ctx.has("budget:view") and can_open("FIN-02") %}<a href="/finance/performance">Budgets</a>{% endif %}
+    {% if ctx.has("funding:view") and can_open("FND-01") %}<a href="/funding">Funding</a>{% endif %}
+    {% if ctx.has("estate:view") and can_open("OPS-01") %}<a href="/estate">Facilities</a>{% endif %}
+    {% if ctx.has("warehouse:view") and can_open("EST-03") %}<a href="/estate/state">Infrastructure</a>{% endif %}
+    {% if ctx.has("access:manage") %}<a href="/admin/access-levels">Access levels</a>{% endif %}
+    {% if ctx.has("session:manage") %}<a href="/admin/sessions">Sessions</a>{% endif %}
+    <a href="/forms">Forms</a>
+    <a href="/pages">Pages</a>
+    <a href="/verify">Verify</a>
+    {% endif %}
+  </nav>
+  <div class="who">
+    <span><a href="/me" id="me-link">{{ user.display_name }}</a> · <strong>{{ ctx.role_code or "no role" }}</strong> · <a href="/auth/context?next={{ request.path|urlencode }}">Switch</a></span>
+    <form method="post" action="/sign-out"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><button class="link">Sign out</button></form>
+  </div>
+  {% else %}
+  <nav aria-label="Primary"><a href="/verify">Verify a certificate</a><a href="/regulators">Regulators</a><a href="/sign-in">Sign in</a></nav>
+  {% endif %}
+</header>
+{% if signed_in and session and session.affiliation_name %}
+<div class="affbar" id="affiliation-bar">
+  {% if emblem and government_office %}<img class="affbar-emblem" src="{{ emblem }}" alt="" width="30" height="24">{% endif %}
+  <span class="affbar-name">{{ session.affiliation_name }}</span>
+  {% if session.affiliation_address %}<span class="affbar-address">{{ session.affiliation_address }}</span>{% endif %}
+  {% if my_level %}<span class="level level-{{ my_level.number }}" title="{{ my_level.sees }}">{{ my_level.label }}</span>{% endif %}
+</div>
+{% endif %}
+{% if signed_in and refused_sign_ins %}
+<div class="alert alert-error banner" role="alert" id="refused-banner"><strong>Someone tried to sign in to your account while you were using it</strong> ({{ refused_sign_ins }} time{{ "s" if refused_sign_ins != 1 else "" }} since you signed in) and was refused. If this was not you, change your password and tell your administrator.</div>
+{% endif %}
+<main id="main">
+  {% if page is defined and page %}<p class="crumb">{{ page.module }} · <code>{{ page.id }}</code> · <span class="cls cls-{{ page.classification }}">{{ page.classification }}</span></p>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="foot">Syntegra · CEDA {{ ctx.correlation_id[:8] if ctx else "" }}</footer>
+</body>
+</html>

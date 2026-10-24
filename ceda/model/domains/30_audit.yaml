@@ -1,0 +1,117 @@
+domain: audit
+code: AUD
+title: Audit trail, chain anchors and the transactional outbox
+module: core
+zone: ops
+retention: RS-AUDIT
+summary: >
+  Every consequential write — and every view of special-category records, reveal of restricted fields,
+  bulk export and assistant query — produces an audit event in the same transaction and the same zone as
+  the change (Book 3 §15). Each zone keeps its own hash chain per tenant (hash = SHA-256(prev_hash ‖
+  canonical(event))); a daily anchor is written to write-once storage and the chain is verified nightly.
+  Special-category values appear in field_changes only as hashes with a pointer to the vault history.
+  Domain events are written to the zone's outbox in the same transaction and published by Debezium
+  (outbox event router) to Kafka; outbox rows are purged seven days after publication.
+
+entities:
+  audit_event:
+    title: Tamper-evident audit event (append-only, hash-chained per tenant and zone, partitioned by day)
+    kind: event
+    zone: [platform, registry, ops, vault, records]
+    class: restricted
+    history: append
+    origin: appj
+    pk: [chain_id, chain_seq, occurred_at]
+    partition: {type: range_day, column: occurred_at}
+    scope_note: Audit visibility is governed by ADM-11 (DPO, own-tenant administrators, purpose-bound investigators).
+    reqs: [FR-ADM-08, FR-LRN-13, FR-SAF-06, FR-AGT-109, FR-CMD-107, FR-SUB-114]
+    pages: [ADM-11]
+    attrs:
+      - "chain_id: uuid! | Tenant id (or the platform chain id in the platform zone)"
+      - "chain_seq: bigint! | Monotonic sequence within the chain"
+      - "occurred_at: ts!"
+      - "event_id: uuid! | UUID v7 of the event"
+      - "actor_kind: enum(actor_kind)!"
+      - "actor_id: uuid"
+      - "on_behalf_of_user_id: uuid | Agent X acting for Owner Y"
+      - "actor_grant_id: uuid | Active role-at-scope"
+      - "scope_node_id_at: uuid | Scope of the record at the time"
+      - "action: code(80)! | e.g. learner.update, learner.nin.reveal, safeguarding_case.view, export.bulk"
+      - "record_kind: code(64)!"
+      - "record_id: uuid"
+      - "field_changes: json | [{field, from, to}] — special-category values as hashes"
+      - "reason: str(1000)"
+      - "purpose_code: code(40) | Required for restricted/special access"
+      - "approval_ref: uuid"
+      - "correlation_id: code(64)"
+      - "ip: ip"
+      - "user_agent: str(400)"
+      - "prev_hash: hash!"
+      - "hash: hash!"
+    ix: [[record_kind, record_id], [actor_id, occurred_at]]
+
+  audit_chain_head:
+    title: Head of an audit hash chain (last sequence and hash), locked FOR UPDATE by each writer to sequence the chain
+    kind: projection
+    zone: [platform, registry, ops, vault, records]
+    class: internal
+    history: none
+    origin: ceda
+    pk: [chain_id]
+    scope_note: One row per chain (tenant × zone × lane).
+    reqs: [FR-ADM-08]
+    pages: [ADM-11]
+    notes: >
+      Chains are split into lanes (chain_id = UUID5(tenant_id, "lane-<n>"), default 16 lanes per tenant and zone)
+      so concurrent writers at the 07:30–09:30 register peak do not serialise on a single row; each lane is an
+      independent hash chain anchored daily and verified nightly (CD-12).
+    attrs:
+      - "chain_id: uuid!"
+      - "lane: smallint!"
+      - "last_seq: bigint!"
+      - "last_hash: hash!"
+
+  audit_anchor:
+    title: Daily anchor of an audit chain written to write-once storage, and the nightly verification result
+    kind: event
+    zone: [platform, registry, ops, vault, records]
+    class: internal
+    history: append
+    origin: ceda
+    scope_note: One row per chain per day.
+    reqs: [FR-ADM-08]
+    pages: [ADM-11]
+    attrs:
+      - "chain_id: uuid!"
+      - "anchor_date: date!"
+      - "last_chain_seq: bigint!"
+      - "anchor_hash: hash!"
+      - "worm_object_key: object_key!"
+      - "verified_at: ts"
+      - "verification_ok: bool"
+    uq: [[chain_id, anchor_date]]
+
+  outbox_event:
+    title: Transactional outbox of domain events (written with the change; published by CDC; purged 7 days after publication)
+    kind: queue
+    zone: [platform, registry, ops, vault, records]
+    class: internal
+    history: none
+    origin: appj
+    retention: RS-OUTBOX
+    partition: {type: range_day, column: created_on}
+    scope_note: Payloads carry identifiers only; consumers fetch details under their own permissions.
+    reqs: [FR-ADM-05, FR-CER-102, FR-COM-05]
+    pages: [ADM-18, ADM-11]
+    attrs:
+      - "created_on: date!"
+      - "event_type: code(80)! | e.g. LRN.CREATED"
+      - "schema_version: smallint!"
+      - "aggregate_kind: code(64)!"
+      - "aggregate_id: uuid!"
+      - "scope_node_id_at: uuid"
+      - "actor: str(120)!"
+      - "correlation_id: code(64)"
+      - "payload: json!"
+      - "published_at: ts"
+    ix: [[published_at]]

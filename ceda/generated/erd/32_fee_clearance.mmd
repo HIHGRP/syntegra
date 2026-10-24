@@ -1,0 +1,115 @@
+erDiagram
+    learner_obligation {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ learner_id FK
+        BINARY_16_ creditor_institution_id FK
+        BINARY_16_ creditor_tenant_id
+        VARCHAR_32_ obligation_kind
+        VARCHAR_32_ payer_kind
+        JSON periods
+        BIGINT amount_outstanding_minor
+        CHAR_3_ currency
+        DATE oldest_due_on
+        JSON evidence
+        BINARY_32_ evidence_hash
+        VARCHAR_32_ source
+        BINARY_16_ published_by
+        DATETIME_6_ published_at
+        DATE reconfirm_by
+        DATETIME_6_ last_checked_at
+        DATETIME_6_ settled_at
+        VARCHAR_32_ status
+        VARCHAR_120_ open_key
+    }
+    obligation_dispute {
+        BINARY_16_ id PK
+        BINARY_16_ scope_node_id
+        BINARY_16_ obligation_id FK
+        VARCHAR_32_ raised_by_kind
+        BINARY_16_ raised_by
+        VARCHAR_32_ grounds
+        TEXT statement
+        JSON evidence_document_ids
+        DATE due_by
+        BINARY_16_ resolver_scope_id FK
+        VARCHAR_32_ resolution
+        BIGINT resolved_amount_minor
+        CHAR_3_ currency
+        BINARY_16_ resolved_by FK
+        DATETIME_6_ resolved_at
+        VARCHAR_32_ status
+    }
+    clearance_check {
+        BINARY_16_ id PK
+        BINARY_16_ learner_id FK
+        BINARY_16_ requesting_institution_id FK
+        VARCHAR_32_ purpose
+        VARCHAR_32_ basis
+        BINARY_16_ admission_application_id
+        BINARY_16_ learner_transfer_id FK
+        BINARY_16_ requested_by
+        DATETIME_6_ checked_at
+        VARCHAR_32_ coverage
+        VARCHAR_32_ result
+        JSON obligations
+        BIGINT total_outstanding_minor
+        CHAR_3_ currency
+        JSON pattern_flags
+        JSON federation
+    }
+    clearance_decision {
+        BINARY_16_ id PK
+        BINARY_16_ check_id FK
+        VARCHAR_32_ decision
+        VARCHAR_32_ protected_reason
+        TEXT reason
+        VARCHAR_64_ payment_plan_ref
+        BINARY_16_ decided_by
+        DATETIME_6_ decided_at
+    }
+    clearance_exchange_query {
+        BINARY_16_ id PK
+        VARCHAR_32_ direction
+        BINARY_16_ query_ref
+        VARCHAR_6_ counterpart_state_code
+        BINARY_16_ clearance_check_id FK
+        BINARY_16_ learner_id FK
+        VARCHAR_32_ purpose
+        JSON identifiers_used
+        VARCHAR_32_ match_outcome
+        JSON obligations
+        BIGINT total_minor
+        CHAR_3_ currency
+        VARCHAR_300_ requesting_institution
+        VARCHAR_64_ kid
+        INT latency_ms
+        VARCHAR_64_ error
+        DATETIME_6_ occurred_at
+    }
+    app_user {
+        BINARY_16 id PK
+    }
+    institution {
+        BINARY_16 id PK
+    }
+    learner {
+        BINARY_16 id PK
+    }
+    learner_transfer {
+        BINARY_16 id PK
+    }
+    scope_node {
+        BINARY_16 id PK
+    }
+    app_user ||--o{ obligation_dispute : "resolved_by"
+    clearance_check ||--o{ clearance_exchange_query : "clearance_check_id"
+    clearance_check ||--o| clearance_decision : "check_id"
+    institution ||--o{ clearance_check : "requesting_institution_id"
+    institution ||--o{ learner_obligation : "creditor_institution_id"
+    learner ||--o{ clearance_check : "learner_id"
+    learner ||--o{ clearance_exchange_query : "learner_id"
+    learner ||--o{ learner_obligation : "learner_id"
+    learner_obligation ||--o{ obligation_dispute : "obligation_id"
+    learner_transfer ||--o{ clearance_check : "learner_transfer_id"
+    scope_node ||--o{ obligation_dispute : "resolver_scope_id"

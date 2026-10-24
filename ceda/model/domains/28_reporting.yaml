@@ -1,0 +1,134 @@
+domain: reporting
+code: RPT
+title: Reporting, semantic layer registry, government returns, scheduled reports and lineage
+module: reporting
+zone: registry
+retention: RS-RPT
+summary: >
+  Reports come from live master records, never re-keyed spreadsheets (FR-RPT-01–06, 101–102). Every metric
+  is defined once in the semantic layer (ceda/model/metrics.yaml is the source; metric_definition is its
+  published, tenant-tunable copy with targets). Report definitions, saved queries and schedules are
+  governed by scope; government returns are generated, validated, reviewed, certified by the head and
+  submitted, with corrections made in the source records. Lineage is generated from the model: every
+  metric → warehouse facts → operational entities.
+
+entities:
+  metric_definition:
+    title: Published semantic-layer metric (definition, formula, grain, source, owner, refresh, target, suppression)
+    kind: config
+    class: public
+    history: versioned
+    scope: owned
+    origin: ceda
+    reqs: [FR-RPT-02, FR-RPT-04, FR-CMD-10, FR-CMD-113, FR-CMD-114]
+    pages: [RPT-02, RPT-04, CMD-07]
+    attrs:
+      - "metric_code: code(40)! | e.g. ATT-RATE, CUR-COVERAGE"
+      - "name: title!"
+      - "definition: json! | From metrics.yaml at the published CEDA version"
+      - "target: dec(12,4)"
+      - "direction: enum(metric_direction)!"
+      - "label_kind: enum(indicator_label)! | verified, calculated, estimated"
+      - "is_equity_indicator: bool! default=false | Shown only where jurisdiction policy allows"
+      - "ceda_version: semver!"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, metric_code, version]]
+
+  report_definition:
+    title: Report in the library (standard, statutory or saved builder query) with permission trimming and suppression
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: ceda
+    reqs: [FR-RPT-01, FR-RPT-02, FR-RPT-102, FR-BEH-114, FR-SAF-106, FR-COM-117, FR-FRM-108]
+    pages: [RPT-01, RPT-02, SAF-103]
+    attrs:
+      - "code: code(48)!"
+      - "title: title!"
+      - "report_kind: enum(report_kind)!"
+      - "query: json! | Metrics, dimensions, filters over the semantic layer"
+      - "min_cell_size: smallint! default=10"
+      - "owner_user_id: ref(app_user)"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, code, version]]
+
+  report_schedule:
+    title: Scheduled delivery of a report (recipients, formats, cadence)
+    kind: config
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-RPT-05, FR-CMD-110, FR-SUB-126]
+    pages: [RPT-05]
+    attrs:
+      - "report_definition_id: ref(report_definition)!"
+      - "cron: code(64)!"
+      - "recipients: json!"
+      - "format: enum(export_format)!"
+      - "last_run_at: ts"
+      - "status: enum(record_status)!"
+
+  report_export:
+    title: Export of a permitted table, chart or report (Excel/CSV/PDF), logged; bulk exports of confidential data audited
+    kind: event
+    zone: ops
+    class: internal
+    history: append
+    origin: ceda
+    retention: RS-OPS-3
+    scope_note: Requester's own export.
+    reqs: [FR-RPT-102, FR-RPT-101]
+    pages: [RPT-01, RPT-02]
+    attrs:
+      - "requested_by: uuid!"
+      - "source: str(200)! | Page region, report code or BI connector"
+      - "format: enum(export_format)!"
+      - "row_count: int_u!"
+      - "object_key: object_key | Expiring export object"
+      - "expires_at: ts!"
+
+  return_definition:
+    title: Statutory return definition (UBEC census, capitation, exam-body, regulator exports) with validation rules
+    kind: config
+    class: internal
+    history: versioned
+    scope: owned
+    origin: ceda
+    reqs: [FR-RPT-03, FR-MED-04]
+    pages: [RPT-03]
+    attrs:
+      - "code: code(40)!"
+      - "title: title!"
+      - "recipient: str(200)!"
+      - "spec: json! | Datasets, metrics and validation"
+      - "calendar: json | Due dates"
+      - "version: int_u!"
+      - "status: enum(version_status)!"
+    uq: [[scope_node_id, code, version]]
+
+  return_submission:
+    title: Return generated from live data, validated, reviewed, head-certified and submitted (Accepted / Queried)
+    kind: transaction
+    class: internal
+    history: lifecycle
+    scope: owned
+    origin: ceda
+    reqs: [FR-RPT-03]
+    pages: [RPT-03]
+    events: [RPT.RETURN_SUBMITTED]
+    attrs:
+      - "return_definition_id: ref(return_definition)!"
+      - "institution_id: ref(institution)"
+      - "period_label: code(20)!"
+      - "generated_at: ts!"
+      - "anomalies: json | Explained anomalies (Returns Agent draft)"
+      - "certified_by: ref(app_user)"
+      - "certified_at: ts"
+      - "submitted_at: ts"
+      - "content_hash: hash"
+      - "recipient_ref: code(64)"
+      - "status: enum(return_status)!"
