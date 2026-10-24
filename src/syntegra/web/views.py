@@ -645,6 +645,7 @@ def learner_new(request: HttpRequest) -> HttpResponse:
 @page("LRN-04")
 def learner(request: HttpRequest, learner_id: uuid.UUID) -> HttpResponse:
     from syntegra.academic.models import Programme
+    from syntegra.assessment import reports
     from syntegra.attendance import services as att
     from syntegra.families import services as families
     from syntegra.institutions.models import Institution
@@ -670,6 +671,7 @@ def learner(request: HttpRequest, learner_id: uuid.UUID) -> HttpResponse:
             insts=insts,
             attendance=attendance,
             guardians=families.guardians_of(learner_id),
+            results=reports.learner_results(learner_id),
             identifiers=lrn.identifiers_of(learner_id),
             programmes={
                 p.id: p for p in Programme.objects.filter(id__in=[e.programme_id for e in enrolments if e.programme_id])
@@ -1403,6 +1405,142 @@ def lesson_plans(request: HttpRequest) -> HttpResponse:
             page=pages.page("CUR-09"),
         ),
         status=422 if problem else 200,
+    )
+
+
+# ------------------------------------------------------------------------- marksheets and report cards (CR-009)
+def _decimal_or_fail(value: str | None, what: str) -> Any:
+    from decimal import Decimal, InvalidOperation
+
+    try:
+        return Decimal((value or "").strip())
+    except InvalidOperation as exc:
+        raise HardValidation("PAGE-PARAM", f"Invalid {what}", f"Enter the {what} as a number.") from exc
+
+
+@require_http_methods(["GET", "POST"])
+@page("ASM-01")
+def markbook(request: HttpRequest, class_id: uuid.UUID, subject_id: uuid.UUID) -> HttpResponse:
+    """The marksheet of a class-subject: add an assessment, enter a column of marks, lock approved marks."""
+    from syntegra.assessment import markbook as mb
+
+    message, problem = None, None
+    editing = request.POST.get("assessment_id") or request.GET.get("enter")
+    picked = request.POST.get("term") or request.GET.get("term")
+    term_id = _uuid_or_fail(picked, "term") if picked else None
+    if request.method == "POST":
+        action = request.POST.get("action")
+        try:
+            if action == "add":
+                a = mb.add_assessment(
+                    class_id,
+                    subject_id,
+                    request.POST.get("title", ""),
+                    request.POST.get("kind", ""),
+                    _decimal_or_fail(request.POST.get("max_mark"), "maximum mark"),
+                    _decimal_or_fail(request.POST.get("weight"), "weight"),
+                    _date_or_none(request.POST.get("assessed_on"), "date"),
+                )
+                message, editing = f"{a.title} added — enter its marks below.", str(a.id)
+                term_id = _term_of(class_id, a.assessed_on)
+            elif action == "save":
+                aid = _uuid_or_fail(request.POST.get("assessment_id"), "assessment")
+                marks = {
+                    uuid.UUID(k[5:]): request.POST.get(k, "")
+                    for k in request.POST
+                    if k.startswith("mark_") and _is_uuid(k[5:])
+                }
+                lock = request.POST.get("lock") == "1"
+                r = mb.save_marks(aid, marks, lock=lock)
+                message = f"Marks saved ({r['created']} new, {r['updated']} changed)" + (
+                    " and locked." if lock else "."
+                )
+                editing = None if lock else str(aid)
+            elif action == "lock":
+                mb.lock(_uuid_or_fail(request.POST.get("assessment_id"), "assessment"))
+                message, editing = "Marks locked.", None
+        except DomainError as exc:
+            if isinstance(exc, Forbidden):
+                raise
+            problem = exc.problem()
+    d = mb.sheet(class_id, subject_id, term_id)
+    return render(
+        request,
+        "markbook.html",
+        _ctx(
+            request,
+            d=d,
+            editing=editing if d["can_enter"] else None,
+            posted=request.POST if problem else {},
+            names={str(r["learner_id"]): r["name"] for r in d["rows"]},
+            today=dt.date.today(),
+            message=message,
+            problem=problem,
+            page=pages.page("ASM-01"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+def _term_of(class_id: uuid.UUID, on: dt.date | None) -> uuid.UUID | None:
+    from syntegra.academic.models import ClassGroup
+    from syntegra.assessment import markbook as mb
+
+    cls = ClassGroup.objects.in_scope().filter(pk=class_id).first()
+    term = mb.current_term(cls, on) if cls is not None else None
+    return term.id if term is not None else None
+
+
+def _is_uuid(value: str) -> bool:
+    try:
+        uuid.UUID(value)
+    except ValueError:
+        return False
+    return True
+
+
+@require_http_methods(["GET", "POST"])
+@page("ASM-04")
+def report_cards(request: HttpRequest, class_id: uuid.UUID) -> HttpResponse:
+    """A class's termly report cards: completeness, each learner's result and personalised comments; issue."""
+    from syntegra.assessment import reports
+
+    message, problem = None, None
+    if request.method == "POST":
+        try:
+            if request.POST.get("action") == "comments":
+                comments: dict[str, dict[str, str]] = {}
+                for k in request.POST:
+                    kind, _, lid = k.partition("_")
+                    if kind in ("form", "head") and _is_uuid(lid):
+                        comments.setdefault(lid, {})[kind] = request.POST.get(k, "")
+                n = reports.save_comments(class_id, comments)
+                message = f"Comments saved ({n} learner{'' if n == 1 else 's'} with edited comments)."
+            elif request.POST.get("action") == "issue":
+                r = reports.issue(class_id)
+                message = f"{r['issued']} report cards issued and filed in the school's register."
+        except DomainError as exc:
+            if isinstance(exc, Forbidden):
+                raise
+            problem = exc.problem()
+    return render(
+        request,
+        "report_cards.html",
+        _ctx(request, d=reports.class_reports(class_id), message=message, problem=problem, page=pages.page("ASM-04")),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET"])
+@page("ASM-04")
+def report_card(request: HttpRequest, class_id: uuid.UUID, learner_id: uuid.UUID) -> HttpResponse:
+    """One learner's report card, laid out as it prints and as the issued PDF reads."""
+    from syntegra.assessment import reports
+
+    return render(
+        request,
+        "report_card.html",
+        _ctx(request, d=reports.learner_report(class_id, learner_id), page=pages.page("ASM-04")),
     )
 
 

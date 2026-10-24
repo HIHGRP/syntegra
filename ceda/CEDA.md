@@ -2178,3 +2178,61 @@ Igbo Language (authored and approved by two different state curriculum officers)
 timetable, the SS 2 schemes of work, and the SS 2 Mathematics lessons logged by the teacher (`teacher.<school
 code>@abia.demo`, now linked to the Mathematics teacher) up to the day of the load, leaving a lesson unlogged this
 week and last.
+
+## 34. Organised marksheets and fully personalised report cards (CR-009, phase 1)
+
+### 34.1 Marksheets (ASM-01)
+
+Each class and subject has one marksheet per term (`/markbook/{class}/{subject}`; `assessment:view` to open). Every
+assessment of the class-subject dated within the term is a column — continuous-assessment test, examination,
+coursework, practical, homework or quiz — with its maximum mark and weight; every learner of the class is a row. The
+sheet works out each learner's weighted total, the percentage, the WAEC/NECO grade (A1 75 and over … F9 below 40) with
+its remark, and the position in the subject (competition ranking: equal totals share a position and the next is
+skipped); each column shows the class average, highest, lowest and how many marks are entered. The term tabs open the
+other terms of the session.
+
+The class-subject's current teacher (of record or co-teacher), or anyone who manages classes, adds assessments
+(`assessment:manage`): the term is taken from the date, which must fall within a term, and the weights of a
+class-subject's assessments in a term add up to at most 100. Marks are entered a column at a time
+(`assessment:enter`): 0 up to the maximum mark, a blank box recording work not done (`is_missing_work`); a mark that is
+not a number or is out of range rejects the whole column, and only the class's learners count. The head locks an
+assessment once its marks are approved (`assessment:approve`, `ASM.RESULTS_LOCKED`); a locked column cannot be changed.
+A teacher cannot lock.
+
+### 34.2 Report cards (ASM-04)
+
+`/reports/class/{id}` (`assessment:view`) shows the class's termly report for every learner, built from the
+marksheets and attendance registers of the term being reported on (the term running today):
+
+| On the report card | Source |
+|---|---|
+| School name, address and contacts; the state's coat of arms | `institution`; `static/img/emblems/<state>.png` |
+| Learner's name, learner number, sex, date of birth; learners in class | `learner`, `class_membership` |
+| Per subject: CA, examination and total out of 100, grade, remark, position in the subject, class average, highest and lowest | the term's assessments (examination kind → Exam, all others → CA), weighted and scaled to 100 |
+| Subjects taken, total, average, grade, position in class ("Nth of N"), class average | the subject totals |
+| Attendance: sessions attended of possible, and the rate | `attendance_mark` from the term's start to today or the term's end |
+| Form teacher's and head's comments | drafted per learner, editable (below) |
+| Next term begins; grading key | the next term of the session; the WAEC/NECO bands |
+
+**Personalised comments.** For each learner a form teacher's and a head's comment are drafted from the learner's own
+term: how they stand (average and position, in five bands), their strongest subjects (the best two at 60 % or more), the
+subjects needing more practice (up to two below 50 %, with their marks), and attendance against the 90 % expected (or
+"excellent" at 97 % and over). The rules are plain, so the same results always draft the same words. Teachers and the
+head (`assessment:manage` or `assessment:approve`) edit any comment before issue; only comments that differ from the
+draft are kept, with the class's report-card run (`report_card_run.completeness.comments`, status `draft`).
+
+**Issue.** The head issues the class's report cards (`assessment:approve` and `document:upload`) once every
+assessment of the term is locked and no mark is blank without being recorded as work not done. Each learner's report
+card is written as a one-page A4 PDF (fpdf2; DejaVu Sans when installed, otherwise Helvetica with the text reduced to
+Latin-1), filed in the school's document register (category RES — results, broadsheets and report cards; confidential;
+write-once master, full-text indexed) and recorded as a `report_card` row with the document and the PDF's SHA-256, under
+a `report_card_run` marked `issued` with the time of publication. Report cards are issued once per class and term:
+issuing again, or changing comments after issue, is refused. `/reports/class/{id}/learner/{learner}` shows one learner's
+report card as it prints, and after issue links to the filed PDF; Learner 360 shows the term's results with the link.
+
+### 34.3 Demonstration data
+
+The 2026/2027 session gains its second term (11 January – 9 April 2027) and third term (26 April – 23 July 2027), so a
+report card names the day the next term begins, and every class of the sample secondary schools gets a form teacher in
+turn from the school's teachers. The first term's continuous assessment and examination marks were already loaded and
+locked, so the report cards are ready to issue.

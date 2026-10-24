@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Report cards — {{ d.class.name }}{% endblock %}
+{% block content %}
+<h1>Report cards — {{ d.class.name }}</h1>
+<p class="muted">{{ d.institution.name }} · {% if d.term %}{{ d.term.name }}, {{ d.session }} session ({{ d.term.starts_on|date }} – {{ d.term.ends_on|date }}){% else %}no term set up{% endif %} · form teacher {{ d.form_teacher or "not assigned" }}</p>
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<nav class="tabs" aria-label="Classes">{% for c in d.classes %}<a href="/reports/class/{{ c.id }}"{% if c.id == d.class.id %} aria-current="page"{% endif %}>{{ c.name }}</a>{% endfor %}</nav>
+<section class="kpis" aria-label="Summary">
+  <div class="kpi"><span class="v">{{ d.class.learners }}</span><span class="k">learners</span></div>
+  <div class="kpi"><span class="v">{{ d.subjects|length }}</span><span class="k">subjects · {{ d.completeness.assessments }} assessments this term</span></div>
+  <div class="kpi"><span class="v">{{ d.class_average if d.class_average is not none else "—" }}{% if d.class_average is not none %}%{% endif %}</span><span class="k">class average</span></div>
+  <div class="kpi"><span class="v">{% if d.issued %}Issued{% elif d.completeness.ready %}Ready{% else %}{{ d.completeness.unlocked|length }} to lock{% endif %}</span><span class="k">{% if d.issued %}{{ d.run.published_at|localtime }}{% elif d.completeness.ready %}every mark entered and locked{% else %}{{ d.completeness.missing }} blank mark(s){% endif %}</span></div>
+</section>
+{% if not d.issued %}
+<section class="card"><h2>Before issue</h2>
+  {% if d.completeness.ready %}<p><span class="pill pill-ok">Complete</span> Every assessment of the term is locked and every learner has a mark or a recorded reason.</p>
+  {% else %}<ul>{% for u in d.completeness.unlocked[:8] %}<li>Not locked: {{ u }}</li>{% endfor %}{% if d.completeness.unlocked|length > 8 %}<li>… and {{ d.completeness.unlocked|length - 8 }} more</li>{% endif %}
+    {% if d.completeness.missing %}<li>{{ d.completeness.missing }} mark(s) are blank — enter them, or record the work as not done.</li>{% endif %}</ul>{% endif %}
+  {% if d.can_issue %}<form method="post"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="issue">
+    <p><button class="primary"{% if not d.completeness.ready %} disabled{% endif %}>Issue {{ d.rows|selectattr("average")|list|length }} report cards</button> <span class="hint opt">Each is written as a PDF with the school's details and the state's coat of arms, and filed in the school's document register.</span></p></form>{% endif %}
+</section>
+{% endif %}
+<form method="post" class="card scroll-x" id="learners">
+  <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="comments">
+  <h2>Learners and comments</h2>
+  <p class="muted">Comments are drafted for each learner from their own results and attendance; edit any of them before the report cards are issued.</p>
+  <table class="compact reports">
+    <thead><tr><th scope="col">Position</th><th scope="col">Learner</th><th scope="col" class="num">Average</th><th scope="col">Strongest · weakest</th><th scope="col" class="num">Attendance</th><th scope="col">Form teacher's comment</th><th scope="col">{{ d.institution.head_title }}'s comment</th><th scope="col"><span class="sr">Report card</span></th></tr></thead>
+    <tbody>
+    {% for r in d.rows %}{% set taken = r.subjects|selectattr("total", "ne", none)|list|sort(attribute="total", reverse=true) %}
+      <tr>
+        <td>{{ r.position or "—" }}</td>
+        <td><strong>{{ r.name }}</strong><br><span class="hint">{{ r.lrn }}</span></td>
+        <td class="num">{{ r.average if r.average is not none else "—" }} <span class="hint opt">{{ r.grade or "" }}</span></td>
+        <td>{% if taken %}{{ taken[0].subject }} ({{ taken[0].total|round(0)|int }})<br><span class="muted">{{ taken[-1].subject }} ({{ taken[-1].total|round(0)|int }})</span>{% else %}—{% endif %}</td>
+        <td class="num">{% if r.attendance.rate is not none %}{{ (r.attendance.rate * 100)|round(0)|int }}%{% else %}—{% endif %}</td>
+        {% if d.issued or not d.can_edit %}<td>{{ r.comments.form }}</td><td>{{ r.comments.head }}</td>
+        {% else %}<td><textarea name="form_{{ r.learner_id }}" rows="6" cols="34" maxlength="600" aria-label="Form teacher's comment for {{ r.name }}">{{ r.comments.form }}</textarea></td>
+        <td><textarea name="head_{{ r.learner_id }}" rows="6" cols="24" maxlength="600" aria-label="{{ d.institution.head_title }}'s comment for {{ r.name }}">{{ r.comments.head }}</textarea>{% if r.edited %}<br><span class="pill">edited</span>{% endif %}</td>{% endif %}
+        <td><a href="/reports/class/{{ d.class.id }}/learner/{{ r.learner_id }}">Report card</a>{% if r.card %}<br><a href="/documents/{{ r.card.document_id }}">Issued PDF</a>{% endif %}</td>
+      </tr>
+    {% else %}<tr><td colspan="8" class="muted">No learners in this class.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  {% if not d.issued and d.can_edit and d.rows %}<p><button class="primary">Save comments</button></p>{% endif %}
+</form>
+<section class="card"><h2>Marksheets</h2><p>{% for s in d.subjects %}{{ s }}{% if not loop.last %} · {% endif %}{% endfor %}</p><p class="muted">Open a subject's marksheet from the class's <a href="/classes/{{ d.class.id }}/plan">Subjects and teachers</a> page.</p></section>
+{% endblock %}

@@ -36,5 +36,15 @@
     {% elif attendance.flags["ATT-PERSISTENT"] %}<div class="alert">Persistent absence — below the state threshold.</div>{% endif %}
   </article>
   {% endif %}
+  {% if results %}{% set r = results.row %}
+  <article class="card span-all scroll-x" id="results">
+    <h2>Results — {{ results.term.name if results.term else "this term" }}, {{ results.class.name }}</h2>
+    <p class="big">{{ r.average }}% <span class="muted">{{ r.grade }}</span></p>
+    <p class="muted">{{ r.position }} of {{ results.of }} in the class · class average {{ results.class_average }}%</p>
+    <table class="compact"><thead><tr><th scope="col">Subject</th><th scope="col" class="num">Total</th><th scope="col">Grade</th><th scope="col">Position</th><th scope="col" class="num">Class avg</th></tr></thead>
+      <tbody>{% for s in r.subjects %}<tr><td>{{ s.subject }}</td><td class="num">{{ s.total|round(0)|int if s.total is not none else "—" }}</td><td>{{ s.grade or "—" }}</td><td>{{ s.position or "—" }}</td><td class="num">{{ s.average if s.average is not none else "—" }}</td></tr>{% endfor %}</tbody></table>
+    <p><a href="/reports/class/{{ results.class.id }}/learner/{{ r.learner_id }}">Report card</a>{% if r.card %} · <a href="/documents/{{ r.card.document_id }}">Issued PDF</a>{% endif %}</p>
+  </article>
+  {% endif %}
 </section>
 {% endblock %}

@@ -17,7 +17,7 @@ pytestmark = pytest.mark.django_db(databases="__all__")
 
 
 def _plan_row(page: str, subject: str) -> str:
-    m = re.search(rf"<tr>\s*<td>{re.escape(subject)}.*?</tr>", page, re.S)
+    m = re.search(rf"<tr>\s*<td>(?:<a [^>]*>)?{re.escape(subject)}.*?</tr>", page, re.S)
     assert m, subject
     return m.group(0)
 

@@ -461,6 +461,10 @@ def _calendar() -> tuple[Any, Any]:
         term = academic.create_session(
             state.id, "First Term", dt.date(2026, 9, 14), dt.date(2026, 12, 18), kind="term", parent_id=session.id
         )
+    for name, start, end in (("Second Term", dt.date(2027, 1, 11), dt.date(2027, 4, 9)),
+                             ("Third Term", dt.date(2027, 4, 26), dt.date(2027, 7, 23))):  # fmt: skip
+        if not AcademicPeriod.objects.filter(parent_id=session.id, kind="term", name=name).exists():
+            academic.create_session(state.id, name, start, end, kind="term", parent_id=session.id)
     return session, term
 
 
@@ -1406,6 +1410,11 @@ def _teaching(schools: list[Any], subjects: dict[str, Any], session: Any, names:
                                            staff_id=posts["Chemistry"].staff_id, staff_post_id=posts["Chemistry"].id,
                                            role="co_teacher", justification="Biology practicals (laboratory)",
                                            valid_from=session.starts_on))  # fmt: skip
+            # a form teacher for every class, in turn from the school's teachers (report-card comments, CR-009)
+            tutors = [posts[t] for t in sorted(posts)]
+            for i, c in enumerate(sorted(classes.values(), key=lambda c: c.name)):
+                if tutors and c.form_teacher_staff_id is None:
+                    cmd.update(c, form_teacher_staff_id=tutors[i % len(tutors)].staff_id)
         # 4. the timetable, then each teacher's scheme of work for the SS 2 class-subjects
         with context.use(head):
             timetable.build(inst.id, session.id)

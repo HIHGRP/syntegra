@@ -2,6 +2,7 @@
 {% block title %}Subjects and teachers — {{ d.class.name }}{% endblock %}
 {% block content %}
 <h1>Subjects and teachers — {{ d.class.name }}</h1>
+<p class="no-print"><a href="/reports/class/{{ d.class.id }}">Report cards for {{ d.class.name }}</a></p>
 <p class="muted">{{ d.institution }} · {{ d.class.level }} · {{ d.class.learners }} learners · {{ d.totals.periods }} periods a week</p>
 {% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
 {% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
@@ -19,7 +20,7 @@
     <tbody>
     {% for r in d.rows %}
       <tr>
-        <td>{{ r.subject }}{% if not r.mandatory %} <span class="pill">optional</span>{% endif %}</td>
+        <td><a href="/markbook/{{ d.class.id }}/{{ r.subject_id }}" title="Marksheet">{{ r.subject }}</a>{% if not r.mandatory %} <span class="pill">optional</span>{% endif %}</td>
         <td class="num">{{ r.periods or "—" }}</td>
         <td>{% if r.curriculum %}version {{ r.curriculum }}{% else %}<span class="muted">none adopted</span>{% endif %}</td>
         <td>{% if r.teacher %}<strong>{{ r.teacher.name }}</strong> <span class="muted">since {{ r.teacher.since|date }}</span>{% else %}<span class="muted">—</span>{% endif %}

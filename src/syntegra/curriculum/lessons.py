@@ -392,6 +392,7 @@ def plan_view(assignment_id: uuid.UUID, week_of: dt.date | None = None) -> dict[
         "assignment_id": ta.id,
         "class": {"id": cls.id, "name": cls.name, "level": cls.education_level, "learners": roll},
         "subject": subject.name if subject else "?",
+        "subject_id": plan.subject_id,
         "teacher": f"{teacher.given_name} {teacher.family_name}" if teacher else "?",
         "mine": ta.staff_id == mine,
         "curriculum": (

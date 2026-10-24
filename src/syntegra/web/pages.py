@@ -46,6 +46,8 @@ IMPLEMENTED: dict[str, str] = {
     "BEH-102": "seating",
     "ACA-101": "class_plan",
     "CUR-09": "lesson_plans",
+    "ASM-01": "markbook",
+    "ASM-04": "report_cards",
     "ADM-101": "access_levels",
     "ADM-102": "sessions_admin",
     "DOC-104": "documents",
@@ -69,6 +71,7 @@ ENTRY_LEVEL: dict[str, str] = {
     "FND-02": "confidential",  # funding agreement: borrowers see their own; others need the restricted level
     "DOC-104": "confidential",  # documents hold personal records; each document's own level is checked as well
     "DOC-105": "confidential",
+    "ASM-04": "confidential",  # report cards carry each learner's results, attendance and comments
 }
 
 

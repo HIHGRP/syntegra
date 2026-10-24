@@ -14,6 +14,7 @@
 {% if not d %}
 <p class="muted">You have no class-subjects assigned to you yet. The head assigns teachers on each class's <em>Subjects and teachers</em> page.</p>
 {% else %}
+<p class="no-print"><a href="/markbook/{{ d.class.id }}/{{ d.subject_id }}">Marksheet — {{ d.class.name }}, {{ d.subject }}</a></p>
 <p class="muted">{{ d.teacher }}{% if not d.mine %} (teacher of record){% endif %} · {% if d.curriculum %}{{ d.curriculum.title }} — {{ d.curriculum.authority }}, version {{ d.curriculum.version }}{% else %}no curriculum adopted{% endif %} · {{ d.term.name }}, week {{ d.week.no }} of {{ d.week.of }}</p>
 {% if not d.curriculum %}
 <div class="alert">No curriculum applies to this class-subject yet. Lessons can be linked to objectives once the school adopts the curriculum for {{ d.class.level }}.</div>
