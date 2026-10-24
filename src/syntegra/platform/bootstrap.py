@@ -178,6 +178,8 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "seating:*",
             "lesson:*",
             "timetable:*",
+            "cover:*",
+            "room:*",
             "document:view",
             "document:upload",
         ],
@@ -213,6 +215,8 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "seating:*",
             "lesson:plan",
             "lesson:deliver",
+            "timetable:view",
+            "room:book",
         ],
     ),
     "REG": (
@@ -303,7 +307,16 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
     "OPSM": (
         "Operations and facilities manager",
         "confidential",
-        ["estate:*", "institution:view", "metric:view", "warehouse:view", "budget:view", "imprest:request"],
+        [
+            "estate:*",
+            "institution:view",
+            "metric:view",
+            "warehouse:view",
+            "budget:view",
+            "imprest:request",
+            "timetable:view",
+            "room:*",
+        ],
     ),
     "COMM": (
         "Commissioner for Education",

@@ -1415,6 +1415,19 @@ def _teaching(schools: list[Any], subjects: dict[str, Any], session: Any, names:
             for i, c in enumerate(sorted(classes.values(), key=lambda c: c.name)):
                 if tutors and c.form_teacher_staff_id is None:
                     cmd.update(c, form_teacher_staff_id=tutors[i % len(tutors)].staff_id)
+        # rooms the staff book (CR-009 phase 2): a laboratory, the ICT suite, the library and the hall
+        with context.use(head):
+            from syntegra.estate import services as estate
+            from syntegra.operations.models import Room
+
+            if not Room.objects.filter(scope_node_id=inst.scope_node_id, room_type="laboratory").exists():
+                block = estate.add_building(inst.id, "Science and ICT block", built_year=2014,
+                                            facilities={"water": True, "power": True})  # fmt: skip
+                for code, kind, places, title in (("LAB1", "laboratory", 40, "Science laboratory"),
+                                                  ("ICT1", "ict_suite", 30, "ICT suite"),
+                                                  ("LIB", "library", 60, "Library"),
+                                                  ("HALL", "hall", 400, "Assembly hall")):  # fmt: skip
+                    estate.add_room(block.id, code, kind, places, name=title)
         # 4. the timetable, then each teacher's scheme of work for the SS 2 class-subjects
         with context.use(head):
             timetable.build(inst.id, session.id)

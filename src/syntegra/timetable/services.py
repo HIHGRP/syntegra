@@ -6,6 +6,10 @@ left). Each lesson is taught in the class's home room when it is free, otherwise
 that is not assessed unsafe. A class-subject that cannot be placed in full is listed as unmet and the timetable stays a
 draft — publication is blocked while mandatory periods are missing (``unmet_requirements``). Publishing supersedes the
 previous version. ``week`` gives the dated lessons of a class or a teacher for one week.
+
+The school day is the school's own (TIM-01): when it starts, how long a period is, how many periods come before the
+break, between the break and lunch and after lunch, and how long the break and lunch are. It is kept with each
+timetable (``period_structure``); a new build keeps the day of the school's latest timetable unless a new one is given.
 """
 
 from __future__ import annotations
@@ -38,6 +42,8 @@ BELL: tuple[tuple[str, str, str, bool], ...] = (
 )
 DAYS = {1: "Monday", 2: "Tuesday", 3: "Wednesday", 4: "Thursday", 5: "Friday"}
 TEACHING = [b[0] for b in BELL if b[3]]
+Day = tuple[tuple[str, str, str, bool], ...]
+LATEST_END = dt.time(17, 0)
 
 
 def _t(s: str) -> dt.time:
@@ -45,13 +51,124 @@ def _t(s: str) -> dt.time:
     return dt.time(int(h), int(m))
 
 
-def bell() -> dict[str, tuple[dt.time, dt.time]]:
-    return {code: (_t(a), _t(b)) for code, a, b, _teach in BELL}
+def _hm(minutes_: int) -> str:
+    return f"{minutes_ // 60:02d}:{minutes_ % 60:02d}"
 
 
-def minutes(period_code: str) -> int:
-    a, b = bell()[period_code]
-    return (b.hour * 60 + b.minute) - (a.hour * 60 + a.minute)
+def _mins(t: dt.time | str) -> int:
+    t = _t(t) if isinstance(t, str) else t
+    return t.hour * 60 + t.minute
+
+
+def school_day(
+    start: str = "08:00",
+    period: int = 35,
+    before_break: int = 3,
+    break_minutes: int = 20,
+    before_lunch: int = 3,
+    lunch_minutes: int = 40,
+    after_lunch: int = 3,
+) -> Day:
+    """A school day from its shape: periods P1, P2 … with a break and a lunch between them."""
+    errors = []
+    try:
+        begin = _mins(start)
+    except ValueError:
+        begin = -1
+    if not _mins("06:30") <= begin <= _mins("10:00"):
+        errors.append({"field": "start", "message": "the day starts between 06:30 and 10:00"})
+    if not 30 <= period <= 80:
+        errors.append({"field": "period", "message": "a period is 30 to 80 minutes"})
+    total = before_break + before_lunch + after_lunch
+    if before_break < 1 or min(before_lunch, after_lunch) < 0 or not 4 <= total <= 12:
+        errors.append({"field": "periods", "message": "4 to 12 teaching periods, at least one before the break"})
+    if not 10 <= break_minutes <= 60 or not 20 <= lunch_minutes <= 90:
+        errors.append({"field": "breaks", "message": "a break of 10 to 60 minutes and a lunch of 20 to 90 minutes"})
+    if errors:
+        raise HardValidation("TIM-DAY", "The school day is not valid", errors[0]["message"].capitalize() + ".", errors)
+    out: list[tuple[str, str, str, bool]] = []
+    now, n = begin, 0
+    for count, pause, code in (
+        (before_break, break_minutes, "BRK"),
+        (before_lunch, lunch_minutes, "LUN"),
+        (after_lunch, 0, ""),
+    ):
+        for _ in range(count):
+            n += 1
+            out.append((f"P{n}", _hm(now), _hm(now + period), True))
+            now += period
+        if pause and n < total:
+            out.append((code, _hm(now), _hm(now + pause), False))
+            now += pause
+    if now > _mins(LATEST_END):
+        raise HardValidation("TIM-DAY", "The school day is too long", f"It would end at {_hm(now)}, after 17:00.")
+    return tuple(out)
+
+
+def describe(day: Day) -> dict[str, Any]:
+    """The shape of a school day, to fill the builder's form, with its end and teaching time."""
+    teach = [b for b in day if b[3]]
+    pauses = [b for b in day if not b[3]]
+    counts, run = [], 0
+    for b in day:
+        if b[3]:
+            run += 1
+        else:
+            counts.append(run)
+            run = 0
+    counts.append(run)
+    counts += [0] * (3 - len(counts))
+    brk = next((b for b in pauses if b[0] == "BRK"), None)
+    lun = next((b for b in pauses if b[0] == "LUN"), None)
+    return {
+        "start": day[0][1],
+        "end": day[-1][2],
+        "period": _mins(teach[0][2]) - _mins(teach[0][1]) if teach else 0,
+        "before_break": counts[0],
+        "before_lunch": counts[1],
+        "after_lunch": counts[2],
+        "break_minutes": _mins(brk[2]) - _mins(brk[1]) if brk else 20,
+        "lunch_minutes": _mins(lun[2]) - _mins(lun[1]) if lun else 40,
+        "periods": len(teach),
+        "teaching_minutes": sum(_mins(b[2]) - _mins(b[1]) for b in teach),
+    }
+
+
+def schedule(tt: Timetable | None) -> Day:
+    """The school day a timetable was built with (the standard day for a timetable without one)."""
+    if tt is None:
+        return BELL
+    rows = list(PeriodStructure.objects.filter(timetable_id=tt.id, cycle_day=1).order_by("starts_at"))
+    if not rows:
+        return BELL
+    return tuple(
+        (r.period_code, r.starts_at.strftime("%H:%M"), r.ends_at.strftime("%H:%M"), r.is_teaching) for r in rows
+    )
+
+
+def latest(institution_id: uuid.UUID) -> Timetable | None:
+    tt: Timetable | None = Timetable.objects.filter(institution_id=institution_id).order_by("-version").first()
+    return tt
+
+
+def school_schedule(institution_id: uuid.UUID) -> Day:
+    """The school's day: that of its timetable in force, else of its latest timetable, else the standard day."""
+    return schedule(current(institution_id) or latest(institution_id))
+
+
+def bell(tt: Timetable | None = None) -> dict[str, tuple[dt.time, dt.time]]:
+    return {code: (_t(a), _t(b)) for code, a, b, _teach in schedule(tt)}
+
+
+def minutes(period_code: str, tt: Timetable | None = None) -> int:
+    a, b = bell(tt)[period_code]
+    return _mins(b) - _mins(a)
+
+
+def period_minutes(institution_id: uuid.UUID) -> int:
+    """Length of the school's teaching period."""
+    first = next(b for b in school_schedule(institution_id) if b[3])
+    return _mins(first[2]) - _mins(first[1])
 
 
 @dataclass
@@ -74,7 +191,10 @@ def _usable_rooms(scope_node_id: uuid.UUID) -> list[Any]:
 
 
 def place(
-    needs: list[_Need], rooms: list[uuid.UUID], home: dict[uuid.UUID, uuid.UUID | None]
+    needs: list[_Need],
+    rooms: list[uuid.UUID],
+    home: dict[uuid.UUID, uuid.UUID | None],
+    teaching: list[str] | None = None,
 ) -> tuple[list[tuple[_Need, int, str, uuid.UUID]], list[dict[str, Any]]]:
     """Greedy placement: the most constrained class-subjects first, each lesson on the day the class-subject has had
     fewest lessons, in the earliest period free for the class, the teacher and a room. Returns the placed lessons
@@ -86,6 +206,7 @@ def place(
     for n in needs:
         load[n.staff_id] = load.get(n.staff_id, 0) + n.periods
     order = sorted(needs, key=lambda n: (-load[n.staff_id], -n.periods, n.cls.name, str(n.plan.id)))
+    codes = teaching or TEACHING
     placed: list[tuple[_Need, int, str, uuid.UUID]] = []
     unmet: list[dict[str, Any]] = []
     for k, n in enumerate(order):
@@ -95,8 +216,8 @@ def place(
             spot = None
             for day in sorted(DAYS, key=lambda d: (per_day[d], (d + k) % len(DAYS))):
                 # rotate the starting period so one subject is not always first thing in the morning
-                start = (k + day) % len(TEACHING)
-                for code in TEACHING[start:] + TEACHING[:start]:
+                start = (k + day) % len(codes)
+                for code in codes[start:] + codes[:start]:
                     if (n.cls.id, day, code) in busy_class or (n.staff_id, day, code) in busy_staff:
                         continue
                     pref = home.get(n.cls.id)
@@ -121,8 +242,9 @@ def place(
     return placed, unmet
 
 
-def build(institution_id: uuid.UUID, period_id: uuid.UUID) -> Timetable:
-    """Build and, when every mandatory period is placed, publish the school's timetable for the period."""
+def build(institution_id: uuid.UUID, period_id: uuid.UUID, day: Day | None = None) -> Timetable:
+    """Build and, when every mandatory period is placed, publish the school's timetable for the period, on the given
+    school day or the day of the school's latest timetable."""
     from syntegra.institutions.models import Institution
 
     ctx = context.require()
@@ -166,7 +288,9 @@ def build(institution_id: uuid.UUID, period_id: uuid.UUID) -> Timetable:
     rooms = [r.id for r in _usable_rooms(inst.scope_node_id)]
     if not rooms:
         raise HardValidation("TIM-NO-ROOMS", "No usable classroom", "Every classroom is missing or assessed unsafe.")
-    placed, short = place(needs, rooms, {c.id: c.room_id for c in classes.values()})
+    day = day or school_schedule(inst.id)
+    length = {code: _mins(b) - _mins(a) for code, a, b, _teach in day}
+    placed, short = place(needs, rooms, {c.id: c.room_id for c in classes.values()}, [b[0] for b in day if b[3]])
     unmet += short
     with uow.command("ops", "timetable:manage", action="build", record_kind="timetable") as cmd:
         prior = list(
@@ -190,20 +314,20 @@ def build(institution_id: uuid.UUID, period_id: uuid.UUID) -> Timetable:
                 status="draft" if unmet else "published",
             )
         )
-        for day in DAYS:
-            for code, a, b, teach in BELL:
+        for weekday in DAYS:
+            for code, a, b, teach in day:
                 cmd.add(
                     PeriodStructure(
                         timetable_id=tt.id,
                         structure_code=STRUCTURE,
-                        cycle_day=day,
+                        cycle_day=weekday,
                         period_code=code,
                         starts_at=_t(a),
                         ends_at=_t(b),
                         is_teaching=teach,
                     )
                 )
-        for n, day, code, room in placed:
+        for n, weekday, code, room in placed:
             TimetableLesson(
                 timetable_id=tt.id,
                 class_group_id=n.cls.id,
@@ -211,9 +335,9 @@ def build(institution_id: uuid.UUID, period_id: uuid.UUID) -> Timetable:
                 subject_id=n.plan.subject_id,
                 staff_id=n.staff_id,
                 room_id=room,
-                cycle_day=day,
+                cycle_day=weekday,
                 period_code=code,
-                duration_minutes=minutes(code),
+                duration_minutes=length[code],
                 lesson_kind="lesson",
             ).save(using=cmd.alias)  # recorded in bulk: the audit event notes the count
         cmd.note("lessons", None, len(placed))
@@ -253,9 +377,9 @@ def week(
         qs = qs.filter(class_subject_plan_id=class_subject_plan_id)
     if staff_id:
         qs = qs.filter(staff_id=staff_id)
-    times = bell()
+    times = bell(tt)
     start = monday(week_of)
-    order = {c: i for i, c in enumerate(b[0] for b in BELL)}
+    order = {c: i for i, c in enumerate(b[0] for b in schedule(tt))}
     out = []
     for ls in sorted(qs, key=lambda x: (x.cycle_day, order.get(x.period_code, 99))):
         on = start + dt.timedelta(days=ls.cycle_day - 1)
@@ -276,3 +400,67 @@ def week(
             }
         )
     return out
+
+
+def _session_of(institution_id: uuid.UUID) -> uuid.UUID | None:
+    """The session the school's active classes belong to."""
+    counts: dict[uuid.UUID, int] = {}
+    for pid in ClassGroup.objects.filter(institution_id=institution_id, status="active").values_list(
+        "period_id", flat=True
+    ):
+        counts[pid] = counts.get(pid, 0) + 1
+    return max(counts, key=lambda k: counts[k]) if counts else None
+
+
+def builder(institution_id: uuid.UUID) -> dict[str, Any]:
+    """TIM-01: the school's day, how many periods its classes need against the week's teaching periods, and the
+    timetable versions."""
+    from syntegra.institutions.models import Institution
+
+    ctx = context.require()
+    authz.require("timetable:view", ctx)
+    inst = Institution.objects.filter(pk=institution_id).first()
+    if inst is None:
+        raise NotFound("institution", institution_id)
+    authz.require_scope(inst.scope_node_id, ctx)
+    today = dt.date.today()
+    day = school_schedule(inst.id)
+    shape = describe(day)
+    classes = {c.id: c for c in ClassGroup.objects.filter(institution_id=inst.id, status="active").order_by("name")}
+    need: dict[uuid.UUID, int] = dict.fromkeys(classes, 0)
+    for p in ClassSubjectPlan.objects.filter(class_group_id__in=list(classes), valid_from__lte=today).exclude(
+        valid_to__lt=today
+    ):
+        need[p.class_group_id] += int(p.periods_per_week or 0)
+    slots = shape["periods"] * len(DAYS)
+    versions = list(Timetable.objects.filter(institution_id=inst.id).order_by("-version")[:8])
+    lessons = {v.id: n for v, n in ((v, TimetableLesson.objects.filter(timetable_id=v.id).count()) for v in versions)}
+    return {
+        "institution": {"id": inst.id, "name": inst.name},
+        "day": [{"code": c, "starts": a, "ends": b, "teaching": t} for c, a, b, t in day],
+        "shape": shape,
+        "slots": slots,
+        "classes": [{"name": c.name, "periods": need[c.id], "fits": need[c.id] <= slots} for c in classes.values()],
+        "most": max(need.values()) if need else 0,
+        "versions": [
+            {
+                "version": v.version,
+                "status": v.status,
+                "published_at": v.published_at,
+                "created_at": v.created_at,
+                "lessons": lessons[v.id],
+                "unmet": v.unmet_requirements or [],
+                "day": describe(schedule(v)),
+            }
+            for v in versions
+        ],
+        "can_build": ctx.has("timetable:manage"),
+    }
+
+
+def rebuild(institution_id: uuid.UUID, day: Day) -> Timetable:
+    """Build a new version of the school's timetable on the given school day."""
+    period_id = _session_of(institution_id)
+    if period_id is None:
+        raise HardValidation("TIM-NO-CLASSES", "The school has no active classes", "")
+    return build(institution_id, period_id, day)

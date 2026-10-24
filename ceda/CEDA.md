@@ -2236,3 +2236,66 @@ The 2026/2027 session gains its second term (11 January – 9 April 2027) and th
 report card names the day the next term begins, and every class of the sample secondary schools gets a form teacher in
 turn from the school's teachers. The first term's continuous assessment and examination marks were already loaded and
 locked, so the report cards are ready to issue.
+
+## 35. The school day, the timetable, staff cover and room booking (CR-009, phase 2)
+
+### 35.1 The school day and the builder (TIM-01)
+
+Each school sets its own day on `/timetable/builder` (`timetable:view` to open, `timetable:manage` to change — the
+head): when the day starts, how long a period is, how many periods come before the break, between the break and lunch
+and after lunch, and how long the break and lunch are (4–12 teaching periods of 30–80 minutes, starting 06:30–10:00 and
+ending by 17:00). The page shows the day in force, the teaching time it gives, the periods each class needs a week
+against the week's teaching periods (a class that cannot fit is flagged) and the timetable versions with the day each
+was built on. Building on a new day makes a new version of the timetable (§33.2) with that day's periods
+(`period_structure`); it is published, superseding the previous one, when every period fits, and kept as a draft listing
+what could not be placed otherwise. Later builds keep the school's day; lesson lengths, the scheme of work's minutes and
+the times shown everywhere follow it.
+
+### 35.2 The timetable (TIM-02)
+
+`/timetable` (`timetable:view`: teachers, heads, facilities officers) shows one week as a grid — periods down, Monday to
+Friday across, with the break and lunch — for a class, a teacher or a room, chosen from the school's lists; a teacher
+opens on their own week. The week's changes are shown on the lessons: who covers a lesson (flagged when the cover
+teacher is not authorised for the subject), or that it is supervised study, merged or cancelled; a covering teacher sees
+the lessons they cover on their own week. A room's week also shows its bookings.
+
+### 35.3 Staff cover (TIM-03)
+
+On `/cover` (`cover:view`, `cover:manage`: the head; confidential) the head records a teacher's absence for one or more
+whole school days with its kind — sickness, training, official duty, personal, approved leave, other
+(`staff_absence`, status `recorded`; overlapping absences are refused). Every lesson the teacher is timetabled to teach on
+the day appears on that day's board. For each, the board offers only staff who are free that period — not teaching, not
+absent, not already covering — ranked by: authorised for the subject at the class's level, then the fewest cover lessons
+this term, then the fewest lessons that day. The head confirms a teacher or chooses supervised study with work set,
+merging the class or cancelling the lesson. Cover is never arranged automatically (G8); a teacher without the
+authorisation is recorded as such (`cover_assignment.is_qualified`) with the ranking evidence (`rank_evidence`). The
+dated lesson (`lesson_occurrence`) is materialised with the teacher who actually takes it (status `covered`, or
+`cancelled` for an alternative), so the absent teacher cannot log it as taught. Cover can be cancelled until the day
+has passed, returning the lesson to the board. The board counts absences, lessons affected, arranged and still to
+arrange, and each teacher's cover this term (fairness).
+
+### 35.4 Rooms and booking permissions (TIM-04)
+
+`/rooms/bookings` (`room:book`: teachers; `room:*`: the head and the facilities officer) lists the school's bookable rooms
+— laboratories, workshops, skills labs, the ICT suite, the library, the hall, sports areas and classrooms — with their
+places and booking rule, the week's bookings and, for the head, the requests waiting. Every request is checked: the room
+is bookable, not assessed unsafe and big enough for the number of people; the time is in the future, 07:00–18:00,
+Monday to Saturday, 15 minutes to 4 hours and at most 60 days ahead; and the room is free — no timetabled lesson in it
+then and no other live booking (`room_booking`). Whether it is confirmed at once depends on who asks and for what:
+
+| Request | Outcome |
+|---|---|
+| By the head or the facilities officer | Confirmed |
+| The hall or a sports area | Waits for the head's approval |
+| More than 2 hours, or more than 14 days ahead | Waits for the head's approval |
+| A laboratory, workshop or skills lab by a teacher of a subject that uses it (e.g. Biology, Chemistry, Physics, Basic Science, Agricultural Science for a laboratory) | Confirmed |
+| A laboratory, workshop or skills lab by any other teacher | Waits for the head's approval |
+| A classroom, the ICT suite or the library | Confirmed |
+
+The teacher is told the outcome and why. The head approves (the checks run again) or declines; the person who booked,
+or the head, cancels a booking that has not started.
+
+### 35.5 Demonstration data
+
+The sample secondary schools gain a Science and ICT block with a science laboratory (40 places), an ICT suite (30), a
+library (60) and an assembly hall (400).

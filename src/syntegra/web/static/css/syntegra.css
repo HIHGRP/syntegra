@@ -254,3 +254,17 @@ form.assign { min-width: 16rem; }
 @media (max-width: 640px) { .rc-facts { grid-template-columns: 1fr; } .rc-head { flex-direction: column; align-items: flex-start; } }
 @media print { .report-card { border: 0; padding: 0; max-width: none; } }
 .span-all { grid-column: 1 / -1; }
+/* timetable, cover and rooms (CR-009 phase 2) */
+.grid-form { display: grid; gap: 0 1rem; grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr)); }
+.grid-form > p { grid-column: 1 / -1; }
+table.timetable { width: 100%; table-layout: fixed; border-collapse: collapse; }
+table.timetable th[scope="row"] { width: 6.5rem; text-align: left; }
+table.timetable td, table.timetable th { border: 1px solid var(--line); padding: .3rem; vertical-align: top; }
+table.timetable .today { background: var(--ok-bg); }
+table.timetable tr.pause td, table.timetable tr.pause th, tr.pause td { color: var(--muted); font-size: .8rem; text-align: center; background: var(--surface-2, transparent); }
+.lesson { border-left: 3px solid var(--chart-1); padding: .15rem .35rem; margin-bottom: .2rem; font-size: .82rem; line-height: 1.25; }
+.lesson strong { display: block; } .lesson span { color: var(--muted); }
+.lesson.changed { border-left-color: var(--bad); } .lesson.covering { border-left-color: var(--warn); }
+.lesson.booked { border-left-color: var(--accent, #7a4dd8); }
+.rules li { margin-bottom: .4rem; }
+.picker { display: flex; flex-wrap: wrap; gap: 0 1rem; } .picker label { flex: 1 1 14rem; }

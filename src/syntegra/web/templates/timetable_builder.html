@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "_timetable_tabs.html" import timetable_tabs with context %}
+{% block title %}School day and timetable builder{% endblock %}
+{% block content %}{% set s = d.shape %}
+<h1>School day and timetable builder</h1>
+<p class="muted">{{ d.institution.name }} · {{ s.periods }} teaching periods of {{ s.period }} minutes, {{ s.start }}–{{ s.end }} · {{ d.slots }} teaching periods a week</p>
+{{ timetable_tabs("builder", school, schools) }}
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<div class="grid2">
+<section class="card">
+  <h2>The school day now</h2>
+  <table class="compact"><thead><tr><th scope="col">Period</th><th scope="col">From</th><th scope="col">To</th></tr></thead>
+    <tbody>{% for p in d.day %}<tr{% if not p.teaching %} class="pause"{% endif %}><td>{{ p.code if p.teaching else ("Break" if p.code == "BRK" else "Lunch") }}</td><td>{{ p.starts }}</td><td>{{ p.ends }}</td></tr>{% endfor %}</tbody></table>
+  <p class="muted">{{ s.teaching_minutes // 60 }} h {{ s.teaching_minutes % 60 }} min of teaching a day, Monday to Friday.</p>
+</section>
+<section class="card">
+  <h2>Change the school day</h2>
+  {% if d.can_build %}
+  <form method="post" class="grid-form" id="day">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="school" value="{{ school.id }}">
+    <label>Day starts<input type="time" name="start" required value="{{ posted.get('start', s.start) }}"></label>
+    <label>Period length (minutes)<input type="number" name="period" min="30" max="80" required value="{{ posted.get('period', s.period) }}"></label>
+    <label>Periods before the break<input type="number" name="before_break" min="1" max="8" required value="{{ posted.get('before_break', s.before_break) }}"></label>
+    <label>Break (minutes)<input type="number" name="break_minutes" min="10" max="60" required value="{{ posted.get('break_minutes', s.break_minutes) }}"></label>
+    <label>Periods between the break and lunch<input type="number" name="before_lunch" min="0" max="8" required value="{{ posted.get('before_lunch', s.before_lunch) }}"></label>
+    <label>Lunch (minutes)<input type="number" name="lunch_minutes" min="20" max="90" required value="{{ posted.get('lunch_minutes', s.lunch_minutes) }}"></label>
+    <label>Periods after lunch<input type="number" name="after_lunch" min="0" max="8" required value="{{ posted.get('after_lunch', s.after_lunch) }}"></label>
+    <p><button class="primary">Build the timetable on this day</button></p>
+    <p class="hint">4 to 12 teaching periods, ending by 17:00. The timetable is rebuilt from the classes' subjects and teachers of record; it is published when every period fits, otherwise kept as a draft with what could not be placed.</p>
+  </form>
+  {% else %}<p class="muted">Only the head changes the school day.</p>{% endif %}
+</section>
+</div>
+<section class="card scroll-x">
+  <h2>Periods each class needs</h2>
+  <p class="muted">The week has {{ d.slots }} teaching periods; the busiest class needs {{ d.most }}.</p>
+  <table class="compact"><thead><tr><th scope="col">Class</th><th scope="col" class="num">Periods a week</th><th scope="col">Fits the week</th></tr></thead>
+    <tbody>{% for c in d.classes %}<tr><td>{{ c.name }}</td><td class="num"><span class="meter" aria-hidden="true"><span style="width: {{ [c.periods * 100 // (d.slots or 1), 100]|min }}%"></span></span>{{ c.periods }}</td><td>{% if c.fits %}<span class="pill pill-ok">Yes</span>{% else %}<span class="pill pill-bad">No — {{ c.periods - d.slots }} too many</span>{% endif %}</td></tr>{% endfor %}</tbody></table>
+</section>
+<section class="card scroll-x">
+  <h2>Timetable versions</h2>
+  <table class="compact"><thead><tr><th scope="col">Version</th><th scope="col">Status</th><th scope="col">School day</th><th scope="col" class="num">Lessons</th><th scope="col">Built</th><th scope="col">Not placed</th></tr></thead>
+    <tbody>{% for v in d.versions %}<tr><td>{{ v.version }}</td><td><span class="pill{% if v.status == 'published' %} pill-ok{% endif %}">{{ v.status }}</span></td><td>{{ v.day.periods }} × {{ v.day.period }} min, {{ v.day.start }}–{{ v.day.end }}</td><td class="num">{{ v.lessons }}</td><td>{{ v.created_at|localtime }}</td>
+      <td>{% for u in v.unmet[:4] %}{{ u.class }}: {{ u.missing_periods }} period{{ "" if u.missing_periods == 1 else "s" }}{% if u.reason is defined %} ({{ u.reason }}){% endif %}{% if not loop.last %}; {% endif %}{% else %}—{% endfor %}{% if v.unmet|length > 4 %} … and {{ v.unmet|length - 4 }} more{% endif %}</td></tr>
+    {% else %}<tr><td colspan="6" class="muted">No timetable built yet.</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endblock %}

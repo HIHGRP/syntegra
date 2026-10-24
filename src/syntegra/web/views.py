@@ -1544,6 +1544,223 @@ def report_card(request: HttpRequest, class_id: uuid.UUID, learner_id: uuid.UUID
     )
 
 
+# ---------------------------------------------------------- timetable, school day, cover and rooms (CR-009 phase 2)
+def _school_for(request: HttpRequest) -> Any:
+    """The school the page is about: the one asked for, else the first school in the user's scope."""
+    from syntegra.timetable import rooms
+
+    options = rooms.schools()
+    picked = request.POST.get("school") or request.GET.get("school")
+    if picked:
+        want = _uuid_or_fail(picked, "school")
+        found = next((s for s in options if s.id == want), None)
+        if found is None:
+            raise NotFound("school", want)
+        return found, options
+    if not options:
+        raise HardValidation("PAGE-SCHOOL", "No school in your scope", "These pages are for a school's staff.")
+    return options[0], options
+
+
+def _time_or_fail(value: str | None, what: str) -> dt.time:
+    try:
+        h, m = (value or "").split(":")[:2]
+        return dt.time(int(h), int(m))
+    except ValueError as exc:
+        raise HardValidation("PAGE-PARAM", f"Invalid {what}", "Use the 24-hour clock, e.g. 14:30.") from exc
+
+
+@require_http_methods(["GET"])
+@page("TIM-02")
+def timetable_view(request: HttpRequest) -> HttpResponse:
+    """A class's, teacher's or room's week with today's changes; a teacher opens on their own week."""
+    from syntegra.curriculum.lessons import my_staff_id
+    from syntegra.timetable import grid
+
+    school, schools = _school_for(request)
+    week = _date_or_none(request.GET.get("week"), "week") or dt.date.today()
+    picks = {k: request.GET.get(k) for k in ("class", "teacher", "room")}
+    kw: dict[str, Any] = {}
+    for key, arg in (("class", "class_id"), ("teacher", "staff_id"), ("room", "room_id")):
+        if picks[key]:
+            kw[arg] = _uuid_or_fail(picks[key], key)
+            break
+    if not kw:
+        mine = my_staff_id()
+        if mine is not None:
+            kw["staff_id"] = mine
+        else:
+            from syntegra.academic.models import ClassGroup
+
+            first = ClassGroup.objects.filter(institution_id=school.id, status="active").order_by("name").first()
+            if first is None:
+                raise HardValidation("TIM-NO-CLASSES", "The school has no active classes", "")
+            kw["class_id"] = first.id
+    d = grid.week_grid(school.id, week, **kw)
+    return render(
+        request, "timetable.html", _ctx(request, d=d, schools=schools, school=school, page=pages.page("TIM-02"))
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("TIM-01")
+def timetable_builder(request: HttpRequest) -> HttpResponse:
+    """The school day (start, period length, periods around the break and lunch) and building the timetable on it."""
+    from syntegra.timetable import services as tts
+
+    school, schools = _school_for(request)
+    message, problem = None, None
+    if request.method == "POST":
+        try:
+            if not context.require().has("timetable:manage"):
+                raise Forbidden("Only the head builds the school's timetable.")
+            day = tts.school_day(
+                start=request.POST.get("start", ""),
+                period=_int_or_none(request.POST.get("period")) or 0,
+                before_break=_int_or_none(request.POST.get("before_break")) or 0,
+                break_minutes=_int_or_none(request.POST.get("break_minutes")) or 0,
+                before_lunch=_int_or_none(request.POST.get("before_lunch")) or 0,
+                lunch_minutes=_int_or_none(request.POST.get("lunch_minutes")) or 0,
+                after_lunch=_int_or_none(request.POST.get("after_lunch")) or 0,
+            )
+            tt = tts.rebuild(school.id, day)
+            placed = (tt.solver_run or {}).get("lessons_placed", 0)
+            message = (
+                f"Version {tt.version} built and published: {placed} lessons placed."
+                if tt.status == "published"
+                else f"Version {tt.version} built as a draft: some periods could not be placed (listed below)."
+            )
+        except DomainError as exc:
+            if isinstance(exc, Forbidden):
+                raise
+            problem = exc.problem()
+    return render(
+        request,
+        "timetable_builder.html",
+        _ctx(
+            request,
+            d=tts.builder(school.id),
+            schools=schools,
+            school=school,
+            posted=request.POST if problem else {},
+            message=message,
+            problem=problem,
+            page=pages.page("TIM-01"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("TIM-03")
+def cover_board(request: HttpRequest) -> HttpResponse:
+    """Record a teacher's absence; for each affected lesson choose cover from the ranked free staff."""
+    from syntegra.timetable import cover
+
+    school, schools = _school_for(request)
+    on = _date_or_none(request.POST.get("on") or request.GET.get("on"), "date") or dt.date.today()
+    message, problem = None, None
+    if request.method == "POST":
+        action = request.POST.get("action")
+        try:
+            if action == "absence":
+                first = _date_or_none(request.POST.get("first"), "first day") or on
+                cover.record_absence(
+                    school.id,
+                    _uuid_or_fail(request.POST.get("staff_id"), "teacher"),
+                    first,
+                    _date_or_none(request.POST.get("last"), "last day"),
+                    request.POST.get("absence_type", ""),
+                )
+                message = "Absence recorded — the affected lessons are listed below."
+            elif action == "assign":
+                choice = request.POST.get("choice", "")
+                lesson = _uuid_or_fail(request.POST.get("lesson_id"), "lesson")
+                if choice.startswith("staff:"):
+                    cover.assign(lesson, on, cover_staff_id=_uuid_or_fail(choice[6:], "teacher"))
+                else:
+                    cover.assign(lesson, on, alternative=choice.removeprefix("alt:") or None)
+                message = "Cover arranged."
+            elif action == "cancel":
+                cover.cancel(_uuid_or_fail(request.POST.get("cover_id"), "cover"))
+                message = "Cover cancelled — the lesson is back on the board."
+        except DomainError as exc:
+            if isinstance(exc, Forbidden):
+                raise
+            problem = exc.problem()
+    return render(
+        request,
+        "cover.html",
+        _ctx(
+            request,
+            d=cover.board(school.id, on),
+            schools=schools,
+            school=school,
+            prev=on - dt.timedelta(days=1),
+            next=on + dt.timedelta(days=1),
+            message=message,
+            problem=problem,
+            page=pages.page("TIM-03"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("TIM-04")
+def room_bookings(request: HttpRequest) -> HttpResponse:
+    """Book a room under the school's booking rules; the head approves or declines what waits."""
+    from syntegra.timetable import rooms
+
+    school, schools = _school_for(request)
+    week = _date_or_none(request.GET.get("week"), "week") or dt.date.today()
+    message, problem, decided = None, None, None
+    if request.method == "POST":
+        action = request.POST.get("action")
+        try:
+            if action == "book":
+                on = _date_or_none(request.POST.get("on"), "date")
+                if on is None:
+                    raise HardValidation("PAGE-PARAM", "Choose the date", "")
+                r = rooms.book(
+                    _uuid_or_fail(request.POST.get("room_id"), "room"),
+                    on,
+                    _time_or_fail(request.POST.get("starts"), "start time"),
+                    _time_or_fail(request.POST.get("ends"), "end time"),
+                    request.POST.get("purpose", ""),
+                    _int_or_none(request.POST.get("people")) or 0,
+                )
+                decided, message = r["status"], r["reason"]
+                week = on
+            elif action in ("approve", "decline"):
+                rooms.decide_request(_uuid_or_fail(request.POST.get("booking_id"), "booking"), action == "approve")
+                message = "Booking approved." if action == "approve" else "Booking declined."
+            elif action == "cancel":
+                rooms.cancel(_uuid_or_fail(request.POST.get("booking_id"), "booking"))
+                message = "Booking cancelled."
+        except DomainError as exc:
+            if isinstance(exc, Forbidden):
+                raise
+            problem = exc.problem()
+    return render(
+        request,
+        "rooms.html",
+        _ctx(
+            request,
+            d=rooms.overview(school.id, week),
+            schools=schools,
+            school=school,
+            posted=request.POST if problem else {},
+            today=dt.date.today(),
+            decided=decided,
+            message=message,
+            problem=problem,
+            page=pages.page("TIM-04"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
 # ---------------------------------------------------------------------------------- administration (CR-007)
 @require_http_methods(["GET", "POST"])
 @page("ADM-102")

@@ -48,6 +48,10 @@ IMPLEMENTED: dict[str, str] = {
     "CUR-09": "lesson_plans",
     "ASM-01": "markbook",
     "ASM-04": "report_cards",
+    "TIM-01": "timetable_builder",
+    "TIM-02": "timetable",
+    "TIM-03": "cover_board",
+    "TIM-04": "room_bookings",
     "ADM-101": "access_levels",
     "ADM-102": "sessions_admin",
     "DOC-104": "documents",
@@ -72,6 +76,7 @@ ENTRY_LEVEL: dict[str, str] = {
     "DOC-104": "confidential",  # documents hold personal records; each document's own level is checked as well
     "DOC-105": "confidential",
     "ASM-04": "confidential",  # report cards carry each learner's results, attendance and comments
+    "TIM-03": "confidential",  # the cover board shows who is absent and the kind of absence (confidential)
 }
 
 

@@ -217,7 +217,7 @@ def draft_scheme(assignment_id: uuid.UUID, on: dt.date | None = None) -> SchemeO
                 status="published",
             )
         )
-        minutes = int(plan.periods_per_week or 0) * timetable.minutes(timetable.TEACHING[0])
+        minutes = int(plan.periods_per_week or 0) * timetable.period_minutes(cls.institution_id)
         for i, monday in enumerate(teaching):
             cmd.add(
                 SchemeWeek(
@@ -493,7 +493,7 @@ def log_delivery(
     week = timetable.week(cls.institution_id, occurs_on, class_subject_plan_id=plan.id)
     planned = _planned(_scheme(ta.id), week).get(lesson.id, [])
     tz = ZoneInfo(settings.TIME_ZONE)
-    a, b = timetable.bell()[lesson.period_code]
+    a, b = timetable.bell(tt)[lesson.period_code]
     with uow.command("ops", "lesson:deliver", action="log_delivery", record_kind="delivery_log") as cmd:
         o = (
             LessonOccurrence.objects.using(cmd.alias)
@@ -520,6 +520,10 @@ def log_delivery(
                 raise ConflictError("CUR-LOGGED", "This lesson was logged a moment ago", "Reload the page.") from exc
         elif DeliveryLog.objects.using(cmd.alias).filter(lesson_occurrence_id=o.id).exists():
             raise ConflictError("CUR-LOGGED", "This lesson is already logged", "A delivery log cannot be changed.")
+        elif o.status in ("covered", "cancelled"):
+            raise ConflictError(
+                "CUR-COVERED", f"This lesson was {o.status}", "A lesson taken by cover or cancelled is not logged here."
+            )
         else:
             cmd.update(o, status="taught")
         lg = cmd.add(

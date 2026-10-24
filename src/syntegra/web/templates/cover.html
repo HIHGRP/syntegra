@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% from "_timetable_tabs.html" import timetable_tabs with context %}
+{% block title %}Cover — {{ d.on|date }}{% endblock %}
+{% block content %}
+<h1>Cover — {{ d.on.strftime("%A") }} {{ d.on|date }}</h1>
+<p class="muted">{{ d.institution }} · <a href="?school={{ school.id }}&amp;on={{ prev }}">← {{ prev.strftime("%A") }}</a> · <a href="?school={{ school.id }}&amp;on={{ next }}">{{ next.strftime("%A") }} →</a></p>
+{{ timetable_tabs("cover", school, schools) }}
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<section class="kpis" aria-label="Today">
+  <div class="kpi"><span class="v">{{ d.absences|length }}</span><span class="k">teachers absent</span></div>
+  <div class="kpi"><span class="v">{{ d.rows|length }}</span><span class="k">lessons affected</span></div>
+  <div class="kpi"><span class="v">{{ d.covered }}</span><span class="k">covered or arranged</span></div>
+  <div class="kpi"><span class="v">{{ d.gaps }}</span><span class="k">still to arrange</span></div>
+</section>
+{% if not d.weekday %}<div class="alert">No lessons are timetabled on this day.</div>{% elif not d.timetable %}<div class="alert">The school has no published timetable.</div>{% endif %}
+{% if d.can_manage %}
+<details class="card no-print"{% if not d.absences %} open{% endif %}><summary><strong>Record an absence</strong></summary>
+  <form method="post" class="grid-form">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="absence"><input type="hidden" name="school" value="{{ school.id }}"><input type="hidden" name="on" value="{{ d.on }}">
+    <label>Teacher<select name="staff_id" required>{% for s in d.staff %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></label>
+    <label>Kind of absence<select name="absence_type">{% for k, v in d.types.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+    <label>First day<input type="date" name="first" required value="{{ d.on }}"></label>
+    <label>Last day <span class="hint opt">— leave empty for one day</span><input type="date" name="last"></label>
+    <p><button class="primary">Record the absence</button></p>
+  </form>
+</details>
+{% endif %}
+{% if d.absences %}
+<section class="card scroll-x"><h2>Absent today</h2>
+  <table class="compact"><thead><tr><th scope="col">Teacher</th><th scope="col">Kind</th><th scope="col">Days</th><th scope="col" class="num">Lessons today</th></tr></thead>
+  <tbody>{% for a in d.absences %}<tr><td>{{ a.staff }}</td><td>{{ a.type }}</td><td>{{ a.first|date }}{% if a.last != a.first %} – {{ a.last|date }}{% endif %}</td><td class="num">{{ a.lessons }}</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endif %}
+{% if d.rows %}
+<section class="card scroll-x" id="lessons"><h2>Lessons to cover</h2>
+  <table class="compact cover">
+    <thead><tr><th scope="col">Period</th><th scope="col">Class and subject</th><th scope="col">Room</th><th scope="col">Absent teacher</th><th scope="col">Cover</th></tr></thead>
+    <tbody>
+    {% for r in d.rows %}
+      <tr>
+        <td>{{ r.period }}<br><span class="hint opt">{{ r.starts.strftime("%H:%M") }}–{{ r.ends.strftime("%H:%M") }}</span></td>
+        <td><strong>{{ r.class }}</strong> · {{ r.subject }}</td><td>{{ r.room }}</td><td>{{ r.teacher }}</td>
+        <td>{% if r.cover %}
+            {% if r.cover.staff %}<span class="pill pill-ok">{{ r.cover.staff }}</span>{% if not r.cover.qualified %} <span class="sev sev-high" title="G8">not authorised for {{ r.subject }}</span>{% endif %}{% else %}<span class="pill">{{ r.cover.alternative }}</span>{% endif %}
+            {% if d.can_manage %}<form method="post" class="inline-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="cancel"><input type="hidden" name="school" value="{{ school.id }}"><input type="hidden" name="on" value="{{ d.on }}"><input type="hidden" name="cover_id" value="{{ r.cover.id }}"><button>Cancel</button></form>{% endif %}
+          {% elif d.can_manage %}
+            <form method="post" class="inline-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="assign"><input type="hidden" name="school" value="{{ school.id }}"><input type="hidden" name="on" value="{{ d.on }}"><input type="hidden" name="lesson_id" value="{{ r.lesson_id }}">
+              <label><span class="sr">Cover for {{ r.class }} {{ r.subject }}</span><select name="choice">
+                <optgroup label="Free teachers, best first">{% for c in r.candidates[:8] %}<option value="staff:{{ c.staff_id }}">{{ c.name }} — {{ "authorised" if c.qualified else "not authorised" }} · {{ c.cover_load }} cover this term · {{ c.lessons_today }} lessons today</option>{% endfor %}</optgroup>
+                <optgroup label="Or">{% for k, v in d.alternatives.items() %}<option value="alt:{{ k }}">{{ v }}</option>{% endfor %}</optgroup>
+              </select></label> <button class="primary">Arrange</button></form>
+            {% if not r.candidates %}<span class="hint">No teacher is free this period.</span>{% endif %}
+          {% else %}<span class="sev sev-high">To arrange</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted">Only teachers free that period are offered — not teaching, not absent, not already covering — ranked: authorised for the subject at the class's level, then the fewest cover lessons this term, then the fewest lessons today. Cover is never arranged automatically; a teacher without the authorisation is recorded as such (G8).</p>
+</section>
+{% endif %}
+<section class="card scroll-x"><h2>Cover taken this term</h2>
+  <table class="compact"><thead><tr><th scope="col">Teacher</th><th scope="col" class="num">Cover lessons</th></tr></thead>
+  <tbody>{% for x in d.load[:12] %}<tr><td>{{ x.name }}</td><td class="num">{{ x.covers }}</td></tr>{% else %}<tr><td colspan="2" class="muted">—</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endblock %}
