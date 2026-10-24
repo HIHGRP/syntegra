@@ -795,6 +795,7 @@ Read from the files that pin them; `cedagen.py check` fails when this table no l
 | Runtime library — pillow | 13.0.0 | `pyproject.toml` |
 | Runtime library — boto3 | 1.43.105 | `pyproject.toml` |
 | Runtime library — botocore | 1.43.105 | `pyproject.toml` |
+| Runtime library — fpdf2 | 2.8.3 | `pyproject.toml` |
 | Quality gate — pytest | 8.4.2 | `pyproject.toml` [dev] |
 | Quality gate — pytest-django | 4.11.1 | `pyproject.toml` [dev] |
 | Quality gate — ruff | 0.13.3 | `pyproject.toml` [dev] |
