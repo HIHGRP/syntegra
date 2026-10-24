@@ -24,6 +24,9 @@
     {% if ctx.has("hr:view") and can_open("HRM-01") %}<a href="/hr/establishment">HR</a>{% endif %}
     {% if ctx.has("lesson:plan") and can_open("CUR-09") %}<a href="/teaching/plans"{% if request.path.startswith("/teaching") %} aria-current="page"{% endif %}>Lessons</a>{% endif %}
     {% if ctx.has("timetable:view") and can_open("TIM-02") %}<a href="/timetable"{% if request.path.startswith("/timetable") or request.path.startswith("/cover") or request.path.startswith("/rooms") %} aria-current="page"{% endif %}>Timetable</a>{% endif %}
+    {% if ctx.has("behaviour:view") and can_open("BEH-02") %}<a href="/behaviour"{% if request.path.startswith("/behaviour") %} aria-current="page"{% endif %}>Behaviour</a>{% endif %}
+    {% if ctx.has("safeguarding:manage") and can_open("SAF-02") %}<a href="/safeguarding"{% if request.path.startswith("/safeguarding/cases") or request.path == "/safeguarding" %} aria-current="page"{% endif %}>Safeguarding</a>{% elif ctx.has("safeguarding:report") and can_open("SAF-01") %}<a href="/safeguarding/concerns/new"{% if request.path.startswith("/safeguarding") %} aria-current="page"{% endif %}>Report a concern</a>{% endif %}
+    {% if ctx.has("send:view") and can_open("SEN-01") %}<a href="/send"{% if request.path.startswith("/send") %} aria-current="page"{% endif %}>SEN register</a>{% endif %}
     {% if ctx.has("exam:view") and can_open("EXM-01") %}<a href="/exams/series">Exams</a>{% endif %}
     {% if (ctx.has("document:view") or ctx.has("document:search") or ctx.has("document:upload")) and can_open("DOC-104") %}<a href="/documents"{% if request.path.startswith("/documents") or request.path.endswith("/documents") %} aria-current="page"{% endif %}>Documents</a>{% endif %}
     {% if ctx.has("budget:view") and can_open("FIN-02") %}<a href="/finance/performance">Budgets</a>{% endif %}

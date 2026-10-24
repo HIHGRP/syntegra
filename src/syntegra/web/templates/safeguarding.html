@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Safeguarding caseload{% endblock %}
+{% block content %}
+<h1>Safeguarding caseload</h1>
+<p class="muted">Designated safeguarding lead · special category: every case you open is written to its access log.</p>
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}{% if opened %} <a href="/safeguarding/cases/{{ opened }}">Open the case</a>{% endif %}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<section class="kpis" aria-label="Caseload">
+  <div class="kpi"><span class="v">{{ d.new|length }}</span><span class="k">new concerns to act on</span></div>
+  <div class="kpi"><span class="v">{{ d.open|length }}</span><span class="k">open cases</span></div>
+  <div class="kpi"><span class="v">{{ d.open|selectattr("risk_code", "in", ["high", "immediate"])|list|length }}</span><span class="k">high or immediate risk</span></div>
+  <div class="kpi"><span class="v">{{ d.open|selectattr("overdue")|list|length }}</span><span class="k">reviews overdue</span></div>
+</section>
+<section class="card scroll-x" id="new"><h2>New concerns</h2>
+  <table class="compact"><thead><tr><th scope="col">Received</th><th scope="col">Learner</th><th scope="col">Kind</th><th scope="col">Receipt</th><th scope="col">Act</th></tr></thead>
+  <tbody>{% for c in d.new %}<tr><td>{{ c.at.strftime("%d %b %Y %H:%M") }}</td><td>{{ c.learner }}</td><td>{{ c.category }}</td><td><code>{{ c.receipt }}</code></td>
+    <td><form method="post" class="inline-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="concern_id" value="{{ c.id }}"><label><span class="sr">Risk</span><select name="risk">{% for k, v in d.risks.items() %}<option value="{{ k }}"{% if k == "medium" %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></label><button class="primary">{{ "Add to open case" if c.open_case else "Open a case" }}</button></form></td></tr>
+  {% else %}<tr><td colspan="5" class="muted">No new concerns.</td></tr>{% endfor %}</tbody></table>
+</section>
+<section class="card scroll-x" id="open"><h2>Open cases</h2>
+  <table class="compact"><thead><tr><th scope="col">Case</th><th scope="col">Learner</th><th scope="col">Risk</th><th scope="col">Opened</th><th scope="col">Review due</th></tr></thead>
+  <tbody>{% for c in d.open %}<tr><td><a href="/safeguarding/cases/{{ c.id }}">{{ c.reference }}</a></td><td>{{ c.learner }}</td><td><span class="sev sev-{{ 'critical' if c.risk_code == 'immediate' else c.risk_code or 'low' }}">{{ c.risk }}</span></td><td>{{ c.opened|date }}</td><td>{{ c.review_due_on|date if c.review_due_on else "—" }}{% if c.overdue %} <span class="pill pill-bad">overdue</span>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">No open cases.</td></tr>{% endfor %}</tbody></table>
+</section>
+{% if d.closed %}<section class="card scroll-x"><h2>Recently closed</h2><table class="compact"><tbody>{% for c in d.closed %}<tr><td><a href="/safeguarding/cases/{{ c.id }}">{{ c.reference }}</a></td><td>{{ c.learner }}</td><td>{{ c.closed|localtime if c.closed else "" }}</td></tr>{% endfor %}</tbody></table></section>{% endif %}
+{% endblock %}

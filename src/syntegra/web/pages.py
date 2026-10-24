@@ -52,6 +52,14 @@ IMPLEMENTED: dict[str, str] = {
     "TIM-02": "timetable",
     "TIM-03": "cover_board",
     "TIM-04": "room_bookings",
+    "BEH-01": "behaviour_log",
+    "BEH-02": "behaviour",
+    "BEH-101": "behaviour_policy",
+    "SAF-01": "concern_new",
+    "SAF-02": "safeguarding",
+    "SAF-03": "safeguarding_case",
+    "SEN-01": "send_register",
+    "SEN-02": "send_profile",
     "ADM-101": "access_levels",
     "ADM-102": "sessions_admin",
     "DOC-104": "documents",
@@ -77,6 +85,9 @@ ENTRY_LEVEL: dict[str, str] = {
     "DOC-105": "confidential",
     "ASM-04": "confidential",  # report cards carry each learner's results, attendance and comments
     "TIM-03": "confidential",  # the cover board shows who is absent and the kind of absence (confidential)
+    "SAF-01": "internal",  # any member of staff records a concern; nothing comes back to them but the receipt
+    "BEH-01": "confidential",  # the class's learners are listed by name
+    "BEH-02": "confidential",  # named learners' behaviour records
 }
 
 

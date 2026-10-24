@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Case {{ d.case.reference }}{% endblock %}
+{% block content %}{% set c = d.case %}
+<p class="no-print"><a href="/safeguarding">← Caseload</a></p>
+<h1>Case {{ c.reference }} — {{ c.learner }}</h1>
+<p class="muted">Opened {{ c.opened.strftime("%d %b %Y") }} by {{ c.dsl }} · <span class="sev sev-{{ 'critical' if c.risk == 'immediate' else c.risk or 'low' }}">Risk: {{ c.risk_label }}</span> · {% if c.status == "closed" %}<span class="pill">Closed {{ c.closed.strftime("%d %b %Y") }}</span>{% else %}review due {{ c.review_due_on|date if c.review_due_on else "—" }}{% if c.overdue %} <span class="pill pill-bad">overdue</span>{% endif %}{% endif %}</p>
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<div class="grid2c">
+<section class="card" id="chronology"><h2>Chronology</h2>
+  <ol class="chronology">{% for e in d.chronology %}<li{% if e.is_concern %} class="concern"{% endif %}><strong>{{ e.kind }}</strong> <span class="muted">{{ e.at.strftime("%d %b %Y %H:%M") }} · {{ e.by }}{% if e.receipt %} · receipt {{ e.receipt }}{% endif %}</span><p>{{ e.text }}</p></li>{% endfor %}</ol>
+  {% if c.status != "closed" and d.can_manage %}
+  <form method="post" class="grid-form no-print"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="entry">
+    <label>Add<select name="kind">{% for k, v in d.kinds.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+    <label>What was done or decided<textarea name="text" rows="3" required minlength="10"></textarea></label>
+    <p><button class="primary">Add to the chronology</button></p></form>
+  {% endif %}
+</section>
+<div>
+<section class="card"><h2>Alongside the case</h2>
+  <p><strong>Attendance, last 60 days:</strong> {{ d.context.attendance.attended }} of {{ d.context.attendance.possible }} sessions{% if d.context.attendance.rate is not none %} ({{ (d.context.attendance.rate * 100)|round(0)|int }}%){% endif %}, {{ d.context.attendance.unauthorised }} unauthorised</p>
+  <p><strong>Behaviour:</strong> {% for b in d.context.behaviour %}{{ b.at.strftime("%d %b") }} {{ b.label }} ({{ "%+d"|format(b.points) }}){% if not loop.last %}; {% endif %}{% else %}nothing recorded{% endfor %}</p>
+</section>
+{% if c.status != "closed" and d.can_manage %}
+<section class="card no-print"><h2>Risk and review</h2>
+  <form method="post" class="grid-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="risk">
+    <label>Risk<select name="risk">{% for k, v in d.risks.items() %}<option value="{{ k }}"{% if k == c.risk %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+    <label>Next review<input type="date" name="review" value="{{ c.review_due_on or '' }}"></label><p><button>Update</button></p></form>
+</section>
+{% endif %}
+<section class="card"><h2>Referrals</h2>
+  {% for r in d.referrals %}<div class="referral"><strong>{{ r.agency }}</strong> <span class="pill">{{ r.status }}</span><br><span class="muted">{{ r.at.strftime("%d %b %Y") }} · {{ r.basis }}{% if r.contact %} · {{ r.contact }}{% endif %}</span>{% if r.outcome %}<p>{{ r.outcome }}</p>{% endif %}
+    {% if r.status == "sent" and d.can_manage and c.status != "closed" %}<form method="post" class="grid-form no-print"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="outcome"><input type="hidden" name="referral_id" value="{{ r.id }}"><label>Outcome<select name="status"><option value="acknowledged">Acknowledged</option><option value="accepted">Accepted</option><option value="declined">Declined</option></select></label><label>Notes<input name="outcome" maxlength="2000"></label><p><button>Record outcome</button></p></form>{% endif %}</div>
+  {% else %}<p class="muted">No referrals.</p>{% endfor %}
+  {% if c.status != "closed" and d.can_manage %}<details class="no-print"><summary>Refer to an agency</summary>
+    <form method="post" class="grid-form"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="refer">
+      <label>Agency<input name="agency" list="agencies" required></label><datalist id="agencies">{% for a in d.agencies %}<option value="{{ a }}">{% endfor %}</datalist>
+      <label>Contact <span class="hint opt">— name, office, phone</span><input name="contact" maxlength="300"></label>
+      <label>Legal basis for sharing<select name="basis">{% for k, v in d.bases.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+      <p class="hint">Share only what the agency needs to act.</p><p><button class="primary">Record the referral</button></p></form></details>{% endif %}
+</section>
+{% if c.status == "closed" %}<section class="card"><h2>Closure</h2><p>{{ c.closure_reason }}</p></section>
+{% elif d.can_manage %}<details class="card no-print"><summary><strong>Close the case</strong></summary>
+  <form method="post"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="close">
+    <label>Why the child is now safe or supported<textarea name="reason" rows="3" required minlength="20"></textarea></label><p><button>Close and sign</button></p></form></details>{% endif %}
+<section class="card scroll-x"><h2>Access log</h2>
+  <table class="compact"><tbody>{% for x in d.access_log %}<tr><td>{{ x.at.strftime("%d %b %Y %H:%M") }}</td><td>{{ x.who }}</td><td>{{ x.access }} · {{ x.purpose.replace("_", " ") }}</td></tr>{% endfor %}</tbody></table>
+</section>
+</div>
+</div>
+{% endblock %}

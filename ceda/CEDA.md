@@ -2300,3 +2300,73 @@ or the head, cancels a booking that has not started.
 
 The sample secondary schools gain a Science and ICT block with a science laboratory (40 places), an ICT suite (30), a
 library (60) and an assembly hall (400).
+
+## 36. Behaviour, safeguarding and special educational needs (CR-009, phase 3)
+
+### 36.1 Roles
+
+Two roles are added. The **designated safeguarding lead** (`DSL`, access level 5 — special) holds `safeguarding:*`
+and sees attendance and behaviour beside a case. The **special educational needs coordinator** (`SENCO`, level 5)
+holds `send:*` and logs behaviour and records concerns like any member of staff. Teachers gain `behaviour:log`,
+`behaviour:view` and `safeguarding:report`; heads `behaviour:*` and `safeguarding:report`; registrars, examinations
+officers, HR, finance and facilities staff `safeguarding:report`. A head is neither the DSL nor the SENCO unless also
+granted that role: special-category records stay with the people whose job they are.
+
+### 36.2 Behaviour (BEH-01, BEH-02, BEH-101)
+
+A school records behaviour against its own published policy (`behaviour_policy`, `behaviour_type`); a school without
+one adopts the state's default — five positive behaviours (+1 to +3) and nine negative ones (lateness and homework −1
+to examination malpractice −5), each with its usual outcome. `/behaviour/new` logs one behaviour for one or several
+learners of a class in one step (`behaviour_event`): the points are those of the policy in force; serious negative
+behaviours need a description; bullying names the learner(s) it was aimed at; a time in the future or more than 14 days
+back is refused. Internal exclusion, suspension and exclusion are the head's decision: a teacher's proposal waits for
+it (`decision_by`). An entry is withdrawn (`reversed_at`) by its author on the day or by the head at any time.
+`/behaviour` shows a school or a class over a period — entries and net points, by category, by class and by day of
+the week, the most positive learners and those needing attention, the decisions waiting for the head and the latest
+entries. Learner 360 shows the last 90 days.
+
+### 36.3 Safeguarding (SAF-01, SAF-02, SAF-03)
+
+Any member of staff records a concern on `/safeguarding/concerns/new`: the learner (from a class or by learner number),
+the kind of concern (from a Nigerian list: physical, emotional or sexual abuse, neglect, child labour or hawking,
+trafficking, early or forced marriage, harmful traditional practice, domestic violence, online harm, self-harm,
+serious bullying, missing education, other), when, and what they saw or heard in their own words. The text is sealed at
+once with its own key (`safeguarding_concern.body`, vault zone, append-only) and the reporter receives a receipt code;
+afterwards they see only their receipts — never the concern or what follows.
+
+The DSL's caseload (`/safeguarding`) lists new concerns, open cases by risk with review dates (overdue flagged) and
+recent closures. The DSL opens a case from a concern, or adds it to the learner's open case, setting the risk (low,
+medium, high, immediate danger); the case gets its reference (SG-YYYY-NNNN) and a review date (next day for immediate
+danger, else 14 days). The case page (`/safeguarding/cases/{id}`) shows the chronology — the concerns as reported and
+every action, decision, agency contact, meeting and review, each sealed and append-only (`safeguarding_entry`) —
+with the learner's last 60 days of attendance and behaviour beside it. Referrals record the agency, its contact
+(sealed), the legal basis for sharing and the outcome (`safeguarding_referral`). A case closes only when every referral
+has an outcome, with a reason (sealed) signed by the DSL. **Every opening of a case is written to its access log**
+(`case_access_log`, append-only), shown on the case. Only the DSL and users the DSL names on the case
+(`case_access_grant`) open it; the head and teachers are refused.
+
+### 36.4 Special educational needs (SEN-01, SEN-02) and what teachers see
+
+The SENCO's register (`/send`) lists each learner with their level of support (monitoring, school support, specialist
+support, statutory plan), primary area of need (cognition and learning, specific learning difficulty, communication,
+autism, social, emotional and mental health, visual, hearing, physical, medical), current plan, number of adjustments
+and next review (overdue flagged), with counts by level and by area. Adding a learner records the needs
+(`send_need`) and a profile — strengths, what they find difficult, how they communicate best, what helps them learn,
+the learner's and parents' own words — sealed (`send_profile.profile`). The profile page (`/send/learners/{id}`)
+updates it, publishes a support plan (individual education or support plan, or statutory plan: outcomes sealed,
+participants, review every 1–12 months; a new version supersedes the last), records reviews (sealed notes, attendees;
+the next review moves on by the cycle) and authorises adjustments and teaching strategies. **Every opening of a profile
+is written to the access log** shown on it.
+
+What teachers need in class is kept apart from the diagnosis: adjustments — a teaching strategy, seating, extra time,
+large print, a reader, a scribe, rest breaks, visual supports, assistive technology — each with a short note for the
+teacher and where it applies (`adjustment`, confidential, ops zone). A teacher sees these, and only these, for the
+learners of the classes they teach, on their lesson page (CUR-09); the seating plan and examination access arrangements
+use them too. The needs and profile are never shown to teachers or the head.
+
+### 36.5 Demonstration data
+
+At the sample secondary schools: a DSL (`dsl.<school code>@abia.demo`) and a SENCO (`senco.<school code>@abia.demo`);
+the default behaviour policy with two weeks of entries for SS 2A and SS 2B, a bullying report naming who it was aimed
+at and a proposed suspension waiting for the head; and three SS 2A learners on the SEN register with their profiles,
+adjustments and, for one, an individual education plan. No safeguarding concern is invented.

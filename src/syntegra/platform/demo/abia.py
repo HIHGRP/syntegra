@@ -1285,6 +1285,120 @@ def _curricula(subjects: dict[str, Any], out: Loaded) -> dict[str, Any]:
     return versions
 
 
+def _pastoral(schools: list[Any], names: _Names, out: Loaded, log: Log) -> None:
+    """At the sample secondary schools: a designated safeguarding lead and a SENCO, the state's default behaviour
+    policy with two weeks of entries for SS 2A and SS 2B (a bullying report naming who it was aimed at, a proposed
+    suspension waiting for the head), and three SS 2A learners on the special educational needs register with
+    their adjustments and, for one, a support plan — for the behaviour, safeguarding and SEN demonstrations
+    (CR-009 phase 3). No safeguarding concern is invented."""
+    from zoneinfo import ZoneInfo
+
+    from django.conf import settings
+
+    from syntegra.academic.models import ClassGroup
+    from syntegra.iam.models import AppUser, Role, RoleGrant
+    from syntegra.success import behaviour, send
+    from syntegra.success.models import BehaviourPolicy
+    from syntegra.timetable.models import Timetable
+
+    head_role = Role.objects.get(code="HEAD")
+    rng = names.rng
+    tz = ZoneInfo(settings.TIME_ZONE)
+    done = 0
+    for inst in schools:
+        if not Timetable.objects.filter(institution_id=inst.id, status="published").exists():
+            continue
+        if BehaviourPolicy.objects.filter(institution_id=inst.id).exists():
+            continue
+        grant = RoleGrant.objects.filter(scope_id=inst.scope_node_id, role_id=head_role.id, status="active").first()
+        teacher_user = AppUser.objects.filter(username=f"teacher.{inst.institution_code.lower()}@abia.demo").first()
+        if grant is None or teacher_user is None:
+            continue
+        head_user = AppUser.objects.get(pk=grant.user_id)
+        head = _user(head_user.username, head_user.display_name, "HEAD", inst.scope_node_id, out, inst.name)
+        teacher = _user(teacher_user.username, teacher_user.display_name, "TCH", inst.scope_node_id, out, inst.name)
+        code = inst.institution_code.lower()
+        _user(f"dsl.{code}@abia.demo", f"Designated safeguarding lead, {inst.name}", "DSL", inst.scope_node_id, out,
+              inst.name)  # fmt: skip
+        senco = _user(f"senco.{code}@abia.demo", f"SENCO, {inst.name}", "SENCO", inst.scope_node_id, out, inst.name)
+        classes = {c.name: c for c in ClassGroup.objects.filter(institution_id=inst.id, status="active")}
+        if "SS 2A" not in classes or "SS 2B" not in classes:
+            continue
+        with context.use(head):
+            behaviour.adopt_default(inst.id)
+            kinds = {t.code: t for t in behaviour.types(inst.id)}
+        now = dt.datetime.now(tz)
+        days = [d for d in (now.date() - dt.timedelta(days=n) for n in range(1, 13)) if d.weekday() < 5]
+        plan = [("EXCELLENT_WORK", 14), ("EFFORT", 10), ("HELPING", 8), ("LEADERSHIP", 3), ("LATE", 9),
+                ("HOMEWORK", 8), ("UNIFORM", 4), ("DISRUPTION", 7), ("DISRESPECT", 2), ("FIGHTING", 1)]  # fmt: skip
+        notes = {"DISRESPECT": "Refused to stop talking when asked and answered back in front of the class.",
+                 "FIGHTING": "Fight at the back of the class block during break; both separated by the duty teacher."}  # fmt: skip
+        for cname in ("SS 2A", "SS 2B"):
+            with context.use(head):
+                roster = [x["id"] for x in behaviour.class_list(classes[cname].id)["learners"]]
+            if len(roster) < 4:
+                continue
+            for kcode, count in plan:
+                for _ in range(count if cname == "SS 2A" else max(1, count * 2 // 3)):
+                    day = rng.choice(days)
+                    at = dt.datetime.combine(day, dt.time(rng.randint(8, 13), rng.choice((0, 15, 30, 45))), tzinfo=tz)
+                    who = rng.sample(roster, 2 if kcode == "FIGHTING" else 1)
+                    with context.use(teacher if cname == "SS 2A" else head):
+                        behaviour.log(classes[cname].id, who, kinds[kcode].id, occurred_at=at,
+                                      description=notes.get(kcode))  # fmt: skip
+            if cname == "SS 2A":
+                n = len(roster)
+                bully, aimed = roster[3 % n], roster[7 % n] if roster[7 % n] != roster[3 % n] else roster[(3 + 1) % n]
+                with context.use(teacher):
+                    behaviour.log(classes[cname].id, [bully], kinds["BULLYING"].id, occurred_at=now - dt.timedelta(days=2),
+                                  description="Repeatedly took another learner's lunch money on the way home; seen by two prefects.",
+                                  target_ids=[aimed])  # fmt: skip
+                    behaviour.log(classes[cname].id, [roster[11 % n]], kinds["MALPRACTICE"].id,
+                                  occurred_at=now - dt.timedelta(days=1),
+                                  description="Brought written notes into the mid-term Mathematics test.")  # fmt: skip
+        # the SEN register: three SS 2A learners
+        with context.use(head):
+            roster = [x["id"] for x in behaviour.class_list(classes["SS 2A"].id)["learners"]]
+        if len(roster) < 3:
+            done += 1
+            continue
+        first, second, third = (roster[i * len(roster) // 3 + 1 if len(roster) > 3 else i] for i in range(3))
+        with context.use(senco):
+            send.add(first, "school_support", ["specific_learning", "cognition_learning"], "specific_learning", {
+                "strengths": "Strong verbal reasoning; contributes well in discussion; good at practical science.",
+                "needs": "Reads slowly and loses the place on dense pages; spelling well below age; tires in long written tasks.",
+                "communication": "Prefers spoken explanations; asks for help when the teacher checks in privately.",
+                "helps": "Instructions one step at a time; key words on the board; extra time to read; a reading ruler.",
+                "learner_voice": "I understand when the teacher explains it, it is the reading that takes me long.",
+                "parent_voice": "Mother says homework reading takes twice as long as for his sister.",
+            })  # fmt: skip
+            p = send.profile_for(first)
+            assert p is not None
+            send.new_plan(p.id, "iep", ["Reads a short passage aloud with fewer than five errors by the end of term",
+                                        "Uses a word bank to spell the term's subject key words correctly",
+                                        "Completes timed tests with 25% extra time without running out of time"],
+                          ["SENCO", "form teacher", "mother", "learner"], 3)  # fmt: skip
+            send.add_adjustment(first, "extra_time", "25% extra time in class tests and examinations",
+                                ["assessments", "exams"])  # fmt: skip
+            send.add_adjustment(first, "strategy", "Give instructions one step at a time and put key words on the board",
+                                ["lessons"])  # fmt: skip
+            send.add(second, "monitoring", ["hearing"], "hearing", {
+                "needs": "Mild hearing loss in the left ear; misses instructions given from the back of the room.",
+                "helps": "Sit at the front on the right; face the class when speaking; repeat other learners' answers.",
+            })  # fmt: skip
+            send.add_adjustment(second, "seating", "Front row, right-hand side, facing the board", ["lessons", "rooms"])
+            send.add(third, "specialist_support", ["semh"], "semh", {
+                "strengths": "Kind with younger pupils; enjoys football and drawing.",
+                "needs": "Becomes anxious before tests and when called on without warning; has walked out of lessons.",
+                "helps": "A quiet agreed exit card; warning before being asked to answer; a calm start to the day.",
+            })  # fmt: skip
+            send.add_adjustment(third, "rest_breaks", "May use the agreed exit card for a five-minute break outside the room",
+                                ["lessons"])  # fmt: skip
+        done += 1
+    if done:
+        log(f"  behaviour, safeguarding lead, SENCO and SEN register at {done} secondary schools")
+
+
 def _teaching(schools: list[Any], subjects: dict[str, Any], session: Any, names: _Names, out: Loaded, log: Log) -> None:
     """At the sample secondary schools: three more junior-secondary teachers, every teacher's TRCN authorisations,
     a teacher of record for every class-subject (one deliberately not authorised, with the head's reason, so the
@@ -1573,6 +1687,7 @@ def run(scale: Scale | None = None, log: Log = print) -> Loaded:
             _teachers(schools, names, out, log)
             _classrooms(schools, out, log)
             _teaching(schools, subjects, session, names, out, log)
+            _pastoral(schools, names, out, log)
             _documents(names, out, log)
             log("6/6 daily jobs: facility rules and the warehouse")
             from syntegra.analytics import warehouse

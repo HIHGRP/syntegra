@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "_school_picker.html" import school_picker %}
+{% block title %}Behaviour policy{% endblock %}
+{% block content %}
+<div class="head-row"><h1>Behaviour policy</h1><p class="no-print"><a href="/behaviour?school={{ school.id }}">Behaviour overview</a></p></div>
+<p class="muted">{{ school.name }}{% if policy %} · version {{ policy.version }}, in force from {{ policy.effective_from|date }}{% endif %}</p>
+{{ school_picker(school, schools) }}
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+{% if not policy %}
+<section class="card"><h2>No policy yet</h2><p>The school records behaviour against its own policy. Until it writes one, it can adopt the state's default policy below; the head publishes it.</p>
+{% if ctx.has("behaviour:manage") %}<form method="post"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="school" value="{{ school.id }}"><button class="primary">Adopt the state's default policy</button></form>{% endif %}
+<table class="compact"><thead><tr><th scope="col">Behaviour</th><th scope="col" class="num">Points</th><th scope="col">Default outcome</th></tr></thead><tbody>{% for code, label, pol, cat, pts, out in defaults %}<tr><td>{{ label }}</td><td class="num">{{ "%+d"|format(pts) }}</td><td>{{ outcomes[out] }}</td></tr>{% endfor %}</tbody></table></section>
+{% else %}
+<section class="card scroll-x"><h2>Behaviours the school records</h2>
+  <table class="compact"><thead><tr><th scope="col">Behaviour</th><th scope="col">Category</th><th scope="col" class="num">Points</th><th scope="col">Default outcome</th></tr></thead>
+  <tbody>{% for t in types %}<tr><td>{% if t.polarity == "positive" %}<span class="pill pill-ok">+</span>{% else %}<span class="pill pill-bad">−</span>{% endif %} {{ t.label }}</td><td>{{ categories.get(t.category, t.category) }}</td><td class="num">{{ "%+d"|format(t.points) }}</td><td>{{ outcomes.get(t.default_outcome or "none") }}{% if t.default_outcome in head_decision %} <span class="hint opt">(head's decision)</span>{% endif %}</td></tr>{% endfor %}</tbody></table>
+  <p class="muted">A published policy is never changed in place: a new version applies from its date, and past entries keep their points.</p>
+</section>
+{% endif %}
+{% endblock %}

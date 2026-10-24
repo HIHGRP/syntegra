@@ -650,6 +650,7 @@ def learner(request: HttpRequest, learner_id: uuid.UUID) -> HttpResponse:
     from syntegra.families import services as families
     from syntegra.institutions.models import Institution
     from syntegra.learners import services as lrn
+    from syntegra.success import behaviour, send
 
     c = context.require()
     if not c.has("learner:view"):
@@ -672,6 +673,8 @@ def learner(request: HttpRequest, learner_id: uuid.UUID) -> HttpResponse:
             attendance=attendance,
             guardians=families.guardians_of(learner_id),
             results=reports.learner_results(learner_id),
+            behaviour=behaviour.learner_summary(learner_id),
+            send_profile=send.profile_for(learner_id) if c.has("send:view") else None,
             identifiers=lrn.identifiers_of(learner_id),
             programmes={
                 p.id: p for p in Programme.objects.filter(id__in=[e.programme_id for e in enrolments if e.programme_id])
@@ -1392,12 +1395,21 @@ def lesson_plans(request: HttpRequest) -> HttpResponse:
     if not picked and options:
         picked = str(options[0]["assignment_id"])
     d = lessons.plan_view(_uuid_or_fail(picked, "class-subject"), week) if picked else None
+    support: list[dict[str, Any]] = []
+    if d is not None:
+        from syntegra.success import send
+
+        try:
+            support = send.for_class(d["class"]["id"])
+        except Forbidden:
+            support = []
     return render(
         request,
         "lesson_plans.html",
         _ctx(
             request,
             d=d,
+            support=support,
             options=options,
             open_lesson=request.POST.get("lesson_id") if problem else None,
             message=message,
@@ -1756,6 +1768,426 @@ def room_bookings(request: HttpRequest) -> HttpResponse:
             message=message,
             problem=problem,
             page=pages.page("TIM-04"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+# ----------------------------------------------------- behaviour, safeguarding and special needs (CR-009 phase 3)
+def _problem_or_raise(exc: DomainError) -> dict[str, Any]:
+    if isinstance(exc, Forbidden):
+        raise exc
+    return exc.problem()
+
+
+def _datetime_or_none(day: str | None, time: str | None) -> dt.datetime | None:
+    from zoneinfo import ZoneInfo
+
+    on = _date_or_none(day, "date")
+    if on is None:
+        return None
+    at = _time_or_fail(time, "time") if time else dt.time(12, 0)
+    return dt.datetime.combine(on, at, tzinfo=ZoneInfo(settings.TIME_ZONE))
+
+
+def _uuids(values: list[str]) -> list[uuid.UUID]:
+    return [uuid.UUID(v) for v in values if _is_uuid(v)]
+
+
+def _default_class(school_id: uuid.UUID) -> uuid.UUID | None:
+    """The class to open on: the teacher's own form class or first class taught, else the school's first class."""
+    from syntegra.academic.models import ClassGroup
+    from syntegra.curriculum.lessons import choices, my_staff_id
+
+    mine = my_staff_id()
+    if mine is not None:
+        form: ClassGroup | None = (
+            ClassGroup.objects.in_scope().filter(form_teacher_staff_id=mine, status="active").first()
+        )
+        if form is not None:
+            own: uuid.UUID = form.id
+            return own
+        try:
+            taught = [o for o in choices() if o["mine"]]
+        except DomainError:
+            taught = []
+        if taught:
+            return uuid.UUID(str(taught[0]["class_id"]))
+    first = ClassGroup.objects.in_scope().filter(institution_id=school_id, status="active").order_by("name").first()
+    return first.id if first else None
+
+
+@require_http_methods(["GET", "POST"])
+@page("BEH-01")
+def behaviour_log(request: HttpRequest) -> HttpResponse:
+    """Record a behaviour for one or more learners of a class in one step."""
+    from syntegra.success import behaviour
+
+    school, schools = _school_for(request)
+    picked = request.POST.get("class") or request.GET.get("class")
+    class_id = _uuid_or_fail(picked, "class") if picked else _default_class(school.id)
+    if class_id is None:
+        raise HardValidation("BEH-NO-CLASS", "The school has no active classes", "")
+    message, problem = None, None
+    if request.method == "POST":
+        try:
+            events = behaviour.log(
+                class_id,
+                _uuids(request.POST.getlist("learner_ids")),
+                _uuid_or_fail(request.POST.get("type_id"), "behaviour"),
+                occurred_at=_datetime_or_none(request.POST.get("on"), request.POST.get("at")),
+                description=request.POST.get("description"),
+                outcome=request.POST.get("outcome") or None,
+                target_ids=_uuids(request.POST.getlist("target_ids")),
+            )
+            n = len(events)
+            waiting = events[0].outcome in behaviour.HEAD_DECISION and events[0].decision_by is None
+            message = f"Recorded for {n} learner{'' if n == 1 else 's'}" + (
+                " — the proposed outcome waits for the head's decision." if waiting else "."
+            )
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    now = dt.datetime.now()
+    return render(
+        request,
+        "behaviour_log.html",
+        _ctx(
+            request,
+            d=behaviour.class_list(class_id),
+            school=school,
+            schools=schools,
+            posted=request.POST if problem else {},
+            chosen=request.POST.getlist("learner_ids") if problem else [],
+            today=now.date(),
+            now=now.strftime("%H:%M"),
+            message=message,
+            problem=problem,
+            page=pages.page("BEH-01"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("BEH-02")
+def behaviour_overview(request: HttpRequest) -> HttpResponse:
+    """The school's (or a class's) behaviour over a period; the head's decisions and withdrawals."""
+    from syntegra.success import behaviour
+
+    school, schools = _school_for(request)
+    today = dt.date.today()
+    start = _date_or_none(request.GET.get("from"), "from") or today - dt.timedelta(days=30)
+    end = _date_or_none(request.GET.get("to"), "to") or today
+    picked = request.GET.get("class")
+    message, problem = None, None
+    if request.method == "POST":
+        try:
+            if request.POST.get("action") == "decide":
+                behaviour.decide(_uuid_or_fail(request.POST.get("event_id"), "entry"), request.POST.get("outcome", ""))
+                message = "Decision recorded."
+            elif request.POST.get("action") == "withdraw":
+                behaviour.withdraw(_uuid_or_fail(request.POST.get("event_id"), "entry"))
+                message = "Entry withdrawn."
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    d = behaviour.overview(school.id, start, end, _uuid_or_fail(picked, "class") if picked else None)
+    return render(
+        request,
+        "behaviour.html",
+        _ctx(request, d=d, school=school, schools=schools, message=message, problem=problem, page=pages.page("BEH-02")),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("BEH-101")
+def behaviour_policy(request: HttpRequest) -> HttpResponse:
+    """The school's behaviours, points and default outcomes; a school without a policy adopts the state default."""
+    from syntegra.success import behaviour
+
+    school, schools = _school_for(request)
+    message, problem = None, None
+    if request.method == "POST":
+        try:
+            behaviour.adopt_default(school.id)
+            message = "The state's default behaviour policy is now the school's policy."
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    kinds = behaviour.types(school.id)
+    return render(
+        request,
+        "behaviour_policy.html",
+        _ctx(
+            request,
+            types=kinds,
+            policy=behaviour.policy(school.id),
+            defaults=behaviour.DEFAULT_TYPES,
+            outcomes=behaviour.OUTCOMES,
+            categories=behaviour.CATEGORY_LABELS,
+            head_decision=behaviour.HEAD_DECISION,
+            school=school,
+            schools=schools,
+            message=message,
+            problem=problem,
+            page=pages.page("BEH-101"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("SAF-01")
+def concern_new(request: HttpRequest) -> HttpResponse:
+    """Any member of staff records a concern; afterwards they see only the receipt."""
+    from syntegra.academic.models import ClassGroup
+    from syntegra.learners.models import Learner
+    from syntegra.safeguarding import services as sg
+
+    c = context.require()
+    receipt, problem = None, None
+    school, schools = _school_for(request)
+    picked = request.POST.get("class") or request.GET.get("class")
+    classes = list(ClassGroup.objects.in_scope().filter(institution_id=school.id, status="active").order_by("name"))
+    class_id = _uuid_or_fail(picked, "class") if picked else (classes[0].id if classes else None)
+    if request.method == "POST":
+        try:
+            lid_raw = request.POST.get("learner_id") or ""
+            lrn = (request.POST.get("lrn") or "").strip().upper()
+            if lrn:
+                found = Learner.objects.filter(global_learner_id=lrn).first()
+                if found is None:
+                    raise HardValidation("SAF-LEARNER", "No learner has that number", "Check the learner number.")
+                lid = found.id
+            else:
+                lid = _uuid_or_fail(lid_raw, "learner")
+            receipt = sg.record_concern(
+                lid,
+                request.POST.get("category", ""),
+                request.POST.get("what", ""),
+                _datetime_or_none(request.POST.get("on"), request.POST.get("at")),
+            )
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    learners: list[dict[str, Any]] = []
+    if class_id is not None and c.has("class:view"):
+        from syntegra.academic.models import ClassMembership
+
+        today = dt.date.today()
+        ids = (
+            ClassMembership.objects.filter(class_group_id=class_id, valid_from__lte=today)
+            .exclude(valid_to__lt=today)
+            .values_list("learner_id", flat=True)
+        )
+        learners = sorted(
+            ({"id": lr.id, "name": f"{lr.legal_family_name}, {lr.legal_given_name}"}
+             for lr in Learner.objects.filter(id__in=list(ids))),
+            key=lambda x: x["name"],
+        )  # fmt: skip
+    return render(
+        request,
+        "concern_new.html",
+        _ctx(
+            request,
+            receipt=receipt,
+            receipts=sg.my_receipts(),
+            categories=sg.CATEGORIES,
+            classes=[{"id": k.id, "name": k.name} for k in classes] if c.has("class:view") else [],
+            class_id=class_id,
+            learners=learners,
+            posted=request.POST if problem else {},
+            today=dt.date.today(),
+            school=school,
+            schools=schools,
+            problem=problem,
+            page=pages.page("SAF-01"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("SAF-02")
+def safeguarding_caseload(request: HttpRequest) -> HttpResponse:
+    """The DSL's caseload: new concerns to act on, open cases by risk, recent closures."""
+    from syntegra.safeguarding import services as sg
+
+    message, problem, opened = None, None, None
+    if request.method == "POST":
+        try:
+            case = sg.open_case(_uuid_or_fail(request.POST.get("concern_id"), "concern"), request.POST.get("risk", ""))
+            opened, message = case.id, f"Concern added to case {case.case_reference}."
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    return render(
+        request,
+        "safeguarding.html",
+        _ctx(request, d=sg.caseload(), opened=opened, message=message, problem=problem, page=pages.page("SAF-02")),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("SAF-03")
+def safeguarding_case(request: HttpRequest, case_id: uuid.UUID) -> HttpResponse:
+    """One case: chronology, risk and review, referrals and their outcomes, closure; every opening is logged."""
+    from syntegra.safeguarding import services as sg
+
+    message, problem = None, None
+    if request.method == "POST":
+        action = request.POST.get("action")
+        try:
+            if action == "entry":
+                sg.add_entry(case_id, request.POST.get("kind", ""), request.POST.get("text", ""))
+                message = "Added to the chronology."
+            elif action == "risk":
+                sg.set_risk(case_id, request.POST.get("risk", ""), _date_or_none(request.POST.get("review"), "review"))
+                message = "Risk and review date updated."
+            elif action == "refer":
+                sg.refer(case_id, request.POST.get("agency", ""), request.POST.get("contact", ""),
+                         request.POST.get("basis", ""))  # fmt: skip
+                message = "Referral recorded."
+            elif action == "outcome":
+                sg.record_outcome(
+                    _uuid_or_fail(request.POST.get("referral_id"), "referral"),
+                    request.POST.get("status", ""),
+                    request.POST.get("outcome", ""),
+                )
+                message = "Referral outcome recorded."
+            elif action == "close":
+                sg.close(case_id, request.POST.get("reason", ""))
+                message = "Case closed and signed."
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    return render(
+        request,
+        "safeguarding_case.html",
+        _ctx(request, d=sg.case_view(case_id), message=message, problem=problem, page=pages.page("SAF-03")),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("SEN-01")
+def send_register(request: HttpRequest) -> HttpResponse:
+    """The school's special educational needs register; the SENCO adds learners to it."""
+    from syntegra.academic.models import ClassGroup, ClassMembership
+    from syntegra.learners.models import Learner
+    from syntegra.success import send
+
+    school, schools = _school_for(request)
+    message, problem, added = None, None, None
+    if request.method == "POST":
+        try:
+            p = send.add(
+                _uuid_or_fail(request.POST.get("learner_id"), "learner"),
+                request.POST.get("support_level", ""),
+                request.POST.getlist("need_areas"),
+                request.POST.get("primary", ""),
+                {k: request.POST.get(k, "") for k, _label in send.PROFILE_FIELDS},
+                _date_or_none(request.POST.get("review"), "review date"),
+            )
+            added, message = p.learner_id, "Added to the register."
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    picked = request.POST.get("class") or request.GET.get("class")
+    classes = list(ClassGroup.objects.in_scope().filter(institution_id=school.id, status="active").order_by("name"))
+    class_id = _uuid_or_fail(picked, "class") if picked else (classes[0].id if classes else None)
+    today = dt.date.today()
+    ids = (
+        ClassMembership.objects.filter(class_group_id=class_id, valid_from__lte=today)
+        .exclude(valid_to__lt=today)
+        .values_list("learner_id", flat=True)
+        if class_id
+        else []
+    )
+    learners = sorted(
+        ({"id": lr.id, "name": f"{lr.legal_family_name}, {lr.legal_given_name}"}
+         for lr in Learner.objects.filter(id__in=list(ids))),
+        key=lambda x: x["name"],
+    )  # fmt: skip
+    return render(
+        request,
+        "send_register.html",
+        _ctx(
+            request,
+            d=send.register(school.id),
+            classes=[{"id": k.id, "name": k.name} for k in classes],
+            class_id=class_id,
+            learners=learners,
+            added=added,
+            posted=request.POST if problem else {},
+            chosen_needs=request.POST.getlist("need_areas") if problem else [],
+            school=school,
+            schools=schools,
+            message=message,
+            problem=problem,
+            page=pages.page("SEN-01"),
+        ),
+        status=422 if problem else 200,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@page("SEN-02")
+def send_profile(request: HttpRequest, learner_id: uuid.UUID) -> HttpResponse:
+    """A learner's support profile and needs, their support plan and reviews, and the adjustments teachers see."""
+    from syntegra.success import send
+
+    p = send.profile_for(learner_id)
+    if p is None:
+        raise NotFound("learner on the register", learner_id)
+    message, problem = None, None
+    if request.method == "POST":
+        action = request.POST.get("action")
+        try:
+            if action == "profile":
+                send.update_profile(
+                    p.id,
+                    request.POST.get("support_level", ""),
+                    {k: request.POST.get(k, "") for k, _label in send.PROFILE_FIELDS},
+                    _date_or_none(request.POST.get("review"), "review date"),
+                )
+                message = "Profile updated."
+            elif action == "plan":
+                send.new_plan(
+                    p.id,
+                    request.POST.get("plan_type", ""),
+                    request.POST.get("outcomes", "").splitlines(),
+                    request.POST.get("participants", "").split(","),
+                    _int_or_none(request.POST.get("cycle")) or 0,
+                )
+                message = "Support plan published."
+            elif action == "review":
+                send.review_plan(
+                    _uuid_or_fail(request.POST.get("plan_id"), "plan"),
+                    request.POST.get("notes", ""),
+                    request.POST.get("attendees", "").split(","),
+                )
+                message = "Review recorded; the next review date has moved on."
+            elif action == "adjust":
+                send.add_adjustment(
+                    learner_id,
+                    request.POST.get("kind", ""),
+                    request.POST.get("note", ""),
+                    request.POST.getlist("applies_to"),
+                    _date_or_none(request.POST.get("until"), "end date"),
+                )
+                message = "Adjustment added — the learner's teachers see it on their lesson page."
+            elif action == "end_adjust":
+                send.end_adjustment(_uuid_or_fail(request.POST.get("adjustment_id"), "adjustment"))
+                message = "Adjustment ended."
+        except DomainError as exc:
+            problem = _problem_or_raise(exc)
+    return render(
+        request,
+        "send_profile.html",
+        _ctx(
+            request,
+            d=send.profile_view(p.id),
+            posted=request.POST if problem else {},
+            message=message,
+            problem=problem,
+            page=pages.page("SEN-02"),
         ),
         status=422 if problem else 200,
     )

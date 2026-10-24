@@ -180,6 +180,8 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "timetable:*",
             "cover:*",
             "room:*",
+            "behaviour:*",
+            "safeguarding:report",
             "document:view",
             "document:upload",
         ],
@@ -196,6 +198,7 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "institution:view",
             "estate:view",
             "metric:view",
+            "safeguarding:report",
         ],
     ),
     "TCH": (
@@ -217,6 +220,38 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "lesson:deliver",
             "timetable:view",
             "room:book",
+            "behaviour:log",
+            "behaviour:view",
+            "safeguarding:report",
+        ],
+    ),
+    "DSL": (
+        "Designated safeguarding lead",
+        "special",
+        [
+            "safeguarding:*",
+            "learner:view",
+            "class:view",
+            "attendance:view",
+            "behaviour:view",
+            "institution:view",
+            "timetable:view",
+        ],
+    ),
+    "SENCO": (
+        "Special educational needs coordinator",
+        "special",
+        [
+            "send:*",
+            "learner:view",
+            "class:view",
+            "attendance:view",
+            "assessment:view",
+            "behaviour:view",
+            "behaviour:log",
+            "safeguarding:report",
+            "institution:view",
+            "timetable:view",
         ],
     ),
     "REG": (
@@ -230,6 +265,7 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "clearance:dispute",
             "institution:view",
             "assessment:view",
+            "safeguarding:report",
         ],
     ),
     "HR": (
@@ -255,6 +291,7 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "funding:view",
             "funding:apply",
             "funding:review",
+            "safeguarding:report",
         ],
     ),
     "PAYR": (
@@ -301,6 +338,7 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "funding:disburse",
             "funding:collect",
             "funding:decide",
+            "safeguarding:report",
         ],
     ),
     # CR-006: facilities and the Commissioner's view
@@ -316,6 +354,7 @@ ROLES: dict[str, tuple[str, str, list[str]]] = {
             "imprest:request",
             "timetable:view",
             "room:*",
+            "safeguarding:report",
         ],
     ),
     "COMM": (

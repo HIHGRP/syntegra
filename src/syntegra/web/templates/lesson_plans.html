@@ -76,5 +76,11 @@
   <p class="muted">Highlighted objectives have been delivered. The last two weeks of the term are kept for revision and examinations.</p>
 </details>
 {% endif %}
+{% if support %}
+<section class="card" id="support"><h2>Support for learners in {{ d.class.name }}</h2>
+  <p class="muted">Adjustments and strategies authorised by the SENCO for this class's learners.</p>
+  <table class="compact"><tbody>{% for s in support %}<tr><th scope="row">{{ s.name }}</th><td>{% for a in s.adjustments %}<strong>{{ a.kind }}:</strong> {{ a.note }}{% if not loop.last %}<br>{% endif %}{% endfor %}</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endif %}
 {% endif %}
 {% endblock %}

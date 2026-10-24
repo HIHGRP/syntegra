@@ -48,8 +48,11 @@ def test_teacher_arranges_a_class(world: Any, client: Any) -> None:
     assert page.count('class="seat"') == 10 and "★" in page and "att." in page
     with context.use(system_ctx()):
         plan = SeatingPlan.objects.get(class_group_id=ss2a.id, is_active=True)
-        adjusted = Adjustment.objects.get(adjustment_kind="seating", learner_id__in=list(plan.placements["seats"]))
-    assert plan.placements["seats"][str(adjusted.learner_id)].startswith("R1-")  # front row, whatever the strategy
+        adjusted = list(
+            Adjustment.objects.filter(adjustment_kind="seating", learner_id__in=list(plan.placements["seats"]))
+        )
+    assert adjusted  # every learner with a seating adjustment sits in the front row, whatever the strategy
+    assert all(plan.placements["seats"][str(a.learner_id)].startswith("R1-") for a in adjusted)
 
     board = _ok(client.get(url + "?view=board"))
     assert "Board-safe view" in board and "att." not in board and "Green" not in board and "★" not in board

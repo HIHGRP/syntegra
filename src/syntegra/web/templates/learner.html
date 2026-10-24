@@ -36,6 +36,17 @@
     {% elif attendance.flags["ATT-PERSISTENT"] %}<div class="alert">Persistent absence — below the state threshold.</div>{% endif %}
   </article>
   {% endif %}
+  {% if behaviour %}
+  <article class="card" id="behaviour">
+    <h2>Behaviour ({{ behaviour.days }} days)</h2>
+    <p class="big">{{ "%+d"|format(behaviour.points) }} <span class="muted">points</span></p>
+    <p class="muted">{{ behaviour.positive }} positive · {{ behaviour.negative }} negative</p>
+    <ul class="plain">{% for e in behaviour.recent %}<li>{{ e.at.strftime("%d %b") }} · {{ e.behaviour }} ({{ "%+d"|format(e.points) }}){% if e.outcome and e.outcome != "No further action" %} — {{ e.outcome }}{% endif %}</li>{% endfor %}</ul>
+  </article>
+  {% endif %}
+  {% if send_profile %}
+  <article class="card" id="send"><h2>Special educational needs</h2><p>On the register. <a href="/send/learners/{{ learner.id }}">Open the support profile</a> <span class="hint opt">(logged)</span></p></article>
+  {% endif %}
   {% if results %}{% set r = results.row %}
   <article class="card span-all scroll-x" id="results">
     <h2>Results — {{ results.term.name if results.term else "this term" }}, {{ results.class.name }}</h2>

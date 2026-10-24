@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "_school_picker.html" import school_picker %}
+{% block title %}Special educational needs register{% endblock %}
+{% block content %}
+<h1>Special educational needs register</h1>
+<p class="muted">{{ d.institution.name }} · special category: every profile opened is written to its access log.</p>
+{{ school_picker(school, schools) }}
+{% if message %}<div class="alert alert-ok" role="status">{{ message }}{% if added %} <a href="/send/learners/{{ added }}">Open the profile</a>{% endif %}</div>{% endif %}
+{% if problem %}<div class="alert alert-error" role="alert">{{ problem.title }}{% if problem.detail %} — {{ problem.detail }}{% endif %}</div>{% endif %}
+<section class="kpis" aria-label="Register">
+  <div class="kpi"><span class="v">{{ d.rows|length }}</span><span class="k">learners on the register</span></div>
+  {% for l in d.levels %}<div class="kpi"><span class="v">{{ l.count }}</span><span class="k">{{ l.label|lower }}</span></div>{% endfor %}
+  <div class="kpi"><span class="v">{{ d.overdue }}</span><span class="k">reviews overdue</span></div>
+</section>
+<section class="card scroll-x" id="register"><h2>Learners</h2>
+  <table class="compact"><thead><tr><th scope="col">Learner</th><th scope="col">Class</th><th scope="col">Support</th><th scope="col">Primary need</th><th scope="col">Plan</th><th scope="col" class="num">Adjustments</th><th scope="col">Next review</th></tr></thead>
+  <tbody>{% for r in d.rows %}<tr><td><a href="/send/learners/{{ r.learner_id }}">{{ r.name }}</a></td><td>{{ r.class }}</td><td>{{ r.level }}</td><td>{{ r.primary }}{% if r.other_needs %} <span class="hint opt">+{{ r.other_needs }}</span>{% endif %}</td><td>{% if r.plan %}{{ r.plan }} v{{ r.plan_version }}{% else %}<span class="muted">—</span>{% endif %}</td><td class="num">{{ r.adjustments }}</td><td>{{ r.review|date if r.review else "—" }}{% if r.overdue %} <span class="pill pill-bad">overdue</span>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="7" class="muted">No learner is on the register.</td></tr>{% endfor %}</tbody></table>
+</section>
+{% if d.areas %}<section class="card"><h2>Primary areas of need</h2><p>{% for a in d.areas %}{{ a.label }} <strong>{{ a.count }}</strong>{% if not loop.last %} · {% endif %}{% endfor %}</p></section>{% endif %}
+{% if d.can_manage %}
+<section class="card no-print" id="add"><h2>Add a learner to the register</h2>
+  <form method="get" class="picker"><input type="hidden" name="school" value="{{ school.id }}"><label>Class<select name="class" onchange="this.form.submit()">{% for c in classes %}<option value="{{ c.id }}"{% if c.id == class_id %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></label><noscript><button>Show the class</button></noscript></form>
+  <form method="post" class="grid-form">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="school" value="{{ school.id }}"><input type="hidden" name="class" value="{{ class_id or '' }}">
+    <label>Learner<select name="learner_id" required>{% for lr in learners %}<option value="{{ lr.id }}"{% if posted.get('learner_id') == lr.id|string %} selected{% endif %}>{{ lr.name }}</option>{% endfor %}</select></label>
+    <label>Level of support<select name="support_level">{% for k, v in d.support_levels.items() %}<option value="{{ k }}"{% if posted.get('support_level', 'school_support') == k %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+    <fieldset class="span-all"><legend>Areas of need</legend>{% for k, v in d.need_areas.items() %}<label class="chip"><input type="checkbox" name="need_areas" value="{{ k }}"{% if k in chosen_needs %} checked{% endif %}> {{ v }}</label>{% endfor %}</fieldset>
+    <label>Primary need<select name="primary">{% for k, v in d.need_areas.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+    <label>Review by<input type="date" name="review"></label>
+    {% for k, label in d.profile_fields %}<label>{{ label }}{% if k in ("needs", "helps") %} <span class="hint opt">— needed</span>{% endif %}<textarea name="{{ k }}" rows="2" maxlength="2000">{{ posted.get(k, '') }}</textarea></label>{% endfor %}
+    <p><button class="primary">Add to the register</button></p>
+  </form>
+  <p class="hint">The profile and the detail of needs are sealed. Teachers never see them — only the adjustments and strategies you authorise on the learner's profile.</p>
+</section>
+{% endif %}
+{% endblock %}

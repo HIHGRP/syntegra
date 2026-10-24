@@ -88,6 +88,7 @@ def choices(on: dt.date | None = None) -> list[dict[str, Any]]:
             {
                 "assignment_id": a.id,
                 "plan_id": p.id,
+                "class_id": c.id,
                 "label": f"{c.name} — {subjects.get(p.subject_id, '?')}",
                 "class": c.name,
                 "mine": a.staff_id == mine,
