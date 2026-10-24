@@ -27,8 +27,8 @@
 </details>
 {% endif %}
 {% if d.absences %}
-<section class="card scroll-x"><h2>Absent today</h2>
-  <table class="compact"><thead><tr><th scope="col">Teacher</th><th scope="col">Kind</th><th scope="col">Days</th><th scope="col" class="num">Lessons today</th></tr></thead>
+<section class="card scroll-x"><h2>Absent on {{ d.on.strftime("%A") }}</h2>
+  <table class="compact"><thead><tr><th scope="col">Teacher</th><th scope="col">Kind</th><th scope="col">Days</th><th scope="col" class="num">Lessons that day</th></tr></thead>
   <tbody>{% for a in d.absences %}<tr><td>{{ a.staff }}</td><td>{{ a.type }}</td><td>{{ a.first|date }}{% if a.last != a.first %} – {{ a.last|date }}{% endif %}</td><td class="num">{{ a.lessons }}</td></tr>{% endfor %}</tbody></table>
 </section>
 {% endif %}
